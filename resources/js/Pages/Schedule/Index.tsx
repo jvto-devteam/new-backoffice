@@ -1,10 +1,11 @@
 import Main from '@/Layouts/Main';
 import React, { useState, useMemo } from 'react';
+import { router } from '@inertiajs/react';
 import { format, parse, addDays } from 'date-fns';
 import { 
   ChevronDown, ChevronRight, Search, Calendar, 
   Hotel, Car, DollarSign, AlertCircle, Package,
-  Users, Clock, MapPin, LifeBuoy, Backpack
+  Users, Clock, MapPin, LifeBuoy, Backpack 
 } from 'lucide-react';
 
 // Integrated Card Components
@@ -27,47 +28,23 @@ const CardTitle = ({ className, children, ...props }) => (
 );
 
 const CardContent = ({ className, children, ...props }) => (
-  <div className={`p-6 pt-0 ${className}`} {...props}>
+  <div className={`${className}`} {...props}>
     {children}
   </div>
 );
 
 // Sample package templates for auto-population
-const PACKAGE_TEMPLATES = {
-  'BRM3D': {
-    name: 'Bromo 3D2N Package',
-    duration: '3D2N',
-    defaultItinerary: [
-      { day: 1, activity: 'Surabaya to Bromo - Stargazing', hotel: 'Manis Ae Bromo' },
-      { day: 2, activity: 'Bromo Sunrise - Madakaripura Waterfall', hotel: 'Manis Ae Bromo' },
-      { day: 3, activity: 'Return to Surabaya', hotel: null }
-    ]
-  },
-  'IJN4D': {
-    name: 'Ijen Crater 4D3N Package',
-    duration: '4D3N',
-    defaultItinerary: [
-      { day: 1, activity: 'Arrival - Transfer to Hotel', hotel: 'Astons Banyuwangi' },
-      { day: 2, activity: 'Ijen Crater Trek', hotel: 'Astons Banyuwangi' },
-      { day: 3, activity: 'Local Activities', hotel: 'Astons Banyuwangi' },
-      { day: 4, activity: 'Departure', hotel: null }
-    ]
-  }
-};
 const formatRupiah = (angka) => {
     return new Intl.NumberFormat('id-ID').format(angka);
 };
+const Alert = ({ message }) => (
+  <div className="flex items-center space-x-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100 px-1 py-0.5 rounded text-xs mb-1">
+    <AlertCircle className="h-3 w-3" />
+    <span>{message}</span>
+  </div>
+);
 
 const BookingRow = ({ no,booking, isExpanded, onToggle }) => {
-    
-  const getStatusColor = (status) => {
-    switch (status?.toLowerCase()) {
-      case 'paid': return 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-100';
-      case 'pending': return 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-100';
-      case 'overdue': return 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-100';
-      default: return 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100';
-    }
-  };
 
   const getSourceColor = (source) => {
     switch (source) {
@@ -79,7 +56,10 @@ const BookingRow = ({ no,booking, isExpanded, onToggle }) => {
   };
 
   const source = booking.agent_id == 2 && booking.booking_category_id == 3 ? 'KLOOK' : booking.agent.name
-  
+  const hasCar = booking.book_car && booking.book_car.length > 0;
+  const hasDriver = booking.guide_driver && booking.guide_driver.some(gd => gd.type === 'driver');
+  const hasGuide = booking.guide_driver && booking.guide_driver.some(gd => gd.type === 'guide');
+
   return (
     <>
       <tr 
@@ -104,7 +84,9 @@ const BookingRow = ({ no,booking, isExpanded, onToggle }) => {
          <td className="align-top px-4 py-3">
           <div className="space-y-1">
             <div className="font-medium">{booking.user.name}</div>
-            <div className="text-sm text-gray-500 dark:text-gray-400">{booking.booking_detail[0].package ? `${booking.booking_detail[0].package.duration.day}D ${booking.booking_detail[0].package.duration.night}N` : ''}</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {booking.booking_detail[0].package ? `${booking.booking_detail[0].package.duration.day}D ${booking.booking_detail[0].package.duration.night}N` : `${booking.package_duration}D ${booking.package_duration-1}N`} / {booking.total_pax} PAX
+              </div>
             <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getSourceColor(source)}`}>
               {source}
             </span>
@@ -163,39 +145,51 @@ const BookingRow = ({ no,booking, isExpanded, onToggle }) => {
         </td>
         <td className="align-top px-4 py-3">
             <div>
-                {booking.book_car.map((bookCar,key) => (
-                    <div key={key} className="flex space-x-2">
-                        <Car className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                        <div>
-                            <div className="text-sm font-medium">{bookCar.car.name}</div>
-                        </div>
+              {hasCar ? (
+                booking.book_car.map((bookCar, key) => (
+                  <div key={key} className="flex space-x-2">
+                    <Car className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                    <div>
+                      <div className="text-sm font-medium">{bookCar.car.name}</div>
                     </div>
-                ))}
+                  </div>
+                ))
+              ) : (
+                <Alert message="No car assigned" />
+              )}
             </div>
             <div>
-                {booking.guide_driver
-                .filter((bookDriver) => bookDriver.type === 'driver')
-                .map((bookDriver,keyDriver) => (
-                    <div key={keyDriver} className="flex space-x-2" key={bookDriver.id}>
-                        <LifeBuoy className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                        <div>
-                            <div className="text-sm font-medium">{bookDriver.person.name}</div>
-                        </div>
+              {hasDriver ? (
+                booking.guide_driver
+                  .filter((bookDriver) => bookDriver.type === 'driver')
+                  .map((bookDriver, keyDriver) => (
+                    <div key={keyDriver} className="flex space-x-2">
+                      <LifeBuoy className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                      <div>
+                        <div className="text-sm font-medium">{bookDriver.person.name}</div>
+                      </div>
                     </div>
-                ))}
+                  ))
+              ) : (
+                <Alert message="No driver assigned" />
+              )}
             </div>
             <div>
-                {booking.guide_driver
-                .filter((bookGuide) => bookGuide.type === 'guide')
-                .map((bookGuide,keyGuide) => (
-                    <div key={keyGuide} className="flex space-x-2" key={bookGuide.id}>
-                        <Backpack className="h-4 w-4 text-gray-400 dark:text-gray-500" />
-                        <div>
-                            <div className="text-sm font-medium">{bookGuide.person.name}</div>
-                        </div>
+              {hasGuide ? (
+                booking.guide_driver
+                  .filter((bookGuide) => bookGuide.type === 'guide')
+                  .map((bookGuide, keyGuide) => (
+                    <div key={keyGuide} className="flex space-x-2">
+                      <Backpack className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                      <div>
+                        <div className="text-sm font-medium">{bookGuide.person.name}</div>
+                      </div>
                     </div>
-                ))}
-            </div>
+                  ))
+              ) : (
+                <Alert message="No guide assigned" />
+              )}
+            </div>            
         </td>
       </tr>
       {isExpanded && (
@@ -276,67 +270,104 @@ const BookingRow = ({ no,booking, isExpanded, onToggle }) => {
   );
 };
 
-const DashboardFilters = ({ onFilterChange }) => {
+const DashboardFilters = ({ filter }) => {
+  const [filters, setFilters] = useState({
+    month: filter.month,
+    year: filter.year,
+    source: filter.source
+  });
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Remove empty filters
+
+    router.get('', filters, {
+      preserveState: true,
+      preserveScroll: true,
+    });
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
       <div>
-        <label className="block text-sm font-medium mb-1">Date Range</label>
-        <input
-          type="date"
-          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          onChange={(e) => onFilterChange('dateRange', e.target.value)}
-        />
+        <label className="block text-sm font-medium mb-1">Date</label>
+        <div className="flex">
+          <select
+            className="w-full border dark:border-gray-700 rounded-tl-lg rounded-bl-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            value={filters.month}
+            onChange={(e) => handleFilterChange('month', e.target.value)}
+          >
+            <option value="">Month</option>
+            {[
+              ["01", "January"],
+              ["02", "February"],
+              ["03", "March"],
+              ["04", "April"], 
+              ["05", "May"],
+              ["06", "June"],
+              ["07", "July"],
+              ["08", "August"],
+              ["09", "September"],
+              ["10", "October"],
+              ["11", "November"],
+              ["12", "December"]
+            ].map(([key, value]) => (
+              <option key={key} value={key}>
+                {value}
+              </option>
+            ))}
+          </select>
+          <select
+            className="w-full border dark:border-gray-700 rounded-tr-lg rounded-br-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            value={filters.year}
+            onChange={(e) => handleFilterChange('year', e.target.value)}
+          >
+            <option value="">Year</option>
+            <option value="2024">2024</option>
+            <option value="2025">2025</option>
+          </select>
+        </div>
       </div>
-      
+            
       <div>
-        <label className="block text-sm font-medium mb-1">Package</label>
+        <label className="block text-sm font-medium mb-1">Order Channel</label>
         <select
           className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          onChange={(e) => onFilterChange('package', e.target.value)}
+          value={filters.source}
+          onChange={(e) => handleFilterChange('source', e.target.value)}
         >
-          <option value="">All Packages</option>
-          {Object.entries(PACKAGE_TEMPLATES).map(([id, pkg]) => (
-            <option key={id} value={id}>{pkg.name}</option>
-          ))}
+          <option value="">All Order Channel</option>
+          <option value="2">JVTO</option>
+          <option value="3">KLOOK</option>
+          <option value="1">TWT</option>
         </select>
       </div>
-      
-      <div>
-        <label className="block text-sm font-medium mb-1">Status</label>
-        <select
-          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          onChange={(e) => onFilterChange('status', e.target.value)}
+
+      <div className="flex items-end">
+        <button
+          type="submit"
+          className=" bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg"
         >
-          <option value="">All Statuses</option>
-          <option value="paid">Paid</option>
-          <option value="pending">Pending</option>
-          <option value="overdue">Overdue</option>
-        </select>
-      </div>
-      
-      <div>
-        <label className="block text-sm font-medium mb-1">Source</label>
-        <select
-          className="w-full border dark:border-gray-700 rounded-lg px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-          onChange={(e) => onFilterChange('source', e.target.value)}
-        >
-          <option value="">All Sources</option>
-          <option value="JVTO">JVTO</option>
-          <option value="KLOOK">KLOOK</option>
-          <option value="TWT">TWT</option>
-        </select>
-      </div>
-    </div>
+          Apply Filters
+        </button>
+      </div>      
+    </form>
   );
 };
 
 const Index = ({data}) => {    
   const [expandedRows, setExpandedRows] = useState(new Set());
   const [filters, setFilters] = useState({
-    dateRange: '',
-    package: '',
-    status: '',
-    source: ''
+    month: data.month,
+    year: data.year,
+    source: data.source
   });
 
   const handleFilterChange = (filterKey, value) => {
@@ -358,56 +389,12 @@ const Index = ({data}) => {
     });
   };
 
-  // Sample booking data structure
-  const bookings = [
-    {
-      no: 1,
-      dates: {
-        start: '02 Dec',
-        end: '06 Dec',
-        days: 'Mon - Fri'
-      },
-      guestName: 'Lin Chun Hong',
-      packageId: 'BRM3D',
-      source: 'JVTO',
-      pickup: {
-        time: '09:00',
-        location: 'Surabaya Airport'
-      },
-      itinerary: [
-        { day: 1, activity: 'Surabaya Airport - Bondowoso', hotel: 'Grand Padis Hotel' },
-        { day: 2, activity: 'Ijen Crater - Papuma Beach Sunset', hotel: 'Dana Homestay' }
-      ],
-      accommodation: {
-        hotel: 'Grand Padis Hotel',
-        roomType: 'Deluxe Double',
-        checkIn: '02 Dec 2024',
-        checkOut: '06 Dec 2024',
-        rooms: [
-          { type: 'Deluxe Double', quantity: 2 },
-          { type: 'Twin', quantity: 1 }
-        ]
-      },
-      transport: {
-        vehicle: 'Toyota Hiace',
-        driver: 'Yandi'
-      },
-      financial: {
-        invoice: 4500000,
-        expenses: 3172500,
-        profit: 1327500,
-        status: 'PAID',
-        notes: 'Early bird discount applied'
-      }
-    }
-  ];
-
   return (
     <Main>
         <div className="min-h-screen">
             <div className="mb-6">
                 <h1 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Booking Overview</h1>
-                <DashboardFilters onFilterChange={handleFilterChange} />
+                <DashboardFilters filter={filters}/>
             </div>
 
             <Card>
@@ -441,41 +428,6 @@ const Index = ({data}) => {
                 </div>
                 </CardContent>
             </Card>
-
-            {/* Quick Actions Panel */}
-            <div className="fixed bottom-6 right-6">
-                <div className="flex flex-col space-y-2">
-                <button 
-                    className="bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-                    title="Add New Booking"
-                >
-                    <Package className="h-5 w-5" />
-                </button>
-                <button 
-                    className="bg-green-600 text-white p-3 rounded-full shadow-lg hover:bg-green-700 dark:bg-green-500 dark:hover:bg-green-600"
-                    title="Export to Excel"
-                >
-                    <DollarSign className="h-5 w-5" />
-                </button>
-                </div>
-            </div>
-
-            {/* Notifications Panel */}
-            <div className="fixed top-6 right-6 max-w-sm">
-                {bookings.some(b => b.financial.status === 'OVERDUE') && (
-                <div className="bg-red-100 dark:bg-red-900 border-l-4 border-red-500 dark:border-red-600 p-4 mb-4">
-                    <div className="flex items-start">
-                    <AlertCircle className="h-5 w-5 text-red-500 dark:text-red-400 mt-0.5 mr-2" />
-                    <div>
-                        <h3 className="text-sm font-medium text-red-800 dark:text-red-100">Overdue Payments Alert</h3>
-                        <p className="text-sm text-red-700 dark:text-red-200 mt-1">
-                        There are bookings with overdue payments that require immediate attention.
-                        </p>
-                    </div>
-                    </div>
-                </div>
-                )}
-            </div>
         </div>
     </Main>
   );

@@ -20,6 +20,7 @@ class ScheduleController extends Controller
         $data['endDate'] = $request->start_end ? $startEnd[1] : date('Y-m-t', strtotime(date('Y-m-d')));
         $data['month'] = $request->month ? $request->month : date('m');
         $data['year'] = $request->year ? $request->year : date('Y');
+        $data['source'] = $request->source ? $request->source : '';
 
         if ($request->get('month')) {
             $data['startDate'] = date('Y-' . $request->get('month') . '-01');
@@ -57,12 +58,12 @@ class ScheduleController extends Controller
                     }
                 }
             }
-            if ($request->order_channel) {
-                if ($request->order_channel == '3') {
-                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id',$request->order_channel);
+            if ($request->source) {
+                if ($request->source == '3') {
+                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id',$request->source);
                 }
                 else{
-                    $data['booking'] = $data['booking']->where('agent_id', $request->order_channel);
+                    $data['booking'] = $data['booking']->where('agent_id', $request->source);
                 }
             }
             if($request->package_id){

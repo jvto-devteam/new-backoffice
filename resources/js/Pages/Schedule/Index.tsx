@@ -262,7 +262,7 @@ const BookingRow = ({ no,booking, isExpanded, onToggle }) => {
                     <span className="font-medium">Invoice Total:</span> IDR {formatRupiah(booking.grand_total)}
                   </div>
                   <div>
-                    <span className="font-medium">Expenses:</span> IDR {formatRupiah(booking.expense_internal_total)}
+                    <span className="font-medium">Expenses:</span> <span className=" text-blue-400 underline"><a href={booking.expense_file_internal} target="_blank">IDR {formatRupiah(booking.expense_internal_total)}</a></span>
                   </div>
                   <div>
                     <span className="font-medium">Profit:</span> IDR  {formatRupiah(booking.grand_total-booking.expense_internal_total)}

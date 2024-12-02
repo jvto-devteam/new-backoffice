@@ -133,8 +133,14 @@ class ScheduleController extends Controller
             return $e->getMessage();
         }
 
-        // return $data;
         return Inertia::render('Schedule/Index',['data' => $data]);
-        
+    }
+    
+    function bookingList(Request $request){
+        return Inertia::render('Schedule/BookingList');
+    }
+    
+    function bookingAnalist(Request $request){
+        return Inertia::render('Schedule/BookingAnalist');
     }
 }

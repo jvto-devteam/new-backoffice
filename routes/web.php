@@ -22,6 +22,8 @@ use Inertia\Inertia;
 
 Route::get('/', [DashboardController::class,'index']);
 Route::get('/booking-overview', [ScheduleController::class,'index']);
+Route::get('/booking-list', [ScheduleController::class,'bookingList']);
+Route::get('/booking-analist', [ScheduleController::class,'bookingAnalist']);
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

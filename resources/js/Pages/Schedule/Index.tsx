@@ -9,8 +9,22 @@ import {
 } from 'lucide-react';
 
 // Integrated Card Components
-const Card = ({ className, children, ...props }) => (
-  <div className={`rounded-lg border bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm ${className}`} {...props}>
+const Card = ({ children, className = '' }) => (
+  <div className={`bg-white/80 dark:bg-gray-800/90 backdrop-blur-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg transition-all duration-300 hover:shadow-xl ${className}`}>
+    {children}
+  </div>
+);
+
+const GlassCard = ({ children, className = '', glow = false }) => (
+  <div className={`
+    relative backdrop-blur-xl bg-white/40 dark:bg-gray-800/40
+    border border-white/20 dark:border-gray-700/20 
+    rounded-2xl shadow-lg
+    ${glow ? 'before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-r before:from-blue-500/10 before:to-purple-500/10 before:animate-pulse before:-z-10' : ''}
+    transition-all duration-500 ease-out
+    hover:shadow-xl hover:shadow-blue-500/10
+    ${className}
+  `}>
     {children}
   </div>
 );
@@ -397,7 +411,7 @@ const Index = ({data}) => {
                 <DashboardFilters filter={filters}/>
             </div>
 
-            <Card>
+            <GlassCard>
                 <CardContent className="p-0">
                 <div className="overflow-x-auto">
                     <table className="w-full">
@@ -427,7 +441,7 @@ const Index = ({data}) => {
                     </table>
                 </div>
                 </CardContent>
-            </Card>
+            </GlassCard>
         </div>
     </Main>
   );

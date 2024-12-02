@@ -81,7 +81,7 @@ const BookingRow = ({ no,booking, isExpanded, onToggle }) => {
           <div className="font-medium">{format(booking.travel_date_start,'dd-MMM')} - {format(booking.travel_date_end,'dd-MMM')}</div>
           <div className="text-gray-500 dark:text-gray-400">{format(booking.travel_date_start,'E')} - {format(booking.travel_date_end,'E')}</div>
         </td>
-         <td className="align-top px-4 py-3">
+        <td className="align-top px-4 py-3">
           <div className="space-y-1">
             <div className="font-medium">{booking.user.name}</div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -112,7 +112,7 @@ const BookingRow = ({ no,booking, isExpanded, onToggle }) => {
             ) : ''}
           </div>
         </td>
-        <td className="align-top px-4 py-3 text-sm max-w-md">
+        <td className="align-top px-4 py-3 text-sm whitespace-nowrap">
             {booking.booking_detail[0].xss ? (<span className="mr-2">XSS x {booking.booking_detail[0].xss}</span>) : ''}
             {booking.booking_detail[0].xxs ? (<span className="mr-2">XXS x {booking.booking_detail[0].xxs}</span>) : ''}
             {booking.booking_detail[0].xs ? (<span className="mr-2">XS x {booking.booking_detail[0].xs}</span>) : ''}
@@ -143,7 +143,7 @@ const BookingRow = ({ no,booking, isExpanded, onToggle }) => {
             ) : ''}
           </div>
         </td>
-        <td className="align-top px-4 py-3">
+        <td className="align-top px-4 py-3 whitespace-nowrap">
             <div>
               {hasCar ? (
                 booking.book_car.map((bookCar, key) => (

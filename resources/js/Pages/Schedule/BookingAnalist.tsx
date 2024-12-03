@@ -1,6 +1,7 @@
 import Main from '@/Layouts/Main';
 import React, { useState } from 'react';
 import { router } from '@inertiajs/react';
+import { format, parse, addDays } from 'date-fns';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell,
@@ -32,17 +33,17 @@ const useClickOutside = (handler) => {
     return ref;
 };
   
-const FilterDropdown = ({ label, value, options, onChange,activeTab, currentFilters }) => {
+const FilterDropdown = ({ label, value, options, onChange, currentFilters }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useClickOutside(() => setIsOpen(false));
-
+  
+  
   const handleChange = (id) => {
     onChange(id);
 
     const updatedFilters = {
       ...currentFilters,
       [label.toLowerCase()]: id,
-      activeTab:activeTab
     };
 
     router.get('', updatedFilters, { preserveScroll: true });
@@ -75,7 +76,7 @@ const FilterDropdown = ({ label, value, options, onChange,activeTab, currentFilt
     </div>
   );
 };
-export default function BookingAnalist({data}) {
+export default function BookingAnalist({data,total}) {
   // State for all filters
   const [month, setMonth] = useState(data.filter.month);
   const [year, setYear] = useState(data.filter.year);
@@ -112,12 +113,7 @@ export default function BookingAnalist({data}) {
   const hotels = data.hotel
   
   
-  const activities = [
-    { id: 'all', name: 'All' },
-    { id: 'ijen', name: 'Ijen' },
-    { id: 'bromo', name: 'Bromo' },
-    { id: 'tumpak', name: 'Tumpak Sewu' }
-  ];
+  const activities = data.destination;
   
 
   // T-shirt data
@@ -310,24 +306,21 @@ export default function BookingAnalist({data}) {
                         value={month}
                         options={months}
                         onChange={setMonth}
-                        activeTab={activeTab}
-                        currentFilters={{month, year, channel, hotel, activity}}
+                        currentFilters={{month, year, channel, activeTab}}
                     />
                     <FilterDropdown 
                         label="Year"
                         value={year}
                         options={years}
                         onChange={setYear}
-                        activeTab={activeTab}
-                        currentFilters={{month, year, channel, hotel, activity}}
+                        currentFilters={{month, year, channel, activeTab}}
                     />
                     <FilterDropdown 
                         label="Channel"
                         value={channel}
                         options={channels}
                         onChange={setChannel}
-                        activeTab={activeTab}
-                        currentFilters={{month, year, channel, hotel, activity}}
+                        currentFilters={{month, year, channel, activeTab}}
                     />
                 </div>
               </div>
@@ -380,7 +373,15 @@ export default function BookingAnalist({data}) {
               {['All Reports', 'Accommodations', 'Activities', 'Transportation', 'T-Shirts'].map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab.toLowerCase().replace(' ', '-'))}
+                  onClick={() => {
+                    setActiveTab(tab.toLowerCase().replace(' ', '-'))
+                    router.get('', {
+                      month : month,
+                      year : year,
+                      channel : channel,
+                      activeTab : tab.toLowerCase().replace(' ', '-'),
+                    }, { preserveScroll: true });
+                  }}
                   className={`
                     whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm
                     ${activeTab === tab.toLowerCase().replace(' ', '-')
@@ -402,8 +403,7 @@ export default function BookingAnalist({data}) {
                 value={hotel}
                 options={hotels}
                 onChange={setHotel}
-                activeTab={activeTab}
-                currentFilters={{month, year, channel, hotel, activity}}
+                currentFilters={{month, year, channel, activeTab, hotel}}
                 />
             </div>
             )}
@@ -415,8 +415,7 @@ export default function BookingAnalist({data}) {
                 value={activity}
                 options={activities}
                 onChange={setActivity}
-                activeTab={activeTab}
-                currentFilters={{month, year, channel, hotel, activity}}
+                currentFilters={{month, year, channel, activeTab, activity}}
                 />
             </div>
             )}
@@ -429,13 +428,22 @@ export default function BookingAnalist({data}) {
               ))}
             </div>
           ) : (
-            <DetailedReport dataReport={data.report} report={reports[activeTab]} type={activeTab} currentFilters={{ hotel }} />
+            <DetailedReport 
+              totalProps={total} 
+              dataReport={data.report} 
+              report={reports[activeTab]} 
+              type={activeTab} 
+              currentFilters={{ hotel }} 
+            />
           )}
         </div>
       </div>
     </Main>
   );
 }
+const formatRupiah = (angka) => {
+  return new Intl.NumberFormat('id-ID').format(angka);
+};
 
 function SummaryCard({ report }) {
   return (
@@ -479,10 +487,42 @@ function SummaryCard({ report }) {
   );
 }
 
-function DetailedReport({ dataReport,type,currentFilters }) {
+function DetailedReport({ totalProps,dataReport,type,currentFilters }) {
     const getContent = () => {
       switch(type) {
         case 'accommodations':
+          const totalRoom = Object.values(dataReport.data_hotel.book_hotel).flatMap((book) => book.book_room).reduce((total, room) => total + room.quantity, 0)
+
+          const totalAmount = Object.values(dataReport.data_hotel.book_hotel).flatMap((book) => book.book_room).reduce((total, room) => total + (room.subtotal !== null ? room.subtotal : (room.room_hotel.rate * room.quantity )), 0)
+
+          let roomSummary = []
+          let grandTotalSummary = 0
+          let totalRoomSummary = 0
+
+          Object.values(dataReport.data_hotel.book_hotel)
+          .map((data,index) => {
+            data.book_room.map((res,key) => {
+              const cek = roomSummary.find((d) => d.room_id == res.room_hotel.id)
+              const subtotal = (res.subtotal !== null ? res.subtotal : (res.room_hotel.rate * res.quantity ))
+
+              if(typeof cek === 'undefined'){
+                roomSummary.push({
+                  room_id: res.room_hotel.id,
+                  room_name: res.room_hotel.room_name,
+                  quantity: res.quantity,
+                  amount: subtotal,
+                });
+              }              
+              else{
+                roomSummary.find((d) => d.room_id == res.room_hotel.id).quantity += res.quantity
+                roomSummary.find((d) => d.room_id == res.room_hotel.id).amount += subtotal
+              }
+              
+              grandTotalSummary += subtotal
+              totalRoomSummary += res.quantity
+            })
+          });
+
           return (
             currentFilters.hotel !== '' ? (
               <div className="space-y-6">
@@ -511,7 +551,7 @@ function DetailedReport({ dataReport,type,currentFilters }) {
                   <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                     <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Rooms</h3>
                     <div className="mt-2 flex items-baseline">
-                      <p className="text-2xl font-semibold text-gray-900 dark:text-white">Rp 3,550,000</p>
+                      <p className="text-2xl font-semibold text-gray-900 dark:text-white">{totalRoom}</p>
                       {/* <p className="ml-2 text-sm font-medium text-green-600">
                         +15% from last month
                       </p> */}
@@ -521,7 +561,7 @@ function DetailedReport({ dataReport,type,currentFilters }) {
                   <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                     <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Amount</h3>
                     <div className="mt-2 flex items-baseline">
-                      <p className="text-2xl font-semibold text-gray-900 dark:text-white">2.3 days</p>
+                      <p className="text-2xl font-semibold text-gray-900 dark:text-white">IDR {formatRupiah(totalAmount)}</p>
                       {/* <p className="ml-2 text-sm font-medium text-red-600">
                         -2% from last month
                       </p> */}
@@ -544,27 +584,19 @@ function DetailedReport({ dataReport,type,currentFilters }) {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        <tr>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Twin</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">4</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">Rp 2,360,000</td>
-                        </tr>
-                        <tr>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Extra Bed</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">2</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">Rp 600,000</td>
-                        </tr>
-                        <tr>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Double</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">1</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">Rp 590,000</td>
-                        </tr>
+                        {roomSummary.map((data,index) => (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{data.room_name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{data.quantity}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">IDR {formatRupiah(data.amount)}</td>
+                          </tr>
+                        ))}
                       </tbody>
                       <tfoot className="bg-gray-50 dark:bg-gray-900/50">
                         <tr>
                           <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Total</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">7</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Rp 3,550,000</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{totalRoomSummary}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">IDR {formatRupiah(grandTotalSummary)}</td>
                         </tr>
                       </tfoot>
                     </table>
@@ -583,25 +615,34 @@ function DetailedReport({ dataReport,type,currentFilters }) {
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest Name</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pax</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rooms</th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                        <tr>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">1</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Nethmi Hettiarachchi</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">06-Dec-2024</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">07-Dec-2024</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">5 Pax</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            <div>Twin x 2</div>
-                            <div>Extra Bed x 1</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">1,480,000</td>
-                        </tr>
+                        {Object.values(dataReport.data_hotel.book_hotel).map((data,index)=>{
+                          const night = data.booking_itinerary.day - 1
+                          const subtotal = data.book_room.reduce((total, room) => total + (room.subtotal !== null ? room.subtotal : (room.room_hotel.rate * room.quantity )), 0)
+                          
+                          return (
+                          <tr key={index}>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{index + 1}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{data.booking.user.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {format(addDays(data.booking.travel_date_start,night),'dd-MMM')}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{data.booking.total_pax} Pax</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                              {Object.values(data.book_room).map((res,key) => {
+                                return (
+                                  <div>{res.room_hotel.room_name} x {res.quantity}</div>
+                                )
+                              })}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{formatRupiah(subtotal)}</td>
+                          </tr>
+                        )})}
                         {/* Add more rows as needed */}
                       </tbody>
                     </table>
@@ -619,7 +660,7 @@ function DetailedReport({ dataReport,type,currentFilters }) {
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
                   <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Activities</h3>
                   <div className="mt-2 flex items-baseline">
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">24</p>
+                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">{totalProps}</p>
                     <p className="ml-2 text-sm font-medium text-green-600">+4 new</p>
                   </div>
                 </div>

@@ -433,8 +433,8 @@ export default function BookingAnalist({data,total}) {
               dataReport={data.report} 
               report={reports[activeTab]} 
               type={activeTab} 
-              currentFilters={{ hotel }} 
-            />
+              currentFilters={{month, year, channel, activeTab, activity}}
+              />
           )}
         </div>
       </div>
@@ -696,6 +696,17 @@ function DetailedReport({ totalProps,dataReport,type,currentFilters }) {
                   <h2 className="text-lg font-semibold">Popular Activities</h2>
                 </div>
                 <div className="overflow-x-auto">
+                  {currentFilters.activity === '1' ? (
+                    <h1>Bromo</h1> 
+                  ) : ''}
+
+                  {currentFilters.activity === '2' ? (
+                  <h1>Ijen</h1> 
+                  ) : ''}
+
+                  {currentFilters.activity === '7' ? (
+                    <h1>Tumpak Sewu</h1> 
+                  ) : ''}
                   <table className="min-w-full">
                     <thead>
                       <tr className="bg-gray-50 dark:bg-gray-900/50">

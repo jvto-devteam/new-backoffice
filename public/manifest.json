@@ -1,0 +1,34 @@
+{
+  "background_color": "#eee",
+  "description": "Welcome to New Backoffice JVTO",
+  "dir": "ltr",
+  "display": "standalone",
+  "name": "New Backoffice JVTO",
+  "orientation": "any",
+  "scope": "/",
+  "short_name": "New Backoffice JVTO",
+  "start_url": "/",
+  "theme_color": "#eee",
+  "categories": [
+    "travel"
+  ],
+  "icons": [
+    {
+      "src": "https://javavolcano-touroperator.com/assets/img/download.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "/favicon.ico",
+      "type": "image/x-icon"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Backoffice JVTO",
+      "url": "https://new-backoffice.javavolcano-touroperator.com/",
+      "description": "New Backoffice JVTO Webiste"
+    }
+  ],
+  "id": "new-backoffice.javavolcano-touroperator.com"
+}

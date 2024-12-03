@@ -1,10 +1,10 @@
 {
-  "_Main-!~{007}~.js": {
+  "_Main-!~{008}~.js": {
     "file": "assets/Main-DlfMUGqY.css",
-    "src": "_Main-!~{007}~.js"
+    "src": "_Main-!~{008}~.js"
   },
-  "_Main-C3QO_NfW.js": {
-    "file": "assets/Main-C3QO_NfW.js",
+  "_Main-f2ki6BgE.js": {
+    "file": "assets/Main-f2ki6BgE.js",
     "name": "Main",
     "imports": [
       "resources/js/app.tsx"
@@ -50,22 +50,22 @@
       "assets/Satoshi-BlackItalic-CvIpOoSh.ttf"
     ]
   },
-  "_arrow-right-CBRdg3nj.js": {
-    "file": "assets/arrow-right-CBRdg3nj.js",
+  "_arrow-right-Bl29Wycf.js": {
+    "file": "assets/arrow-right-Bl29Wycf.js",
     "name": "arrow-right",
     "imports": [
-      "_createLucideIcon-AaiB4BN1.js"
+      "_createLucideIcon-xSkgyY1Y.js"
     ]
   },
-  "_chevron-down-CHiXC5s-.js": {
-    "file": "assets/chevron-down-CHiXC5s-.js",
+  "_chevron-down-CDdMLgDy.js": {
+    "file": "assets/chevron-down-CDdMLgDy.js",
     "name": "chevron-down",
     "imports": [
-      "_createLucideIcon-AaiB4BN1.js"
+      "_createLucideIcon-xSkgyY1Y.js"
     ]
   },
-  "_createLucideIcon-AaiB4BN1.js": {
-    "file": "assets/createLucideIcon-AaiB4BN1.js",
+  "_createLucideIcon-xSkgyY1Y.js": {
+    "file": "assets/createLucideIcon-xSkgyY1Y.js",
     "name": "createLucideIcon",
     "imports": [
       "resources/js/app.tsx"
@@ -236,13 +236,13 @@
     "src": "resources/fonts/Satoshi-Regular.woff2"
   },
   "resources/js/Pages/Dashboard.tsx": {
-    "file": "assets/Dashboard-BUANG-eC.js",
+    "file": "assets/Dashboard-BnzdeQpv.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Dashboard.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.tsx",
-      "_Main-C3QO_NfW.js"
+      "_Main-f2ki6BgE.js"
     ],
     "assets": [
       "assets/user-05-DvLXiEro.png",
@@ -254,54 +254,64 @@
     ]
   },
   "resources/js/Pages/Schedule/BookingAnalist.tsx": {
-    "file": "assets/BookingAnalist-BYsM45rs.js",
+    "file": "assets/BookingAnalist-CMo_iTcv.js",
     "name": "BookingAnalist",
     "src": "resources/js/Pages/Schedule/BookingAnalist.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.tsx",
-      "_Main-C3QO_NfW.js",
-      "_createLucideIcon-AaiB4BN1.js",
-      "_chevron-down-CHiXC5s-.js",
-      "_arrow-right-CBRdg3nj.js"
+      "_Main-f2ki6BgE.js",
+      "_createLucideIcon-xSkgyY1Y.js",
+      "_chevron-down-CDdMLgDy.js",
+      "_arrow-right-Bl29Wycf.js"
     ]
   },
   "resources/js/Pages/Schedule/BookingList.tsx": {
-    "file": "assets/BookingList-BzoRFXdA.js",
+    "file": "assets/BookingList-BHqIFU5p.js",
     "name": "BookingList",
     "src": "resources/js/Pages/Schedule/BookingList.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.tsx",
-      "_Main-C3QO_NfW.js"
+      "_Main-f2ki6BgE.js"
     ]
   },
   "resources/js/Pages/Schedule/Index.tsx": {
-    "file": "assets/Index-DtJkpQ3L.js",
+    "file": "assets/Index-Cfeciujf.js",
     "name": "Index",
     "src": "resources/js/Pages/Schedule/Index.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.tsx",
-      "_Main-C3QO_NfW.js",
-      "_chevron-down-CHiXC5s-.js",
-      "_createLucideIcon-AaiB4BN1.js"
+      "_Main-f2ki6BgE.js",
+      "_chevron-down-CDdMLgDy.js",
+      "_createLucideIcon-xSkgyY1Y.js"
+    ]
+  },
+  "resources/js/Pages/Schedule/SamplePage.tsx": {
+    "file": "assets/SamplePage-LDAtXT7h.js",
+    "name": "SamplePage",
+    "src": "resources/js/Pages/Schedule/SamplePage.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.tsx",
+      "_Main-f2ki6BgE.js"
     ]
   },
   "resources/js/Pages/Test.tsx": {
-    "file": "assets/Test-DY8SaDH1.js",
+    "file": "assets/Test-DqjI4iVm.js",
     "name": "Test",
     "src": "resources/js/Pages/Test.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.tsx",
-      "_Main-C3QO_NfW.js",
-      "_createLucideIcon-AaiB4BN1.js",
-      "_arrow-right-CBRdg3nj.js"
+      "_Main-f2ki6BgE.js",
+      "_createLucideIcon-xSkgyY1Y.js",
+      "_arrow-right-Bl29Wycf.js"
     ]
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-Bl2hCd9Q.js",
+    "file": "assets/app-UazsF5zi.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
@@ -310,6 +320,7 @@
       "resources/js/Pages/Schedule/BookingAnalist.tsx",
       "resources/js/Pages/Schedule/BookingList.tsx",
       "resources/js/Pages/Schedule/Index.tsx",
+      "resources/js/Pages/Schedule/SamplePage.tsx",
       "resources/js/Pages/Test.tsx"
     ],
     "css": [

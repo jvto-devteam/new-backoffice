@@ -1,5 +1,6 @@
 import Main from '@/Layouts/Main';
 import React, { useState } from 'react';
+import { router } from '@inertiajs/react';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell,
@@ -9,7 +10,7 @@ import {
   BedDouble, Mountain, Bus, Shirt,
   Users, Calendar, Wallet, ArrowRight,
   TrendingUp, TrendingDown, ArrowUpRight, 
-  ArrowDownRight, Filter, Download, 
+  ArrowDownRight, Filter, Download, Minus,
   ChevronDown, Search
 } from 'lucide-react';
 
@@ -31,56 +32,93 @@ const useClickOutside = (handler) => {
     return ref;
 };
   
-const FilterDropdown = ({ label, value, options, onChange }) => {
-const [isOpen, setIsOpen] = useState(false);
-const dropdownRef = useClickOutside(() => setIsOpen(false));
+const FilterDropdown = ({ label, value, options, onChange,activeTab, currentFilters }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useClickOutside(() => setIsOpen(false));
 
-return (
-    <div className="relative w-full md:w-auto" ref={dropdownRef}>
-    <button 
-        onClick={() => setIsOpen(!isOpen)}
-        className="inline-flex justify-between  w-full md:w-auto items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-    >
-        {label}: {value} <ChevronDown className="ml-1 h-4 w-4" />
-    </button>
-    {isOpen && (
-        <div className="absolute mt-1 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-lg z-10">
-        {options.map((option) => (
-            <button
-            key={option}
-            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-            onClick={() => {
-                onChange(option);
-                setIsOpen(false);
-            }}
-            >
-            {option}
-            </button>
-        ))}
-        </div>
-    )}
-    </div>
-);
-};
+  const handleChange = (id) => {
+    onChange(id);
+
+    const updatedFilters = {
+      ...currentFilters,
+      [label.toLowerCase()]: id,
+      activeTab:activeTab
+    };
+
+    router.get('', updatedFilters, { preserveScroll: true });
+  };
   
-export default function BookingAnalist() {
+  return (
+    <div className="relative w-full md:w-auto" ref={dropdownRef}>
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="inline-flex justify-between w-full md:w-auto items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+      >
+        {label}: {options.find(opt => opt.id == value)?.name || 'Select'} <ChevronDown className="ml-1 h-4 w-4" />
+      </button>
+      {isOpen && (
+        <div className="absolute mt-1 w-48 bg-white dark:bg-gray-800 shadow-lg rounded-lg z-10">
+          {options.map((option) => (
+            <button
+              key={option.id}
+              className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+              onClick={() => {
+                handleChange(option.id);
+                setIsOpen(false);
+              }}
+            >
+              {option.name}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+export default function BookingAnalist({data}) {
   // State for all filters
-  const [month, setMonth] = useState('November');
-  const [year, setYear] = useState('2024');
-  const [channel, setChannel] = useState('All');
-  const [hotel, setHotel] = useState('All');
-  const [activity, setActivity] = useState('All');
-  const [activeTab, setActiveTab] = useState('all-reports');
+  const [month, setMonth] = useState(data.filter.month);
+  const [year, setYear] = useState(data.filter.year);
+  const [channel, setChannel] = useState(data.filter.channel);
+  const [hotel, setHotel] = useState(data.filter.hotel);
+  const [activity, setActivity] = useState(data.filter.activity);
+  const [activeTab, setActiveTab] = useState(data.filter.activeTab);
 
   // Filter options
   const months = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
+    { id: '01', name: 'January' },
+    { id: '02', name: 'February' },
+    { id: '03', name: 'March' },
+    { id: '04', name: 'April' }, 
+    { id: '05', name: 'May' },
+    { id: '06', name: 'June' },
+    { id: '07', name: 'July' },
+    { id: '08', name: 'August' },
+    { id: '09', name: 'September' },
+    { id: '10', name: 'October' },
+    { id: '11', name: 'November' }, 
+    { id: '12', name: 'December' }
   ];
-  const years = ['2024', '2025'];
-  const channels = ['All', 'TWT', 'JVTO', 'KLOOK'];
-  const hotels = ['All', 'Astons Banyuwangi', 'Grand Padis', 'Baratha', 'Joglo Kecombrang'];
-  const activities = ['All', 'Ijen', 'Bromo', 'Tumpak Sewu'];
+  const years = [
+    { id: '2024', name: '2024' },
+    { id: '2025', name: '2025' }
+  ];
+  const channels = [
+    { id: 'all', name: 'All' },
+    { id: 'twt', name: 'TWT' },
+    { id: 'jvto', name: 'JVTO' },
+    { id: 'klook', name: 'KLOOK' }
+  ];
+  const hotels = data.hotel
+  
+  
+  const activities = [
+    { id: 'all', name: 'All' },
+    { id: 'ijen', name: 'Ijen' },
+    { id: 'bromo', name: 'Bromo' },
+    { id: 'tumpak', name: 'Tumpak Sewu' }
+  ];
+  
 
   // T-shirt data
   const tshirtData = {
@@ -104,19 +142,19 @@ export default function BookingAnalist() {
   // Compounded data statistics
   const compoundStats = {
     totalBookings: {
-      value: 685,
-      change: '+12.5%',
-      trend: 'up'
+      value: data.total_booking_current_month,
+      change: data.total_booking_percentage_change,
+      trend: data.total_booking_percentage_change_trend
     },
-    totalRevenue: {
-      value: 'Rp 337,360,000',
-      change: '+15.2%',
-      trend: 'up'
+    totalInvoice: {
+      value: data.total_invoice_current_month,
+      change: data.total_invoice_percentage_change,
+      trend: data.total_invoice_percentage_change_trend
     },
-    avgBookingValue: {
-      value: 'Rp 492,496',
-      change: '-2.3%',
-      trend: 'down'
+    totalProfit: {
+      value: data.total_profit_current_month,
+      change: data.total_profit_percentage_change,
+      trend: data.total_profit_percentage_change_trend
     }
   };
 
@@ -272,18 +310,24 @@ export default function BookingAnalist() {
                         value={month}
                         options={months}
                         onChange={setMonth}
+                        activeTab={activeTab}
+                        currentFilters={{month, year, channel, hotel, activity}}
                     />
                     <FilterDropdown 
                         label="Year"
                         value={year}
                         options={years}
                         onChange={setYear}
+                        activeTab={activeTab}
+                        currentFilters={{month, year, channel, hotel, activity}}
                     />
                     <FilterDropdown 
                         label="Channel"
                         value={channel}
                         options={channels}
                         onChange={setChannel}
+                        activeTab={activeTab}
+                        currentFilters={{month, year, channel, hotel, activity}}
                     />
                 </div>
               </div>
@@ -306,12 +350,20 @@ export default function BookingAnalist() {
                       <p className="mt-1 text-xl font-semibold">{stat.value}</p>
                     </div>
                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-sm ${
-                      stat.trend === 'up' 
-                        ? 'text-green-600 bg-green-100 dark:bg-green-900/50' 
-                        : 'text-red-600 bg-red-100 dark:bg-red-900/50'
+                    stat.trend === 'up' 
+                      ? 'text-green-600 bg-green-100 dark:bg-green-900/50'
+                      : stat.trend === 'down'
+                        ? 'text-red-600 bg-red-100 dark:bg-red-900/50'
+                        : 'text-gray-600 bg-gray-100 dark:bg-gray-900/50'
                     }`}>
-                      {stat.trend === 'up' ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
-                      {stat.change}
+                    {stat.trend === 'up' ? (
+                      <ArrowUpRight className="h-4 w-4 mr-1" />
+                    ) : stat.trend === 'down' ? (
+                      <ArrowDownRight className="h-4 w-4 mr-1" /> 
+                    ) : (
+                      <Minus className="h-4 w-4 mr-1" />
+                    )}
+                    {stat.change}
                     </span>
                   </div>
                 </div>
@@ -350,6 +402,8 @@ export default function BookingAnalist() {
                 value={hotel}
                 options={hotels}
                 onChange={setHotel}
+                activeTab={activeTab}
+                currentFilters={{month, year, channel, hotel, activity}}
                 />
             </div>
             )}
@@ -361,6 +415,8 @@ export default function BookingAnalist() {
                 value={activity}
                 options={activities}
                 onChange={setActivity}
+                activeTab={activeTab}
+                currentFilters={{month, year, channel, hotel, activity}}
                 />
             </div>
             )}
@@ -373,7 +429,7 @@ export default function BookingAnalist() {
               ))}
             </div>
           ) : (
-            <DetailedReport report={reports[activeTab]} type={activeTab} />
+            <DetailedReport dataReport={data.report} report={reports[activeTab]} type={activeTab} currentFilters={{ hotel }} />
           )}
         </div>
       </div>
@@ -399,13 +455,21 @@ function SummaryCard({ report }) {
             </p>
             <div className="mt-1 flex items-center justify-between">
               <p className="text-lg font-semibold">{stat.value}</p>
-              <span className={`inline-flex items-center text-sm ${
-                stat.trend === 'up'
-                  ? 'text-green-600 dark:text-green-400'
-                  : 'text-red-600 dark:text-red-400'
+              <span className={`inline-flex items-center px-2 py-0.5 rounded text-sm ${
+              stat.trend === 'up' 
+                ? 'text-green-600 bg-green-100 dark:bg-green-900/50'
+                : stat.trend === 'down'
+                  ? 'text-red-600 bg-red-100 dark:bg-red-900/50'
+                  : 'text-gray-600 bg-gray-100 dark:bg-gray-900/50'
               }`}>
-                {stat.trend === 'up' ? <ArrowUpRight className="h-4 w-4 mr-1" /> : <ArrowDownRight className="h-4 w-4 mr-1" />}
-                {stat.change}
+              {stat.trend === 'up' ? (
+                <ArrowUpRight className="h-4 w-4 mr-1" />
+              ) : stat.trend === 'down' ? (
+                <ArrowDownRight className="h-4 w-4 mr-1" /> 
+              ) : (
+                <Minus className="h-4 w-4 mr-1" />
+              )}
+              {stat.change}
               </span>
             </div>
           </div>
@@ -415,134 +479,136 @@ function SummaryCard({ report }) {
   );
 }
 
-function DetailedReport({ type }) {
+function DetailedReport({ dataReport,type,currentFilters }) {
     const getContent = () => {
       switch(type) {
         case 'accommodations':
           return (
-            <div className="space-y-6">
-              {/* Summary Statistics */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Rooms</h3>
-                  <div className="mt-2 flex items-baseline">
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">7</p>
-                    <p className="ml-2 text-sm font-medium text-green-600">
-                      +8% from last month
-                    </p>
+            currentFilters.hotel !== '' ? (
+              <div className="space-y-6">
+                {/* Summary Statistics */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Bookings</h3>
+                    <div className="mt-2 flex items-baseline">
+                      <p className="text-2xl font-semibold text-gray-900 dark:text-white">{dataReport.data_hotel.total_booking}</p>
+                      {/* <p className="ml-2 text-sm font-medium text-green-600">
+                        +8% from last month
+                      </p> */}
+                    </div>
+                  </div>
+    
+                  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Guests</h3>
+                    <div className="mt-2 flex items-baseline">
+                      <p className="text-2xl font-semibold text-gray-900 dark:text-white">{dataReport.data_hotel.total_pax}</p>
+                      {/* <p className="ml-2 text-sm font-medium text-green-600">
+                        +12% from last month
+                      </p> */}
+                    </div>
+                  </div>
+    
+                  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Rooms</h3>
+                    <div className="mt-2 flex items-baseline">
+                      <p className="text-2xl font-semibold text-gray-900 dark:text-white">Rp 3,550,000</p>
+                      {/* <p className="ml-2 text-sm font-medium text-green-600">
+                        +15% from last month
+                      </p> */}
+                    </div>
+                  </div>
+    
+                  <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Amount</h3>
+                    <div className="mt-2 flex items-baseline">
+                      <p className="text-2xl font-semibold text-gray-900 dark:text-white">2.3 days</p>
+                      {/* <p className="ml-2 text-sm font-medium text-red-600">
+                        -2% from last month
+                      </p> */}
+                    </div>
                   </div>
                 </div>
-  
+    
+                {/* Room Distribution Summary */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Guests</h3>
-                  <div className="mt-2 flex items-baseline">
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">12</p>
-                    <p className="ml-2 text-sm font-medium text-green-600">
-                      +12% from last month
-                    </p>
+                  <div className="mb-4">
+                    <h2 className="text-lg font-semibold">Room Distribution</h2>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead>
+                        <tr className="bg-gray-50 dark:bg-gray-900/50">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room Type</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Booked</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        <tr>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Twin</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">4</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">Rp 2,360,000</td>
+                        </tr>
+                        <tr>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Extra Bed</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">2</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">Rp 600,000</td>
+                        </tr>
+                        <tr>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Double</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">1</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">Rp 590,000</td>
+                        </tr>
+                      </tbody>
+                      <tfoot className="bg-gray-50 dark:bg-gray-900/50">
+                        <tr>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Total</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">7</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Rp 3,550,000</td>
+                        </tr>
+                      </tfoot>
+                    </table>
                   </div>
                 </div>
-  
+    
+                {/* Booking List */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Revenue</h3>
-                  <div className="mt-2 flex items-baseline">
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">Rp 3,550,000</p>
-                    <p className="ml-2 text-sm font-medium text-green-600">
-                      +15% from last month
-                    </p>
+                  <div className="mb-4">
+                    <h2 className="text-lg font-semibold">Recent Bookings</h2>
                   </div>
-                </div>
-  
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                  <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Average Stay</h3>
-                  <div className="mt-2 flex items-baseline">
-                    <p className="text-2xl font-semibold text-gray-900 dark:text-white">2.3 days</p>
-                    <p className="ml-2 text-sm font-medium text-red-600">
-                      -2% from last month
-                    </p>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full">
+                      <thead>
+                        <tr className="bg-gray-50 dark:bg-gray-900/50">
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest Name</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pax</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rooms</th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                        <tr>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">1</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Nethmi Hettiarachchi</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">06-Dec-2024</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">07-Dec-2024</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">5 Pax</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                            <div>Twin x 2</div>
+                            <div>Extra Bed x 1</div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">1,480,000</td>
+                        </tr>
+                        {/* Add more rows as needed */}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               </div>
-  
-              {/* Room Distribution Summary */}
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                <div className="mb-4">
-                  <h2 className="text-lg font-semibold">Room Distribution</h2>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full">
-                    <thead>
-                      <tr className="bg-gray-50 dark:bg-gray-900/50">
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room Type</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Booked</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Twin</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">4</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">Rp 2,360,000</td>
-                      </tr>
-                      <tr>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Extra Bed</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">2</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">Rp 600,000</td>
-                      </tr>
-                      <tr>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Double</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">1</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">Rp 590,000</td>
-                      </tr>
-                    </tbody>
-                    <tfoot className="bg-gray-50 dark:bg-gray-900/50">
-                      <tr>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Total</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">7</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Rp 3,550,000</td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              </div>
-  
-              {/* Booking List */}
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
-                <div className="mb-4">
-                  <h2 className="text-lg font-semibold">Recent Bookings</h2>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full">
-                    <thead>
-                      <tr className="bg-gray-50 dark:bg-gray-900/50">
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest Name</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check In</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check Out</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pax</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rooms</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      <tr>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">1</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Nethmi Hettiarachchi</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">06-Dec-2024</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">07-Dec-2024</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">5 Pax</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                          <div>Twin x 2</div>
-                          <div>Extra Bed x 1</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">1,480,000</td>
-                      </tr>
-                      {/* Add more rows as needed */}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+            ) : null
           );
   
         case 'activities':

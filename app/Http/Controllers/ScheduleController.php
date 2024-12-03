@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\Agent;
+use App\Models\BookHotel;
 use App\Models\Booking;
 use App\Models\BookingCategory;
+use App\Models\Hotel;
 use App\Models\Package;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -141,6 +143,208 @@ class ScheduleController extends Controller
     }
     
     function bookingAnalist(Request $request){
-        return Inertia::render('Schedule/BookingAnalist');
+        $data['filter'] = [
+            'month' => $request->month ? $request->month : date('m'),
+            'year' => $request->year ? $request->year : date('Y'),
+            'channel' => $request->channel ? $request->channel : 'all',
+            'hotel' => $request->hotel ? $request->hotel : '',
+            'activeTab' => $request->activeTab ? $request->activeTab : 'all-reports',
+        ];
+        $data['hotel'] = Hotel::whereRaw('id in(1,10,11,34)')->get(['id','name']);
+        $last_month_year = date('Y-m',strtotime($data['filter']['year']."-".$data['filter']['month']."-01 -1 month"));
+
+        $data['total_booking_current_month'] = Booking::where('travel_date_start', 'like', "%" . $data['filter']['year'] . "-" . $data['filter']['month'] . "%")->where('status', 'booked');
+        if($data['filter']['channel'] != 'all'){
+            if($data['filter']['channel'] == 'twt'){
+                $data['total_booking_current_month'] = $data['total_booking_current_month']->where('agent_id',1);
+            }
+            else if($data['filter']['channel'] == 'jvto'){
+                $data['total_booking_current_month'] = $data['total_booking_current_month']->where('agent_id',2)->where('booking_category_id','!=',3);
+            }
+            else{
+                $data['total_booking_current_month'] = $data['total_booking_current_month']->where('agent_id',2)->where('booking_category_id',3);
+            }
+        }
+        $data['total_booking_current_month'] = $data['total_booking_current_month']->count();
+        
+        $data['total_booking_last_month'] = Booking::where('travel_date_start', 'like', "%" . $last_month_year . "%")->where('status', 'booked');
+        if($data['filter']['channel'] != 'all'){
+            if($data['filter']['channel'] == 'twt'){
+                $data['total_booking_last_month'] = $data['total_booking_last_month']->where('agent_id',1);
+            }
+            else if($data['filter']['channel'] == 'jvto'){
+                $data['total_booking_last_month'] = $data['total_booking_last_month']->where('agent_id',2)->where('booking_category_id','!=',3);
+            }
+            else{
+                $data['total_booking_last_month'] = $data['total_booking_last_month']->where('agent_id',2)->where('booking_category_id',3);
+            }
+        }
+        $data['total_booking_last_month'] = $data['total_booking_last_month']->count();
+
+            
+        if ($data['total_booking_last_month'] > 0) {
+            $data['total_booking_percentage_change'] = round(($data['total_booking_current_month'] - $data['total_booking_last_month']) / $data['total_booking_last_month'] * 100);
+        } else {
+            $data['total_booking_percentage_change'] = 0; // Atau nilai lain sesuai logika bisnis Anda
+        }
+
+        if($data['total_booking_percentage_change'] == 0){
+            $data['total_booking_percentage_change'] = "";
+            $data['total_booking_percentage_change_trend'] = "same";
+        }
+        else if($data['total_booking_percentage_change'] < 0){
+            $data['total_booking_percentage_change'] = $data['total_booking_percentage_change']."%";
+            $data['total_booking_percentage_change_trend'] = "down";
+        }
+        else{
+            $data['total_booking_percentage_change'] = "+".$data['total_booking_percentage_change']."%";
+            $data['total_booking_percentage_change_trend'] = "up";
+        }
+
+        $data['total_invoice_current_month'] = Booking::where('travel_date_start', 'like', "%" . $data['filter']['year'] . "-" . $data['filter']['month'] . "%")
+        ->where('status', 'booked');
+        if($data['filter']['channel'] != 'all'){
+            if($data['filter']['channel'] == 'twt'){
+                $data['total_invoice_current_month'] = $data['total_invoice_current_month']->where('agent_id',1);
+            }
+            else if($data['filter']['channel'] == 'jvto'){
+                $data['total_invoice_current_month'] = $data['total_invoice_current_month']->where('agent_id',2)->where('booking_category_id','!=',3);
+            }
+            else{
+                $data['total_invoice_current_month'] = $data['total_invoice_current_month']->where('agent_id',2)->where('booking_category_id',3);
+            }
+        }
+        $data['total_invoice_current_month'] = $data['total_invoice_current_month']->sum('grand_total');
+
+        $data['total_expense_current_month'] = Booking::where('travel_date_start', 'like', "%" . $data['filter']['year'] . "-" . $data['filter']['month'] . "%")
+        ->where('status', 'booked');
+        if($data['filter']['channel'] != 'all'){
+            if($data['filter']['channel'] == 'twt'){
+                $data['total_expense_current_month'] = $data['total_expense_current_month']->where('agent_id',1);
+            }
+            else if($data['filter']['channel'] == 'jvto'){
+                $data['total_expense_current_month'] = $data['total_expense_current_month']->where('agent_id',2)->where('booking_category_id','!=',3);
+            }
+            else{
+                $data['total_expense_current_month'] = $data['total_expense_current_month']->where('agent_id',2)->where('booking_category_id',3);
+            }
+        }
+        $data['total_expense_current_month'] = $data['total_expense_current_month']->sum('expense_internal_total');
+
+        $data['total_invoice_last_month'] = Booking::where('travel_date_start', 'like', "%" . $last_month_year . "%")
+        ->where('status', 'booked');
+        if($data['filter']['channel'] != 'all'){
+            if($data['filter']['channel'] == 'twt'){
+                $data['total_invoice_last_month'] = $data['total_invoice_last_month']->where('agent_id',1);
+            }
+            else if($data['filter']['channel'] == 'jvto'){
+                $data['total_invoice_last_month'] = $data['total_invoice_last_month']->where('agent_id',2)->where('booking_category_id','!=',3);
+            }
+            else{
+                $data['total_invoice_last_month'] = $data['total_invoice_last_month']->where('agent_id',2)->where('booking_category_id',3);
+            }
+        }
+        $data['total_invoice_last_month'] = $data['total_invoice_last_month']->sum('grand_total');
+
+        $data['total_expense_last_month'] = Booking::where('travel_date_start', 'like', "%" . $last_month_year . "%")
+        ->where('status', 'booked');
+        if($data['filter']['channel'] != 'all'){
+            if($data['filter']['channel'] == 'twt'){
+                $data['total_expense_last_month'] = $data['total_expense_last_month']->where('agent_id',1);
+            }
+            else if($data['filter']['channel'] == 'jvto'){
+                $data['total_expense_last_month'] = $data['total_expense_last_month']->where('agent_id',2)->where('booking_category_id','!=',3);
+            }
+            else{
+                $data['total_expense_last_month'] = $data['total_expense_last_month']->where('agent_id',2)->where('booking_category_id',3);
+            }
+        }
+        $data['total_expense_last_month'] = $data['total_expense_last_month']->sum('expense_internal_total');
+
+        $data['total_profit_current_month'] = $data['total_invoice_current_month'] - $data['total_expense_current_month'];
+
+        $data['total_profit_last_month'] = $data['total_invoice_last_month'] - $data['total_expense_last_month'];
+
+        if ($data['total_invoice_last_month'] > 0) {
+            $data['total_invoice_percentage_change'] = round(($data['total_invoice_current_month'] - $data['total_invoice_last_month']) / $data['total_invoice_last_month'] * 100);
+        } else {
+            $data['total_invoice_percentage_change'] = 0; // Atau nilai lain sesuai logika bisnis Anda
+        }
+
+        if($data['total_invoice_percentage_change'] == 0){
+            $data['total_invoice_percentage_change'] = "";
+            $data['total_invoice_percentage_change_trend'] = "same";
+        }
+        else if($data['total_invoice_percentage_change'] < 0){
+            $data['total_invoice_percentage_change'] = $data['total_invoice_percentage_change']."%";
+            $data['total_invoice_percentage_change_trend'] = "down";
+        }
+        else{
+            $data['total_invoice_percentage_change'] = "+".$data['total_invoice_percentage_change']."%";
+            $data['total_invoice_percentage_change_trend'] = "up";
+        }
+        $data['total_invoice_current_month'] = "IDR ".number_format($data['total_invoice_current_month'],0,',','.');
+
+        if ($data['total_profit_last_month'] > 0) {
+            $data['total_profit_percentage_change'] = round(($data['total_profit_current_month'] - $data['total_profit_last_month']) / $data['total_profit_last_month'] * 100);
+        } else {
+            $data['total_profit_percentage_change'] = 0; // Atau nilai lain sesuai logika bisnis Anda
+        }
+
+        if($data['total_profit_percentage_change'] == 0){
+            $data['total_profit_percentage_change'] = "";
+            $data['total_profit_percentage_change_trend'] = "same";
+        }
+        else if($data['total_profit_percentage_change'] < 0){
+            $data['total_profit_percentage_change'] = $data['total_profit_percentage_change']."%";
+            $data['total_profit_percentage_change_trend'] = "down";
+        }
+        else{
+            $data['total_profit_percentage_change'] = "+".$data['total_profit_percentage_change']."%";
+            $data['total_profit_percentage_change_trend'] = "up";
+        }
+        $data['total_profit_current_month'] = "IDR ".number_format($data['total_profit_current_month'],0,',','.');
+
+        $year = $data['filter']['year'];
+        $month = $data['filter']['month'];
+        
+        $getBookHotel = BookHotel::with([
+            'bookRoom.roomHotel',
+            'booking.user',
+            'bookingItinerary',
+        ])
+            ->where('hotel_id', $data['filter']['hotel'])
+            ->whereHas('booking', function ($query) use ($year, $month) {
+                $query->where('travel_date_start', 'like', "%$year-$month%");
+            });
+        if($data['filter']['channel'] != 'all'){
+            if($data['filter']['channel'] == 'twt'){
+                $getBookHotel->whereHas('booking', function ($query){
+                    $query->where('agent_id', 1);
+                });
+            }
+            else if($data['filter']['channel'] == 'jvto'){
+                $getBookHotel->whereHas('booking', function ($query){
+                    $query->where('agent_id', 2)->where('booking_category_id','!=',3);
+                });
+            }
+            else{
+                $getBookHotel->whereHas('booking', function ($query){
+                    $query->where('agent_id', 2)->where('booking_category_id',3);
+                });
+            }
+        }
+
+        $bookHotel = $getBookHotel->get()->sortBy(function ($item) use ($year, $month) {
+            $plusDay = $item->bookingItinerary->day - 1;
+            $checkIn = date('Y-m-d', strtotime($item->booking->travel_date_start . " +$plusDay days"));
+            return $checkIn;
+        });
+        $data['report']['data_hotel']['total_booking'] = $bookHotel->count();
+        $data['report']['data_hotel']['total_pax'] = $bookHotel->sum('booking.total_pax');
+        $data['report']['data_hotel']['total_room'] = $bookHotel->sum('book_room.quantity');
+        $data['report']['data_hotel']['total_rate'] = $bookHotel->sum('book_room.room_hotel.rate');
+        // return $bookHotel;
+        return Inertia::render('Schedule/BookingAnalist',['data' => $data]);
     }
 }

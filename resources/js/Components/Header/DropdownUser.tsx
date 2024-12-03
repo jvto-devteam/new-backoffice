@@ -15,13 +15,13 @@ const DropdownUser = () => {
       >
         <span className="hidden text-right lg:block">
           <span className="block text-sm font-medium text-black dark:text-white">
-            Thomas Anree
+            SAM
           </span>
-          <span className="block text-xs">UX Designer</span>
+          <span className="block text-xs">Java Volcano Tour Operator</span>
         </span>
 
-        <span className="h-12 w-12 rounded-full">
-          <img src={UserOne} alt="User" />
+        <span>
+          <img src="https://javavolcano-touroperator.com/assets/img/pages/about/mr-sam.png?1728115604" className="h-12 w-12 rounded-full object-cover" alt="User" />
         </span>
 
         <svg

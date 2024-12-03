@@ -348,15 +348,15 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
           </div>
 
           {/* <!-- Others Group --> */}
-          {/* <div>
+          <div>
             <h3 className="mb-4 ml-4 text-sm font-semibold text-bodydark2">
               OTHERS
             </h3>
 
             <ul className="mb-6 flex flex-col gap-1.5">
             <li>
-                <Link
-                  href="/settings"
+                <a
+                  href="https://react-demo.tailadmin.com/" target="_blank"
                   className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
                     pathname.includes('settings') &&
                     'bg-graydark dark:bg-meta-4'
@@ -391,12 +391,12 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                       </clipPath>
                     </defs>
                   </svg>
-                  Settings
-                </Link>
+                  Full Template
+                </a>
               </li>
 
             </ul>
-          </div> */}
+          </div>
         </nav>
         {/* <!-- Sidebar Menu --> */}
       </div>

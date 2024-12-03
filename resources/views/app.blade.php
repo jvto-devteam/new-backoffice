@@ -10,9 +10,11 @@
         <meta property="og:image" content="https://javavolcano-touroperator.com/assets/img/download.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="627" />
+        <link rel="icon" type="image/png" href="https://javavolcano-touroperator.com/assets/img/download.png" id="favicon"/>
         <link rel="manifest" href="/manifest.json">        
 
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        {{-- <title inertia>{{ config('app.name', 'New Backoffice JVTO') }}</title> --}}
+        <title>New Backoffice JVTO</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">

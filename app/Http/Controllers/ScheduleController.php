@@ -368,7 +368,7 @@ class ScheduleController extends Controller
         }
 
         if ($request->activeTab == 't-shirts') {
-            $data['report']['data_activity'] = $this->getTshirt($year, $month, $data['filter']['channel']);
+            $data['report']['data_tshirt'] = $this->getTshirt($year, $month, $data['filter']['channel']);
         }
 
         // return $data['report']['data_tshirt'];

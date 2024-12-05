@@ -137,12 +137,13 @@ class ScheduleController extends Controller
         }
         return Inertia::render('Schedule/Index',['data' => $data]);
     }
-    
+
     function bookingList(Request $request){
         return Inertia::render('Schedule/BookingList');
     }
-    
+
     function bookingAnalist(Request $request){
+
         $data['filter'] = [
             'month' => $request->month ? $request->month : date('m'),
             'year' => $request->year ? $request->year : date('Y'),
@@ -151,6 +152,7 @@ class ScheduleController extends Controller
             'activity' => $request->activity ? $request->activity : '',
             'activeTab' => $request->activeTab ? $request->activeTab : 'all-reports',
         ];
+
         $data['destination'] = Destination::whereRaw('id in(1,2,7)')->get(['id','name']);
         $data['hotel'] = Hotel::whereRaw('id in(1,10,11,34)')->get(['id','name']);
         $last_month_year = date('Y-m',strtotime($data['filter']['year']."-".$data['filter']['month']."-01 -1 month"));
@@ -168,7 +170,7 @@ class ScheduleController extends Controller
             }
         }
         $data['total_booking_current_month'] = $data['total_booking_current_month']->count();
-        
+
         $data['total_booking_last_month'] = Booking::where('travel_date_start', 'like', "%" . $last_month_year . "%")->where('status', 'booked');
         if($data['filter']['channel'] != 'all'){
             if($data['filter']['channel'] == 'twt'){
@@ -183,7 +185,7 @@ class ScheduleController extends Controller
         }
         $data['total_booking_last_month'] = $data['total_booking_last_month']->count();
 
-            
+
         if ($data['total_booking_last_month'] > 0) {
             $data['total_booking_percentage_change'] = round(($data['total_booking_current_month'] - $data['total_booking_last_month']) / $data['total_booking_last_month'] * 100);
         } else {
@@ -311,6 +313,9 @@ class ScheduleController extends Controller
         $month = $data['filter']['month'];
         $data['report']['data_hotel'] = [];
         $data['report']['data_hotel']['book_hotel'] = [];
+        $data['report']['data_tshirt'] = [];
+        $data['report']['data_activity'] = [];
+
         if($request->activeTab == 'accommodations'){
             $getBookHotel = BookHotel::with([
                 'bookRoom.roomHotel',
@@ -338,7 +343,7 @@ class ScheduleController extends Controller
                     });
                 }
             }
-    
+
             $bookHotel = $getBookHotel->get()->sortBy(function ($item) use ($year, $month) {
                 $plusDay = $item->bookingItinerary->day - 1;
                 $checkIn = date('Y-m-d', strtotime($item->booking->travel_date_start . " +$plusDay days"));
@@ -351,8 +356,174 @@ class ScheduleController extends Controller
             $data['report']['data_hotel']['total_rate'] = $bookHotel->sum('book_room.room_hotel.rate');
         }
 
-        // return $bookHotel;
+        if ($request->activeTab == 'activities') {
+            if ($request->activity == '1') {
+                $data['report']['data_activity']['data_bromo'] = $this->getBromoData($year, $month, $data['filter']['channel']);
+            }
+            elseif ($request->activity == '2') {
+                $data['report']['data_activity']['data_ijen'] = $this->getIjenData($year, $month, $data['filter']['channel']);
+            } elseif ($request->activity == '7') {
+                $data['report']['data_activity']['data_tumpak_sewu'] = $this->getTumpakSewuData($year, $month, $data['filter']['channel']);
+            }
+        }
+
+        if ($request->activeTab == 't-shirts') {
+            $data['report']['data_tshirt'] = $this->getTshirt($year, $month, $data['filter']['channel']);
+        }
+
+        // return $data['report']['data_tshirt'];
 
         return Inertia::render('Schedule/BookingAnalist',['data' => $data, 'total' => 1000]);
+    }
+
+    function getTshirt($year, $month, $channel) {
+
+        $get_tshirt = Booking::select([
+            'bookings.id',
+            'bookings.agent_id',
+            'bookings.booking_category_id',
+            'users.id as client_id',
+            'bookings.travel_date_start',
+            'total_pax',
+            'users.name AS customer',
+            'agents.name as agent_name',
+            'booking_details.xss',
+            'booking_details.xxs',
+            'booking_details.xs',
+            'booking_details.s',
+            'booking_details.m',
+            'booking_details.l',
+            'booking_details.xl',
+            'booking_details.xxl',
+            'booking_details.xxxl'
+        ])
+            ->join('users', 'bookings.user_id', '=', 'users.id')
+            ->join('booking_details', 'bookings.id', '=', 'booking_details.booking_id')
+            ->join('agents', 'bookings.agent_id', '=', 'agents.id')
+            ->whereNotNull('bookings.travel_date_start')
+            ->whereMonth('bookings.travel_date_start', $month)
+            ->whereYear('bookings.travel_date_start', $year)
+            ->where(function ($query) {
+                $query->where('booking_details.xss', '>', 0)
+                    ->orWhere('booking_details.xxs', '>', 0)
+                    ->orWhere('booking_details.xs', '>', 0)
+                    ->orWhere('booking_details.s', '>', 0)
+                    ->orWhere('booking_details.m', '>', 0)
+                    ->orWhere('booking_details.l', '>', 0)
+                    ->orWhere('booking_details.xl', '>', 0)
+                    ->orWhere('booking_details.xxl', '>', 0)
+                    ->orWhere('booking_details.xxxl', '>', 0);
+            })
+            ->orderBy('bookings.travel_date_start', 'ASC');
+
+        if ($channel != 'all') {
+            if ($channel == 'twt') {
+                $get_tshirt->where('bookings.agent_id', 1);
+            }
+            elseif($channel == 'jvto'){
+                $get_tshirt->where('bookings.agent_id', 2)->where('bookings.booking_category_id', '!=', 3);
+            }
+            else{
+                $get_tshirt->where('bookings.agent_id', 2)->where('bookings.booking_category_id', 3);
+            }
+        }
+
+        return $get_tshirt->get();
+    }
+
+    function getBromoData($year, $month, $channel) {
+        $getBromoData = Booking::select([
+            'bookings.id',
+            'users.id AS client_id',
+            'users.name AS customer',
+            'agents.name as agent_name',
+            'booking_categories.name as booking_category',
+            'at_bromo AS bromo_visit_date',
+            'total_pax AS pax',
+            'qty_jeep'
+        ])
+            ->join('users', 'bookings.user_id', '=', 'users.id')
+            ->join('agents', 'bookings.agent_id', 'agents.id')
+            ->leftJoin('booking_categories', 'bookings.booking_category_id', 'booking_categories.id')
+            ->whereNotNull('at_bromo')
+            ->whereMonth('at_bromo', $month)
+            ->whereYear('at_bromo', $year)
+            ->orderBy('at_bromo', 'ASC');
+
+        if ($channel != 'all') {
+            if ($channel == 'twt') {
+                $getBromoData->where('bookings.agent_id', 1);
+            } elseif ($channel == 'jvto') {
+                $getBromoData->where('bookings.agent_id', 2)->where('bookings.booking_category_id', '!=', 3);
+            } else {
+                $getBromoData->where('bookings.agent_id', 2)->where('bookings.booking_category_id', 3);
+            }
+        }
+
+        return $getBromoData->get();
+    }
+
+    function getIjenData($year, $month, $channel)
+    {
+        $getIjenData = Booking::select([
+            'bookings.id',
+            'users.id as client_id',
+            'users.name AS customer',
+            'agents.name as agent_name',
+            'booking_categories.name as booking_category',
+            'at_bondowoso AS ijen_visit_date',
+            'total_pax AS pax',
+        ])
+            ->join('users', 'bookings.user_id', '=', 'users.id')
+            ->join('agents', 'bookings.agent_id', 'agents.id')
+            ->leftJoin('booking_categories', 'bookings.booking_category_id', 'booking_categories.id')
+            ->whereNotNull('at_bondowoso')
+            ->whereMonth('at_bondowoso', $month)
+            ->whereYear('at_bondowoso', $year)
+            ->orderBy('at_bondowoso', 'ASC');
+
+        if ($channel != 'all') {
+            if ($channel == 'twt') {
+                $getIjenData->where('bookings.agent_id', 1);
+            } elseif ($channel == 'jvto') {
+                $getIjenData->where('bookings.agent_id', 2)->where('bookings.booking_category_id', '!=', 3);
+            } else {
+                $getIjenData->where('bookings.agent_id', 2)->where('bookings.booking_category_id', 3);
+            }
+        }
+
+        return $getIjenData->get();
+    }
+
+    function getTumpakSewuData($year, $month, $channel)
+    {
+        $getTumpakSewuData = Booking::select([
+            'bookings.id',
+            'users.id as client_id',
+            'users.name AS customer',
+            'agents.name as agent_name',
+            'booking_categories.name as booking_category',
+            'at_tumpak_sewu AS ijen_visit_date',
+            'total_pax AS pax',
+        ])
+            ->join('users', 'bookings.user_id', '=', 'users.id')
+            ->join('agents', 'bookings.agent_id', 'agents.id')
+            ->leftJoin('booking_categories', 'bookings.booking_category_id', 'booking_categories.id')
+            ->whereNotNull('at_tumpak_sewu')
+            ->whereMonth('at_tumpak_sewu', $month)
+            ->whereYear('at_tumpak_sewu', $year)
+            ->orderBy('at_tumpak_sewu', 'ASC');
+
+        if ($channel != 'all') {
+            if ($channel == 'twt') {
+                $getTumpakSewuData->where('bookings.agent_id', 1);
+            } elseif ($channel == 'jvto') {
+                $getTumpakSewuData->where('bookings.agent_id', 2)->where('bookings.booking_category_id', '!=', 3);
+            } else {
+                $getTumpakSewuData->where('bookings.agent_id', 2)->where('bookings.booking_category_id', 3);
+            }
+        }
+
+        return $getTumpakSewuData->get();
     }
 }

@@ -1,10 +1,10 @@
 {
-  "_Main-!~{00a}~.js": {
+  "_Main-!~{00c}~.js": {
     "file": "assets/Main-DlfMUGqY.css",
-    "src": "_Main-!~{00a}~.js"
+    "src": "_Main-!~{00c}~.js"
   },
-  "_Main-BNp2vgNo.js": {
-    "file": "assets/Main-BNp2vgNo.js",
+  "_Main-DQ_ACtKY.js": {
+    "file": "assets/Main-DQ_ACtKY.js",
     "name": "Main",
     "imports": [
       "resources/js/app.tsx"
@@ -50,22 +50,29 @@
       "assets/Satoshi-BlackItalic-CvIpOoSh.ttf"
     ]
   },
-  "_arrow-right-DwnxIAp_.js": {
-    "file": "assets/arrow-right-DwnxIAp_.js",
+  "_arrow-right-C3qRU_Tz.js": {
+    "file": "assets/arrow-right-C3qRU_Tz.js",
     "name": "arrow-right",
     "imports": [
-      "_createLucideIcon-CUrDLrr9.js"
+      "_createLucideIcon-BN4eSXDH.js"
     ]
   },
-  "_chevron-down-B1ABu_ow.js": {
-    "file": "assets/chevron-down-B1ABu_ow.js",
+  "_car-hkKovSh1.js": {
+    "file": "assets/car-hkKovSh1.js",
+    "name": "car",
+    "imports": [
+      "_createLucideIcon-BN4eSXDH.js"
+    ]
+  },
+  "_chevron-down-h7vQ6Wnm.js": {
+    "file": "assets/chevron-down-h7vQ6Wnm.js",
     "name": "chevron-down",
     "imports": [
-      "_createLucideIcon-CUrDLrr9.js"
+      "_createLucideIcon-BN4eSXDH.js"
     ]
   },
-  "_createLucideIcon-CUrDLrr9.js": {
-    "file": "assets/createLucideIcon-CUrDLrr9.js",
+  "_createLucideIcon-BN4eSXDH.js": {
+    "file": "assets/createLucideIcon-BN4eSXDH.js",
     "name": "createLucideIcon",
     "imports": [
       "resources/js/app.tsx"
@@ -75,18 +82,33 @@
     "file": "assets/format-BZCA6QnS.js",
     "name": "format"
   },
-  "_map-pin-go9eGZU-.js": {
-    "file": "assets/map-pin-go9eGZU-.js",
-    "name": "map-pin",
+  "_index-DAb4n4yN.js": {
+    "file": "assets/index-DAb4n4yN.js",
+    "name": "index",
     "imports": [
-      "_createLucideIcon-CUrDLrr9.js"
+      "_createLucideIcon-BN4eSXDH.js",
+      "resources/js/app.tsx"
     ]
   },
-  "_search-Al1ckNvR.js": {
-    "file": "assets/search-Al1ckNvR.js",
+  "_map-pin-BoSWLXST.js": {
+    "file": "assets/map-pin-BoSWLXST.js",
+    "name": "map-pin",
+    "imports": [
+      "_createLucideIcon-BN4eSXDH.js"
+    ]
+  },
+  "_search-xi0BljdS.js": {
+    "file": "assets/search-xi0BljdS.js",
     "name": "search",
     "imports": [
-      "_createLucideIcon-CUrDLrr9.js"
+      "_createLucideIcon-BN4eSXDH.js"
+    ]
+  },
+  "_users-CJur4mlf.js": {
+    "file": "assets/users-CJur4mlf.js",
+    "name": "users",
+    "imports": [
+      "_createLucideIcon-BN4eSXDH.js"
     ]
   },
   "public/assets/images/brand/brand-01.svg": {
@@ -254,25 +276,53 @@
     "src": "resources/fonts/Satoshi-Regular.woff2"
   },
   "resources/js/Pages/Activity/ActivityList.tsx": {
-    "file": "assets/ActivityList-CEunR665.js",
+    "file": "assets/ActivityList-wNmiQaMw.js",
     "name": "ActivityList",
     "src": "resources/js/Pages/Activity/ActivityList.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.tsx",
-      "_Main-BNp2vgNo.js",
-      "_search-Al1ckNvR.js",
-      "_createLucideIcon-CUrDLrr9.js"
+      "_Main-DQ_ACtKY.js",
+      "_search-xi0BljdS.js",
+      "_createLucideIcon-BN4eSXDH.js"
+    ]
+  },
+  "resources/js/Pages/Calendar/Calendar.tsx": {
+    "file": "assets/Calendar-BXQ9W6dR.js",
+    "name": "Calendar",
+    "src": "resources/js/Pages/Calendar/Calendar.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.tsx",
+      "_Main-DQ_ACtKY.js",
+      "_index-DAb4n4yN.js",
+      "_users-CJur4mlf.js",
+      "_car-hkKovSh1.js",
+      "_createLucideIcon-BN4eSXDH.js"
+    ]
+  },
+  "resources/js/Pages/Calendar/Calendar2.tsx": {
+    "file": "assets/Calendar2-C8CVQULM.js",
+    "name": "Calendar2",
+    "src": "resources/js/Pages/Calendar/Calendar2.tsx",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.tsx",
+      "_Main-DQ_ACtKY.js",
+      "_index-DAb4n4yN.js",
+      "_users-CJur4mlf.js",
+      "_car-hkKovSh1.js",
+      "_createLucideIcon-BN4eSXDH.js"
     ]
   },
   "resources/js/Pages/Dashboard.tsx": {
-    "file": "assets/Dashboard-BD29F6Fk.js",
+    "file": "assets/Dashboard-DA8GdfT-.js",
     "name": "Dashboard",
     "src": "resources/js/Pages/Dashboard.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.tsx",
-      "_Main-BNp2vgNo.js"
+      "_Main-DQ_ACtKY.js"
     ],
     "assets": [
       "assets/user-05-DvLXiEro.png",
@@ -284,86 +334,90 @@
     ]
   },
   "resources/js/Pages/Hotel/HotelList.tsx": {
-    "file": "assets/HotelList-DBTX4Hp_.js",
+    "file": "assets/HotelList-BiZEUgXr.js",
     "name": "HotelList",
     "src": "resources/js/Pages/Hotel/HotelList.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.tsx",
-      "_Main-BNp2vgNo.js",
-      "_chevron-down-B1ABu_ow.js",
-      "_map-pin-go9eGZU-.js",
-      "_createLucideIcon-CUrDLrr9.js",
-      "_search-Al1ckNvR.js"
+      "_Main-DQ_ACtKY.js",
+      "_chevron-down-h7vQ6Wnm.js",
+      "_map-pin-BoSWLXST.js",
+      "_createLucideIcon-BN4eSXDH.js",
+      "_search-xi0BljdS.js"
     ]
   },
   "resources/js/Pages/Schedule/BookingAnalist.tsx": {
-    "file": "assets/BookingAnalist-pR2pVwxW.js",
+    "file": "assets/BookingAnalist-CPzHSspR.js",
     "name": "BookingAnalist",
     "src": "resources/js/Pages/Schedule/BookingAnalist.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.tsx",
-      "_Main-BNp2vgNo.js",
-      "_createLucideIcon-CUrDLrr9.js",
-      "_chevron-down-B1ABu_ow.js",
-      "_arrow-right-DwnxIAp_.js",
+      "_Main-DQ_ACtKY.js",
+      "_createLucideIcon-BN4eSXDH.js",
+      "_chevron-down-h7vQ6Wnm.js",
+      "_arrow-right-C3qRU_Tz.js",
       "_format-BZCA6QnS.js"
     ]
   },
   "resources/js/Pages/Schedule/BookingList.tsx": {
-    "file": "assets/BookingList-u2Z8PMOi.js",
+    "file": "assets/BookingList-CScNL1rz.js",
     "name": "BookingList",
     "src": "resources/js/Pages/Schedule/BookingList.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.tsx",
-      "_Main-BNp2vgNo.js"
+      "_Main-DQ_ACtKY.js"
     ]
   },
   "resources/js/Pages/Schedule/Index.tsx": {
-    "file": "assets/Index-DZuTX_FW.js",
+    "file": "assets/Index-CkZO1zMl.js",
     "name": "Index",
     "src": "resources/js/Pages/Schedule/Index.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.tsx",
-      "_Main-BNp2vgNo.js",
-      "_chevron-down-B1ABu_ow.js",
-      "_map-pin-go9eGZU-.js",
-      "_createLucideIcon-CUrDLrr9.js",
-      "_format-BZCA6QnS.js"
+      "_Main-DQ_ACtKY.js",
+      "_chevron-down-h7vQ6Wnm.js",
+      "_map-pin-BoSWLXST.js",
+      "_createLucideIcon-BN4eSXDH.js",
+      "_format-BZCA6QnS.js",
+      "_car-hkKovSh1.js"
     ]
   },
   "resources/js/Pages/Schedule/SamplePage.tsx": {
-    "file": "assets/SamplePage-DnmICs95.js",
+    "file": "assets/SamplePage-l6vSTpwn.js",
     "name": "SamplePage",
     "src": "resources/js/Pages/Schedule/SamplePage.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.tsx",
-      "_Main-BNp2vgNo.js"
+      "_Main-DQ_ACtKY.js"
     ]
   },
   "resources/js/Pages/Test.tsx": {
-    "file": "assets/Test-CSQGYmGT.js",
+    "file": "assets/Test-Bl-Wr3wM.js",
     "name": "Test",
     "src": "resources/js/Pages/Test.tsx",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.tsx",
-      "_Main-BNp2vgNo.js",
-      "_createLucideIcon-CUrDLrr9.js",
-      "_arrow-right-DwnxIAp_.js"
+      "_Main-DQ_ACtKY.js",
+      "_createLucideIcon-BN4eSXDH.js",
+      "_users-CJur4mlf.js",
+      "_arrow-right-C3qRU_Tz.js"
     ]
   },
   "resources/js/app.tsx": {
-    "file": "assets/app-CZEdyiut.js",
+    "file": "assets/app-hNHxXZ9k.js",
     "name": "app",
     "src": "resources/js/app.tsx",
     "isEntry": true,
     "dynamicImports": [
       "resources/js/Pages/Activity/ActivityList.tsx",
+      "resources/js/Pages/Calendar/Calendar.tsx",
+      "resources/js/Pages/Calendar/Calendar2.tsx",
       "resources/js/Pages/Dashboard.tsx",
       "resources/js/Pages/Hotel/HotelList.tsx",
       "resources/js/Pages/Schedule/BookingAnalist.tsx",
@@ -373,7 +427,7 @@
       "resources/js/Pages/Test.tsx"
     ],
     "css": [
-      "assets/app-DOL8y71f.css"
+      "assets/app-CueMprzr.css"
     ]
   }
 }

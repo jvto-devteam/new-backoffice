@@ -5,7 +5,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\ActivityController;
-use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TaskManagementController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -38,7 +38,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::get('/task-management', [TaskController::class, 'index']);
-Route::get('/calendar', [TaskController::class, 'calendar']);
+Route::get('/task-management', [TaskManagementController::class, 'index']);
+Route::get('/calendar', [TaskManagementController::class, 'calendar']);
 
 require __DIR__.'/auth.php';

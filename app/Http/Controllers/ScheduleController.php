@@ -48,7 +48,7 @@ class ScheduleController extends Controller
                 $data['selectedCategory'] = $bookingCategory->name;
             }
             $data['bookingCategory'] = BookingCategory::get();
-            $data['booking'] = Booking::with(['bookingCategory', 'user.country', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination'])->where('travel_date_start', 'like', "$data[year]-$data[month]%");
+            $data['booking'] = Booking::with(['bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination'])->where('travel_date_start', 'like', "$data[year]-$data[month]%");
             if ($request->vendor) {
                 $data['agent'] = Agent::find($request->vendor);
                 $data['booking'] = $data['booking']->where('agent_id', $request->vendor);

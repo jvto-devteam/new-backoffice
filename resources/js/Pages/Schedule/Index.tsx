@@ -162,6 +162,7 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                         } 
                         />
                         <DetailField label="Voucher Code" value={
+                            booking.user.discount ? booking.user.discount.name : 
                             `${booking.user.name.toUpperCase().replace(' ','')}450`
                         } />
                     </div>

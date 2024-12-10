@@ -149,9 +149,15 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                     <div className="space-y-6">
                     <div className="grid md:grid-cols-2 gap-6">
                         <DetailField label="Name" value={booking.user.name} />
-                        <DetailField label="Nationality" value={booking.user.country ? booking.user.country.long_name : '-'} />
-                        <DetailField label="Phone" value={booking.user.phone} />
-                        <DetailField label="Email" value={booking.user.email} />
+                        {
+                            booking.agent_id != 1 ? (
+                                <>
+                                    <DetailField label="Nationality" value={booking.user.country ? booking.user.country.long_name : '-'} />
+                                    <DetailField label="Phone" value={booking.user.phone} />
+                                    <DetailField label="Email" value={booking.user.email} />
+                                </>
+                            ) : ''
+                        }
                         <DetailField 
                         label="T-Shirt Sizes" 
                         value={
@@ -161,20 +167,32 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                             .join(', ')
                         } 
                         />
-                        <DetailField label="Voucher Code" value={
-                            booking.user.discount ? booking.user.discount.name : 
-                            `${booking.user.name.toUpperCase().replace(' ','')}450`
-                        } />
+                        {
+                            booking.agent_id != 1 ? (
+                                <DetailField label="Voucher Code" value={
+                                    booking.user.discount ? booking.user.discount.name : 
+                                    `${booking.user.name.toUpperCase().replace(' ','')}450`
+                                } />
+                            ):''
+                        }
                     </div>
-                    <div>
-                        <DetailField label="Customer Request" value={booking.special_requirements} />
-                    </div>
-                    <div>
-                        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Trip Media</h3>
-                        <a target="_blank" href={booking.media_link || '#'} className="underline">
-                            <p className="mt-1 text-blue-900 dark:text-blue-300">{booking.media_link || '-'}</p>
-                        </a>
-                    </div>
+                    {
+                        booking.agent_id != 1 ? (
+                            <div>
+                                <DetailField label="Customer Request" value={booking.special_requirements} />
+                            </div>
+                        ) : ''
+                    }
+                    {
+                        booking.agent_id != 1 ? (
+                            <div>
+                                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Trip Media</h3>
+                                <a target="_blank" href={booking.media_link || '#'} className="underline">
+                                    <p className="mt-1 text-blue-900 dark:text-blue-300">{booking.media_link || '-'}</p>
+                                </a>
+                            </div>
+                        ) : ''
+                    }
                     </div>
                 )}
 
@@ -201,10 +219,14 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                         label="Participants" 
                         value={`${booking.total_pax} PAX`} 
                         />
-                        <DetailField 
-                        label="Price Per Pax" 
-                        value={formatCurrency(booking.grand_total/booking.total_pax)} 
-                        />
+                    {
+                        booking.agent_id != 1 ? (
+                            <DetailField 
+                            label="Price Per Pax" 
+                            value={formatCurrency(booking.grand_total/booking.total_pax)} 
+                            />
+                        ) : ''
+                    }
                         <DetailField 
                         label="Grand Total" 
                         value={formatCurrency(booking.grand_total)} 
@@ -220,57 +242,63 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                         label="Invoice Total" 
                         value={formatCurrency(booking.grand_total)} 
                         />
-                        <DetailField 
-                        label="Payment Received" 
-                        value={formatCurrency(booking.payment)} 
-                        />
-                        <DetailField 
-                        label="Balance" 
-                        value={formatCurrency(booking.balance)} 
-                        />
-                        <DetailField 
-                        label="Expenses" 
-                        value={formatCurrency(booking.expense_internal_total)} 
-                        />
-                        <DetailField 
-                        label="Payment Method" 
-                        value={booking.outstanding_payment_method.toUpperCase()} 
-                        />
+                        {
+                            booking.agent_id != 1 ? (
+                                <>
+                                    <DetailField 
+                                    label="Payment Received" 
+                                    value={formatCurrency(booking.payment)} 
+                                    />
+                                    <DetailField 
+                                    label="Balance" 
+                                    value={formatCurrency(booking.balance)} 
+                                    />
+                                </>
+                            ) : ''
+                        }
+                            <div>
+                                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Expense</h3>
+                                <a target="_blank" href={booking.expense_file_internal || '#'} className="underline">
+                                    <p className="mt-1 text-blue-900 dark:text-blue-300">IDR {formatRupiah(booking.expense_file_internal) || '-'}</p>
+                                </a>
+                            </div>
+                        {
+                            booking.agent_id != 1 ? (
+                                <DetailField 
+                                label="Payment Method" 
+                                value={booking.outstanding_payment_method ? booking.outstanding_payment_method.toUpperCase() : ''}/> 
+                            ) : ''
+                        }
                     </div>
-                    
-                    <div className="mt-6">
-                        <h3 className="text-lg font-medium mb-4">Payment History</h3>
-                        <div className="bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden">
-                        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                            <thead className="bg-gray-50 dark:bg-gray-800">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Date</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Amount</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Method</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Status</th>
-                            </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                            {booking.payment_history?.map((payment, index) => (
-                                <tr key={index}>
-                                <td className="px-6 py-4 text-sm">{format(payment.date, 'dd MMM yyyy')}</td>
-                                <td className="px-6 py-4 text-sm">{formatCurrency(payment.amount)}</td>
-                                <td className="px-6 py-4 text-sm">{payment.method}</td>
-                                <td className="px-6 py-4 text-sm">
-                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                                    payment.status === 'Paid' 
-                                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                                        : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                                    }`}>
-                                    {payment.status}
-                                    </span>
-                                </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
-                        </div>
-                    </div>
+                    {
+                        booking.agent_id == 2 && booking.booking_category_id != 3 ? (
+                            <div className="mt-6">
+                                <h3 className="text-lg font-medium mb-4">Payment History</h3>
+                                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden">
+                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead className="bg-gray-50 dark:bg-gray-800">
+                                    <tr>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Date</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Method</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Description</th>
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Amount</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                                    {booking.booking_payment?.map((payment, index) => (
+                                        <tr key={index}>
+                                            <td className="px-6 py-4 text-sm">{format(payment.created_at, 'dd MMM yyyy')}</td>
+                                            <td className="px-6 py-4 text-sm">{payment.payment_method.name}</td>
+                                            <td className="px-6 py-4 text-sm">{payment.description}</td>
+                                            <td className="px-6 py-4 text-sm">{formatCurrency(payment.nominal)}</td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                                </div>
+                            </div>
+                        ) : ''
+                    }
                     </div>
                 )}
 
@@ -326,7 +354,7 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                             <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
                             <div className="flex items-center">
                                 <Car className="h-5 w-5 text-gray-400 mr-2" />
-                                <span className="font-medium">{car.car.name}</span>
+                                <span className="font-medium text-blue-600 dark:text-blue-400">{car.car.name}</span>
                             </div>
                             {car.car_info && (
                                 <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
@@ -340,7 +368,7 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
 
                     {/* Crew */}
                     <div>
-                        <h3 className="text-lg font-medium mb-4">Staff Assignment</h3>
+                        <h3 className="text-lg font-medium mb-4">Crew Assignment</h3>
                         <div className="grid md:grid-cols-2 gap-4">
                         {/* Drivers */}
                         {booking.guide_driver
@@ -350,7 +378,7 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                                 <div className="flex items-center">
                                 <LifeBuoy className="h-5 w-5 text-gray-400 mr-2" />
                                 <div>
-                                    <p className="font-medium">{driver.person.name}</p>
+                                    <p className="font-medium text-blue-600 dark:text-blue-400">{driver.person.name}</p>
                                     <p className="text-sm text-gray-600 dark:text-gray-300">Driver</p>
                                 </div>
                                 </div>
@@ -365,7 +393,7 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                                 <div className="flex items-center">
                                 <Backpack className="h-5 w-5 text-gray-400 mr-2" />
                                 <div>
-                                    <p className="font-medium">{guide.person.name}</p>
+                                    <p className="font-medium text-blue-600 dark:text-blue-400">{guide.person.name}</p>
                                     <p className="text-sm text-gray-600 dark:text-gray-300">Guide</p>
                                 </div>
                                 </div>
@@ -395,8 +423,8 @@ const BookingRow = ({no, booking, isExpanded, onToggle}) => {
                 return 'bg-primary text-white hover:bg-opacity-90';
         }
     };
-
     const source = booking.agent_id == 2 && booking.booking_category_id == 3 ? 'KLOOK' : booking.agent.name
+
     const hasCar = booking.book_car && booking.book_car.length > 0;
     const hasDriver = booking.guide_driver && booking.guide_driver.some(gd => gd.type === 'driver');
     const hasGuide = booking.guide_driver && booking.guide_driver.some(gd => gd.type === 'guide');
@@ -679,18 +707,21 @@ const BookingRow = ({no, booking, isExpanded, onToggle}) => {
                           <span
                               className="font-medium">Profit:</span> IDR {formatRupiah(booking.grand_total - booking.expense_internal_total)}
                                     </div>
-                                    <div>
-                          <span
-                              className="font-medium">Deposit:</span> IDR {formatRupiah(booking.payment)}
-                                    </div>
-                                    <div>
-                          <span
-                              className="font-medium">Balance:</span> IDR {formatRupiah(booking.balance)}
-                                    </div>
-                                    <div>
-                          <span
-                              className="font-medium">Payment Method:</span> {booking.outstanding_payment_method.toUpperCase()}
-                                    </div>
+                                    {
+                                        booking.agent_id == 2 && booking.booking_category_id != 3 ? (
+                                            <>
+                                                <div>
+                                                    <span className="font-medium">Deposit:</span> IDR {formatRupiah(booking.payment)}
+                                                </div>
+                                                <div>
+                                                    <span className="font-medium">Balance:</span> IDR {formatRupiah(booking.balance)}
+                                                </div>
+                                                <div>
+                                                    <span className="font-medium">Payment Method:</span> {booking.outstanding_payment_method ? booking.outstanding_payment_method.toUpperCase() : ''}
+                                                </div>
+                                            </>
+                                        ) : ''
+                                    }
 
                                 {/* {booking.financial.notes && (
                     <div className="mt-2 text-yellow-600 dark:text-yellow-400 flex items-start">

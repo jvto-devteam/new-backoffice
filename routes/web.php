@@ -6,6 +6,7 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\TaskManagementController;
+use App\Http\Controllers\KlookExpenseController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -40,5 +41,6 @@ Route::middleware('auth')->group(function () {
 
 Route::get('/task-management', [TaskManagementController::class, 'index']);
 Route::get('/calendar', [TaskManagementController::class, 'calendar']);
+Route::get('/klook-expense-calculation', [KlookExpenseController::class, 'index']);
 
 require __DIR__.'/auth.php';

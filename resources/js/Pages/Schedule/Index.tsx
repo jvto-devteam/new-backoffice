@@ -198,40 +198,41 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
 
                 {activeTab === 'booking' && (
                     <div className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <DetailField 
-                        label="Duration" 
-                        value={`${booking.booking_detail[0].package?.duration.day || booking.package_duration}D ${booking.booking_detail[0].package?.duration.night || booking.package_duration - 1}N`} 
-                        />
-                        <DetailField 
-                        label="Travel Dates" 
-                        value={`${format(booking.travel_date_start, 'dd MMM yyyy')} - ${format(booking.travel_date_end, 'dd MMM yyyy')}`} 
-                        />
-                        <DetailField 
-                        label="Pickup" 
-                        value={`${booking.pickup == 'Terminal 2 Juanda International Airport' ? 'T2' : booking.pickup} (${format(parse(booking.pickup_time, 'HH:mm:ss', new Date()), 'HH:mm')})`} 
-                        />
-                        <DetailField 
-                        label="Drop" 
-                        value={`${booking.drop == 'Terminal 2 Juanda International Airport' ? 'T2' : booking.drop} (${format(parse(booking.drop_time, 'HH:mm:ss', new Date()), 'HH:mm')})`} 
-                        />
-                        <DetailField 
-                        label="Participants" 
-                        value={`${booking.total_pax} PAX`} 
-                        />
-                    {
-                        booking.agent_id != 1 ? (
+                        <div className="grid md:grid-cols-2 gap-6">
                             <DetailField 
-                            label="Price Per Pax" 
-                            value={formatCurrency(booking.grand_total/booking.total_pax)} 
+                                label="Duration" 
+                                value={`${booking?.booking_detail?.[0]?.package?.duration?.day || booking?.package_duration || 0}D 
+                                ${booking?.booking_detail?.[0]?.package?.duration?.night || (booking?.package_duration || 1) - 1}N`} 
                             />
-                        ) : ''
-                    }
-                        <DetailField 
-                        label="Grand Total" 
-                        value={formatCurrency(booking.grand_total)} 
-                        />
-                    </div>
+                            <DetailField 
+                                label="Travel Dates" 
+                                value={`${format(booking?.travel_date_start || new Date(), 'dd MMM yyyy')} - ${format(booking?.travel_date_end || new Date(), 'dd MMM yyyy')}`} 
+                            />
+                            <DetailField 
+                                label="Pickup" 
+                                value={`${booking?.pickup === 'Terminal 2 Juanda International Airport' ? 'T2' : booking?.pickup || 'Unknown'} 
+                                (${format(parse(booking?.pickup_time || '00:00:00', 'HH:mm:ss', new Date()), 'HH:mm')})`} 
+                            />
+                            <DetailField 
+                                label="Drop" 
+                                value={`${booking?.drop === 'Terminal 2 Juanda International Airport' ? 'T2' : booking?.drop || 'Unknown'} 
+                                (${format(parse(booking?.drop_time || '00:00:00', 'HH:mm:ss', new Date()), 'HH:mm')})`} 
+                            />
+                            <DetailField 
+                                label="Participants" 
+                                value={`${booking?.total_pax || 0} PAX`} 
+                            />
+                            {booking?.agent_id !== 1 && (
+                                <DetailField 
+                                    label="Price Per Pax" 
+                                    value={formatCurrency((booking?.grand_total || 0) / (booking?.total_pax || 1))} 
+                                />
+                            )}
+                            <DetailField 
+                                label="Grand Total" 
+                                value={formatCurrency(booking?.grand_total || 0)} 
+                            />
+                        </div>
                     </div>
                 )}
 

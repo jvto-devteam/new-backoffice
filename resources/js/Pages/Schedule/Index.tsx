@@ -258,9 +258,9 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                             ) : ''
                         }
                             <div>
-                                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Expense</h3>
+                                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Expenses</h3>
                                 <a target="_blank" href={booking.expense_file_internal || '#'} className="underline">
-                                    <p className="mt-1 text-blue-900 dark:text-blue-300">IDR {formatRupiah(booking.expense_file_internal) || '-'}</p>
+                                    <p className="mt-1 text-blue-900 dark:text-blue-300">{booking.expense_internal_total ? `IDR ${formatRupiah(booking.expense_internal_total)}` : '-'}</p>
                                 </a>
                             </div>
                         {

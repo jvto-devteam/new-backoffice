@@ -4,7 +4,10 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\HotelController;
+use App\Http\Controllers\AccommodationController;
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\TaskManagementController;
+use App\Http\Controllers\KlookExpenseController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\TaskController;
@@ -33,6 +36,7 @@ Route::get('/expense-package', [ExpenseController::class,'expensePackage']);
 
 //data master management
 Route::get('/data-master-management/hotels', [HotelController::class,'index']);
+Route::get('/data-master-management/accommodation', [AccommodationController::class,'index']);
 Route::get('/data-master-management/activities', [ActivityController::class,'index']);
 
 Route::prefix('package-inventory')->group(function () {
@@ -44,7 +48,8 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::get('/task-management', [TaskController::class, 'index']);
-Route::get('/calendar', [TaskController::class, 'calendar']);
+Route::get('/task-management', [TaskManagementController::class, 'index']);
+Route::get('/calendar', [TaskManagementController::class, 'calendar']);
+Route::get('/klook-expense-calculation', [KlookExpenseController::class, 'index']);
 
 require __DIR__.'/auth.php';

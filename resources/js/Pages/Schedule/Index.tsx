@@ -8,7 +8,13 @@ import {
     Users, Clock, MapPin, LifeBuoy, Backpack
 } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
-import { X as XIcon } from 'lucide-react';
+import { 
+    X as XIcon,
+    UserCircle2, // untuk Client Information
+    Info,        // untuk Booking Information 
+    Route,       // untuk Activity
+    ScrollText,  // untuk Itinerary     
+} from 'lucide-react';
 
 // Integrated Card Components
 const Card = ({children, className = ''}) => (
@@ -90,17 +96,6 @@ const DetailField = ({ label, value, className = '' }) => (
     </div>
 );
 const BookingDetails = ({ isOpen, onClose, booking }) => {
-    const [activeTab, setActiveTab] = useState('customer');
-  
-    const tabs = [
-      { id: 'customer', label: 'Client Information' },
-      { id: 'booking', label: 'Booking Information' },
-      { id: 'finance', label: 'Finance' },
-      { id: 'itinerary', label: 'Itinerary' },
-      { id: 'accommodation', label: 'Accommodation' },
-      { id: 'resource', label: 'Resource & Allocations' }
-    ];
-  
     return (
       <Dialog 
         open={isOpen} 
@@ -108,10 +103,8 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
         className="relative z-50"
       >
         <div className="fixed inset-0">
-            {/* Dark overlay */}  
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300" aria-hidden="true" />
         </div>        
-        <div className="fixed inset-0 bg-black/30 dark:bg-black/50" aria-hidden="true" />
         
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-4xl w-full bg-white dark:bg-gray-800 rounded-xl shadow-xl">
@@ -127,289 +120,226 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                 <XIcon className="w-5 h-5" />
               </button>
             </div>
-  
-            {/* Tab Navigation */}
-            <div className="p-4 border-b dark:border-gray-700 overflow-x-auto">
-              <div className="flex gap-2 min-w-max">
-                {tabs.map(tab => (
-                  <TabButton
-                    key={tab.id}
-                    isActive={activeTab === tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                  >
-                    {tab.label}
-                  </TabButton>
-                ))}
-              </div>
-            </div>
-  
-            {/* Tab Content */}
-            <div className="p-6 max-h-[calc(100vh-250px)] overflow-y-auto">
-                {activeTab === 'customer' && (
-                    <div className="space-y-6">
+
+            {/* Content - Now using cards */}
+            <div className="p-6 space-y-6 max-h-[calc(100vh-250px)] overflow-y-auto">
+                {/* Client Information Card */}
+                <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                        <UserCircle2 className="h-5 w-5 mr-2 text-gray-500" />
+                        Client Information
+                    </h3>
                     <div className="grid md:grid-cols-2 gap-6">
                         <DetailField label="Name" value={booking.user.name} />
-                        {
-                            booking.agent_id != 1 ? (
-                                <>
-                                    <DetailField label="Nationality" value={booking.user.country ? booking.user.country.long_name : '-'} />
-                                    <DetailField label="Phone" value={booking.user.phone} />
-                                    <DetailField label="Email" value={booking.user.email} />
-                                </>
-                            ) : ''
-                        }
+                        {booking.agent_id != 1 && (
+                            <>
+                                <DetailField label="Nationality" value={booking.user.country?.long_name || '-'} />
+                                <DetailField label="Phone" value={booking.user.phone} />
+                                <DetailField label="Email" value={booking.user.email} />
+                            </>
+                        )}
                         <DetailField 
-                        label="T-Shirt Sizes" 
-                        value={
-                            Object.entries(booking.booking_detail[0])
-                            .filter(([key, value]) => ['xss', 'xxs', 'xs', 's', 'l', 'xl', 'xxl', 'xxxl'].includes(key) && value)
-                            .map(([size, count]) => `${size.toUpperCase()} × ${count}`)
-                            .join(', ')
-                        } 
+                            label="T-Shirt Sizes" 
+                            value={
+                                Object.entries(booking.booking_detail[0])
+                                .filter(([key, value]) => ['xss', 'xxs', 'xs', 's', 'l', 'xl', 'xxl', 'xxxl'].includes(key) && value)
+                                .map(([size, count]) => `${size.toUpperCase()} × ${count}`)
+                                .join(', ')
+                            } 
                         />
-                        {
-                            booking.agent_id != 1 ? (
-                                <DetailField label="Voucher Code" value={
-                                    booking.user.discount ? booking.user.discount.name : 
-                                    `${booking.user.name.toUpperCase().replace(' ','')}450`
-                                } />
-                            ):''
-                        }
+                        {booking.agent_id != 1 && (
+                            <DetailField 
+                                label="Voucher Code" 
+                                value={booking.user.discount ? booking.user.discount.name : `${booking.user.name.toUpperCase().replace(' ','')}450`} 
+                            />
+                        )}
                     </div>
-                    {
-                        booking.agent_id != 1 ? (
-                            <div>
-                                <DetailField label="Customer Request" value={booking.special_requirements} />
-                            </div>
-                        ) : ''
-                    }
-                    {
-                        booking.agent_id != 1 ? (
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Trip Media</h3>
-                                <a target="_blank" href={booking.media_link || '#'} className="underline">
-                                    <p className="mt-1 text-blue-900 dark:text-blue-300">{booking.media_link || '-'}</p>
-                                </a>
-                            </div>
-                        ) : ''
-                    }
-                    </div>
-                )}
+                </div>
 
-                {activeTab === 'booking' && (
-                    <div className="space-y-6">
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <DetailField 
-                                label="Duration" 
-                                value={`${booking?.booking_detail?.[0]?.package?.duration?.day || booking?.package_duration || 0}D 
-                                ${booking?.booking_detail?.[0]?.package?.duration?.night || (booking?.package_duration || 1) - 1}N`} 
-                            />
-                            <DetailField 
-                                label="Travel Dates" 
-                                value={`${format(booking?.travel_date_start || new Date(), 'dd MMM yyyy')} - ${format(booking?.travel_date_end || new Date(), 'dd MMM yyyy')}`} 
-                            />
-                            <DetailField 
-                                label="Pickup" 
-                                value={`${booking?.pickup === 'Terminal 2 Juanda International Airport' ? 'T2' : booking?.pickup || 'Unknown'} 
-                                (${format(parse(booking?.pickup_time || '00:00:00', 'HH:mm:ss', new Date()), 'HH:mm')})`} 
-                            />
-                            <DetailField 
-                                label="Drop" 
-                                value={`${booking?.drop === 'Terminal 2 Juanda International Airport' ? 'T2' : booking?.drop || 'Unknown'} 
-                                (${format(parse(booking?.drop_time || '00:00:00', 'HH:mm:ss', new Date()), 'HH:mm')})`} 
-                            />
-                            <DetailField 
-                                label="Participants" 
-                                value={`${booking?.total_pax || 0} PAX`} 
-                            />
-                            {booking?.agent_id !== 1 && (
-                                <DetailField 
-                                    label="Price Per Pax" 
-                                    value={formatCurrency((booking?.grand_total || 0) / (booking?.total_pax || 1))} 
-                                />
-                            )}
-                            <DetailField 
-                                label="Grand Total" 
-                                value={formatCurrency(booking?.grand_total || 0)} 
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {activeTab === 'finance' && (
-                    <div className="space-y-6">
+                {/* Booking Information Card */}
+                <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                        <Info className="h-5 w-5 mr-2 text-gray-500" />
+                        Booking Information
+                    </h3>
                     <div className="grid md:grid-cols-2 gap-6">
                         <DetailField 
-                        label="Invoice Total" 
-                        value={formatCurrency(booking.grand_total)} 
+                            label="Duration" 
+                            value={`${booking?.booking_detail?.[0]?.package?.duration?.day || booking?.package_duration || 0}D ${booking?.booking_detail?.[0]?.package?.duration?.night || (booking?.package_duration || 1) - 1}N`} 
                         />
-                        {
-                            booking.agent_id != 1 ? (
-                                <>
-                                    <DetailField 
-                                    label="Payment Received" 
-                                    value={formatCurrency(booking.payment)} 
-                                    />
-                                    <DetailField 
-                                    label="Balance" 
-                                    value={formatCurrency(booking.balance)} 
-                                    />
-                                </>
-                            ) : ''
-                        }
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Expenses</h3>
-                                <a target="_blank" href={booking.expense_file_internal || '#'} className="underline">
-                                    <p className="mt-1 text-blue-900 dark:text-blue-300">{booking.expense_internal_total ? `IDR ${formatRupiah(booking.expense_internal_total)}` : '-'}</p>
-                                </a>
-                            </div>
-                        {
-                            booking.agent_id != 1 ? (
-                                <DetailField 
-                                label="Payment Method" 
-                                value={booking.outstanding_payment_method ? booking.outstanding_payment_method.toUpperCase() : ''}/> 
-                            ) : ''
-                        }
+                        <DetailField 
+                            label="Travel Dates" 
+                            value={`${format(booking?.travel_date_start, 'dd MMM yyyy')} - ${format(booking?.travel_date_end, 'dd MMM yyyy')}`} 
+                        />
+                        <DetailField 
+                            label="Pickup" 
+                            value={`${booking?.pickup === 'Terminal 2 Juanda International Airport' ? 'T2' : booking?.pickup} (${format(parse(booking?.pickup_time || '00:00:00', 'HH:mm:ss', new Date()), 'HH:mm')})`} 
+                        />
+                        <DetailField 
+                            label="Drop" 
+                            value={`${booking?.drop === 'Terminal 2 Juanda International Airport' ? 'T2' : booking?.drop} (${format(parse(booking?.drop_time || '00:00:00', 'HH:mm:ss', new Date()), 'HH:mm')})`} 
+                        />
+                        <DetailField 
+                            label="Participants" 
+                            value={`${booking?.total_pax || 0} PAX`} 
+                        />
+                        <DetailField 
+                            label="Grand Total" 
+                            value={formatCurrency(booking?.grand_total || 0)} 
+                        />
                     </div>
-                    {
-                        booking.agent_id == 2 && booking.booking_category_id != 3 ? (
-                            <div className="mt-6">
-                                <h3 className="text-lg font-medium mb-4">Payment History</h3>
-                                <div className="bg-gray-50 dark:bg-gray-900 rounded-lg overflow-hidden">
-                                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                                    <thead className="bg-gray-50 dark:bg-gray-800">
-                                    <tr>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Date</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Method</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Description</th>
-                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Amount</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                                    {booking.booking_payment?.map((payment, index) => (
-                                        <tr key={index}>
-                                            <td className="px-6 py-4 text-sm">{format(payment.created_at, 'dd MMM yyyy')}</td>
-                                            <td className="px-6 py-4 text-sm">{payment.payment_method.name}</td>
-                                            <td className="px-6 py-4 text-sm">{payment.description}</td>
-                                            <td className="px-6 py-4 text-sm">{formatCurrency(payment.nominal)}</td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                                </div>
-                            </div>
-                        ) : ''
-                    }
-                    </div>
-                )}
+                </div>
 
-                {activeTab === 'itinerary' && (
-                    <div className="space-y-6">
-                    {booking.booking_itinerary.map((item, idx) => (
-                        <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                        <h3 className="text-lg font-bold mb-2">Day {item.day}</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">
-                            {item.itinerary}
-                        </p>
-                        {item.activity_start.destination && (
-                            <div className="mt-2 text-sm text-blue-600 dark:text-blue-400">
-                            Activity: {item.activity_start.destination.name}
-                            </div>
-                        )}
-                        </div>
-                    ))}
-                    </div>
-                )}
-
-                {activeTab === 'accommodation' && (
-                    <div className="space-y-6">
-                    {booking.booking_itinerary.map((item, idx) => (
-                        item.book_hotel.length > 0 && (
-                        <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                            <h3 className="text-md font-bold mb-1">
-                            Day {item.day} - {format(addDays(booking.travel_date_start, item.day - 1), 'dd MMM yyyy')}
-                            </h3>
-                            <p className="font-medium text-blue-600 dark:text-blue-400">{item.book_hotel[0].hotel.name}</p>
-                            <div className="text-sm text-gray-600 dark:text-gray-300">
-                                Rooms:
-                                {item.book_hotel[0].book_room.map((room, keyRoom) => (
-                                <span key={keyRoom} className="ml-2">
-                                    {room.room_hotel.room_name} × {room.quantity}
-                                    {keyRoom + 1 !== item.book_hotel[0].book_room.length ? ',' : ''}
-                                </span>
-                                ))}
-                            </div>
-                        </div>
-                        )
-                    ))}
-                    </div>
-                )}
-
-                {activeTab === 'resource' && (
-                    <div className="space-y-6">
-                    {/* Transportation */}
-                    <div>
-                        <h3 className="text-lg font-medium mb-4">Transportation</h3>
-                        <div className="grid md:grid-cols-2 gap-4">
-                        {booking.book_car?.map((car, idx) => (
-                            <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                            <div className="flex items-center">
-                                <Car className="h-5 w-5 text-gray-400 mr-2" />
-                                <span className="font-medium text-blue-600 dark:text-blue-400">{car.car.name}</span>
-                            </div>
-                            {car.car_info && (
-                                <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                                {car.car_info}
+                {/* Itinerary Card */}
+                <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                        <ScrollText className="h-5 w-5 mr-2 text-gray-500" />
+                        Itinerary
+                    </h3>
+                    <div className="space-y-4">
+                        {booking.booking_itinerary.map((item, idx) => (
+                            <div key={idx} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                <h4 className="font-medium mb-2 text-gray-600 dark:text-gray-300">Day {item.day}</h4>
+                                <p className="text-sm text-blue-600 dark:text-blue-400 whitespace-pre-line">
+                                    {item.itinerary}
                                 </p>
-                            )}
                             </div>
                         ))}
+                    </div>
+                </div>
+                <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                        <Route className="h-5 w-5 mr-2 text-gray-500" />
+                        Activity
+                    </h3>
+                    <div className="space-y-4">
+                        {booking.booking_itinerary.map((item, idx) => (
+                            item.activity_start.destination && (
+                                <div key={idx} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                    <div className="flex items-center">
+                                        <span className="font-medium text-gray-600 dark:text-gray-300 mr-2">Day {item.day}</span>
+                                        <span className="text-blue-600 dark:text-blue-400">
+                                            {item.activity_start.destination.name}
+                                        </span>
+                                    </div>
+                                </div>
+                            )
+                        ))}
+                    </div>
+                </div>
+
+                {/* Accommodation Card */}
+                <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                        <Hotel className="h-5 w-5 mr-2 text-gray-500" />
+                        Accommodation
+                    </h3>
+                    <div className="space-y-4">
+                        {booking.booking_itinerary.map((item, idx) => (
+                            item.book_hotel.length > 0 && (
+                                <div key={idx} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                    <h4 className="font-medium mb-2 text-gray-600 dark:text-gray-300">
+                                        Day {item.day} - {format(addDays(booking.travel_date_start, item.day - 1), 'dd MMM yyyy')}
+                                    </h4>
+                                    <p className="text-blue-600 dark:text-blue-400">{item.book_hotel[0].hotel.name}</p>
+                                    <div className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                                        {item.book_hotel[0].book_room.map((room, i) => (
+                                            `${room.room_hotel.room_name} × ${room.quantity}`
+                                        )).join(', ')}
+                                    </div>
+                                </div>
+                            )
+                        ))}
+                    </div>
+                </div>
+
+                {/* Resource Card */}
+                <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                        <Users className="h-5 w-5 mr-2 text-gray-500" />
+                        Resource & Allocations
+                    </h3>
+
+                    {/* Transportation */}
+                    <div className="mb-6">
+                        <h4 className="text-md font-medium text-gray-600 dark:text-gray-300 mb-3">Transportation</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                            {booking.book_car?.map((car, idx) => (
+                                <div key={idx} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                    <div className="flex items-center">
+                                        <Car className="h-5 w-5 text-gray-400 mr-2" />
+                                        <span className="text-blue-600 dark:text-blue-400">{car.car.name}</span>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
 
                     {/* Crew */}
                     <div>
-                        <h3 className="text-lg font-medium mb-4">Crew Assignment</h3>
+                        <h4 className="text-md font-medium text-gray-600 dark:text-gray-300 mb-3">Crew Assignment</h4>
                         <div className="grid md:grid-cols-2 gap-4">
-                        {/* Drivers */}
-                        {booking.guide_driver
-                            .filter(gd => gd.type === 'driver')
-                            .map((driver, idx) => (
-                            <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                                <div className="flex items-center">
-                                <LifeBuoy className="h-5 w-5 text-gray-400 mr-2" />
-                                <div>
-                                    <p className="font-medium text-blue-600 dark:text-blue-400">{driver.person.name}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">Driver</p>
-                                </div>
-                                </div>
-                            </div>
-                            ))}
-
-                        {/* Guides */}
-                        {booking.guide_driver
-                            .filter(gd => gd.type === 'guide')
-                            .map((guide, idx) => (
-                            <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                                <div className="flex items-center">
-                                <Backpack className="h-5 w-5 text-gray-400 mr-2" />
-                                <div>
-                                    <p className="font-medium text-blue-600 dark:text-blue-400">{guide.person.name}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-300">Guide</p>
-                                </div>
-                                </div>
-                            </div>
-                            ))}
+                            {booking.guide_driver
+                                .filter(gd => gd.type === 'driver')
+                                .map((driver, idx) => (
+                                    <div key={idx} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                                        <div className="flex items-center">
+                                            <LifeBuoy className="h-5 w-5 text-gray-400 mr-2" />
+                                            <div>
+                                                <p className="text-blue-600 dark:text-blue-400">{driver.person.name}</p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-300">Driver</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            {booking.guide_driver
+                                .filter(gd => gd.type === 'guide')
+                                .map((guide, idx) => (
+                                    <div key={idx} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                        <div className="flex items-center">
+                                            <Backpack className="h-5 w-5 text-gray-400 mr-2" />
+                                            <div>
+                                                <p className="text-blue-600 dark:text-blue-400">{guide.person.name}</p>
+                                                <p className="text-sm text-gray-600 dark:text-gray-300">Guide</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
                         </div>
                     </div>
+                </div>
+                {/* Finance Card */}
+                <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                    <h3 className="text-lg font-semibold mb-4 flex items-center">
+                        <DollarSign className="h-5 w-5 mr-2 text-gray-500" />
+                        Finance
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <DetailField label="Invoice Total" value={formatCurrency(booking.grand_total)} />
+                        {booking.agent_id != 1 && (
+                            <>
+                                <DetailField label="Payment Received" value={formatCurrency(booking.payment)} />
+                                <DetailField label="Balance" value={formatCurrency(booking.balance)} />
+                            </>
+                        )}
+                        <DetailField label="Expenses" value={booking.expense_internal_total ? formatCurrency(booking.expense_internal_total) : '-'} />
                     </div>
-                )}
+                    {booking.agent_id == 2 && booking.booking_category_id != 3 && (
+                        <div className="mt-6">
+                            <h4 className="text-md font-medium mb-3">Payment History</h4>
+                            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg overflow-hidden">
+                                {/* Payment history table */}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
             </div>
           </Dialog.Panel>
         </div>
       </Dialog>
     );
-  };
+};
 const BookingRow = ({no, booking, isExpanded, onToggle}) => {
 
     const getSourceColor = (source) => {
@@ -447,10 +377,8 @@ const BookingRow = ({no, booking, isExpanded, onToggle}) => {
 
     return (
         <>
-            <tr
-                className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b dark:border-gray-700"
-                onClick={onToggle}
-            >
+            <tr className="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer border-b dark:border-gray-700"
+                onClick={onToggle}>
                 <td className="align-top px-4 py-3 text-sm whitespace-nowrap">
                     <div className="flex items-center">
                         {isExpanded ? <ChevronDown className="h-4 w-4 mr-2"/> :
@@ -463,6 +391,15 @@ const BookingRow = ({no, booking, isExpanded, onToggle}) => {
                         <span className={`inline-flex px-2 py-1 text-xs font-bold rounded ${getSourceColor(source)}`}>{source}-{booking.id}</span>
                     </div>
                 </td>
+                {/* <td className="align-top px-4 py-3 text-sm whitespace-nowrap">
+                    {
+                        booking.booking_detail[0].package_id ? (
+                            <span className="inline-flex px-2 py-1 text-xs font-bold rounded bg-meta-3 hover:bg-opacity-90 text-white mt-2">
+                                {booking.booking_detail[0].package_id}
+                            </span>          
+                        ) : "-"
+                    }
+                </td> */}
                 <td className="align-top px-4 py-3 space-y-1">
                     <div className="font-medium">{booking.user.name}</div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
@@ -489,8 +426,8 @@ const BookingRow = ({no, booking, isExpanded, onToggle}) => {
                                     <Clock className="mt-1 h-3.5 w-3.5 text-gray-400 dark:text-gray-500"/>
                                 </div>
                                 <span className="text-sm">
-                    {format(parse(booking.pickup_time, 'HH:mm:ss', new Date()), 'HH:mm')}
-                </span>
+                                    {format(parse(booking.pickup_time, 'HH:mm:ss', new Date()), 'HH:mm')}
+                                </span>
                             </>
                         ) : ''}
                     </div>
@@ -537,8 +474,8 @@ const BookingRow = ({no, booking, isExpanded, onToggle}) => {
                                     <Clock className="mt-1 h-3.5 w-3.5 text-gray-400 dark:text-gray-500"/>
                                 </div>
                                 <span className='text-sm'>
-                    {format(parse(booking.drop_time, 'HH:mm:ss', new Date()), 'HH:mm')}
-                </span>
+                                    {format(parse(booking.drop_time, 'HH:mm:ss', new Date()), 'HH:mm')}
+                                </span>
                             </>
                         ) : ''}
                     </div>
@@ -695,45 +632,45 @@ const BookingRow = ({no, booking, isExpanded, onToggle}) => {
                                 </h4>
                                 <div className="space-y-2 text-sm">
                                     <div>
-                                        <span
-                                            className="font-medium">Invoice Total:</span> IDR {formatRupiah(booking.grand_total)}
+                                        <span className="font-medium">Invoice Total:</span> IDR {formatRupiah(booking.grand_total)}
                                     </div>
                                     <div>
-                                        <span className="font-medium">Expenses:</span> <span
-                                        className=" text-blue-400 underline"><a
-                                        href={booking.expense_file_internal}
-                                        target="_blank">IDR {formatRupiah(booking.expense_internal_total)}</a></span>
+                                        <span className="font-medium">Expenses:</span> 
+                                        <span className=" text-blue-400 underline">
+                                            <a href={booking.expense_file_internal} target="_blank">
+                                                IDR {formatRupiah(booking.expense_internal_total)}
+                                            </a>
+                                        </span>
                                     </div>
-                                    <div>
-                          <span
-                              className="font-medium">Profit:</span> IDR {formatRupiah(booking.grand_total - booking.expense_internal_total)}
-                                    </div>
-                                    {
-                                        booking.agent_id == 2 && booking.booking_category_id != 3 ? (
-                                            <>
-                                                <div>
-                                                    <span className="font-medium">Deposit:</span> IDR {formatRupiah(booking.payment)}
-                                                </div>
-                                                <div>
-                                                    <span className="font-medium">Balance:</span> IDR {formatRupiah(booking.balance)}
-                                                </div>
-                                                <div>
-                                                    <span className="font-medium">Payment Method:</span> {booking.outstanding_payment_method ? booking.outstanding_payment_method.toUpperCase() : ''}
-                                                </div>
-                                            </>
-                                        ) : ''
-                                    }
+                                <div>
+                                <span className="font-medium">Profit:</span> IDR {formatRupiah(booking.grand_total - booking.expense_internal_total)}
+                            </div>
+                            {
+                                booking.agent_id == 2 && booking.booking_category_id != 3 ? (
+                                    <>
+                                        <div>
+                                            <span className="font-medium">Deposit:</span> IDR {formatRupiah(booking.payment)}
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Balance:</span> IDR {formatRupiah(booking.balance)}
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Payment Method:</span> {booking.outstanding_payment_method ? booking.outstanding_payment_method.toUpperCase() : ''}
+                                        </div>
+                                    </>
+                                ) : ''
+                            }
 
                                 {/* {booking.financial.notes && (
-                    <div className="mt-2 text-yellow-600 dark:text-yellow-400 flex items-start">
-                      <AlertCircle className="h-4 w-4 mr-1 mt-0.5" />
-                      {booking.financial.notes}
-                    </div>
-                  )} */}
+                                    <div className="mt-2 text-yellow-600 dark:text-yellow-400 flex items-start">
+                                    <AlertCircle className="h-4 w-4 mr-1 mt-0.5" />
+                                    {booking.financial.notes}
+                                    </div>
+                                )} */}
                             </div>
                         </div>
                     </div>
-                </td>
+                    </td>
                 </tr>
                 )}
 
@@ -906,6 +843,8 @@ const Index = ({data}) => {
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Booking
                                         ID
                                     </th>
+                                    {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Package ID
+                                    </th> */}
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">Guest
                                         & Package
                                     </th>

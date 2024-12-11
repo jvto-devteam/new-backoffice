@@ -10,7 +10,7 @@ class Accommodation extends Model
     use HasFactory;
 
     protected $table = 'accommodations';
-
+    protected $primaryKey = 'accommodation_id';
     protected $fillable = [
         'category_id',
         'accommodation_name',

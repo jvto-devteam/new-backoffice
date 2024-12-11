@@ -11,14 +11,7 @@ class RoomType extends Model
 
     protected $table = 'room_types';
 
-    protected $fillable = [
-        'accommodation_id',
-        'room_type',
-        'rate_per_night',
-        'include_breakfast',
-        'include_dinner',
-        'extra_bed_option',
-    ];
+    protected $primaryKey = 'room_type_id';
 
     /**
      * Relation to accommodation.

@@ -48,7 +48,7 @@ class ScheduleController extends Controller
                 $data['selectedCategory'] = $bookingCategory->name;
             }
             $data['bookingCategory'] = BookingCategory::get();
-            $data['booking'] = Booking::with(['bookingCategory', 'user.country', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area'])->where('travel_date_start', 'like', "$data[year]-$data[month]%");
+            $data['booking'] = Booking::with(['bookingPayment.paymentMethod','bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination'])->where('travel_date_start', 'like', "$data[year]-$data[month]%");
             if ($request->vendor) {
                 $data['agent'] = Agent::find($request->vendor);
                 $data['booking'] = $data['booking']->where('agent_id', $request->vendor);
@@ -64,6 +64,9 @@ class ScheduleController extends Controller
             if ($request->source) {
                 if ($request->source == '3') {
                     $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id',$request->source);
+                }
+                if ($request->source == '2') {
+                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id','!=','3');
                 }
                 else{
                     $data['booking'] = $data['booking']->where('agent_id', $request->source);
@@ -135,6 +138,7 @@ class ScheduleController extends Controller
         } catch (\Illuminate\Database\QueryException $e) {
             return $e->getMessage();
         }
+        // return $data;
         return Inertia::render('Schedule/Index',['data' => $data]);
     }
 

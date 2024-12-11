@@ -8,6 +8,9 @@ use App\Http\Controllers\AccommodationController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\TaskManagementController;
 use App\Http\Controllers\KlookExpenseController;
+use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\PackageController;
+use App\Http\Controllers\TaskController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -29,14 +32,18 @@ Route::get('/', [DashboardController::class,'index']);
 Route::get('/booking-overview', [ScheduleController::class,'index']);
 Route::get('/booking-list', [ScheduleController::class,'bookingList']);
 Route::get('/booking-analist', [ScheduleController::class,'bookingAnalist']);
+Route::get('/expense-package', [ExpenseController::class,'expensePackage']);
 
 //data master management
 Route::get('/data-master-management/hotels', [HotelController::class,'index']);
 Route::get('/data-master-management/accommodation', [AccommodationController::class,'index']);
 Route::get('/data-master-management/activities', [ActivityController::class,'index']);
 
+Route::prefix('package-inventory')->group(function () {
+    Route::get('/{order_channel}', [PackageController::class, 'index']);
+});
 Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/profile', [PackageController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });

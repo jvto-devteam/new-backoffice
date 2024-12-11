@@ -11,9 +11,9 @@ class UpdateTasksTable extends Migration
      */
     public function up(): void
     {
-        Schema::table('tasks', function (Blueprint $table) {
-            $table->enum('status', ['to_do', 'in_progress', 'completed'])->default('to_do')->after('description');
-        });
+//        Schema::table('tasks', function (Blueprint $table) {
+//            $table->enum('status', ['to_do', 'in_progress', 'completed'])->default('to_do')->after('description');
+//        });
     }
 
     /**

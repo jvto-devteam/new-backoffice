@@ -4,6 +4,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\HotelController;
+use App\Http\Controllers\AccommodationController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\TaskManagementController;
 use App\Http\Controllers\KlookExpenseController;
@@ -31,6 +32,7 @@ Route::get('/booking-analist', [ScheduleController::class,'bookingAnalist']);
 
 //data master management
 Route::get('/data-master-management/hotels', [HotelController::class,'index']);
+Route::get('/data-master-management/accommodation', [AccommodationController::class,'index']);
 Route::get('/data-master-management/activities', [ActivityController::class,'index']);
 
 Route::middleware('auth')->group(function () {

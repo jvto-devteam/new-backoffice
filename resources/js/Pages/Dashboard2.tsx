@@ -685,7 +685,7 @@ export default function Dashboard2(data) {
                           <th className="pb-4">T-Shirt Size</th>
                           <th className="pb-4">Drop</th>
                           <th className="pb-4">Resource Allocation</th>
-                          <th className="pb-4">Actions</th>
+                          {/* <th className="pb-4">Actions</th> */}
                       </tr>
                   </thead>
                   <tbody>
@@ -789,9 +789,9 @@ export default function Dashboard2(data) {
                                       ))
                                   }
                               </td>
-                              <td className="py-4">
+                              {/* <td className="py-4">
                                   <ActionDropdown booking={booking}/>
-                              </td>
+                              </td> */}
                           </tr>
                       ))}
                   </tbody>

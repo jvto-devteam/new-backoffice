@@ -33,6 +33,7 @@ Route::get('/booking-overview', [ScheduleController::class,'index']);
 Route::get('/booking-list', [ScheduleController::class,'bookingList']);
 Route::get('/booking-analist', [ScheduleController::class,'bookingAnalist']);
 Route::get('/expense-package', [ExpenseController::class,'expensePackage']);
+Route::get('/expense-item', [ExpenseController::class,'expenseItem']);
 
 //data master management
 Route::get('/data-master-management/hotels', [HotelController::class,'index']);

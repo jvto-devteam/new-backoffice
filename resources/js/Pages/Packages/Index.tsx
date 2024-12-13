@@ -4,8 +4,52 @@ import { Dialog } from '@headlessui/react';
 import { 
   MoreVertical, 
   X as XIcon,
+  Users, 
+  CarFront, 
+  Car, 
+  Ticket, 
+  HeartPulse, 
+  Shirt, 
+  Droplet   
 } from 'lucide-react';
-
+import QRCode from 'qrcode';
+const inclusions = [
+  {
+    icon: Users,
+    title: "Licensed Tour Guides",
+    description: "Trekking tour with license and certified tour guides at Ijen & Bromo"
+  },
+  {
+    icon: CarFront,
+    title: "Private Transport",
+    description: "Private Transport with licensed driver"
+  },
+  {
+    icon: Car,
+    title: "Private 4WD Jeep",
+    description: "Private 4WD Jeep at Bromo area for 1-4 Pax (Not Sharing)"
+  },
+  {
+    icon: Ticket,
+    title: "Permits & Entry Fees",
+    description: "All permits and entry fees as mentioned in the itinerary"
+  },
+  {
+    icon: HeartPulse,
+    title: "Safety Equipment",
+    description: "Trekking Equipment and Medical Aid are also included"
+  },
+  {
+    icon: Shirt,
+    title: "Souvenir T-Shirt",
+    description: "Free Travel T-Shirts with 100% Cotton fabric"
+  },
+  {
+    icon: Droplet,
+    title: "Mineral Water",
+    description: "We would provide mineral water during the trip"
+  }
+];
 const formatPrice = (price) => {
   return new Intl.NumberFormat('id-ID', {
       style: 'currency',
@@ -76,8 +120,34 @@ const PackageDetails = ({ isOpen, onClose, packages }) => {
                   </div>
                   <div>
                     <h3 className="text-md font-medium text-gray-500 dark:text-gray-400">Link</h3>
-                    <a href={packages.id_url ? `https://javavolcano-touroperator.com/packages/${packages.start_destination.name.toLowerCase()}/${packages.duration.day}d/${packages.duration.night}n/${packages.id_url}` : `https://javavolcano-touroperator.com/packages/details/${packages.url}`} className="mt-1 underline text-blue-900 dark:text-blue-300">{packages.id_url ? `https://javavolcano-touroperator.com/packages/${packages.start_destination.name.toLowerCase()}/${packages.duration.day}d/${packages.duration.night}n/${packages.id_url}` : `https://javavolcano-touroperator.com/packages/details/${packages.url}`}</a>
+                    <a href={packages.id_url ? `https://javavolcano-touroperator.com/packages/${packages.start_destination.name.toLowerCase()}/${packages.duration.day}d${packages.duration.night}n/${packages.id_url}` : `https://javavolcano-touroperator.com/packages/details/${packages.url}`} className="mt-1 underline text-blue-900 dark:text-blue-300">{packages.id_url ? `https://javavolcano-touroperator.com/packages/${packages.start_destination.name.toLowerCase()}/${packages.duration.day}d/${packages.duration.night}n/${packages.id_url}` : `https://javavolcano-touroperator.com/packages/details/${packages.url}`}</a>
                   </div>
+                </div>
+              </div>
+              <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold mb-4 flex items-center">
+                  Banner
+                </h3>
+                <div className="grid md:grid-cols-2 gap-6">
+                  {packages.package_banner.map((data,key) => (
+                    <React.Fragment key={key}>
+                      <div
+                        className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
+                      >
+                        <img
+                          src={`https://javavolcano-touroperator.com/assets/img/destinations/`+data.gallery.image || 'https://via.placeholder.com/300'}
+                          alt={data.title || 'Itinerary Image'}
+                          className="w-full h-48 object-cover"
+                        />
+                        <div className="p-4">
+                          <p className="text-sm text-blue-600 dark:text-blue-300 font-bold">
+                            Alt Text : 
+                          </p>
+                          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{data.gallery.alt_text ? data.gallery.alt_text : data.gallery.caption}</h3>
+                        </div>
+                      </div>
+                    </React.Fragment>
+                  ))}
                 </div>
               </div>
               <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
@@ -87,36 +157,30 @@ const PackageDetails = ({ isOpen, onClose, packages }) => {
                 <div className="grid md:grid-cols-2 gap-6">
                   {packages.itinerary.map((data,key) => (
                     <React.Fragment key={key}>
-                      <div
-                        className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
-                      >
-                        <img
-                          src={`https://javavolcano-touroperator.com/assets/img/destinations/`+data.itinerary_destination.destination.gallery.image || 'https://via.placeholder.com/300'}
-                          alt={data.title || 'Itinerary Image'}
-                          className="w-full h-48 object-cover"
-                        />
-                        <div className="p-4">
-                          <p className="text-sm text-blue-600 dark:text-blue-300 font-bold">
-                            DAY {data.day}
-                          </p>
-                          <h3 className="text-lg font-semibold text-gray-800">{data.itinerary_destination.destination.name}</h3>
+                      <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <div
+                          className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <div className="flex items-center">
+                            <span className=" bg-blue-500 text-white rounded px-3 py-1 text-sm font-medium">
+                              Day {data.day}
+                            </span>
+                            <h4 className="ml-3 text-lg font-semibold text-gray-900 dark:text-white">{data.itinerary_destination.destination.name}</h4>
+                          </div>
                         </div>
                       </div>
                     {
                       data.itinerary_destination.second_destination_id ? (
+                        <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                         <div
-                        className="bg-white rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
-                      >
-                        <img
-                          src={`https://javavolcano-touroperator.com/assets/img/destinations/`+data.itinerary_destination.second_destination.gallery.image || 'https://via.placeholder.com/300'}
-                          alt={data.title || 'Itinerary Image'}
-                          className="w-full h-48 object-cover"
-                        />
-                        <div className="p-4">
-                          <p className="text-sm text-blue-600 dark:text-blue-300 font-bold">
-                            DAY {data.day}
-                          </p>
-                          <h3 className="text-lg font-semibold text-gray-800">{data.itinerary_destination.second_destination.name}</h3>
+                          className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <div className="flex items-center">
+                            <span className=" bg-blue-500 text-white rounded px-3 py-1 text-sm font-medium">
+                              Day {data.day}
+                            </span>
+                            <h4 className="ml-3 text-lg font-semibold text-gray-900 dark:text-white">{data.itinerary_destination.second_destination.name}</h4>
+                          </div>
                         </div>
                       </div>
                       ) : ''
@@ -129,23 +193,324 @@ const PackageDetails = ({ isOpen, onClose, packages }) => {
                 <h3 className="text-lg font-semibold mb-4 flex items-center">
                   Itinerary
                 </h3>
-                <div className="grid md:grid-cols-1 gap-6">
+                <div className="space-y-4">
+                  {packages.itinerary.map((day, index) => {
+                    const [isOpen, setIsOpen] = useState(false);
+                    return (
+                      <div key={index} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                        <button
+                          onClick={() => setIsOpen(!isOpen)}
+                          className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <div className="flex items-center">
+                            <span className=" bg-blue-500 text-white rounded px-3 py-1 text-sm font-medium">
+                              Day {day.day}
+                            </span>
+                            <h4 className="ml-3 text-lg font-semibold text-gray-900 dark:text-white">{day.title}</h4>
+                          </div>
+                          <svg
+                            className={`w-5 h-5 transform transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </button>
+                        
+                        {isOpen && (
+                          <div className="p-4 bg-white dark:bg-gray-900">
+                            <div 
+                              className="prose dark:prose-invert max-w-none"
+                              dangerouslySetInnerHTML={{ 
+                                __html: day.activity.split('#next-stop#').map(activity => 
+                                  `<div class="mb-4">${activity.trim()}</div>`
+                                ).join('')
+                              }} 
+                            />
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
               <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold mb-4 flex items-center">
                   Hotel
                 </h3>
-                <div className="grid md:grid-cols-1 gap-6">
+                <div className="space-y-4">
+                  {packages.package_hotel && packages.package_hotel.map((hotel, index) => (
+                    <div key={index} className="flex gap-4 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                      <div className="w-24 h-24 flex-shrink-0">
+                        <img
+                          src={`https://javavolcano-touroperator.com/assets/img/hotels/${hotel.hotel.banner}`}
+                          alt={hotel.hotel.name}
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                      </div>
+                      <div className="flex-grow">
+                        <p className="text-sm text-blue-600 dark:text-blue-300 font-bold">
+                            DAY {hotel.day}
+                          </p>
+                        <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          {hotel.hotel.name}
+                        </h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                          {hotel.hotel.address}
+                        </p>
+                        <a 
+                          href={hotel.hotel.map_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          <svg 
+                            className="w-4 h-4 mr-1"
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24" 
+                          >
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth={2} 
+                              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" 
+                            />
+                            <path 
+                              strokeLinecap="round" 
+                              strokeLinejoin="round" 
+                              strokeWidth={2} 
+                              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" 
+                            />
+                          </svg>
+                          View on Google Maps
+                        </a>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
               <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold mb-4 flex items-center">
-                  Inclussion
+                  Meals Schedule
                 </h3>
-                <div className="grid md:grid-cols-1 gap-6">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead>
+                      <tr>
+                        <th scope="col" className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Day
+                        </th>
+                        <th scope="col" className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Breakfast
+                        </th>
+                        <th scope="col" className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Lunch
+                        </th>
+                        <th scope="col" className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          Dinner
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                      {packages.itinerary.map((day, index) => (
+                        <tr key={index}>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            Day {day.day}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex justify-center">
+                              {
+                                day.itinerary_meals.length != 0 ? (
+                                  <svg
+                                      className={`w-5 h-5 ${
+                                        day.itinerary_meals[0].breakfast === '1' ? 'text-green-500' : 'text-gray-300 dark:text-gray-600'
+                                      }`}
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d={
+                                          day.itinerary_meals[0].breakfast === '1'
+                                            ? 'M5 13l4 4L19 7'
+                                            : 'M6 18L18 6M6 6l12 12'
+                                        }
+                                      />
+                                    </svg>
+                                ) : ''
+                              }
+
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex justify-center">
+                              {
+                                day.itinerary_meals.length != 0 ? (
+                                  <svg
+                                      className={`w-5 h-5 ${
+                                        day.itinerary_meals[0].lunch === '1' ? 'text-green-500' : 'text-gray-300 dark:text-gray-600'
+                                      }`}
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d={
+                                          day.itinerary_meals[0].lunch === '1'
+                                            ? 'M5 13l4 4L19 7'
+                                            : 'M6 18L18 6M6 6l12 12'
+                                        }
+                                      />
+                                    </svg>
+                                ) : ''
+                              }
+
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex justify-center">
+                              {
+                                day.itinerary_meals.length != 0 ? (
+                                  <svg
+                                      className={`w-5 h-5 ${
+                                        day.itinerary_meals[0].dinner === '1' ? 'text-green-500' : 'text-gray-300 dark:text-gray-600'
+                                      }`}
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d={
+                                          day.itinerary_meals[0].dinner === '1'
+                                            ? 'M5 13l4 4L19 7'
+                                            : 'M6 18L18 6M6 6l12 12'
+                                        }
+                                      />
+                                    </svg>
+                                ) : ''
+                              }
+
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
+                <div className="mt-4 flex gap-6 text-sm text-gray-500">
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span>Included</span>
+                  </div>
+                  <div className="flex items-center">
+                    <svg className="w-5 h-5 text-gray-300 dark:text-gray-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span>Not Included</span>
+                  </div>
+                </div>
+            </div>
+            <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold mb-4 flex items-center">
+                Price List
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                  <thead>
+                    <tr>
+                      <th scope="col" className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Participant Range
+                      </th>
+                      <th scope="col" className="px-4 py-3 bg-gray-50 dark:bg-gray-800 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Price per Person
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+                    {packages.package_price
+                      .sort((a, b) => a.price_category.start - b.price_category.start)
+                      .map((price, index) => (
+                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                            {price.price_category.end === 0 
+                              ? `${price.price_category.start}+ Pax`
+                              : price.price_category.start === price.price_category.end
+                                ? `${price.price_category.start} Pax`
+                                : `${price.price_category.start} - ${price.price_category.end} Pax`
+                            }
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right text-gray-900 dark:text-white">
+                            <div className="flex items-center justify-end space-x-2">
+                              <span className="font-semibold">
+                                {new Intl.NumberFormat('id-ID', {
+                                  style: 'currency',
+                                  currency: 'IDR'
+                                }).format(price.price)}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
+              <div className="mt-4 space-y-2 text-sm text-gray-500 dark:text-gray-400">
+                <p>Notes:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  <li>Prices are per person and subject to change without prior notice</li>
+                  <li>Special rates apply during peak season and holidays</li>
+                  <li>Additional charges may apply for special requests</li>
+                </ul>
+              </div>
+            </div>      
+            <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-semibold mb-4">
+                Other Inclusions
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {inclusions.map((item, index) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <div 
+                      key={index}
+                      className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 flex items-start space-x-4"
+                    >
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                          <IconComponent className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                          {item.title}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {item.description}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>                  
           </div>
         </Dialog.Panel>
       </div>
@@ -156,7 +521,8 @@ const PackageDetails = ({ isOpen, onClose, packages }) => {
 const PackageRow = ({dataKey,packages,order_channel}) => {
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [showDetails, setShowDetails] = useState(false);    
+  const [showDetails, setShowDetails] = useState(false);   
+  const [showQRCode, setShowQRCode] = useState(false);   
   const dropdownRef = useRef(null);
 
   // Handle outside clicks
@@ -256,7 +622,16 @@ const PackageRow = ({dataKey,packages,order_channel}) => {
                 >
                 Detail
                 </button>
+                <a href={`/package-inventory/${order_channel}?id=${packages.id}&json=true`} 
+                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                >
+                Json
+                </a>
                 <button 
+                onClick={() => {
+                  setIsDropdownOpen(false);
+                  setShowQRCode(true);
+                }}                
                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                 >
                 QR Code
@@ -282,13 +657,90 @@ const PackageRow = ({dataKey,packages,order_channel}) => {
             isOpen={showDetails} 
             onClose={() => setShowDetails(false)}
             packages={packages}
-            />                                             
+            />          
+          <QRCodeModal
+            isOpen={showQRCode}
+            onClose={() => setShowQRCode(false)}
+            packageData={packages}
+          />                                               
         </div>
       </td>
     </tr>
 
   )
 }
+const QRCodeModal = ({ isOpen, onClose, packageData }) => {
+  const canvasRef = useRef(null);
+  
+  useEffect(() => {
+    if (isOpen && canvasRef.current && packageData) {  // Tambahkan check untuk packageData
+      const url = packageData.id_url 
+        ? `https://javavolcano-touroperator.com/packages/${packageData.start_destination.name.toLowerCase()}/${packageData.duration.day}d${packageData.duration.night}n/${packageData.id_url}`
+        : `https://javavolcano-touroperator.com/packages/details/${packageData.url}`;
+        
+      // Tambahkan error handling
+      QRCode.toCanvas(canvasRef.current, url, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff'
+        }
+      }).catch(err => {
+        console.error('Error generating QR code:', err);
+      });
+    }
+  }, [isOpen, packageData]);
+
+  const handleDownload = () => {
+    const packageName = packageData.name.replaceAll(' ','-').toLowerCase()
+    if (canvasRef.current) {
+      const link = document.createElement('a');
+      link.download = `qr-code-${packageName}.png`;
+      link.href = canvasRef.current.toDataURL('image/png');
+      link.click();
+    }
+  };
+
+  return (
+    <Dialog 
+      open={isOpen} 
+      onClose={onClose}
+      className="relative z-50"
+    >
+      {/* Tambahkan overlay background */}
+      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+      
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <Dialog.Panel className="mx-auto max-w-sm w-full bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+          <div className="flex justify-between items-center p-4 border-b dark:border-gray-700">
+            <Dialog.Title className="text-lg font-semibold text-gray-900 dark:text-white">
+              QR Code - {packageData?.name}
+            </Dialog.Title>
+            <button 
+              onClick={onClose}
+              className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <XIcon className="w-5 h-5" />
+            </button>
+          </div>
+
+          <div className="p-6 flex flex-col items-center">
+            {/* Tambahkan loading state jika perlu */}
+            <canvas ref={canvasRef} className="mb-6" />
+            
+            <button
+              onClick={handleDownload}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Download QR Code
+            </button>
+          </div>
+        </Dialog.Panel>
+      </div>
+    </Dialog>
+  );
+};
 export default function Index(data) {
     
     return (

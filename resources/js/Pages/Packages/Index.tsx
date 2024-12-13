@@ -24,9 +24,21 @@ function ActionDropdown({ booking }) {
           }
       },
       { 
+          label: 'Download QR', 
+          onClick: () => window.location.href = `/bookings/${booking.id}/edit`
+      },
+      { 
+          label: 'PDF', 
+          onClick: () => window.location.href = `/bookings/${booking.id}/edit`
+      },
+      { 
+          label: 'Flipbook', 
+          onClick: () => window.location.href = `/bookings/${booking.id}/edit`
+      },
+      { 
           label: 'Edit', 
           onClick: () => window.location.href = `/bookings/${booking.id}/edit`
-      }
+      },
   ];
 
   return (

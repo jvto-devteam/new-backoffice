@@ -52,7 +52,7 @@ class PackageController extends Controller
             },
             'packageHotel' => function($query){
                 $query->select('id','hotel_id','package_id','day')->with('hotel',function($q){
-                    $q->select('id','name','banner','address');
+                    $q->select('id','name','banner','address','url','map_url');
                 })->where('price_plan_id',2)->orderBy('day','asc');
             },
             'packagePrice' => function($query){

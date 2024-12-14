@@ -189,26 +189,39 @@ const PackageDetails = ({ isOpen, onClose, packages }) => {
                   Banner
                 </h3>
                 <div className="grid md:grid-cols-2 gap-6">
-                  {packages.package_banner.map((data,key) => (
-                    <React.Fragment key={key}>
-                      <div
-                        className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300"
-                      >
-                        <img
-                          src={`https://javavolcano-touroperator.com/assets/img/destinations/`+data.gallery.image || 'https://via.placeholder.com/300'}
-                          alt={data.title || 'Itinerary Image'}
-                          className="w-full h-48 object-cover"
-                        />
-                        <div className="p-4">
-                          <p className="text-sm text-blue-600 dark:text-blue-300 font-bold">
-                            Alt Text : 
-                          </p>
-                          <h3 className="text-lg font-semibold text-gray-800 dark:text-white">{data.gallery.alt_text ? data.gallery.alt_text : data.gallery.caption}</h3>
-                        </div>
-                      </div>
-                    </React.Fragment>
-                  ))}
-                </div>
+                {packages.package_banner.map((data,key) => (
+  <React.Fragment key={key}>
+    <a href={`https://javavolcano-touroperator.com/assets/img/destinations/${data.gallery.image}`} 
+       target="_blank" 
+       className="block group">
+      <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden transition-all duration-300 
+                      group-hover:shadow-2xl group-hover:scale-[1.02] group-hover:ring-2 group-hover:ring-blue-500">
+        <div className="relative">
+          <img
+            src={`https://javavolcano-touroperator.com/assets/img/destinations/${data.gallery.image}` || 'https://via.placeholder.com/300'}
+            alt={data.title || 'Itinerary Image'}
+            className="w-full h-48 object-cover transition-transform duration-300"
+          />
+          {/* Overlay saat hover */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center">
+            <span className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black/70 text-white px-4 py-2 rounded-full text-sm">
+              Click to view full image
+            </span>
+          </div>
+        </div>
+        
+        <div className="p-4 border-t dark:border-gray-700">
+          <p className="text-sm text-blue-600 dark:text-blue-300 font-bold">
+            Alt Text : 
+          </p>
+          <h3 className="text-lg font-semibold text-gray-800 dark:text-white mt-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">
+            {data.gallery.alt_text ? data.gallery.alt_text : data.gallery.caption}
+          </h3>
+        </div>
+      </div>
+    </a>
+  </React.Fragment>
+))}                </div>
               </div>
               <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold mb-4 flex items-center">

@@ -731,23 +731,41 @@ const PackageRow = ({dataKey,packages,order_channel}) => {
 }
 const QRCodeModal = ({ isOpen, onClose, packageData }) => {
   const canvasRef = useRef(null);
+  console.log(canvasRef);
   
   useEffect(() => {
-    if (isOpen && canvasRef.current && packageData) {  // Tambahkan check untuk packageData
-      const url = `https://javavolcano-touroperator.com/packages/details/${packageData.url}`;
-        
-      // Tambahkan error handling
-      QRCode.toCanvas(canvasRef.current, url, {
-        width: 256,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#ffffff'
+    const generateQR = async () => {
+      if (!isOpen || !packageData) return;
+
+      // Tambahkan setTimeout untuk memastikan canvas sudah ter-render
+      setTimeout(async () => {
+        try {
+          if (!canvasRef.current) {
+            console.error('Canvas reference is null');
+            return;
+          }
+
+          const url = packageData.id_url 
+            ? `https://javavolcano-touroperator.com/packages/${packageData.start_destination.name.toLowerCase()}/${packageData.duration.day}d${packageData.duration.night}n/${packageData.id_url}`
+            : `https://javavolcano-touroperator.com/packages/details/${packageData.url}`;
+
+          console.log('Generating QR for URL:', url);
+          
+          await QRCode.toCanvas(canvasRef.current, url, {
+            width: 256,
+            margin: 2,
+            color: {
+              dark: '#000000',
+              light: '#ffffff'
+            }
+          });
+        } catch (err) {
+          console.error('Error generating QR code:', err);
         }
-      }).catch(err => {
-        console.error('Error generating QR code:', err);
-      });
-    }
+      }, 100); // Tunggu 100ms untuk memastikan canvas sudah ter-render
+    };
+
+    generateQR();
   }, [isOpen, packageData]);
 
   const handleDownload = () => {

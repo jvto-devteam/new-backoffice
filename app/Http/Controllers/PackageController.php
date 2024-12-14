@@ -67,6 +67,12 @@ class PackageController extends Controller
         else{
             $data['packages'] = $data['packages']->where('package_platform', 'klook');
         }
+        if($request->from){
+            $data['packages'] = $data['packages']->where('start_destination_id',$request->from);
+        }
+        if($request->end){
+            $data['packages'] = $data['packages']->where('end_destination_id',$request->end);
+        }
         // return $data['packages'];
         if($request->json){
             $data['packages'] = $data['packages']->where('id',$request->id)->first();

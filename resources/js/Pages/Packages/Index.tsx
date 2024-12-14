@@ -1,5 +1,6 @@
 import Main from '@/Layouts/Main';
 import React,{useState,useRef,useEffect} from 'react';
+import {router} from '@inertiajs/react';
 import { Dialog } from '@headlessui/react';
 import { 
   MoreVertical, 
@@ -10,7 +11,8 @@ import {
   Ticket, 
   HeartPulse, 
   Shirt, 
-  Droplet   
+  Droplet,
+  ChevronDown  
 } from 'lucide-react';
 import QRCode from 'qrcode';
 const inclusions = [
@@ -56,6 +58,64 @@ const formatPrice = (price) => {
       currency: 'IDR'
   }).format(price);
 };
+const CustomSelect = ({ value, onChange, options, placeholder, className }) => {      
+  const [isOpen, setIsOpen] = useState(false);
+  const selectRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (selectRef.current && !selectRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={selectRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`w-full flex items-center justify-between px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+      >
+        <span className="text-gray-700 dark:text-gray-200">
+          {value ? options.find(opt => opt.value == value)?.label : placeholder}
+        </span>
+        <ChevronDown className="w-4 h-4 text-gray-500" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
+          <div className="py-1 max-h-60 overflow-auto">
+            <button
+              onClick={() => {
+                onChange({ target: { value: '' }});
+                setIsOpen(false);
+              }}
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              {placeholder}
+            </button>
+            {options.map((option) => (
+              <button
+                key={option.value}
+                onClick={() => {
+                  onChange({ target: { value: option.value }});
+                  setIsOpen(false);
+                }}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const PackageDetails = ({ isOpen, onClose, packages }) => {
   return (
     <Dialog 
@@ -202,7 +262,7 @@ const PackageDetails = ({ isOpen, onClose, packages }) => {
                           onClick={() => setIsOpen(!isOpen)}
                           className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
-                          <div className="flex items-center">
+                          <div className="flex flex-column md:flex-row items-center">
                             <span className=" bg-blue-500 text-white rounded px-3 py-1 text-sm font-medium">
                               Day {day.day}
                             </span>
@@ -674,9 +734,7 @@ const QRCodeModal = ({ isOpen, onClose, packageData }) => {
   
   useEffect(() => {
     if (isOpen && canvasRef.current && packageData) {  // Tambahkan check untuk packageData
-      const url = packageData.id_url 
-        ? `https://javavolcano-touroperator.com/packages/${packageData.start_destination.name.toLowerCase()}/${packageData.duration.day}d${packageData.duration.night}n/${packageData.id_url}`
-        : `https://javavolcano-touroperator.com/packages/details/${packageData.url}`;
+      const url = `https://javavolcano-touroperator.com/packages/details/${packageData.url}`;
         
       // Tambahkan error handling
       QRCode.toCanvas(canvasRef.current, url, {
@@ -742,7 +800,39 @@ const QRCodeModal = ({ isOpen, onClose, packageData }) => {
   );
 };
 export default function Index(data) {
+
+    const fromEnd = [
+      {
+        value : 4,
+        label : 'Surabaya'
+      },
+      {
+        value : 3,
+        label : 'Bali'
+      },
+      {
+        value : 17,
+        label : 'Yogyakarta'
+      },
+    ]
     
+    // State for filters
+    const [filters, setFilters] = useState({
+      from: new URLSearchParams(window.location.search).get('from') || '',
+      end: new URLSearchParams(window.location.search).get('end') || ''
+    });
+
+    // Handle filter changes
+    const handleFilterChange = (name, value) => {
+      const newFilters = { ...filters, [name]: value };
+      setFilters(newFilters);
+      
+      // Update URL with Inertia
+      router.get(window.location.pathname, {
+        ...newFilters,
+      });
+    };    
+    console.log(filters.from);
     return (
         <Main>
           <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
@@ -750,24 +840,38 @@ export default function Index(data) {
               <h4 className="text-xl font-semibold text-black dark:text-white">
                 {data.data.title}
               </h4>
-              <a 
-                    href="/package-inventory/create" 
-                    className="bg-meta-3 hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-150 flex items-center gap-2"
-                >
+              <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              <CustomSelect
+                value={filters.from}
+                onChange={(e) => handleFilterChange('from', e.target.value)}
+                options={fromEnd}
+                placeholder="All Start Points"
+                className="w-full sm:w-48"
+              />
+
+              <CustomSelect
+                value={filters.end}
+                onChange={(e) => handleFilterChange('end', e.target.value)}
+                options={fromEnd}
+                placeholder="All End Points"
+                className="w-full sm:w-48"
+              />
+
+              <a href="/package-inventory/create" 
+                    className="bg-meta-3 hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-150 flex items-center gap-2">
                     <svg 
                         xmlns="http://www.w3.org/2000/svg" 
                         className="h-5 w-5" 
                         viewBox="0 0 20 20" 
-                        fill="currentColor"
-                    >
+                        fill="currentColor">
                         <path 
                             fillRule="evenodd" 
                             d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" 
-                            clipRule="evenodd" 
-                        />
+                            clipRule="evenodd" />
                     </svg>
                     Add Package
-                </a>
+              </a>
+            </div>
 
             </div>
 

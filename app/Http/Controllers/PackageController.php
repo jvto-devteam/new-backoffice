@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CarConfiguration;
 use App\Models\Package;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -73,7 +74,6 @@ class PackageController extends Controller
         if($request->end){
             $data['packages'] = $data['packages']->where('end_destination_id',$request->end);
         }
-        // return $data['packages'];
         if($request->json){
             $data['packages'] = $data['packages']->where('id',$request->id)->first();
             $fileName = $data['packages']->name.'.json';
@@ -88,8 +88,54 @@ class PackageController extends Controller
             // return response()->json($data['packages']);
         }
         else{
+            // $data['packages'] = $data['packages']->get()
+            // ->sortBy(fn($package) => $package->duration->day);
             $data['packages'] = $data['packages']->get()
-            ->sortBy(fn($package) => $package->duration->day);
+            ->groupBy(function($package) {
+                // Format: "City - XD YN Packages"
+                return sprintf(
+                    "%s - %dD %dN Packages",
+                    $package->startDestination->name,
+                    $package->duration->day,
+                    $package->duration->night
+                );
+            })
+            ->sortBy(function($group, $key) {
+                // Split key into parts for sorting
+                $parts = explode(' - ', $key);
+                $city = $parts[0];
+                $duration = (int) filter_var($parts[1], FILTER_SANITIZE_NUMBER_INT);
+                
+                // City priority (lower number = higher priority)
+                $cityPriority = [
+                    'Surabaya' => 1,
+                    'Bali' => 2,
+                    'Yogyakarta' => 3
+                ];
+                
+                // Create sorting value: cityPriority * 100 + duration
+                // This ensures city is primary sort key and duration is secondary
+                return ($cityPriority[$city] * 100) + $duration;
+            });
+    
+            $data['pax_configuration'] = CarConfiguration::select('id','car_id','pax','price','crew_jvto_role_id','crew_twt_role_id','crew_klook_role_id')
+            ->with(['car' => function($query){
+                $query->select('id','name');
+            },'crewJvtoRole' => function($query){
+                $query->select('id','order_channel_id','role');
+            },'crewTwtRole' => function($query){
+                $query->select('id','order_channel_id','role');
+            },'crewKlookRole' => function($query){
+                $query->select('id','order_channel_id','role');
+            }]);
+            if($orderCHannel == 'jvto'){
+                $data['pax_configuration'] = $data['pax_configuration']->where('crew_jvto_role_id','!=',null);
+            }
+            else{
+                $data['pax_configuration'] = $data['pax_configuration']->where('crew_klook_role_id','!=',null);
+            }
+            $data['pax_configuration'] = $data['pax_configuration']->orderBy('pax','asc')->get();
+            // return $data['pax_configuration'];
             return Inertia::render('Packages/Index',['data' => $data]);
         }
     }

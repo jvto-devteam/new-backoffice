@@ -25,13 +25,17 @@ class PackageController extends Controller
                     [
                         'itineraryDestination' => function($q){
                             $q->select('id','itinerary_id','destination_id','second_destination_id')->with('destination',function($qq){
-                                $qq->select('id','name','gallery_id')->with('gallery',function($qqq){
+                                $qq->select('id','name','gallery_id','activity_id')->with(['gallery' => function($qqq){
                                     $qqq->select('id','image','caption','alt_text');
-                                });
+                                },'activityDestination' => function($qqq){
+                                    $qqq->select('id','name');
+                                }]);
                             })->with('secondDestination',function($qq){
-                                $qq->select('id','name','gallery_id')->with('gallery',function($qqq){
+                                $qq->select('id','name','gallery_id','activity_id')->with(['gallery' => function($qqq){
                                     $qqq->select('id','image','caption','alt_text');
-                                });
+                                },'activityDestination' => function($qqq){
+                                    $qqq->select('id','name');
+                                }]);
                             });
                         },
                         'itineraryMeals' => function($q){
@@ -92,7 +96,6 @@ class PackageController extends Controller
             // ->sortBy(fn($package) => $package->duration->day);
             $data['packages'] = $data['packages']->get()
             ->groupBy(function($package) {
-                // Format: "City - XD YN Packages"
                 return sprintf(
                     "%s - %dD %dN Packages",
                     $package->startDestination->name,
@@ -100,24 +103,45 @@ class PackageController extends Controller
                     $package->duration->night
                 );
             })
+            ->map(function($group) {
+                // Add package code to each package in group
+                $counter = 1;
+                return $group->map(function($package) use (&$counter) {
+                    // Create destination prefix
+                    $prefixMap = [
+                        'Surabaya' => 'SUB',
+                        'Bali' => 'BALI',
+                        'Yogyakarta' => 'YOGYA'
+                    ];
+                    $prefix = $prefixMap[$package->startDestination->name];
+                    
+                    // Create package code
+                    $package->package_code = sprintf(
+                        "%s-%dD%dN-%03d",
+                        $prefix,
+                        $package->duration->day,
+                        $package->duration->night,
+                        $counter++
+                    );
+                    
+                    return $package;
+                });
+            })
             ->sortBy(function($group, $key) {
-                // Split key into parts for sorting
                 $parts = explode(' - ', $key);
                 $city = $parts[0];
                 $duration = (int) filter_var($parts[1], FILTER_SANITIZE_NUMBER_INT);
                 
-                // City priority (lower number = higher priority)
                 $cityPriority = [
                     'Surabaya' => 1,
                     'Bali' => 2,
                     'Yogyakarta' => 3
                 ];
                 
-                // Create sorting value: cityPriority * 100 + duration
-                // This ensures city is primary sort key and duration is secondary
                 return ($cityPriority[$city] * 100) + $duration;
             });
-    
+            // return $data['packages'];
+
             $data['pax_configuration'] = CarConfiguration::select('id','car_id','pax','price','crew_jvto_role_id','crew_twt_role_id','crew_klook_role_id')
             ->with(['car' => function($query){
                 $query->select('id','name');
@@ -135,6 +159,7 @@ class PackageController extends Controller
                 $data['pax_configuration'] = $data['pax_configuration']->where('crew_klook_role_id','!=',null);
             }
             $data['pax_configuration'] = $data['pax_configuration']->orderBy('pax','asc')->get();
+            $data['order_channel'] = $orderCHannel;
             // return $data['pax_configuration'];
             return Inertia::render('Packages/Index',['data' => $data]);
         }

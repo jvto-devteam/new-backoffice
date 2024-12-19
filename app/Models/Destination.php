@@ -49,6 +49,11 @@ class Destination extends Model
         return $this->hasMany(Hotel::class, 'destination_id');
     }
 
+    public function activityDestination()
+    {
+        return $this->belongsTo(Activity::class, 'activity_id');
+    }
+
     public function activity()
     {
         return $this->hasMany(DestinationActivity::class);

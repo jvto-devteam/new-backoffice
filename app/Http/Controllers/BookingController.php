@@ -11,7 +11,7 @@ use Inertia\Inertia;
 
 class BookingController extends Controller
 {
-    function create($orderCHannel){
+    function create($orderChannel){
         $data['packages'] = Package::select('id','name','overview','duration_id','category_id','start_destination_id','end_destination_id','id_url','url')->with([
             'duration' => function($query){
                 $query->select('id','name','day','night');
@@ -19,25 +19,43 @@ class BookingController extends Controller
             'category' => function($query){
                 $query->select('id','name');
             },
-            'itinerary' => function($query){
+            'itinerary' => function($query) use($orderChannel){
                 $query->select('id','package_id','day','title','activity')->with(
                     [
-                        'itineraryDestination' => function($q){
-                            $q->select('id','itinerary_id','destination_id','second_destination_id')->with('destination',function($qq){
+                        'itineraryDestination' => function($q) use($orderChannel){
+                            $q->select('id','itinerary_id','destination_id','second_destination_id')->with('destination',function($qq) use($orderChannel){
                                 $qq->select('id','name','gallery_id','activity_id')->with(['gallery' => function($qqq){
                                     $qqq->select('id','image','caption','alt_text');
                                 },'activityDestination' => function($qqq){
                                     $qqq->select('id','name');
-                                },'activity' => function($qqq){
-                                    $qqq->select('id','destination_id','name','unit','price');
+                                },'activity' => function($qqq) use($orderChannel){
+                                    $qqq->select('id','destination_id','name','unit','formula','price');
+                                    if($orderChannel == 'jvto'){
+                                        $qqq->where('is_default_jvto','1');
+                                    }
+                                    else if($orderChannel == 'klook'){
+                                        $qqq->where('is_default_klook','1');
+                                    }
+                                    else if($orderChannel == 'twt'){
+                                        $qqq->where('is_default_twt','1');
+                                    }
                                 }]);
-                            })->with('secondDestination',function($qq){
-                                $qq->select('id','name','gallery_id','activity_id')->with(['gallery' => function($qqq){
+                            })->with('secondDestination',function($qq) use($orderChannel){
+                                $qq->select('id','name','gallery_id','activity_id')->with(['gallery' => function($qqq) use($orderChannel){
                                     $qqq->select('id','image','caption','alt_text');
                                 },'activityDestination' => function($qqq){
                                     $qqq->select('id','name');
-                                },'activity' => function($qqq){
-                                    $qqq->select('id','destination_id','name','unit','price');
+                                },'activity' => function($qqq) use($orderChannel){
+                                    $qqq->select('id','destination_id','name','unit','formula','price');
+                                    if($orderChannel == 'jvto'){
+                                        $qqq->where('is_default_jvto','1');
+                                    }
+                                    else if($orderChannel == 'klook'){
+                                        $qqq->where('is_default_klook','1');
+                                    }
+                                    else if($orderChannel == 'twt'){
+                                        $qqq->where('is_default_twt','1');
+                                    }
                                 }]);
                             });
                         },
@@ -60,7 +78,7 @@ class BookingController extends Controller
             },
             'packageHotel' => function($query){
                 $query->select('id','hotel_id','package_id','day')->with('hotel',function($q){
-                    $q->select('id','name','banner','address','url','map_url');
+                    $q->select('id','name','banner','address','url','map_url','lunch_rate','dinner_rate');
                 })->where('price_plan_id',2)->orderBy('day','asc');
             },
             'packagePrice' => function($query){
@@ -69,7 +87,7 @@ class BookingController extends Controller
                 })->where('price_plan_id',2);
             }
         ]);
-        if($orderCHannel == 'jvto'){
+        if($orderChannel == 'jvto'){
             $data['packages'] = $data['packages']->where('is_publish', '1');
         }
         else{
@@ -83,22 +101,23 @@ class BookingController extends Controller
         ->with(['car' => function($query){
             $query->select('id','name');
         },'crewJvtoRole' => function($query){
-            $query->select('id','order_channel_id','role');
+            $query->select('id','order_channel_id','role','rate');
         },'crewTwtRole' => function($query){
-            $query->select('id','order_channel_id','role');
+            $query->select('id','order_channel_id','role','rate');
         },'crewKlookRole' => function($query){
-            $query->select('id','order_channel_id','role');
+            $query->select('id','order_channel_id','role','rate');
         }]);
-        if($orderCHannel == 'jvto'){
+        if($orderChannel == 'jvto'){
             $data['car_configuration'] = $data['car_configuration']->where('crew_jvto_role_id','!=',null);
         }
         else{
             $data['car_configuration'] = $data['car_configuration']->where('crew_klook_role_id','!=',null);
         }
         $data['car_configuration'] = $data['car_configuration']->orderBy('pax','asc')->get();
-        $data['others_activities'] = OthersActivity::select('name','unit','price')->get();
+        $data['others_activities'] = OthersActivity::select('id','name','unit','formula','price')->get();
+        $data['order_channel'] = $orderChannel;
 
-        // return $data['others_activities'];
+        // return $data['packages'];
 
         $data['nationality'] = Country::get();
         

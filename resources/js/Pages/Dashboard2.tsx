@@ -556,6 +556,66 @@ function BookingDetails({ isOpen, onClose, booking }) {
         </Dialog>
     ) : ''
 }
+const BookingDropdown = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const options = [
+    { label: 'JVTO', href: '/bookings/create/jvto' },
+    { label: 'KLOOK', href: '/bookings/create/klook' },
+    { label: 'TWT', href: '/bookings/create/twt' }
+  ];
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="bg-meta-3 hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-150 flex items-center gap-2"
+      >
+        <svg 
+          xmlns="http://www.w3.org/2000/svg" 
+          className="h-5 w-5" 
+          viewBox="0 0 20 20" 
+          fill="currentColor"
+        >
+          <path 
+            fillRule="evenodd" 
+            d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" 
+            clipRule="evenodd" 
+          />
+        </svg>
+        Add Booking
+        <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+      
+      {isOpen && (
+        <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-[#24303f] rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+          {options.map((option) => (
+            <a
+              key={option.label}
+              href={option.href}
+              className="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg"
+            >
+              {option.label}
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function Dashboard2(data) {
   const res = data.data
   return (
@@ -653,25 +713,7 @@ export default function Dashboard2(data) {
         <div className="bg-white dark:bg-[#24303f] p-6 rounded-lg shadow-sm mb-6">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold">Upcoming Trip</h3>
-                <a 
-                    href="/bookings/create" 
-                    className="bg-meta-3 hover:bg-opacity-90 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-150 flex items-center gap-2"
-                >
-                    <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        className="h-5 w-5" 
-                        viewBox="0 0 20 20" 
-                        fill="currentColor"
-                    >
-                        <path 
-                            fillRule="evenodd" 
-                            d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" 
-                            clipRule="evenodd" 
-                        />
-                    </svg>
-                    Add Booking
-                </a>
-
+                <BookingDropdown/>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[800px]">

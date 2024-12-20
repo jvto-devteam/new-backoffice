@@ -29,12 +29,16 @@ class PackageController extends Controller
                                     $qqq->select('id','image','caption','alt_text');
                                 },'activityDestination' => function($qqq){
                                     $qqq->select('id','name');
+                                },'activity' => function($qqq){
+                                    $qqq->select('id','destination_id','name','unit','price');
                                 }]);
                             })->with('secondDestination',function($qq){
                                 $qq->select('id','name','gallery_id','activity_id')->with(['gallery' => function($qqq){
                                     $qqq->select('id','image','caption','alt_text');
                                 },'activityDestination' => function($qqq){
                                     $qqq->select('id','name');
+                                },'activity' => function($qqq){
+                                    $qqq->select('id','destination_id','name','unit','price');
                                 }]);
                             });
                         },

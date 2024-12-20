@@ -6,6 +6,7 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\AccommodationController;
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\BookingController;
 use App\Http\Controllers\TaskManagementController;
 use App\Http\Controllers\KlookExpenseController;
 use App\Http\Controllers\ExpenseController;
@@ -39,6 +40,10 @@ Route::get('/expense-item', [ExpenseController::class,'expenseItem']);
 Route::get('/data-master-management/hotels', [HotelController::class,'index']);
 Route::get('/data-master-management/accommodation', [AccommodationController::class,'index']);
 Route::get('/data-master-management/activities', [ActivityController::class,'index']);
+
+Route::prefix('bookings')->group(function () {
+    Route::get('/create/{order_channel}', [BookingController::class, 'create']);
+});
 
 Route::prefix('package-inventory')->group(function () {
     Route::get('/{order_channel}', [PackageController::class, 'index']);

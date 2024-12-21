@@ -174,7 +174,7 @@ const Create = ({ data }) => {
       activities: false,
       others: false,
       resource: false,
-      accommodation: true      
+      accommodation: false      
     });
     const toggleSection = (section) => {
       setExpandedSections(prev => ({

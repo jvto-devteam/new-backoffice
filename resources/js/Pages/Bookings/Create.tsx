@@ -207,6 +207,31 @@ const Create = ({ data }) => {
         year: 'numeric' 
       });
     };
+    const getCrewRate = (resourceInfo, orderChannel) => {
+      switch(orderChannel) {
+        case 'klook':
+          return resourceInfo.crew_klook_role?.rate || 0;
+        case 'jvto':
+          return resourceInfo.crew_jvto_role?.rate || 0;
+        case 'twt':
+          return resourceInfo.crew_twt_role?.rate || 0;
+        default:
+          return 0;
+      }
+    };
+    
+    const getCrewRole = (resourceInfo, orderChannel) => {
+      switch(orderChannel) {
+        case 'klook':
+          return resourceInfo.crew_klook_role?.role;
+        case 'jvto':
+          return resourceInfo.crew_jvto_role?.role;
+        case 'twt':
+          return resourceInfo.crew_twt_role?.role;
+        default:
+          return '';
+      }
+    };    
 
     const getResourceInfo = () => {
         if (!numberOfPax || !carConfiguration) return null;
@@ -257,8 +282,9 @@ const Create = ({ data }) => {
     };
     const calculateResourceTotal = () => {
       if (!resourceInfo) return 0;
+      const crewRate = getCrewRate(resourceInfo, orderChannel);
       return (resourceInfo.price * selectedPackage.duration.day) + 
-             (resourceInfo.crew_klook_role.rate * selectedPackage.duration.day);
+             (crewRate * selectedPackage.duration.day);
     };
     const calculateAccommodationTotal = () => {
       if (!selectedPackage?.package_hotel || !numberOfPax) return 0;
@@ -793,9 +819,12 @@ const Create = ({ data }) => {
           {/* Resource Requirements Section */}
           {/* Resource Requirements Section */}
           <section className="bg-white rounded-xl shadow-sm border border-gray-100">
-            <SectionHeader 
+          <SectionHeader 
               title="Resource Requirements"
-              total={resourceInfo ? formatCurrency((resourceInfo.price * selectedPackage.duration.day) + (resourceInfo.crew_klook_role.rate * selectedPackage.duration.day)) : '-'}
+              total={resourceInfo ? formatCurrency(
+                (resourceInfo.price * selectedPackage.duration.day) + 
+                (getCrewRate(resourceInfo, orderChannel) * selectedPackage.duration.day)
+              ) : '-'}
               isExpanded={expandedSections.resource}
               onToggle={() => toggleSection('resource')}
             />
@@ -832,26 +861,25 @@ const Create = ({ data }) => {
                       <div className="grid gap-3">
                         <div className="flex justify-between">
                           <span className="text-gray-600">Type</span>
-                          <span className="font-medium">{resourceInfo.crew_klook_role.role}</span>
+                          <span className="font-medium">{getCrewRole(resourceInfo, orderChannel)}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Rate per Day</span>
-                          <span className="font-medium">{formatCurrency(resourceInfo.crew_klook_role.rate)}</span>
+                          <span className="font-medium">{formatCurrency(getCrewRate(resourceInfo, orderChannel))}</span>
                         </div>
                         <div className="flex justify-between text-blue-600 font-medium border-t pt-2">
                           <span>Total Price ({selectedPackage.duration.day} days)</span>
-                          <span>{formatCurrency(resourceInfo.crew_klook_role.rate * selectedPackage.duration.day)}</span>
+                          <span>{formatCurrency(getCrewRate(resourceInfo, orderChannel) * selectedPackage.duration.day)}</span>
                         </div>
                       </div>
                     </div>
-
                     {/* Total */}
                     <div className="border-t pt-4">
                       <div className="flex justify-between text-lg font-medium">
                         <span>Total Resource Requirements</span>
                         <span>{formatCurrency(
                           (resourceInfo.price * selectedPackage.duration.day) + 
-                          (resourceInfo.crew_klook_role.rate * selectedPackage.duration.day)
+                          (getCrewRate(resourceInfo, orderChannel) * selectedPackage.duration.day)
                         )}</span>
                       </div>
                     </div>

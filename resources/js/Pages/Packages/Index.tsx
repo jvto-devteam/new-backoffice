@@ -257,12 +257,12 @@ const Index = (data) => {
                   <h3 className="text-lg font-semibold mb-4">Overview</h3>
                   <div className="grid md:grid-cols-1 gap-6">
                     <div>
-                      <h3 className="text-md font-medium text-gray-500">Package ID</h3>
-                      <p className="mt-1 text-gray-900">{selectedPackage.package_code}</p>
+                      <h3 className="text-md font-medium text-gray-500 dark:text-gray-400">Package ID</h3>
+                      <p className="mt-1 text-gray-900 dark:text-gray-100">{selectedPackage.package_code}</p>
                     </div>
                     <div>
-                      <h3 className="text-md font-medium text-gray-500">Package Name</h3>
-                      <p className="mt-1 text-gray-900">{selectedPackage.name}</p>
+                      <h3 className="text-md font-medium text-gray-500 dark:text-gray-400">Package Name</h3>
+                      <p className="mt-1 text-gray-900 dark:text-gray-100">{selectedPackage.name}</p>
                     </div>
                     <div>
                       <h3 className="text-md font-medium text-gray-500 dark:text-gray-400">Duration</h3>

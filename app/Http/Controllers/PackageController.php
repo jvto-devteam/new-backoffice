@@ -20,25 +20,43 @@ class PackageController extends Controller
             'category' => function($query){
                 $query->select('id','name');
             },
-            'itinerary' => function($query){
+            'itinerary' => function($query) use($orderChannel){
                 $query->select('id','package_id','day','title','activity')->with(
                     [
-                        'itineraryDestination' => function($q){
-                            $q->select('id','itinerary_id','destination_id','second_destination_id')->with('destination',function($qq){
+                        'itineraryDestination' => function($q) use($orderChannel){
+                            $q->select('id','itinerary_id','destination_id','second_destination_id')->with('destination',function($qq) use($orderChannel){
                                 $qq->select('id','name','gallery_id','activity_id')->with(['gallery' => function($qqq){
                                     $qqq->select('id','image','caption','alt_text');
                                 },'activityDestination' => function($qqq){
                                     $qqq->select('id','name');
-                                },'activity' => function($qqq){
-                                    $qqq->select('id','destination_id','name','unit','price');
+                                },'activity' => function($qqq) use($orderChannel){
+                                    $qqq->select('id','destination_id','name','unit','formula','price');
+                                    if($orderChannel == 'jvto'){
+                                        $qqq->where('is_default_jvto','1');
+                                    }
+                                    else if($orderChannel == 'klook'){
+                                        $qqq->where('is_default_klook','1');
+                                    }
+                                    else if($orderChannel == 'twt'){
+                                        $qqq->where('is_default_twt','1');
+                                    }
                                 }]);
-                            })->with('secondDestination',function($qq){
-                                $qq->select('id','name','gallery_id','activity_id')->with(['gallery' => function($qqq){
+                            })->with('secondDestination',function($qq) use($orderChannel){
+                                $qq->select('id','name','gallery_id','activity_id')->with(['gallery' => function($qqq) use($orderChannel){
                                     $qqq->select('id','image','caption','alt_text');
                                 },'activityDestination' => function($qqq){
                                     $qqq->select('id','name');
-                                },'activity' => function($qqq){
-                                    $qqq->select('id','destination_id','name','unit','price');
+                                },'activity' => function($qqq) use($orderChannel){
+                                    $qqq->select('id','destination_id','name','unit','formula','price');
+                                    if($orderChannel == 'jvto'){
+                                        $qqq->where('is_default_jvto','1');
+                                    }
+                                    else if($orderChannel == 'klook'){
+                                        $qqq->where('is_default_klook','1');
+                                    }
+                                    else if($orderChannel == 'twt'){
+                                        $qqq->where('is_default_twt','1');
+                                    }
                                 }]);
                             });
                         },
@@ -61,7 +79,11 @@ class PackageController extends Controller
             },
             'packageHotel' => function($query){
                 $query->select('id','hotel_id','package_id','day')->with('hotel',function($q){
-                    $q->select('id','name','banner','address','url','map_url');
+                    $q->select('id','name','banner','address','url','map_url','lunch_rate','dinner_rate')->with('roomHotelConfiguration',function($qq){
+                        $qq->select('id','hotel_id','room_id','pax','qty')->with('room',function($qqq){
+                            $qqq->select('id','room_name','rate');
+                        });
+                    });
                 })->where('price_plan_id',2)->orderBy('day','asc');
             },
             'packagePrice' => function($query){

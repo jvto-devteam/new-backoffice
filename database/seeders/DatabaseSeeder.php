@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             OrderChannelSeeder::class,
             CrewRoleSeeder::class,
             CarConfigurationSeeder::class,
+            RoomHotelConfigurationSeeder::class,
         ]);
     }
 }

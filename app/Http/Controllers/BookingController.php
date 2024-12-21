@@ -78,7 +78,11 @@ class BookingController extends Controller
             },
             'packageHotel' => function($query){
                 $query->select('id','hotel_id','package_id','day')->with('hotel',function($q){
-                    $q->select('id','name','banner','address','url','map_url','lunch_rate','dinner_rate');
+                    $q->select('id','name','banner','address','url','map_url','lunch_rate','dinner_rate')->with('roomHotelConfiguration',function($qq){
+                        $qq->select('id','hotel_id','room_id','pax','qty')->with('room',function($qqq){
+                            $qqq->select('id','room_name','rate');
+                        });
+                    });
                 })->where('price_plan_id',2)->orderBy('day','asc');
             },
             'packagePrice' => function($query){

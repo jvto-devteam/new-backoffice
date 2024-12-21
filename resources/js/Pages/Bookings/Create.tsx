@@ -173,7 +173,8 @@ const Create = ({ data }) => {
       itinerary: false,
       activities: false,
       others: false,
-      resource: false
+      resource: false,
+      accommodation: true      
     });
     const toggleSection = (section) => {
       setExpandedSections(prev => ({
@@ -259,13 +260,25 @@ const Create = ({ data }) => {
       return (resourceInfo.price * selectedPackage.duration.day) + 
              (resourceInfo.crew_klook_role.rate * selectedPackage.duration.day);
     };
+    const calculateAccommodationTotal = () => {
+      if (!selectedPackage?.package_hotel || !numberOfPax) return 0;
+      
+      return selectedPackage.package_hotel.reduce((total, hotelDay) => {
+        const roomConfigs = getRoomConfiguration(hotelDay.hotel, numberOfPax);
+        const dayTotal = roomConfigs.reduce((sum, config) => 
+          sum + (config.qty * config.room.rate), 0);
+        return total + dayTotal;
+      }, 0);
+    };    
+
     const calculateTotalExpense = () => {
       const activitiesTotal = calculateActivitiesTotal();
       const othersTotal = calculateOthersActivitiesTotal();
       const resourceTotal = calculateResourceTotal();
+      const accommodationTotal = calculateAccommodationTotal();
       
-      return activitiesTotal + othersTotal + resourceTotal;
-    };        
+      return activitiesTotal + othersTotal + resourceTotal + accommodationTotal;
+    };
     const getPackagePrice = () => {
       if (!selectedPackage || !numberOfPax) return 0;
       
@@ -294,6 +307,16 @@ const Create = ({ data }) => {
         )}
       </div>
     );
+    const getRoomConfiguration = (hotel, pax) => {
+      return hotel.room_hotel_configuration
+        .filter(config => config.pax === parseInt(pax))
+        .map(config => ({
+          ...config,
+          subtotal: config.qty * config.room.rate
+        }));
+    };
+
+
     return (
       <div className="space-y-8 p-6">
         {/* Package Overview Section */}
@@ -407,7 +430,66 @@ const Create = ({ data }) => {
             </div>
             )}
           </section>
-  
+
+          {/* Accommodation Section */}
+          <section className="bg-white rounded-xl shadow-sm border border-gray-100">
+            <SectionHeader 
+              title="Accommodation"
+              total={formatCurrency(calculateAccommodationTotal())}
+              isExpanded={expandedSections.accommodation}
+              onToggle={() => toggleSection('accommodation')}
+            />
+            {expandedSections.accommodation && (
+              <div className="p-6 space-y-6">
+                {selectedPackage.package_hotel.map((hotelDay, index) => {
+                  const roomConfigs = getRoomConfiguration(hotelDay.hotel, numberOfPax);
+                  const dayTotal = roomConfigs.reduce((sum, config) => 
+                    sum + (config.qty * config.room.rate), 0);
+
+                  return (
+                    <div key={hotelDay.id} className="space-y-4">
+                      <h4 className="font-medium text-gray-700">
+                        Day {hotelDay.day} - {hotelDay.hotel.name}
+                      </h4>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="w-16 px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">No</th>
+                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Room Name</th>
+                              <th className="w-24 px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
+                              <th className="w-32 px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Rate</th>
+                              <th className="w-32 px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Subtotal</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {roomConfigs.map((config, idx) => (
+                              <tr key={config.id}>
+                                <td className="px-4 py-2 text-sm text-gray-900">{idx + 1}</td>
+                                <td className="px-4 py-2 text-sm text-gray-900">{config.room.room_name}</td>
+                                <td className="px-4 py-2 text-sm text-gray-900">{config.qty}</td>
+                                <td className="px-4 py-2 text-sm text-gray-900">{formatCurrency(config.room.rate)}</td>
+                                <td className="px-4 py-2 text-sm text-gray-900">{formatCurrency(config.qty * config.room.rate)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot className="bg-gray-50 font-medium">
+                            <tr>
+                              <td colSpan="4" className="px-4 py-3 text-sm text-right text-gray-600">
+                                Total Day {hotelDay.day}
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-800">{formatCurrency(dayTotal)}</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </section>
+
           {/* Activities Section */}
           <section className="bg-white rounded-xl shadow-sm border border-gray-100">
               <SectionHeader 

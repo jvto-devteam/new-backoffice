@@ -12,6 +12,184 @@ const Create = ({ data }) => {
     const [searchNationality, setSearchNationality] = useState('');
     const [searchPackage, setSearchPackage] = useState('');
 
+    const [formData, setFormData] = useState({
+      // Customer Information
+      customerName: '',
+      nationality: null,
+      phoneNumber: '',
+      email: '',
+      tShirtSizes: {
+        XSS: 0, XXS: 0, XS: 0, S: 0, M: 0, L: 0, XL: 0, XXL: 0, XXXL: 0
+      },
+      
+      // Booking Information
+      bookingFile: null,
+      tripDate: '',
+      numberOfPax: 2,
+      package: null,
+      pickupLocation: '',
+      pickupTime: '',
+      dropLocation: '',
+      dropTime: '',
+    
+      // Booking Items akan ditambahkan saat submit
+      bookingItems: []
+    });
+    
+    // Fungsi handler untuk update form
+    const handleInputChange = (field, value) => {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    };
+
+    const handleTShirtSizeChange = (size, value) => {
+      setFormData(prev => ({
+        ...prev,
+        tShirtSizes: {
+          ...prev.tShirtSizes,
+          [size]: parseInt(value) || 0
+        }
+      }));
+    };
+
+    const handleFileChange = (e) => {
+      setFormData(prev => ({
+        ...prev,
+        bookingFile: e.target.files[0]
+      }));
+    };    
+    
+    // Fungsi untuk mengumpulkan semua data
+    const collectAllData = () => {
+      // Dapatkan booking items dari PackageDetailCard component
+      const bookingItems = bookingDetailRef.current?.collectBookingItems() || [];
+      
+      const groupedItems = {
+        accommodation: [],
+        room_hotels: [],
+        activity: [],
+        meal: [],
+        other: [],
+        resource: []
+      };    
+      const hotelTracking = {};
+      
+      bookingItems.forEach(item => {
+        switch(item.type) {
+          case 'accommodation':
+            groupedItems.room_hotels.push({
+              day: item.day,
+              hotel_id: item.meta.hotel_id,
+              room_id: item.meta.room_id,
+              room_config_id: item.meta.room_config_id,
+              qty: item.qty,
+              rate: item.price,
+              total: item.total
+            });
+            const hotelKey = `${item.day}_${item.meta.hotel_id}`;
+            if (!hotelTracking[hotelKey]) {
+              hotelTracking[hotelKey] = true;
+              groupedItems.accommodation.push({
+                day: item.day,
+                hotel_id: item.meta.hotel_id,
+                name: item.name.split(' - ')[0], // Ambil nama hotel saja
+                total: item.total
+              });
+            }
+            break;
+    
+          case 'activity':
+            groupedItems.activity.push({
+              day: item.day,
+              activity_id: item.meta.activity_id,
+              destination_id: item.meta.destination_id,
+              is_second_destination: item.meta.is_second_destination,
+              name: item.name,
+              qty: item.qty,
+              unit: item.unit,
+              price: item.price,
+              total: item.total
+            });
+            break;
+    
+          case 'meal':
+            groupedItems.meal.push({
+              day: item.day,
+              hotel_id: item.meta.hotel_id,
+              meal_type: item.meta.meal_type,
+              name: item.name,
+              qty: item.qty,
+              price: item.price,
+              total: item.total
+            });
+            break;
+    
+          case 'other':
+            groupedItems.other.push({
+              other_activity_id: item.meta.other_activity_id,
+              name: item.name,
+              qty: item.qty,
+              unit: item.unit,
+              price: item.price,
+              total: item.total
+            });
+            break;
+    
+          case 'resource':
+            groupedItems.resource.push({
+              sub_type: item.sub_type,
+              name: item.name,
+              qty: item.qty,
+              unit: item.unit,
+              price: item.price,
+              total: item.total,
+              meta: item.sub_type === 'vehicle' ? {
+                car_id: item.meta.car_id,
+                car_config_id: item.meta.car_config_id,
+                pax_capacity: item.meta.pax_capacity
+              } : {
+                crew_role: item.meta.crew_role,
+                order_channel: item.meta.order_channel
+              }
+            });
+            break;
+        }
+      });      
+    
+      // Gabungkan semua data
+      const completeData = {
+        customer_info: {
+          name: formData.customerName,
+          nationality_id: formData.nationality,
+          phone: formData.phoneNumber,
+          email: formData.email,
+          t_shirt_sizes: formData.tShirtSizes
+        },
+        booking_info: {
+          booking_file: formData.bookingFile,
+          trip_date: formData.tripDate,
+          number_of_pax: formData.numberOfPax,
+          package_id: formData.package,
+          pickup_location: formData.pickupLocation,
+          pickup_time: formData.pickupTime,
+          drop_location: formData.dropLocation,
+          drop_time: formData.dropTime
+        },
+        booking_items: groupedItems
+      };
+    
+      return completeData;
+    };
+    
+    // Fungsi untuk handle submit
+    const handleSubmit = () => {
+      const data = collectAllData();
+      console.log('Data to submit:', data);
+      // Di sini Anda bisa menambahkan axios.post atau fetch untuk mengirim data ke controller
+    };    
+
   // Custom Card Component
   const Card = ({ children, className = '' }) => (
     <div className={`bg-white rounded-lg shadow ${className}`}>
@@ -168,7 +346,7 @@ const Create = ({ data }) => {
   };
 
   // Custom Card Component with detail rendering for Package Details
-  const PackageDetailCard = ({ selectedPackage, tripDate, numberOfPax, carConfiguration, othersActivities,orderChannel }) => {
+  const PackageDetailCard = React.forwardRef(({ selectedPackage, tripDate, numberOfPax, carConfiguration, othersActivities, orderChannel }, ref) => {
     const [expandedSections, setExpandedSections] = useState({
       itinerary: false,
       activities: false,
@@ -237,6 +415,179 @@ const Create = ({ data }) => {
         if (!numberOfPax || !carConfiguration) return null;
         return carConfiguration.find(config => config.pax === parseInt(numberOfPax));
     };
+    const collectBookingItems = () => {
+      let items = [];
+    
+      // Accommodation Items
+      if (selectedPackage?.package_hotel) {
+        selectedPackage.package_hotel.forEach(hotelDay => {
+          const roomConfigs = getRoomConfiguration(hotelDay.hotel, numberOfPax);
+          roomConfigs.forEach(config => {
+            items.push({
+              type: 'accommodation',
+              day: hotelDay.day,
+              name: `${hotelDay.hotel.name} - ${config.room.room_name}`,
+              qty: config.qty,
+              unit: 'room',
+              price: config.room.rate,
+              total: config.qty * config.room.rate,
+              meta: {
+                hotel_id: hotelDay.hotel.id,
+                room_id: config.room.id,
+                room_config_id: config.id
+              }
+            });
+          });
+        });
+      }
+    
+      // Activities Items
+      selectedPackage.itinerary.forEach(day => {
+        // Main destination activities
+        if (day.itinerary_destination?.destination?.activity) {
+          day.itinerary_destination.destination.activity.forEach(act => {
+            const qty = act.unit === 'pax' ? numberOfPax : eval(act.formula.replace(/pax/g, numberOfPax));
+            items.push({
+              type: 'activity',
+              day: day.day,
+              name: act.name,
+              qty: qty,
+              unit: act.unit,
+              price: act.price,
+              total: qty * act.price,
+              meta: {
+                activity_id: act.id,
+                destination_id: day.itinerary_destination.destination.id,
+                is_second_destination: false
+              }
+            });
+          });
+        }
+    
+        // Second destination activities
+        if (day.itinerary_destination?.second_destination?.activity) {
+          day.itinerary_destination.second_destination.activity.forEach(act => {
+            const qty = act.unit === 'pax' ? numberOfPax : eval(act.formula.replace(/pax/g, numberOfPax));
+            items.push({
+              type: 'activity',
+              day: day.day,
+              name: act.name,
+              qty: qty,
+              unit: act.unit,
+              price: act.price,
+              total: qty * act.price,
+              meta: {
+                activity_id: act.id,
+                destination_id: day.itinerary_destination.second_destination.id,
+                is_second_destination: true
+              }
+            });
+          });
+        }
+    
+        // Meals for Ijen Crater
+        const dayHotel = selectedPackage.package_hotel.find(h => h.day === day.day-1);
+        if (day.itinerary_destination?.destination?.id === 2 && dayHotel) {
+          // Dinner
+          items.push({
+            type: 'meal',
+            day: day.day,
+            name: `Dinner at ${dayHotel.hotel.name}`,
+            qty: numberOfPax,
+            unit: 'pax',
+            price: dayHotel.hotel.dinner_rate || 0,
+            total: (dayHotel.hotel.dinner_rate || 0) * numberOfPax,
+            meta: {
+              meal_type: 'dinner',
+              hotel_id: dayHotel.hotel.id
+            }
+          });
+    
+          // Lunch (with conditions)
+          if (orderChannel !== 'klook' && 
+              day.day !== selectedPackage.duration.day && 
+              selectedPackage.end_destination_id !== 3) {
+            items.push({
+              type: 'meal',
+              day: day.day,
+              name: `Lunch at ${dayHotel.hotel.name}`,
+              qty: numberOfPax,
+              unit: 'pax',
+              price: dayHotel.hotel.lunch_rate || 0,
+              total: (dayHotel.hotel.lunch_rate || 0) * numberOfPax,
+              meta: {
+                meal_type: 'lunch',
+                hotel_id: dayHotel.hotel.id
+              }
+            });
+          }
+        }
+      });
+    
+      // Others Activities Items
+      if (othersActivities) {
+        othersActivities.forEach(act => {
+          const qty = calculateQuantity(act.formula, numberOfPax, selectedPackage?.duration?.day);
+          items.push({
+            type: 'other',
+            day: null,
+            name: act.name,
+            qty: qty,
+            unit: act.unit,
+            price: act.price,
+            total: qty * act.price,
+            meta: {
+              other_activity_id: act.id
+            }
+          });
+        });
+      }
+    
+      // Resource Requirements Items
+      if (resourceInfo) {
+        // Vehicle
+        items.push({
+          type: 'resource',
+          sub_type: 'vehicle',
+          day: null,
+          name: `Vehicle - ${resourceInfo.car.name}`,
+          qty: selectedPackage.duration.day,
+          unit: 'day',
+          price: resourceInfo.price,
+          total: resourceInfo.price * selectedPackage.duration.day,
+          meta: {
+            car_id: resourceInfo.car.id,
+            car_config_id: resourceInfo.id,
+            pax_capacity: resourceInfo.pax
+          }
+        });
+    
+        // Crew
+        const crewRate = getCrewRate(resourceInfo, orderChannel);
+        const crewRole = getCrewRole(resourceInfo, orderChannel);
+        items.push({
+          type: 'resource',
+          sub_type: 'crew',
+          day: null,
+          name: `Crew - ${crewRole}`,
+          qty: selectedPackage.duration.day,
+          unit: 'day',
+          price: crewRate,
+          total: crewRate * selectedPackage.duration.day,
+          meta: {
+            crew_role: crewRole,
+            order_channel: orderChannel
+          }
+        });
+      }
+    
+      return items;
+    };    
+    React.useImperativeHandle(ref, () => ({
+      collectBookingItems: () => {
+        return collectBookingItems();
+      }
+    }));    
     const resourceInfo = getResourceInfo();
 
     // Calculate grand totals
@@ -931,7 +1282,7 @@ const Create = ({ data }) => {
         </div>
       </div>
     );
-  };
+  });
   const calculateQuantity = (formula, pax, day) => {
     try {
       // Replace variabel dalam formula dengan nilai aktual
@@ -946,6 +1297,7 @@ const Create = ({ data }) => {
       return 0;
     }
   };
+  const bookingDetailRef = useRef();
   return (
     <Main>
       <div className="p-6">
@@ -958,18 +1310,22 @@ const Create = ({ data }) => {
 
             {/* Customer Information Card */}
             <Card className="mb-6">
-              <CardHeader title="Customer Information" />
+              <CardHeader title="Client Information" />
               <div className="p-6">
                 <div className="grid grid-cols-2 gap-4">
                   <FormField label="Customer Name">
-                    <Input placeholder="Enter customer name" />
+                    <Input 
+                      placeholder="Enter customer name"
+                      value={formData.customerName}
+                      onChange={(e) => handleInputChange('customerName', e.target.value)}
+                    />
                   </FormField>
 
                   <FormField label="Nationality">
                     <SearchableSelect
                       options={data.nationality}
-                      value={selectedNationality}
-                      onChange={setSelectedNationality}
+                      value={formData.nationality}
+                      onChange={(id) => handleInputChange('nationality', id)}
                       placeholder="Select nationality"
                       searchValue={searchNationality}
                       onSearchChange={setSearchNationality}
@@ -980,16 +1336,40 @@ const Create = ({ data }) => {
                   </FormField>
 
                   <FormField label="Phone Number">
-                    <Input type="tel" placeholder="Enter phone number" />
+                    <Input 
+                      type="tel" 
+                      placeholder="Enter phone number"
+                      value={formData.phoneNumber}
+                      onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                    />
                   </FormField>
 
                   <FormField label="Email">
-                    <Input type="email" placeholder="Enter email address" />
+                    <Input 
+                      type="email" 
+                      placeholder="Enter email address"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                    />
                   </FormField>
                 </div>
 
                 <FormField label="T-Shirt Sizes" className="mt-4">
-                  <TShirtSizes />
+                  <div className="grid grid-cols-3 gap-4">
+                    {Object.keys(formData.tShirtSizes).map((size) => (
+                      <div key={size} className="flex items-center gap-2">
+                        <label className="w-12 text-sm text-gray-600">{size}</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          className="w-20"
+                          value={formData.tShirtSizes[size]}
+                          onChange={(e) => handleTShirtSizeChange(size, e.target.value)}
+                          placeholder="0"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </FormField>
               </div>
             </Card>
@@ -999,15 +1379,18 @@ const Create = ({ data }) => {
               <CardHeader title="Booking Information" />
               <div className="p-6">
                 <div className="grid grid-cols-2 gap-4">
-                  <FormField label="Booking File">
-                    <Input type="file" className="bg-white" />
-                  </FormField>
-
-                  <FormField label="Trip Date">
+                <FormField label="Booking File">
                   <Input 
-                        type="date" 
-                        value={tripDate}
-                        onChange={(e) => setTripDate(e.target.value)}
+                    type="file" 
+                    className="bg-white"
+                    onChange={handleFileChange}
+                  />
+                </FormField>
+                  <FormField label="Trip Date">
+                    <Input 
+                      type="date" 
+                      value={formData.tripDate}
+                      onChange={(e) => handleInputChange('tripDate', e.target.value)}
                     />
                   </FormField>
 
@@ -1068,6 +1451,7 @@ const Create = ({ data }) => {
           <Card>
             <CardHeader title="Selected Package Details" />
             <PackageDetailCard 
+                ref={bookingDetailRef}            
                 selectedPackage={selectedPackage} 
                 tripDate={tripDate}
                 numberOfPax={numberOfPax}
@@ -1076,6 +1460,14 @@ const Create = ({ data }) => {
                 orderChannel={data.order_channel} // Tambahkan ini
                 />
             </Card>
+            <div className="mt-6 flex justify-end">
+              <button 
+                onClick={handleSubmit}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Submit Booking
+              </button>
+            </div>            
           </div>
         </div>
     </Main>

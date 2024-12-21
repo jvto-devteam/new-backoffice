@@ -458,8 +458,8 @@ const Create = ({ data }) => {
                               <th className="w-16 px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">No</th>
                               <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Room Name</th>
                               <th className="w-24 px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
-                              <th className="w-32 px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Rate</th>
-                              <th className="w-32 px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Subtotal</th>
+                              <th className="w-32 px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase text-right">Rate</th>
+                              <th className="w-32 px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase text-right">Subtotal</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
@@ -468,17 +468,17 @@ const Create = ({ data }) => {
                                 <td className="px-4 py-2 text-sm text-gray-900">{idx + 1}</td>
                                 <td className="px-4 py-2 text-sm text-gray-900">{config.room.room_name}</td>
                                 <td className="px-4 py-2 text-sm text-gray-900">{config.qty}</td>
-                                <td className="px-4 py-2 text-sm text-gray-900">{formatCurrency(config.room.rate)}</td>
-                                <td className="px-4 py-2 text-sm text-gray-900">{formatCurrency(config.qty * config.room.rate)}</td>
+                                <td className="px-4 py-2 text-sm text-gray-900 text-right">{formatCurrency(config.room.rate)}</td>
+                                <td className="px-4 py-2 text-sm text-gray-900 text-right">{formatCurrency(config.qty * config.room.rate)}</td>
                               </tr>
                             ))}
                           </tbody>
                           <tfoot className="bg-gray-50 font-medium">
                             <tr>
                               <td colSpan="4" className="px-4 py-3 text-sm text-right text-gray-600">
-                                Total Day {hotelDay.day}
+                                Total
                               </td>
-                              <td className="px-4 py-3 text-sm text-gray-800">{formatCurrency(dayTotal)}</td>
+                              <td className="px-4 py-3 text-sm text-gray-800 text-right">{formatCurrency(dayTotal)}</td>
                             </tr>
                           </tfoot>
                         </table>

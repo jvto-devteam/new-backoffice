@@ -271,8 +271,8 @@ export default function Index({ data, flash = {} }) {
                 </div>
 
                 {/* Table Section */}
-                <div className="overflow-x-auto border rounded-lg">
-                    <table className="w-full table-fixed">
+                <div className="border rounded-lg">
+                    <table className="w-full">
                         <thead>
                             <tr className="bg-gray-50">
                                 <th className="w-16 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
@@ -301,8 +301,8 @@ export default function Index({ data, flash = {} }) {
                                             {`https://jv-to.com/${item.short_url}`}
                                         </a>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-900 relative">
-                                        <div className="flex justify-center">
+                                    <td className="px-6 py-4 text-sm text-gray-900">
+                                        <div className="flex justify-center relative">
                                             <button 
                                                 onClick={() => toggleDropdown(item.id)}
                                                 className="text-gray-400 hover:text-gray-600"

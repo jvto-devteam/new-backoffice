@@ -11,6 +11,7 @@ use App\Http\Controllers\TaskManagementController;
 use App\Http\Controllers\KlookExpenseController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\PackageController;
+use App\Http\Controllers\ShortLinkController;
 use App\Http\Controllers\TaskController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +41,11 @@ Route::get('/expense-item', [ExpenseController::class,'expenseItem']);
 Route::get('/data-master-management/hotels', [HotelController::class,'index']);
 Route::get('/data-master-management/accommodation', [AccommodationController::class,'index']);
 Route::get('/data-master-management/activities', [ActivityController::class,'index']);
+
+Route::get('/short-link', [ShortLinkController::class,'index']);
+Route::post('/short-link/store', [ShortLinkController::class,'store']);
+Route::delete('/short-link/{id}', [ShortLinkController::class, 'destroy'])->name('short-link.destroy');
+Route::put('/short-link/{id}', [ShortLinkController::class, 'update'])->name('short-link.update');
 
 Route::prefix('bookings')->group(function () {
     Route::get('/create/{order_channel}', [BookingController::class, 'create']);

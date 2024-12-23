@@ -51,6 +51,7 @@ Route::prefix('generator')->group(function () {
 
 Route::prefix('bookings')->group(function () {
     Route::get('/create/{order_channel}', [BookingController::class, 'create']);
+    Route::post('/store', [BookingController::class, 'store']);
 });
 
 Route::prefix('package-inventory')->group(function () {

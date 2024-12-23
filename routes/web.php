@@ -42,10 +42,12 @@ Route::get('/data-master-management/hotels', [HotelController::class,'index']);
 Route::get('/data-master-management/accommodation', [AccommodationController::class,'index']);
 Route::get('/data-master-management/activities', [ActivityController::class,'index']);
 
-Route::get('/short-link', [ShortLinkController::class,'index']);
-Route::post('/short-link/store', [ShortLinkController::class,'store']);
-Route::delete('/short-link/{id}', [ShortLinkController::class, 'destroy'])->name('short-link.destroy');
-Route::put('/short-link/{id}', [ShortLinkController::class, 'update'])->name('short-link.update');
+Route::prefix('generator')->group(function () {
+    Route::get('/short-link', [ShortLinkController::class,'index']);
+    Route::post('/short-link/store', [ShortLinkController::class,'store']);
+    Route::delete('/short-link/{id}', [ShortLinkController::class, 'destroy'])->name('short-link.destroy');
+    Route::put('/short-link/{id}', [ShortLinkController::class, 'update'])->name('short-link.update');
+});
 
 Route::prefix('bookings')->group(function () {
     Route::get('/create/{order_channel}', [BookingController::class, 'create']);

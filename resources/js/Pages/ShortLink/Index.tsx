@@ -44,7 +44,7 @@ export default function Index({ data, flash = {} }) {
         e.preventDefault();
         setIsSubmitting(true);
         
-        router.post('/short-link/store', formData, {
+        router.post('/generator/short-link/store', formData, {
             onSuccess: () => {
                 setIsDialogOpen(false);
                 setIsSubmitting(false);
@@ -77,7 +77,7 @@ export default function Index({ data, flash = {} }) {
         e.preventDefault();
         setIsSubmitting(true);
         
-        router.put(`/short-link/${selectedItem.id}`, formData, {
+        router.put(`/generator/short-link/${selectedItem.id}`, formData, {
             onSuccess: () => {
                 setIsEditDialogOpen(false);
                 setIsSubmitting(false);
@@ -104,7 +104,7 @@ export default function Index({ data, flash = {} }) {
 
     const confirmDelete = () => {
         setIsDeleting(true);
-        router.delete(`/short-link/${selectedItem.id}`, {
+        router.delete(`/generator/short-link/${selectedItem.id}`, {
             onSuccess: () => {
                 setIsDeleteDialogOpen(false);
                 setIsDeleting(false);

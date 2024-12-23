@@ -317,14 +317,85 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                                 <ul className="mt-4 mb-5.5 flex flex-col gap-2.5 pl-6">
                                                     <li>
                                                         <Link
-                                                            href="/finance/expense">
+                                                            href="/generator/expense">
                                                             Expense
                                                         </Link>
                                                     </li>
                                                     <li>
                                                         <Link
-                                                            href="/finance/income">
+                                                            href="/generator/income">
                                                             Income
+                                                        </Link>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                            {/* <!-- Dropdown Menu End --> */}
+                                        </React.Fragment>
+                                    );
+                                }}
+                            </SidebarLinkGroup>
+                            {/* <!-- Menu Item Forms --> */}
+
+                            {/* <!-- Menu Item Forms --> */}
+                            <SidebarLinkGroup
+                                activeCondition={
+                                    pathname === '/generator' || pathname.includes('generator')
+                                }
+                            >
+                                {(handleClick, open) => {
+                                    return (
+                                        <React.Fragment>
+                                            <Link
+                                                href="#"
+                                                className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                                                    (pathname === '/generator' ||
+                                                        pathname.includes('generator')) &&
+                                                    'bg-graydark dark:bg-meta-4'
+                                                }`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    sidebarExpanded
+                                                        ? handleClick()
+                                                        : setSidebarExpanded(true);
+                                                }}
+                                            >
+<svg class="fill-current" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><g clip-path="url(#clip0_1184_13869)"><path d="M10.8559 0.506226C10.5184 0.506226 10.209 0.787476 10.209 1.1531V6.7781C10.209 7.1156 10.4902 7.42498 10.8559 7.42498H16.8746C17.0434 7.42498 17.2121 7.3406 17.3246 7.2281C17.4371 7.08748 17.4934 6.91873 17.4934 6.74998C17.2684 3.23435 14.3434 0.506226 10.8559 0.506226ZM11.4746 6.1031V1.79998C13.809 2.08123 15.6934 3.82498 16.1434 6.13123H11.4746V6.1031Z" fill=""></path><path d="M15.384 8.69057H9.11211V2.6437C9.11211 2.3062 8.83086 2.02495 8.49336 2.02495C8.40898 2.02495 8.32461 2.02495 8.24023 2.02495C3.96523 1.99682 0.505859 5.48432 0.505859 9.75932C0.505859 14.0343 3.99336 17.5218 8.26836 17.5218C12.5434 17.5218 16.0309 14.0343 16.0309 9.75932C16.0309 9.59057 16.0309 9.42182 16.0027 9.2812C16.0027 8.9437 15.7215 8.69057 15.384 8.69057ZM8.26836 16.2562C4.66836 16.2562 1.77148 13.3593 1.77148 9.75932C1.77148 6.32807 4.47148 3.48745 7.87461 3.29057V9.30932C7.87461 9.64682 8.15586 9.9562 8.52148 9.9562H14.7934C14.6809 13.4437 11.784 16.2562 8.26836 16.2562Z" fill=""></path></g><defs><clipPath id="clip0_1184_13869"><rect width="18" height="18" fill="white"></rect></clipPath></defs></svg>
+                                                Generator
+                                                <svg
+                                                    className={`absolute right-4 top-1/2 -translate-y-1/2 fill-current ${
+                                                        open && 'rotate-180'
+                                                    }`}
+                                                    width="20"
+                                                    height="20"
+                                                    viewBox="0 0 20 20"
+                                                    fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                >
+                                                    <path
+                                                        fillRule="evenodd"
+                                                        clipRule="evenodd"
+                                                        d="M4.41107 6.9107C4.73651 6.58527 5.26414 6.58527 5.58958 6.9107L10.0003 11.3214L14.4111 6.91071C14.7365 6.58527 15.2641 6.58527 15.5896 6.91071C15.915 7.23614 15.915 7.76378 15.5896 8.08922L10.5896 13.0892C10.2641 13.4147 9.73651 13.4147 9.41107 13.0892L4.41107 8.08922C4.08563 7.76378 4.08563 7.23614 4.41107 6.9107Z"
+                                                        fill=""
+                                                    />
+                                                </svg>
+                                            </Link>
+                                            {/* <!-- Dropdown Menu Start --> */}
+                                            <div
+                                                className={`translate transform overflow-hidden ${
+                                                    !open && 'hidden'
+                                                }`}
+                                            >
+                                                <ul className="mt-4 mb-5.5 flex flex-col gap-2.5 pl-6">
+                                                    <li>
+                                                        <Link
+                                                            href="/generator/short-link">
+                                                            Short Link
+                                                        </Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link
+                                                            href="/finance/flipbook">
+                                                            Flipbook
                                                         </Link>
                                                     </li>
                                                 </ul>

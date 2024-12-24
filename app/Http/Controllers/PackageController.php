@@ -9,9 +9,9 @@ use Inertia\Inertia;
 
 class PackageController extends Controller
 {
-    function index(Request $request, $orderCHannel){
-        $data['order_channel'] = $orderCHannel;
-        $data['title'] = strtoupper($orderCHannel)." Packages";
+    function index(Request $request, $orderChannel){
+        $data['order_channel'] = $orderChannel;
+        $data['title'] = strtoupper($orderChannel)." Packages";
 
         $data['packages'] = Package::select('id','name','overview','duration_id','category_id','start_destination_id','end_destination_id','id_url','url')->with([
             'duration' => function($query){
@@ -92,7 +92,7 @@ class PackageController extends Controller
                 })->where('price_plan_id',2);
             }
         ]);
-        if($orderCHannel == 'jvto'){
+        if($orderChannel == 'jvto'){
             $data['packages'] = $data['packages']->where('is_publish', '1');
         }
         else{
@@ -178,14 +178,14 @@ class PackageController extends Controller
             },'crewKlookRole' => function($query){
                 $query->select('id','order_channel_id','role');
             }]);
-            if($orderCHannel == 'jvto'){
+            if($orderChannel == 'jvto'){
                 $data['pax_configuration'] = $data['pax_configuration']->where('crew_jvto_role_id','!=',null);
             }
             else{
                 $data['pax_configuration'] = $data['pax_configuration']->where('crew_klook_role_id','!=',null);
             }
             $data['pax_configuration'] = $data['pax_configuration']->orderBy('pax','asc')->get();
-            $data['order_channel'] = $orderCHannel;
+            $data['order_channel'] = $orderChannel;
             // return $data['pax_configuration'];
             return Inertia::render('Packages/Index',['data' => $data]);
         }

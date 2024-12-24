@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Main from '@/Layouts/Main';
-import { router } from '@inertiajs/react';
 import { Check, ChevronsUpDown,ChevronDown, Search } from 'lucide-react';
 
 const Create = ({ data }) => {
@@ -32,7 +31,6 @@ const Create = ({ data }) => {
       pickupTime: '',
       dropLocation: '',
       dropTime: '',
-      orderChannel : data.order_channel,
     
       // Booking Items akan ditambahkan saat submit
       bookingItems: []
@@ -62,27 +60,11 @@ const Create = ({ data }) => {
         bookingFile: e.target.files[0]
       }));
     };    
-    const getDateForDay = (dayNumber) => {
-      if (!tripDate) return null;
-      const date = new Date(tripDate);
-      date.setDate(date.getDate() + (dayNumber - 1));
-      return date.toLocaleDateString('en-GB', { 
-        day: 'numeric',
-        month: 'short', 
-        year: 'numeric' 
-      });
-    };
-
+    
     // Fungsi untuk mengumpulkan semua data
     const collectAllData = () => {
       // Dapatkan booking items dari PackageDetailCard component
       const bookingItems = bookingDetailRef.current?.collectBookingItems() || [];
-      const financialCalculations = bookingDetailRef.current?.getFinancialCalculations() || {
-        totalExpense: 0,
-        packagePrice: 0,
-        grandTotal: 0,
-        profit: 0
-      };
       
       const groupedItems = {
         accommodation: [],
@@ -174,42 +156,7 @@ const Create = ({ data }) => {
             });
             break;
         }
-      });     
-
-  const itineraryDetails = selectedPackage?.itinerary.map(day => {
-    return {
-      day: day.day,
-      date: getDateForDay(day.day), // Menggunakan fungsi getDateForDay yang sudah ada
-      itinerary: day.title,
-      activities: [
-        // Activities dari destination utama
-        ...(day.itinerary_destination?.destination?.activity?.map(act => ({
-          activity_name: act.name,
-          destination_id: day.itinerary_destination.destination.id,
-          destination_name: day.itinerary_destination.destination.name,
-          is_second_destination: false
-        })) || []),
-        // Activities dari second destination jika ada
-        ...(day.itinerary_destination?.second_destination?.activity?.map(act => ({
-          activity_name: act.name,
-          destination_id: day.itinerary_destination.second_destination.id,
-          destination_name: day.itinerary_destination.second_destination.name,
-          is_second_destination: true
-        })) || [])
-      ],
-      destinations: [
-        {
-          destination_id: day.itinerary_destination?.destination?.id,
-          destination_name: day.itinerary_destination?.destination?.name
-        },
-        // Tambahkan second destination jika ada
-        day.itinerary_destination?.second_destination ? {
-          destination_id: day.itinerary_destination.second_destination.id,
-          destination_name: day.itinerary_destination.second_destination.name
-        } : null
-      ].filter(Boolean) // Hapus null values
-    };
-  }) || [];       
+      });      
     
       // Gabungkan semua data
       const completeData = {
@@ -228,69 +175,21 @@ const Create = ({ data }) => {
           pickup_location: formData.pickupLocation,
           pickup_time: formData.pickupTime,
           drop_location: formData.dropLocation,
-          drop_time: formData.dropTime,
-          order_channel: formData.orderChannel
+          drop_time: formData.dropTime
         },
-        booking_items: groupedItems,
-        itinerary_details: itineraryDetails,
-        financial_summary: {
-          total_expense: financialCalculations.totalExpense,
-          package_price: financialCalculations.packagePrice/formData.numberOfPax,
-          grand_total: financialCalculations.grandTotal,
-          profit: financialCalculations.profit
-        }
+        booking_items: groupedItems
       };
     
       return completeData;
     };
     
-// Fungsi untuk handle submit
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  
-  const data = collectAllData();
-  
-  // Create FormData instance untuk handle file upload
-  const formData = new FormData();
-  
-  // Append booking file jika ada
-  if (data.booking_info.booking_file) {
-    formData.append('booking_file', data.booking_info.booking_file);
-  }
-  
-  // Append data lainnya sebagai JSON string
-  formData.append('customer_info', JSON.stringify(data.customer_info));
-  formData.append('booking_info', JSON.stringify({
-    ...data.booking_info,
-    booking_file: null // Remove file dari JSON karena sudah di-append terpisah
-  }));
-  formData.append('booking_items', JSON.stringify(data.booking_items));
-  formData.append('itinerary_details', JSON.stringify(data.itinerary_details));  
-  formData.append('financial_summary', JSON.stringify(data.financial_summary));
-  
-  try {
-    // Post request menggunakan Inertia
-    await router.post('/bookings/store', formData, {
-      forceFormData: true,
-      preserveScroll: true,
-      preserveState: true,
-      onBefore: () => confirm('Are you sure you want to submit this booking?'),
-      onSuccess: () => {
-        // Reset form atau redirect
-        alert('Booking created successfully!');
-        // Optional: redirect ke halaman lain
-        // router.visit('/bookings');
-      },
-      onError: (errors) => {
-        console.error('Submission errors:', errors);
-        alert('Error creating booking. Please check the form and try again.');
-      }
-    });
-  } catch (error) {
-    console.error('Submission error:', error);
-    alert('An error occurred while creating the booking.');
-  }
-};
+    // Fungsi untuk handle submit
+    const handleSubmit = () => {
+      const data = collectAllData();
+      console.log('Data to submit:', data);
+      // Di sini Anda bisa menambahkan axios.post atau fetch untuk mengirim data ke controller
+    };    
+
   // Custom Card Component
   const Card = ({ children, className = '' }) => (
     <div className={`bg-white rounded-lg shadow ${className}`}>
@@ -476,6 +375,16 @@ const handleSubmit = async (e) => {
     };
   
     // Function to get date for specific day
+    const getDateForDay = (dayNumber) => {
+      if (!tripDate) return null;
+      const date = new Date(tripDate);
+      date.setDate(date.getDate() + (dayNumber - 1));
+      return date.toLocaleDateString('en-GB', { 
+        day: 'numeric',
+        month: 'short', 
+        year: 'numeric' 
+      });
+    };
     const getCrewRate = (resourceInfo, orderChannel) => {
       switch(orderChannel) {
         case 'klook':
@@ -677,17 +586,8 @@ const handleSubmit = async (e) => {
     React.useImperativeHandle(ref, () => ({
       collectBookingItems: () => {
         return collectBookingItems();
-      },
-      // Tambahkan fungsi kalkulasi yang dibutuhkan
-      getFinancialCalculations: () => {
-        return {
-          totalExpense: calculateTotalExpense(),
-          packagePrice: getPackagePrice(),
-          grandTotal: getPackagePrice(),
-          profit: getPackagePrice() - calculateTotalExpense()
-        };
       }
-    }));
+    }));    
     const resourceInfo = getResourceInfo();
 
     // Calculate grand totals
@@ -1398,386 +1298,176 @@ const handleSubmit = async (e) => {
     }
   };
   const bookingDetailRef = useRef();
-  // Searchable select states
-  const [nationalitySearch, setNationalitySearch] = useState('');
-  const [packageSearch, setPackageSearch] = useState('');
-  const [showNationalityDropdown, setShowNationalityDropdown] = useState(false);
-  const [showPackageDropdown, setShowPackageDropdown] = useState(false);
-  
-  // Refs for click outside handling
-  const nationalityRef = useRef(null);
-  const packageRef = useRef(null);
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (nationalityRef.current && !nationalityRef.current.contains(event.target)) {
-        setShowNationalityDropdown(false);
-      }
-      if (packageRef.current && !packageRef.current.contains(event.target)) {
-        setShowPackageDropdown(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Filter functions for searchable selects
-  const filteredNationalities = data.nationality?.filter(nat =>
-    nat.long_name.toLowerCase().includes(nationalitySearch.toLowerCase())
-  );
-
-  const filteredPackages = data.packages?.filter(pkg =>
-    pkg.name.toLowerCase().includes(packageSearch.toLowerCase())
-  );
-
   return (
     <Main>
       <div className="p-6">
         <div className="space-y-6">
           {/* Forms Section */}
-            <form onSubmit={(e) => handleSubmit(e)} className="space-y-8">
-              <div className="w-full">
-                <h2 className="mb-6 text-xl text-black font-semibold">
-                    Create Booking
-                </h2>
-                {/* Client Information */}
-                <div className="bg-white shadow rounded-lg">
-                  <div className="border-b border-gray-200 p-4">
-                    <h2 className="text-lg font-semibold">Client Information</h2>
-                  </div>
-                  
-                  <div className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Customer Name */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Customer Name
-                        </label>
-                        <input
-                          type="text"
-                          value={formData.customerName}
-                          onChange={(e) => handleInputChange('customerName', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          placeholder="Enter customer name"
-                        />
-                      </div>
+          <div className="w-full">
+            <h2 className="mb-6 text-xl text-black font-semibold">
+                Create Booking
+            </h2>
 
-                      {/* Nationality */}
-                      <div ref={nationalityRef} className="relative">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Nationality
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => setShowNationalityDropdown(!showNationalityDropdown)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-left flex justify-between items-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        >
-                          <span className="text-gray-700">
-                            {formData.nationality ? 
-                              data.nationality.find(n => n.id === formData.nationality)?.long_name : 
-                              'Select nationality'
-                            }
-                          </span>
-                          <ChevronsUpDown className="h-4 w-4 text-gray-400" />
-                        </button>
-
-                        {showNationalityDropdown && (
-                          <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200">
-                            <div className="p-2 border-b">
-                              <div className="flex items-center bg-gray-50 rounded-md">
-                                <Search className="h-4 w-4 text-gray-400 ml-2" />
-                                <input
-                                  type="text"
-                                  className="w-full p-2 bg-transparent border-none focus:outline-none focus:ring-0"
-                                  placeholder="Search nationality..."
-                                  value={nationalitySearch}
-                                  onChange={(e) => setNationalitySearch(e.target.value)}
-                                  onClick={(e) => e.stopPropagation()}
-                                />
-                              </div>
-                            </div>
-                            <div className="max-h-60 overflow-auto">
-                              {filteredNationalities.map((nat) => (
-                                <div
-                                  key={nat.id}
-                                  className={`px-3 py-2 cursor-pointer flex items-center hover:bg-gray-50 
-                                    ${formData.nationality === nat.id ? 'bg-blue-50' : ''}`}
-                                  onClick={() => {
-                                    handleInputChange('nationality', nat.id);
-                                    setShowNationalityDropdown(false);
-                                    setNationalitySearch('');
-                                  }}
-                                >
-                                  <Check 
-                                    className={`h-4 w-4 mr-2 ${
-                                      formData.nationality === nat.id ? 'text-blue-500' : 'text-transparent'
-                                    }`} 
-                                  />
-                                  <span>{nat.long_name}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Phone Number */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Phone Number
-                        </label>
-                        <input
-                          type="tel"
-                          value={formData.phoneNumber}
-                          onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          placeholder="Enter phone number"
-                        />
-                      </div>
-
-                      {/* Email */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Email
-                        </label>
-                        <input
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => handleInputChange('email', e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          placeholder="Enter email address"
-                        />
-                      </div>
-                    </div>
-
-                    {/* T-Shirt Sizes */}
-                    <div className="mt-6">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        T-Shirt Sizes
-                      </label>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {Object.keys(formData.tShirtSizes).map((size) => (
-                          <div key={size} className="flex items-center space-x-2">
-                            <label className="text-sm font-medium text-gray-600 w-12">{size}</label>
-                            <input
-                              type="number"
-                              min="0"
-                              value={formData.tShirtSizes[size]}
-                              onChange={(e) => handleTShirtSizeChange(size, e.target.value)}
-                              className="w-20 px-2 py-1 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Booking Information */}
-                <div className="mt-6 bg-white shadow rounded-lg">
-                  <div className="border-b border-gray-200 p-4">
-                    <h2 className="text-lg font-semibold">Booking Information</h2>
-                  </div>
-                  
-                  <div className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Booking File */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Booking File
-                        </label>
-                        <input
-                          type="file"
-                          onChange={handleFileChange}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      {/* Trip Date */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Trip Date
-                        </label>
-                        <input
-                          type="date"
-                          value={formData.tripDate}
-                          onChange={(e) => {
-                            handleInputChange('tripDate', e.target.value)
-                            setTripDate(e.target.value)                            
-                          }
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        />
-                      </div>
-
-                      {/* Number of Pax */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Number of Pax
-                        </label>
-                        <input
-                          type="number"
-                          min="1"
-                          value={formData.numberOfPax}
-                          onChange={
-                            (e) => {
-                              handleInputChange('numberOfPax', parseInt(e.target.value))
-                              setNumberOfPax(e.target.value)
-                            }
-                          }
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          placeholder="Enter number of passengers"
-                        />
-                      </div>
-
-                      {/* Package Selection */}
-                      <div ref={packageRef} className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Package
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowPackageDropdown(!showPackageDropdown)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-left flex justify-between items-center focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    <span className="text-gray-700">
-                      {formData.package ? 
-                        data.packages.find(p => p.id === formData.package)?.name : 
-                        'Select package'
-                      }
-                    </span>
-                    <ChevronsUpDown className="h-4 w-4 text-gray-400" />
-                  </button>
-
-                  {showPackageDropdown && (
-                    <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200">
-                      <div className="p-2 border-b">
-                        <div className="flex items-center bg-gray-50 rounded-md">
-                          <Search className="h-4 w-4 text-gray-400 ml-2" />
-                          <input
-                            type="text"
-                            className="w-full p-2 bg-transparent border-none focus:outline-none focus:ring-0"
-                            placeholder="Search package..."
-                            value={packageSearch}
-                            onChange={(e) => setPackageSearch(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                          />
-                        </div>
-                      </div>
-                      <div className="max-h-60 overflow-auto">
-                        {filteredPackages.map((pkg) => (
-                          <div
-                            key={pkg.id}
-                            className={`px-3 py-2 cursor-pointer flex items-center hover:bg-gray-50 
-                              ${formData.package === pkg.id ? 'bg-blue-50' : ''}`}
-                            onClick={() => {
-                              handleInputChange('package', pkg.id);
-                              setSelectedPackage(data.packages.find(p => p.id === pkg.id));                 
-                              setShowPackageDropdown(false);
-                              setPackageSearch('');
-                            }}
-                          >
-                            <Check 
-                              className={`h-4 w-4 mr-2 ${
-                                formData.package === pkg.id ? 'text-blue-500' : 'text-transparent'
-                              }`} 
-                            />
-                            <span>{pkg.name}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-                    </div>
-
-                    {/* Pickup Details */}
-                    <div className="mt-8">
-                      <h3 className="text-md font-medium mb-4">Pickup Details</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Pickup Location
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.pickupLocation}
-                            onChange={(e) => handleInputChange('pickupLocation', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            placeholder="Enter pickup location"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Pickup Time
-                          </label>
-                          <input
-                            type="time"
-                            value={formData.pickupTime}
-                            onChange={(e) => handleInputChange('pickupTime', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Drop-off Details */}
-                    <div className="mt-8">
-                      <h3 className="text-md font-medium mb-4">Drop-off Details</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Drop-off Location
-                          </label>
-                          <input
-                            type="text"
-                            value={formData.dropLocation}
-                            onChange={(e) => handleInputChange('dropLocation', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            placeholder="Enter drop-off location"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Drop-off Time
-                          </label>
-                          <input
-                            type="time"
-                            value={formData.dropTime}
-                            onChange={(e) => handleInputChange('dropTime', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-              <div>
-              <Card>
-                <CardHeader title="Selected Package Details" />
-                <PackageDetailCard 
-                    ref={bookingDetailRef}            
-                    selectedPackage={selectedPackage} 
-                    tripDate={tripDate}
-                    numberOfPax={numberOfPax}
-                    carConfiguration={data.car_configuration}
-                    othersActivities={data.others_activities} // Tambahkan ini
-                    orderChannel={data.order_channel} // Tambahkan ini
+            {/* Customer Information Card */}
+            <Card className="mb-6">
+              <CardHeader title="Client Information" />
+              <div className="p-6">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField label="Customer Name">
+                    <Input 
+                      placeholder="Enter customer name"
+                      value={formData.customerName}
+                      onChange={(e) => handleInputChange('customerName', e.target.value)}
                     />
-              </Card>
-              </div>
-                {/* Submit Button */}
-                <div className="flex justify-end">
-                  <button
-                    type="submit"
-                    className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  >
-                    Create Booking
-                  </button>
+                  </FormField>
+
+                  <FormField label="Nationality">
+                    <SearchableSelect
+                      options={data.nationality}
+                      value={formData.nationality}
+                      onChange={(id) => handleInputChange('nationality', id)}
+                      placeholder="Select nationality"
+                      searchValue={searchNationality}
+                      onSearchChange={setSearchNationality}
+                      open={openNationality}
+                      setOpen={setOpenNationality}
+                      displayKey="long_name"
+                    />
+                  </FormField>
+
+                  <FormField label="Phone Number">
+                    <Input 
+                      type="tel" 
+                      placeholder="Enter phone number"
+                      value={formData.phoneNumber}
+                      onChange={(e) => handleInputChange('phoneNumber', e.target.value)}
+                    />
+                  </FormField>
+
+                  <FormField label="Email">
+                    <Input 
+                      type="email" 
+                      placeholder="Enter email address"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                    />
+                  </FormField>
                 </div>
-            </form>
+
+                <FormField label="T-Shirt Sizes" className="mt-4">
+                  <div className="grid grid-cols-3 gap-4">
+                    {Object.keys(formData.tShirtSizes).map((size) => (
+                      <div key={size} className="flex items-center gap-2">
+                        <label className="w-12 text-sm text-gray-600">{size}</label>
+                        <Input
+                          type="number"
+                          min="0"
+                          className="w-20"
+                          value={formData.tShirtSizes[size]}
+                          onChange={(e) => handleTShirtSizeChange(size, e.target.value)}
+                          placeholder="0"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </FormField>
+              </div>
+            </Card>
+
+            {/* Booking Information Card */}
+            <Card>
+              <CardHeader title="Booking Information" />
+              <div className="p-6">
+                <div className="grid grid-cols-2 gap-4">
+                <FormField label="Booking File">
+                  <Input 
+                    type="file" 
+                    className="bg-white"
+                    onChange={handleFileChange}
+                  />
+                </FormField>
+                  <FormField label="Trip Date">
+                    <Input 
+                      type="date" 
+                      value={formData.tripDate}
+                      onChange={(e) => handleInputChange('tripDate', e.target.value)}
+                    />
+                  </FormField>
+
+                  <FormField label="Number of Pax">
+                    <Input 
+                        type="number" 
+                        min="1" 
+                        value={numberOfPax}
+                        onChange={(e) => setNumberOfPax(e.target.value)}
+                        placeholder="Enter number of passengers" 
+                    />
+                    </FormField>
+                  <FormField label="Package">
+                    <SearchableSelect
+                      options={data.packages}
+                      value={selectedPackage?.id}
+                      onChange={(id) => setSelectedPackage(data.packages.find(p => p.id === id))}
+                      placeholder="Select package"
+                      searchValue={searchPackage}
+                      onSearchChange={setSearchPackage}
+                      open={openPackage}
+                      setOpen={setOpenPackage}
+                      displayKey="name"
+                    />
+                  </FormField>
+                </div>
+
+                {/* Pickup Details */}
+                <div className="mt-6 pt-6 border-t">
+                  <h3 className="font-medium mb-4">Pickup Details</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Pickup Location">
+                      <Input type="text" placeholder="Select pickup location" />
+                    </FormField>
+
+                    <FormField label="Pickup Time">
+                      <Input type="time" />
+                    </FormField>
+                  </div>
+                </div>
+
+                {/* Drop-off Details */}
+                <div className="mt-6 pt-6 border-t">
+                  <h3 className="font-medium mb-4">Drop-off Details</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField label="Drop-off Location">
+                      <Input type="text" placeholder="Select drop-off location" />
+                    </FormField>
+
+                    <FormField label="Drop-off Time">
+                      <Input type="time" />
+                    </FormField>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+          <Card>
+            <CardHeader title="Selected Package Details" />
+            <PackageDetailCard 
+                ref={bookingDetailRef}            
+                selectedPackage={selectedPackage} 
+                tripDate={tripDate}
+                numberOfPax={numberOfPax}
+                carConfiguration={data.car_configuration}
+                othersActivities={data.others_activities} // Tambahkan ini
+                orderChannel={data.order_channel} // Tambahkan ini
+                />
+            </Card>
+            <div className="mt-6 flex justify-end">
+              <button 
+                onClick={handleSubmit}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Submit Booking
+              </button>
+            </div>            
           </div>
         </div>
     </Main>

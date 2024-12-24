@@ -44,7 +44,7 @@ export default function Index({ data, flash = {} }) {
         e.preventDefault();
         setIsSubmitting(true);
         
-        router.post('/short-link/store', formData, {
+        router.post('/generator/short-link/store', formData, {
             onSuccess: () => {
                 setIsDialogOpen(false);
                 setIsSubmitting(false);
@@ -77,7 +77,7 @@ export default function Index({ data, flash = {} }) {
         e.preventDefault();
         setIsSubmitting(true);
         
-        router.put(`/short-link/${selectedItem.id}`, formData, {
+        router.put(`/generator/short-link/${selectedItem.id}`, formData, {
             onSuccess: () => {
                 setIsEditDialogOpen(false);
                 setIsSubmitting(false);
@@ -104,7 +104,7 @@ export default function Index({ data, flash = {} }) {
 
     const confirmDelete = () => {
         setIsDeleting(true);
-        router.delete(`/short-link/${selectedItem.id}`, {
+        router.delete(`/generator/short-link/${selectedItem.id}`, {
             onSuccess: () => {
                 setIsDeleteDialogOpen(false);
                 setIsDeleting(false);
@@ -271,8 +271,8 @@ export default function Index({ data, flash = {} }) {
                 </div>
 
                 {/* Table Section */}
-                <div className="overflow-x-auto border rounded-lg">
-                    <table className="w-full table-fixed">
+                <div className="border rounded-lg">
+                    <table className="w-full">
                         <thead>
                             <tr className="bg-gray-50">
                                 <th className="w-16 px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
@@ -301,8 +301,8 @@ export default function Index({ data, flash = {} }) {
                                             {`https://jv-to.com/${item.short_url}`}
                                         </a>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-900 relative">
-                                        <div className="flex justify-center">
+                                    <td className="px-6 py-4 text-sm text-gray-900">
+                                        <div className="flex justify-center relative">
                                             <button 
                                                 onClick={() => toggleDropdown(item.id)}
                                                 className="text-gray-400 hover:text-gray-600"

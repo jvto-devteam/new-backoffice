@@ -394,7 +394,7 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                                     </li>
                                                     <li>
                                                         <Link
-                                                            href="/finance/flipbook">
+                                                            href="/generator/flipbook">
                                                             Flipbook
                                                         </Link>
                                                     </li>

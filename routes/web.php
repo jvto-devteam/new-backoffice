@@ -43,17 +43,21 @@ Route::get('/data-master-management/hotels', [HotelController::class,'index']);
 Route::get('/data-master-management/accommodation', [AccommodationController::class,'index']);
 Route::get('/data-master-management/activities', [ActivityController::class,'index']);
 
-Route::get('/flipbook', [FlipBookController::class,'index']);
 
 Route::get('/short-link', [ShortLinkController::class,'index']);
 Route::post('/short-link/store', [ShortLinkController::class,'store']);
 Route::delete('/short-link/{id}', [ShortLinkController::class, 'destroy'])->name('short-link.destroy');
 Route::put('/short-link/{id}', [ShortLinkController::class, 'update'])->name('short-link.update');
 Route::prefix('generator')->group(function () {
+    Route::get('/flipbook', [FlipBookController::class,'index']);
+    Route::post('/flipbook/store', [FlipBookController::class,'store']);
+    Route::delete('/flipbook/{id}', [FlipBookController::class, 'destroy']);
+    Route::put('/flipbook/{id}', [FlipBookController::class, 'update']);
+    
     Route::get('/short-link', [ShortLinkController::class,'index']);
     Route::post('/short-link/store', [ShortLinkController::class,'store']);
-    Route::delete('/short-link/{id}', [ShortLinkController::class, 'destroy'])->name('short-link.destroy');
-    Route::put('/short-link/{id}', [ShortLinkController::class, 'update'])->name('short-link.update');
+    Route::delete('/short-link/{id}', [ShortLinkController::class, 'destroy']);
+    Route::put('/short-link/{id}', [ShortLinkController::class, 'update']);
 });
 
 Route::prefix('bookings')->group(function () {

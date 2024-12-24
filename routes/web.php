@@ -10,6 +10,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\TaskManagementController;
 use App\Http\Controllers\KlookExpenseController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\FlipBookController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ShortLinkController;
 use App\Http\Controllers\TaskController;
@@ -41,6 +42,8 @@ Route::get('/expense-item', [ExpenseController::class,'expenseItem']);
 Route::get('/data-master-management/hotels', [HotelController::class,'index']);
 Route::get('/data-master-management/accommodation', [AccommodationController::class,'index']);
 Route::get('/data-master-management/activities', [ActivityController::class,'index']);
+
+Route::get('/flipbook', [FlipBookController::class,'index']);
 
 Route::get('/short-link', [ShortLinkController::class,'index']);
 Route::post('/short-link/store', [ShortLinkController::class,'store']);

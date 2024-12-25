@@ -6,6 +6,7 @@ use App\Models\CarConfiguration;
 use App\Models\Package;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use Illuminate\Support\Facades\Http;
 
 class PackageController extends Controller
 {
@@ -105,16 +106,27 @@ class PackageController extends Controller
             $data['packages'] = $data['packages']->where('end_destination_id',$request->end);
         }
         if($request->json){
-            $data['packages'] = $data['packages']->where('id',$request->id)->first();
-            $fileName = $data['packages']->name.'.json';
-            $jsonContent = json_encode($data['packages'], JSON_PRETTY_PRINT);
-        
+
+//            $data['packages'] = $data['packages']->where('id',$request->id)->first();
+            $packageId = $request->id;
+            $apiUrl = "https://javavolcano-touroperator.com/public/api/backoffice/packages/$packageId";
+
+            // Fetch data from API
+            $response = Http::get($apiUrl);
+            $packageData = $response->json();
+
+            // Create filename and remove ':' characters
+            $fileName = str_replace(':', '', $packageData['package']['name']) . '.json';
+
+            // Convert to pretty-printed JSON
+            $jsonContent = json_encode($packageData, JSON_PRETTY_PRINT);
+
             return response()->streamDownload(function () use ($jsonContent) {
                 echo $jsonContent;
             }, $fileName, [
                 'Content-Type' => 'application/json',
                 'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
-            ]);            
+            ]);
             // return response()->json($data['packages']);
         }
         else{
@@ -140,7 +152,7 @@ class PackageController extends Controller
                         'Yogyakarta' => 'YOGYA'
                     ];
                     $prefix = $prefixMap[$package->startDestination->name];
-                    
+
                     // Create package code
                     $package->package_code = sprintf(
                         "%s-%dD%dN-%03d",
@@ -149,7 +161,7 @@ class PackageController extends Controller
                         $package->duration->night,
                         $counter++
                     );
-                    
+
                     return $package;
                 });
             })
@@ -157,13 +169,13 @@ class PackageController extends Controller
                 $parts = explode(' - ', $key);
                 $city = $parts[0];
                 $duration = (int) filter_var($parts[1], FILTER_SANITIZE_NUMBER_INT);
-                
+
                 $cityPriority = [
                     'Surabaya' => 1,
                     'Bali' => 2,
                     'Yogyakarta' => 3
                 ];
-                
+
                 return ($cityPriority[$city] * 100) + $duration;
             });
             // return $data['packages'];

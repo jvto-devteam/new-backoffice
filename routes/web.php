@@ -53,7 +53,7 @@ Route::prefix('generator')->group(function () {
     Route::post('/flipbook/store', [FlipBookController::class,'store']);
     Route::delete('/flipbook/{id}', [FlipBookController::class, 'destroy']);
     Route::put('/flipbook/{id}', [FlipBookController::class, 'update']);
-    
+
     Route::get('/short-link', [ShortLinkController::class,'index']);
     Route::post('/short-link/store', [ShortLinkController::class,'store']);
     Route::delete('/short-link/{id}', [ShortLinkController::class, 'destroy']);
@@ -77,5 +77,7 @@ Route::middleware('auth')->group(function () {
 Route::get('/task-management', [TaskManagementController::class, 'index']);
 Route::get('/calendar', [TaskManagementController::class, 'calendar']);
 Route::get('/klook-expense-calculation', [KlookExpenseController::class, 'index']);
+
+Route::get('/package-detail', [PackageController::class, 'packageDetail']);
 
 require __DIR__.'/auth.php';

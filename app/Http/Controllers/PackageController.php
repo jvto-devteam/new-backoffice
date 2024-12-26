@@ -129,6 +129,9 @@ class PackageController extends Controller
             ]);
             // return response()->json($data['packages']);
         }
+        if($request->pdf){
+            return Inertia::render('Packages/PackageFlipbook');
+        }
         else{
             // $data['packages'] = $data['packages']->get()
             // ->sortBy(fn($package) => $package->duration->day);
@@ -201,5 +204,10 @@ class PackageController extends Controller
             // return $data['pax_configuration'];
             return Inertia::render('Packages/Index',['data' => $data]);
         }
+    }
+
+    function packageDetail()
+    {
+        return Inertia::render('Packages/TourLandingPage');
     }
 }

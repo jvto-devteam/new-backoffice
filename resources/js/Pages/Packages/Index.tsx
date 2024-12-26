@@ -2,14 +2,14 @@ import Main from '@/Layouts/Main';
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronUp,XIcon } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
-import { 
-  Users, 
-  CarFront, 
-  Car, 
-  Ticket, 
-  HeartPulse, 
-  Shirt, 
-  Droplet 
+import {
+  Users,
+  CarFront,
+  Car,
+  Ticket,
+  HeartPulse,
+  Shirt,
+  Droplet
 } from 'lucide-react';
 const Index = (data) => {
   // Sample data structure
@@ -52,7 +52,7 @@ const Index = (data) => {
       description: "We would provide mineral water during the trip"
     }
   ];
-  
+
   const [expandedSections, setExpandedSections] = useState(() => {
     // Initialize all sections to be open
     const initialState = {};
@@ -66,7 +66,7 @@ const Index = (data) => {
   const [showDetails, setShowDetails] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [selectedPackage, setSelectedPackage] = useState(null);
-  
+
   const dropdownRefs = useRef({});
 
   // Close dropdown when clicking outside
@@ -103,7 +103,7 @@ const Index = (data) => {
         currency: 'IDR'
     }).format(price);
   };
-  
+
   return (
     <Main>
       <div className="space-y-4">
@@ -120,7 +120,7 @@ const Index = (data) => {
                 <ChevronDown className="w-5 h-5 text-gray-500" />
               )}
             </button>
-            
+
             {expandedSections[section] && (
               <div className="p-4 bg-white">
                 <div>
@@ -150,17 +150,17 @@ const Index = (data) => {
                           <td className="px-4 py-2 text-sm text-gray-900 text-right">{formatPrice(item.min_price)}</td>
                           <td className="px-4 py-2 text-sm text-center">
                           <div className="relative" ref={el => dropdownRefs.current[item.id] = el}>
-                            <button 
+                            <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 toggleDropdown(item.id);
                               }}
                               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full transition-colors duration-150"
                             >
-                              <svg 
-                                xmlns="http://www.w3.org/2000/svg" 
-                                className="h-5 w-5 text-gray-500" 
-                                viewBox="0 0 20 20" 
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-5 w-5 text-gray-500"
+                                viewBox="0 0 20 20"
                                 fill="currentColor"
                               >
                                 <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
@@ -168,11 +168,11 @@ const Index = (data) => {
                             </button>
 
                             {openDropdowns[item.id] && (
-                              <div 
+                              <div
                                 className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 py-1"
                                 onClick={(e) => e.stopPropagation()}
                               >
-                                <button 
+                                <button
                                   onClick={() => {
                                     setSelectedPackage(item);
                                     setShowDetails(true);
@@ -182,13 +182,13 @@ const Index = (data) => {
                                 >
                                   Detail
                                 </button>
-                                <a 
-                                  href={`/package-inventory/${orderChannel}?id=${item.id}&json=true`} 
+                                <a
+                                  href={`/package-inventory/${orderChannel}?id=${item.id}&json=true`}
                                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                                 >
                                   Json
                                 </a>
-                                <button 
+                                <button
                                   onClick={() => {
                                     setSelectedPackage(item);
                                     setShowQRCode(true);
@@ -198,18 +198,20 @@ const Index = (data) => {
                                 >
                                   QR Code
                                 </button>
-                                <button 
-                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
-                                >
-                                  PDF
-                                </button>
-                                <button 
-                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
-                                >
-                                  Flipbook
-                                </button>
-                                <button 
-                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                  <a
+                                      href={`/package-detail`} target="_blank"
+                                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                  >
+                                      {/*PDF*/}
+                                      Landing Page
+                                  </a>
+                                  <button
+                                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                  >
+                                      Flipbook
+                                  </button>
+                                  <button
+                                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                                 >
                                   Edit
                                 </button>
@@ -226,15 +228,15 @@ const Index = (data) => {
             )}
           </div>
         ))}
-      <Dialog 
-        open={showDetails} 
+      <Dialog
+        open={showDetails}
         onClose={() => setShowDetails(false)}
         className="relative z-50"
       >
         <div className="fixed inset-0">
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
         </div>
-        
+
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <Dialog.Panel className="mx-auto max-w-4xl w-full bg-white rounded-xl shadow-xl">
             {/* Modal content similar to the provided PackageDetails component */}
@@ -242,7 +244,7 @@ const Index = (data) => {
               <Dialog.Title className="text-xl font-semibold">
                 Package Details
               </Dialog.Title>
-              <button 
+              <button
                 onClick={() => setShowDetails(false)}
                 className="p-1 rounded-lg hover:bg-gray-100 transition-colors"
               >
@@ -352,7 +354,7 @@ const Index = (data) => {
                     <div>
                       <h3 className="text-md font-medium text-gray-500">Key Features</h3>
                       <p className="mt-1 text-gray-900">
-                      Guided tours, Stargazing, Sunrise at Bromo, Blue flames at Ijen, Turquoise crater lake, Waterfall trek.                        
+                      Guided tours, Stargazing, Sunrise at Bromo, Blue flames at Ijen, Turquoise crater lake, Waterfall trek.
                       </p>
                     </div>
                     <div>
@@ -374,7 +376,7 @@ const Index = (data) => {
                         return (
                           <span className="text-sm mr-1  text-gray-900 dark:text-white">
                             {data.itinerary_destination.destination.name}
-                            {data.itinerary_destination.second_destination_id ? ', '+data.itinerary_destination.second_destination.name : ''}, 
+                            {data.itinerary_destination.second_destination_id ? ', '+data.itinerary_destination.second_destination.name : ''},
                           </span>
                         );
                       })}
@@ -394,7 +396,7 @@ const Index = (data) => {
                     {inclusions.map((item, index) => {
                       const IconComponent = item.icon;
                       return (
-                        <div 
+                        <div
                           key={index}
                           className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 flex items-start space-x-4"
                         >
@@ -427,7 +429,7 @@ const Index = (data) => {
                     <li className="text-sm flex gap-2 items-center"><XIcon className="w-5 h-5 text-red"/> Personal expenses</li>
                     <li className="text-sm flex gap-2 items-center"><XIcon className="w-5 h-5 text-red"/> Domestic/International air tickets</li>
                   </ul>
-                </div>                
+                </div>
                 <div className="p-6 bg-white dark:bg-gray-900 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
                 <h3 className="text-lg font-semibold mb-4 flex items-center">
                   Meals Schedule
@@ -582,7 +584,7 @@ const Index = (data) => {
                       .map((price, index) => (
                         <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                           <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                            {price.price_category.end === 0 
+                            {price.price_category.end === 0
                               ? `${price.price_category.start}+ Pax`
                               : price.price_category.start === price.price_category.end
                                 ? `${price.price_category.start} Pax`
@@ -612,10 +614,10 @@ const Index = (data) => {
                   <li>Additional charges may apply for special requests</li>
                 </ul>
               </div>
-            </div>                                   
+            </div>
               </div>
           )}
-  
+
           </Dialog.Panel>
         </div>
       </Dialog>

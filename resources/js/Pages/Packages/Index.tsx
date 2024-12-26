@@ -198,18 +198,11 @@ const Index = (data) => {
                                 >
                                   QR Code
                                 </button>
-                                  <a
-                                      href={`/package-detail`} target="_blank"
-                                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
-                                  >
-                                      {/*PDF*/}
-                                      Landing Page
-                                  </a>
-                                  <button
+                                  <a href={`/package-inventory/flipbook/${item.url}`}
                                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                                   >
                                       Flipbook
-                                  </button>
+                                  </a>
                                   <button
                                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                                 >

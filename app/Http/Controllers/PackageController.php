@@ -210,4 +210,7 @@ class PackageController extends Controller
     {
         return Inertia::render('Packages/TourLandingPage');
     }
+    function flipbook($url){
+        return view('packages/flipbook');
+    }
 }

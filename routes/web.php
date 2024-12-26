@@ -66,6 +66,7 @@ Route::prefix('bookings')->group(function () {
 });
 
 Route::prefix('package-inventory')->group(function () {
+    Route::get('/flipbook/{url}', [PackageController::class, 'flipbook']);
     Route::get('/{order_channel}', [PackageController::class, 'index']);
 });
 Route::middleware('auth')->group(function () {

@@ -213,8 +213,8 @@
             <div>
 
                 <!-- Halaman 7: Itinerary Day 2 -->
-                <div style="height: 100%; padding: 40px; background: white;">
-                    <h2 style="font-size: 2em; margin-bottom: 30px; color: #333;">Day 2: Ijen Crater & Papuma Beach</h2>
+                <div style="height: 100%; padding: 20px; background: white;">
+                    <h2 style="font-size: 2em; margin-bottom: 20px; color: #333;">Day 2: Ijen Crater & Papuma Beach</h2>
                     <div style="border-left: 4px solid #3B82F6; padding-left: 20px;">
                         <div style="margin-bottom: 20px;">
                             <p style="font-weight: bold; margin-bottom: 10px;">00:00</p>
@@ -254,33 +254,24 @@
                         <div style="margin-bottom: 10px;">
                             <p style="font-weight: bold; margin-bottom: 5px;">14:00</p>
                             <div style="display: flex; align-items: start; margin-bottom: 10px;">
-                                <i class="fas fa-hotel"
-                                   style="margin-right: 10px; margin-top: 4px; color: #3B82F6;"></i>
-                                <p>Check in at Doho Homestay, Jember</p>
-                            </div>
-                        </div>
-
-                        <div style="margin-bottom: 10px;">
-                            <p style="font-weight: bold; margin-bottom: 5px;">15:00</p>
-                            <div style="display: flex; align-items: start; margin-bottom: 10px;">
                                 <i class="fas fa-car" style="margin-right: 10px; margin-top: 4px; color: #3B82F6;"></i>
                                 <p>Depart to Papuma Beach</p>
                             </div>
                         </div>
 
-                        <div style="margin-bottom: 10px;">
+                        <div style="margin-bottom: 5px;">
                             <p style="font-weight: bold; margin-bottom: 5px;">16:00</p>
-                            <div style="display: flex; align-items: start; margin-bottom: 10px;">
+                            <div style="display: flex; align-items: start; margin-bottom: 5px;">
                                 <i class="fas fa-sun" style="margin-right: 10px; margin-top: 4px; color: #3B82F6;"></i>
                                 <p>Sunset tour at Papuma Beach</p>
                             </div>
                         </div>
 
                         <div>
-                            <p style="font-weight: bold; margin-bottom: 5px;">18:00</p>
+                            <p style="font-weight: bold; margin-bottom: 5px;">19:00</p>
                             <div style="display: flex; align-items: start;">
                                 <i class="fas fa-home" style="margin-right: 10px; margin-top: 4px; color: #3B82F6;"></i>
-                                <p>Return to Doho Homestay, Jember</p>
+                                <p>Check in at Doho Homestay, Jember</p>
                             </div>
                         </div>
                     </div>
@@ -424,11 +415,11 @@
             </div>
 
             <div>
-                <div style="height: 100%; padding: 40px; background: white;">
-                    <h2 style="font-size: 2em; margin-bottom: 30px; color: #333;">Accommodation</h2>
+                <div style="height: 100%; padding: 20px; background: white;">
+                    <h2 style="font-size: 2em; margin-bottom: 20px; color: #333;">Accommodation</h2>
 
-                    <div style="margin-bottom: 30px;">
-                        <h3 style="font-size: 1.4em; color: #333; margin-bottom: 15px;">Night 1: Grand Padis Hotel</h3>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="font-size: 1.4em; color: #333; margin-bottom: 10px;">Night 1: Grand Padis Hotel</h3>
                         <div style="border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
                             <p style="margin-bottom: 10px;">
                                 <i class="fas fa-map-marker-alt" style="margin-right: 10px; color: #3B82F6;"></i>
@@ -437,8 +428,8 @@
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 30px;">
-                        <h3 style="font-size: 1.4em; color: #333; margin-bottom: 15px;">Night 2: Doho Homestay</h3>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="font-size: 1.4em; color: #333; margin-bottom: 10px;">Night 2: Doho Homestay</h3>
                         <div style="border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
                             <p style="margin-bottom: 10px;">
                                 <i class="fas fa-map-marker-alt" style="margin-right: 10px; color: #3B82F6;"></i>
@@ -447,8 +438,8 @@
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 30px;">
-                        <h3 style="font-size: 1.4em; color: #333; margin-bottom: 15px;">Night 3: Joglo Kecombrang Bromo</h3>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="font-size: 1.4em; color: #333; margin-bottom: 10px;">Night 3: Joglo Kecombrang Bromo</h3>
                         <div style="border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
                             <p style="margin-bottom: 10px;">
                                 <i class="fas fa-map-marker-alt" style="margin-right: 10px; color: #3B82F6;"></i>
@@ -457,8 +448,8 @@
                         </div>
                     </div>
 
-                    <div style="margin-bottom: 30px;">
-                        <h3 style="font-size: 1.4em; color: #333; margin-bottom: 15px;">Night 4: Holiday Inn Express Surabaya Centerpoint</h3>
+                    <div style="margin-bottom: 20px;">
+                        <h3 style="font-size: 1.4em; color: #333; margin-bottom: 10px;">Night 4: Holiday Inn Express Surabaya Centerpoint</h3>
                         <div style="border: 1px solid #ddd; padding: 20px; border-radius: 8px;">
                             <p style="margin-bottom: 10px;">
                                 <i class="fas fa-map-marker-alt" style="margin-right: 10px; color: #3B82F6;"></i>

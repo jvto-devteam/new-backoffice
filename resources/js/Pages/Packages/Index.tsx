@@ -129,90 +129,95 @@ const Index = (data) => {
                       <tr>
                         <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900 w-32">Package ID</th>
                         <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900 w-64">Package Name</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900 w-64">Start</th>
                         <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900 w-96">Destination</th>
+                        <th className="px-4 py-2 text-left text-sm font-semibold text-gray-900 w-96">Finish</th>
                         <th className="px-4 py-2 text-right text-sm font-semibold text-gray-900 w-32">Price</th>
                         <th className="px-4 py-2 text-center text-sm font-semibold text-gray-900 w-20">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                       {items.map((item) => (
-                        <tr key={item.id} className="hover:bg-gray-50">
-                          <td className="px-4 py-2 text-sm text-gray-900">{item.package_code}</td>
-                          <td className="px-4 py-2 text-sm text-gray-900">{item.name}</td>
-                          <td className="px-4 py-2 text-sm text-gray-500">{item.itinerary.map((data,index) => (
-                            <div className="inline" key={index}>
-                              <span>{data.itinerary_destination.destination.name}, </span>
-                              {data.itinerary_destination.second_destination_id ? (
-                                <span>{data.itinerary_destination.second_destination.name}, </span>
-                              ) : ''}
-                            </div>
-                          ))}</td>
-                          <td className="px-4 py-2 text-sm text-gray-900 text-right">{formatPrice(item.min_price)}</td>
-                          <td className="px-4 py-2 text-sm text-center">
-                          <div className="relative" ref={el => dropdownRefs.current[item.id] = el}>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleDropdown(item.id);
-                              }}
-                              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full transition-colors duration-150"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-5 w-5 text-gray-500"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                              >
-                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
-                              </svg>
-                            </button>
+                          <tr key={item.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-2 text-sm text-gray-900">{item.package_code}</td>
+                              <td className="px-4 py-2 text-sm text-gray-900">{item.name}</td>
+                              <td className="px-4 py-2 text-sm text-gray-900">{item.start_destination.name}</td>
+                              <td className="px-4 py-2 text-sm text-gray-500">{item.itinerary.map((data, index) => (
+                                  <div className="inline" key={index}>
+                                      <span>{data.itinerary_destination.destination.name}, </span>
+                                      {data.itinerary_destination.second_destination_id ? (
+                                          <span>{data.itinerary_destination.second_destination.name}, </span>
+                                      ) : ''}
+                                  </div>
+                              ))}</td>
+                              <td className="px-4 py-2 text-sm text-gray-900">{item.end_destination.name}</td>
+                              <td className="px-4 py-2 text-sm text-gray-900 text-right">{formatPrice(item.min_price)}</td>
+                              <td className="px-4 py-2 text-sm text-center">
+                                  <div className="relative" ref={el => dropdownRefs.current[item.id] = el}>
+                                      <button
+                                          onClick={(e) => {
+                                              e.stopPropagation();
+                                              toggleDropdown(item.id);
+                                          }}
+                                          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full transition-colors duration-150"
+                                      >
+                                          <svg
+                                              xmlns="http://www.w3.org/2000/svg"
+                                              className="h-5 w-5 text-gray-500"
+                                              viewBox="0 0 20 20"
+                                              fill="currentColor"
+                                          >
+                                              <path
+                                                  d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/>
+                                          </svg>
+                                      </button>
 
-                            {openDropdowns[item.id] && (
-                              <div
-                                className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 py-1"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <button
-                                  onClick={() => {
-                                    setSelectedPackage(item);
-                                    setShowDetails(true);
-                                    toggleDropdown(item.id);
-                                  }}
-                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
-                                >
-                                  Detail
-                                </button>
-                                <a
-                                  href={`/package-inventory/${orderChannel}?id=${item.id}&json=true`}
-                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
-                                >
-                                  Json
-                                </a>
-                                <button
-                                  onClick={() => {
-                                    setSelectedPackage(item);
-                                    setShowQRCode(true);
-                                    toggleDropdown(item.id);
-                                  }}
-                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
-                                >
-                                  QR Code
-                                </button>
-                                  <a href={`/package-inventory/flipbook/${item.url}`}
-                                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
-                                  >
-                                      Flipbook
-                                  </a>
-                                  <button
-                                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
-                                >
-                                  Edit
-                                </button>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        </tr>
+                                      {openDropdowns[item.id] && (
+                                          <div
+                                              className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 py-1"
+                                              onClick={(e) => e.stopPropagation()}
+                                          >
+                                              <button
+                                                  onClick={() => {
+                                                      setSelectedPackage(item);
+                                                      setShowDetails(true);
+                                                      toggleDropdown(item.id);
+                                                  }}
+                                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                              >
+                                                  Detail
+                                              </button>
+                                              <a
+                                                  href={`/package-inventory/${orderChannel}?id=${item.id}&json=true`}
+                                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                              >
+                                                  Json
+                                              </a>
+                                              <button
+                                                  onClick={() => {
+                                                      setSelectedPackage(item);
+                                                      setShowQRCode(true);
+                                                      toggleDropdown(item.id);
+                                                  }}
+                                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                              >
+                                                  QR Code
+                                              </button>
+                                              <a href={`/package-inventory/flipbook/${item.url}`}
+                                                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                              >
+                                                  Flipbook
+                                              </a>
+                                              <button
+                                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                              >
+                                                  Edit
+                                              </button>
+                                          </div>
+                                      )}
+                                  </div>
+                              </td>
+                          </tr>
                       ))}
                     </tbody>
                   </table>

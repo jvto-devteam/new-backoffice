@@ -213,7 +213,6 @@ export default function Index({ data, flash = {} }) {
                                 }`}
                                 placeholder="Short URL"
                                 required
-                                disabled="disabled"
                             />
                             {errors.short_url && (
                                 <p className="mt-1 text-sm text-red-500">{errors.short_url}</p>

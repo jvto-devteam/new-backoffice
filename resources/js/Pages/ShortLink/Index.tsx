@@ -14,8 +14,11 @@ export default function Index({ data, flash = {} }) {
     const [formData, setFormData] = useState({
         title: '',
         url: '',
-        short_url: data.new_short_url
+        short_url: data.new_short_url,
+        description: "Explore Java's most breathtaking volcanoes, including Mount Bromo and Ijen with Java Volcano Tour Operator.",
+        thumbnail: null        
     });
+    // Add a preview state for thumbnail
     const [errors, setErrors] = useState({});
     const dropdownRef = useRef(null);
 
@@ -44,14 +47,25 @@ export default function Index({ data, flash = {} }) {
         e.preventDefault();
         setIsSubmitting(true);
         
-        router.post('/generator/short-link/store', formData, {
+        const formDataToSend = new FormData();
+        formDataToSend.append('title', formData.title);
+        formDataToSend.append('url', formData.url);
+        formDataToSend.append('short_url', formData.short_url);
+        formDataToSend.append('description', formData.description);
+        if (formData.thumbnail) {
+            formDataToSend.append('thumbnail', formData.thumbnail);
+        }
+        
+        router.post('/generator/short-link/store', formDataToSend, {
             onSuccess: () => {
                 setIsDialogOpen(false);
                 setIsSubmitting(false);
                 setFormData({
                     title: '',
                     url: '',
-                    short_url: data.new_short_url
+                    short_url: data.new_short_url,
+                    description: '',
+                    thumbnail: null
                 });
                 setErrors({});
             },
@@ -62,12 +76,14 @@ export default function Index({ data, flash = {} }) {
         });
     };
 
-    const handleEdit = (item) => {
+    const handleEdit = (item) => {        
         setSelectedItem(item);
         setFormData({
             title: item.title,
             url: item.file,
-            short_url: item.short_url
+            short_url: item.short_url,
+            description: item.description || '', // Handle null description
+            thumbnail: null // We'll only send new thumbnail if uploaded
         });
         setIsEditDialogOpen(true);
         setOpenDropdownId(null);
@@ -76,8 +92,18 @@ export default function Index({ data, flash = {} }) {
     const handleUpdate = (e) => {
         e.preventDefault();
         setIsSubmitting(true);
+        const formDataToSend = new FormData();
+        formDataToSend.append('title', formData.title);
+        formDataToSend.append('url', formData.url);
+        formDataToSend.append('short_url', formData.short_url);
+        formDataToSend.append('description', formData.description);
+        if (formData.thumbnail) {
+            formDataToSend.append('thumbnail', formData.thumbnail);
+        }
+        // Add _method field for PUT request
+        formDataToSend.append('_method', 'PUT');                
         
-        router.put(`/generator/short-link/${selectedItem.id}`, formData, {
+        router.post(`/generator/short-link/${selectedItem.id}`, formDataToSend, {
             onSuccess: () => {
                 setIsEditDialogOpen(false);
                 setIsSubmitting(false);
@@ -85,7 +111,9 @@ export default function Index({ data, flash = {} }) {
                 setFormData({
                     title: '',
                     url: '',
-                    short_url: data.new_short_url
+                    short_url: data.new_short_url,
+                    description: '',
+                    thumbnail: null
                 });
                 setErrors({});
             },
@@ -125,10 +153,20 @@ export default function Index({ data, flash = {} }) {
     };
 
     const handleChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
+        if (e.target.name === 'thumbnail') {
+            const file = e.target.files[0];
+            setFormData({
+                ...formData,
+                thumbnail: file
+            });
+            
+        } else {
+            setFormData({
+                ...formData,
+                [e.target.name]: e.target.value
+            });
+        }
+        
         if (errors[e.target.name]) {
             setErrors({
                 ...errors,
@@ -181,6 +219,25 @@ export default function Index({ data, flash = {} }) {
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Description
+                            </label>
+                            <textarea
+                                name="description"
+                                value={formData.description}
+                                onChange={handleChange}
+                                className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                                    errors.description ? 'border-red-500' : 'border-gray-300'
+                                }`}
+                                placeholder="Enter description"
+                                rows="3"
+                            />
+                            {errors.description && (
+                                <p className="mt-1 text-sm text-red-500">{errors.description}</p>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
                                 URL/File
                             </label>
                             <input
@@ -218,6 +275,40 @@ export default function Index({ data, flash = {} }) {
                                 <p className="mt-1 text-sm text-red-500">{errors.short_url}</p>
                             )}
                         </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Thumbnail (Optional)
+                            </label>
+                            {selectedItem?.thumbnail && (
+                              <div className="mb-2 text-sm">
+                                  <a 
+                                      href={`/storage/shortlinks/thumbnails/${selectedItem.thumbnail}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-blue-600 hover:text-blue-800 flex items-center"
+                                  >
+                                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                      </svg>
+                                      View Current Thumbnail
+                                  </a>
+                              </div>
+                          )}
+
+                            <input
+                                type="file"
+                                name="thumbnail"
+                                onChange={handleChange}
+                                className={`w-full px-3 py-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                                    errors.thumbnail ? 'border-red-500' : 'border-gray-300'
+                                }`}
+                                accept="image/*"
+                            />
+                            {errors.thumbnail && (
+                                <p className="mt-1 text-sm text-red-500">{errors.thumbnail}</p>
+                            )}
+                        </div>                        
                         <div className="flex justify-end gap-2 mt-4">
                             <button
                                 type="button"

@@ -4,10 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Booking extends Model
 {
     use HasFactory;
+    protected $appends = ['book_add_on_total'];
 
     public function user()
     {
@@ -97,6 +99,11 @@ class Booking extends Model
     public function bookAddOn()
     {
         return $this->hasMany(BookAddOn::class, 'booking_id');
+    }
+
+    public function getBookAddOnTotalAttribute()
+    {
+        return $this->bookAddOn()->sum(DB::raw('qty * price'));
     }
 
     public function bookingPayment()

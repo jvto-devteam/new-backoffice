@@ -32,7 +32,7 @@
         "@react-pdf-viewer/default-layout": "^3.12.0",
         "@types/react": "^18.3.12",
         "@types/react-dom": "^18.3.1",
-        "apexcharts": "^4.1.0",
+        "apexcharts": "^4.3.0",
         "date-fns": "^4.1.0",
         "flatpickr": "^4.6.13",
         "jsvectormap": "^1.5.3",
@@ -40,7 +40,7 @@
         "match-sorter": "^8.0.0",
         "path": "^0.12.7",
         "qrcode": "^1.5.4",
-        "react-apexcharts": "^1.6.0",
+        "react-apexcharts": "^1.7.0",
         "react-beautiful-dnd": "^13.1.1",
         "react-hot-toast": "^2.4.1",
         "react-icons": "^5.3.0",
@@ -48,6 +48,7 @@
         "react-pdf": "^9.2.1",
         "react-router-dom": "^7.0.1",
         "react-toastify": "^10.0.6",
+        "recharts": "^2.15.0",
         "sort-by": "^0.0.2",
         "typescript": "^5.7.2"
     }

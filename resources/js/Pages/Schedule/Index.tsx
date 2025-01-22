@@ -185,7 +185,7 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                         />
                         <DetailField 
                             label="Grand Total" 
-                            value={formatCurrency(booking?.grand_total || 0)} 
+                            value={formatCurrency(booking?.grand_total+booking?.book_add_on_total || 0)} 
                         />
                     </div>
                 </div>
@@ -315,11 +315,11 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                         Finance
                     </h3>
                     <div className="grid md:grid-cols-2 gap-6">
-                        <DetailField label="Invoice Total" value={formatCurrency(booking.grand_total)} />
+                        <DetailField label="Invoice Total" value={formatCurrency(booking.grand_total+booking.book_add_on_total)} />
                         {booking.agent_id != 1 && (
                             <>
                                 <DetailField label="Payment Received" value={formatCurrency(booking.payment)} />
-                                <DetailField label="Balance" value={formatCurrency(booking.balance)} />
+                                <DetailField label="Balance" value={formatCurrency(booking.grand_total+booking.book_add_on_total-booking.payment)} />
                             </>
                         )}
                         <DetailField label="Expenses" value={booking.expense_internal_total ? formatCurrency(booking.expense_internal_total) : '-'} />
@@ -632,7 +632,7 @@ const BookingRow = ({no, booking, isExpanded, onToggle}) => {
                                 </h4>
                                 <div className="space-y-2 text-sm">
                                     <div>
-                                        <span className="font-medium">Invoice Total:</span> IDR {formatRupiah(booking.grand_total)}
+                                        <span className="font-medium">Invoice Total:</span> IDR {formatRupiah(booking.grand_total+booking.book_add_on_total)}
                                     </div>
                                     <div>
                                         <span className="font-medium">Expenses:</span> 
@@ -643,7 +643,7 @@ const BookingRow = ({no, booking, isExpanded, onToggle}) => {
                                         </span>
                                     </div>
                                 <div>
-                                <span className="font-medium">Profit:</span> IDR {formatRupiah(booking.grand_total - booking.expense_internal_total)}
+                                <span className="font-medium">Profit:</span> IDR {formatRupiah((booking.grand_total+booking.book_add_on_total) - booking.expense_internal_total)}
                             </div>
                             {
                                 booking.agent_id == 2 && booking.booking_category_id != 3 ? (
@@ -652,7 +652,7 @@ const BookingRow = ({no, booking, isExpanded, onToggle}) => {
                                             <span className="font-medium">Deposit:</span> IDR {formatRupiah(booking.payment)}
                                         </div>
                                         <div>
-                                            <span className="font-medium">Balance:</span> IDR {formatRupiah(booking.balance)}
+                                            <span className="font-medium">Balance:</span> IDR {formatRupiah((booking.grand_total+booking.book_add_on_total)-booking.payment)}
                                         </div>
                                         <div>
                                             <span className="font-medium">Payment Method:</span> {booking.outstanding_payment_method ? booking.outstanding_payment_method.toUpperCase() : ''}

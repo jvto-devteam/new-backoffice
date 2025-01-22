@@ -15,8 +15,27 @@ import {
   Car, 
   LifeBuoy, 
   Backpack,
-  X as XIcon   
+  X as XIcon,
+  Activity, 
+  AlertTriangle, 
+  Calendar, 
+  Users, 
+  Truck, 
+  Hotel, 
+  CreditCard, 
+  Plus,
+  DollarSign  
 } from 'lucide-react';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
+} from 'recharts';
+
 
 // Chart Options and Data
 const paymentChartOptions = {
@@ -617,6 +636,186 @@ const BookingDropdown = () => {
 };
 
 export default function Dashboard2(data) {
+  const [metrics, setMetrics] = useState({
+    activeBookings: 12,
+    pendingBookings: 5,
+    confirmedBookings: 4,
+    completedBookings: 3,
+    totalPax: 87,
+    unassignedCrewCount: 3,
+    pendingPayments: 4,
+    pendingHotels: 2
+  });
+
+  const [alerts, setAlerts] = useState([
+    { id: 1, type: 'warning', message: 'Hotel booking pending for Tour #123', timestamp: '2h ago' },
+    { id: 2, type: 'error', message: 'Payment overdue for Tour #456', timestamp: '4h ago' },
+    { id: 3, type: 'info', message: 'Crew assignment needed for tomorrow', timestamp: '1h ago' }
+  ]);
+
+  const [schedule, setSchedule] = useState([
+    {
+      id: 1,
+      tourId: 'T123',
+      clientName: 'Smith Group',
+      pax: 6,
+      pickup: '05:00',
+      destination: 'Bromo Sunrise',
+      crew: 'John Driver, Mary Guide',
+      vehicle: 'Van 01',
+      status: 'On Time'
+    },
+    {
+      id: 2,
+      tourId: 'T124',
+      clientName: 'Johnson Family',
+      pax: 4,
+      pickup: '07:30',
+      destination: 'Ijen Crater',
+      crew: 'Mike Driver',
+      vehicle: 'Jeep 03',
+      status: 'Delayed'
+    }
+  ]);
+
+  const [financialData, setFinancialData] = useState([
+    { name: 'Mon', revenue: 4000, expenses: 2400, profit: 1600 },
+    { name: 'Tue', revenue: 3000, expenses: 1398, profit: 1602 },
+    { name: 'Wed', revenue: 2000, expenses: 1800, profit: 200 },
+    { name: 'Thu', revenue: 2780, expenses: 1908, profit: 872 },
+    { name: 'Fri', revenue: 1890, expenses: 1800, profit: 90 }
+  ]);
+
+  // Metric Card Component
+  const MetricCard = ({ title, value, icon: Icon, subtitle }) => (
+    <div className="bg-white rounded-lg shadow p-6 dark:bg-[#24303f]">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-300">{title}</h3>
+        <Icon className="h-5 w-5 text-gray-400 dark:text-blue-400" />
+      </div>
+      <div className="flex flex-col">
+        <span className="text-2xl font-bold text-gray-900 dark:text-white">{value}</span>
+        {subtitle && (
+          <span className="text-xs text-gray-500 mt-1 dark:text-gray-400">{subtitle}</span>
+        )}
+      </div>
+    </div>
+  );
+
+  // Alert Component
+  const AlertItem = ({ type, message, timestamp }) => (
+    <div className={`
+      p-4 rounded-lg mb-3
+      ${type === 'error' ? 'bg-red-50 border-l-4 border-red-400' :
+        type === 'warning' ? 'bg-yellow-50 border-l-4 border-yellow-400' :
+        'bg-blue-50 border-l-4 border-blue-400'}
+    `}>
+      <div className="flex justify-between items-center">
+        <span className={`
+          text-sm
+          ${type === 'error' ? 'text-red-700' :
+            type === 'warning' ? 'text-yellow-700' :
+            'text-blue-700'}
+        `}>
+          {message}
+        </span>
+        <span className="text-xs text-gray-500">{timestamp}</span>
+      </div>
+    </div>
+  );
+
+  // Schedule Item Component
+  const ScheduleItem = ({ tour }) => (
+    <div className="bg-white rounded-lg shadow p-4 mb-4 dark:bg-[#1a222c]">
+      <div className="flex justify-between items-center mb-3">
+        <div className="flex items-center">
+          <span className="font-medium text-gray-900 dark:text-blue-400">{tour.tourId}</span>
+          <span className="mx-2 text-gray-300">|</span>
+          <span className="text-gray-600 dark:text-white">{tour.clientName}</span>
+        </div>
+        <span className={`
+          px-3 py-1 rounded-full text-xs
+          ${tour.status === 'On Time' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}
+        `}>
+          {tour.status}
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex items-center">
+          <Clock className="h-4 w-4 text-gray-400 mr-2" />
+          <span className="text-sm text-gray-600 dark:text-gray-400">{tour.pickup}</span>
+        </div>
+        <div className="flex items-center">
+          <MapPin className="h-4 w-4 text-gray-400 mr-2" />
+          <span className="text-sm text-gray-600 dark:text-gray-400">{tour.destination}</span>
+        </div>
+        <div className="flex items-center">
+          <Users className="h-4 w-4 text-gray-400 mr-2" />
+          <span className="text-sm text-gray-600 dark:text-gray-400">{tour.crew}</span>
+        </div>
+        <div className="flex items-center">
+          <Truck className="h-4 w-4 text-gray-400 mr-2" />
+          <span className="text-sm text-gray-600 dark:text-gray-400">{tour.vehicle}</span>
+        </div>
+      </div>
+    </div>
+  );
+
+  // Quick Action Button Component
+  const QuickActionButton = ({ icon: Icon, label, onClick }) => (
+    <button 
+      onClick={onClick}
+      className="flex flex-col items-center justify-center p-4 bg-white rounded-lg shadow
+        hover:bg-gray-50 transition-colors duration-200  dark:bg-[#1a222c]"
+    >
+      <Icon className="h-6 w-6 text-gray-600 mb-2 dark:text-white" />
+      <span className="text-sm text-gray-700 dark:text-gray-400">{label}</span>
+    </button>
+  );
+
+  // Financial Chart Component
+  const FinancialChart = ({ data }) => (
+    <div className="bg-white rounded-lg shadow p-6 dark:bg-[#24303f]">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Financial Overview</h3>
+        <div className="flex items-center space-x-4">
+          <span className="flex items-center text-xs text-gray-500">
+            <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+            Revenue
+          </span>
+          <span className="flex items-center text-xs text-gray-500">
+            <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+            Profit
+          </span>
+        </div>
+      </div>
+      <div className="h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="name" stroke="#9CA3AF" />
+            <YAxis stroke="#9CA3AF" />
+            <Tooltip />
+            <Line 
+              type="monotone" 
+              dataKey="revenue" 
+              stroke="#3B82F6" 
+              strokeWidth={2}
+              dot={{ fill: '#3B82F6' }}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="profit" 
+              stroke="#10B981" 
+              strokeWidth={2}
+              dot={{ fill: '#10B981' }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+
   const res = data.data
   return (
     <Main>
@@ -631,9 +830,95 @@ export default function Dashboard2(data) {
                 defaultValue="Current Month"
             /> */}
         </div>
+      {/* Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <MetricCard 
+          title="Active Bookings"
+          value={res.total_booking}
+          icon={Calendar}
+          subtitle={`${res.total_booking_complete} complete, ${res.total_booking_on_going} on going`}
+        />
+        <MetricCard 
+          title="Total Guests"
+          value={metrics.totalPax}
+          icon={Users}
+          subtitle="Across all active tours"
+        />
+        <MetricCard 
+          title="Pending Actions"
+          value={metrics.unassignedCrewCount}
+          icon={AlertTriangle}
+          subtitle="Crew assignments needed"
+        />
+        <MetricCard 
+          title="Payments Due"
+          value={metrics.pendingPayments}
+          icon={DollarSign}
+          subtitle="Outstanding payments"
+        />
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Alerts & Schedule */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Alerts Section */}
+          <div className="bg-white rounded-lg shadow p-6 dark:bg-[#24303f]">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 dark:text-white">Recent Alerts</h2>
+            <div className="space-y-3">
+              {alerts.map(alert => (
+                <AlertItem key={alert.id} {...alert} />
+              ))}
+            </div>
+          </div>
+
+          {/* Today's Schedule Section */}
+          <div className="bg-white rounded-lg shadow p-6 dark:bg-[#24303f]">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 dark:text-white">Today's Schedule</h2>
+            <div className="space-y-4">
+              {schedule.map(tour => (
+                <ScheduleItem key={tour.id} tour={tour} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column - Quick Actions & Financial Summary */}
+        <div className="space-y-6">
+          {/* Quick Actions Grid */}
+          <div className="bg-white rounded-lg shadow p-6 dark:bg-[#24303f]">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 dark:text-white">Quick Actions</h2>
+            <div className="grid grid-cols-2 gap-4">
+              <QuickActionButton 
+                icon={Plus} 
+                label="New Booking"
+                onClick={() => console.log('New Booking')}
+              />
+              <QuickActionButton 
+                icon={Users} 
+                label="Assign Crew"
+                onClick={() => console.log('Assign Crew')}
+              />
+              <QuickActionButton 
+                icon={Hotel} 
+                label="Update Hotels"
+                onClick={() => console.log('Update Hotels')}
+              />
+              <QuickActionButton 
+                icon={Truck} 
+                label="Vehicle Status"
+                onClick={() => console.log('Vehicle Status')}
+              />
+            </div>
+          </div>
+
+          {/* Financial Chart */}
+          <FinancialChart data={financialData} />
+        </div>
+      </div>
 
         {/* Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <OverviewCard
             title="Total Bookings"
             value={res.total_booking}
@@ -653,7 +938,7 @@ export default function Dashboard2(data) {
             percentage={res.total_booking_on_going/res.total_booking*100}
             color="#3b82f6"
             />
-        </div>
+        </div> */}
 
         {/* Charts Section */}
         {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
@@ -710,7 +995,7 @@ export default function Dashboard2(data) {
         </div> */}
 
         {/* Leads Report */}
-        <div className="bg-white dark:bg-[#24303f] p-6 rounded-lg shadow-sm mb-6">
+        <div className="mt-5 bg-white dark:bg-[#24303f] p-6 rounded-lg shadow-sm mb-6">
             <div className="flex justify-between items-center mb-6">
                 <h3 className="text-lg font-bold">Upcoming Trip</h3>
                 <BookingDropdown/>

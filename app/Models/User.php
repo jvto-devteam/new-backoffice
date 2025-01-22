@@ -68,5 +68,18 @@ class User extends Authenticatable
         return $this->hasOne(Discount::class, 'user_id');
     }
 
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class, 'user_id');
+    }
 
+    public function bookingDetails()
+    {
+        return $this->hasManyThrough(BookingDetail::class, Booking::class, 'user_id', 'booking_id');
+    }
+
+    public function packages()
+    {
+        return $this->hasMany(Package::class, 'user_id');
+    }
 }

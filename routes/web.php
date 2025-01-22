@@ -14,6 +14,7 @@ use App\Http\Controllers\FlipBookController;
 use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ShortLinkController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\ClientController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -80,5 +81,8 @@ Route::get('/calendar', [TaskManagementController::class, 'calendar']);
 Route::get('/klook-expense-calculation', [KlookExpenseController::class, 'index']);
 
 Route::get('/package-detail', [PackageController::class, 'packageDetail']);
+
+// Client Management Routes
+Route::get('/client-management', [ClientController::class,'index']);
 
 require __DIR__.'/auth.php';

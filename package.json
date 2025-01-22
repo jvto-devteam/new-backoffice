@@ -28,14 +28,17 @@
         "@fullcalendar/daygrid": "^6.1.15",
         "@fullcalendar/interaction": "^6.1.15",
         "@fullcalendar/react": "^6.1.15",
+        "@radix-ui/react-select": "^2.1.4",
         "@react-pdf-viewer/core": "^3.12.0",
         "@react-pdf-viewer/default-layout": "^3.12.0",
         "@types/react": "^18.3.12",
         "@types/react-dom": "^18.3.1",
         "apexcharts": "^4.3.0",
+        "clsx": "^2.1.1",
         "date-fns": "^4.1.0",
         "flatpickr": "^4.6.13",
         "jsvectormap": "^1.5.3",
+        "lodash": "^4.17.21",
         "lucide-react": "^0.462.0",
         "match-sorter": "^8.0.0",
         "path": "^0.12.7",
@@ -50,6 +53,7 @@
         "react-toastify": "^10.0.6",
         "recharts": "^2.15.0",
         "sort-by": "^0.0.2",
+        "tailwind-merge": "^2.6.0",
         "typescript": "^5.7.2"
     }
 }

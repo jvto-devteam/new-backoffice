@@ -15,7 +15,7 @@ class PackageController extends Controller
         $data['order_channel'] = $orderChannel;
         $data['title'] = strtoupper($orderChannel) . " Packages";
 
-        $data['packages'] = Package::select('id', 'name', 'overview', 'duration_id', 'category_id', 'start_destination_id', 'end_destination_id', 'id_url', 'url')->with([
+        $data['packages'] = Package::select('id', 'name', 'overview', 'duration_id', 'category_id', 'start_destination_id', 'end_destination_id', 'id_url', 'url','package_code')->with([
             'duration' => function ($query) {
                 $query->select('id', 'name', 'day', 'night');
             },
@@ -152,7 +152,7 @@ class PackageController extends Controller
                         $prefix = $prefixMap[$package->startDestination->name];
 
                         // Create package code
-                        $package->package_code = sprintf(
+                        $package->package_code_custom = sprintf(
                             "%s-%dD%dN-%03d",
                             $prefix,
                             $package->duration->day,

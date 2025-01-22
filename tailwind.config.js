@@ -32,6 +32,15 @@ export default {
             DEFAULT: '#1C2434',
             2: '#010101',
           },
+          border: "hsl(var(--border))",
+          input: "hsl(var(--input))",
+          ring: "hsl(var(--ring))",
+          background: "hsl(var(--background))",
+          foreground: "hsl(var(--foreground))",
+          muted: {
+            DEFAULT: "hsl(var(--muted))",
+            foreground: "hsl(var(--muted-foreground))",
+          },          
           red: {
             ...colors.red,
             DEFAULT: '#FB5454',

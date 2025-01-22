@@ -840,13 +840,13 @@ export default function Dashboard2(data) {
         />
         <MetricCard 
           title="Total Guests"
-          value={metrics.totalPax}
+          value={data.data.user}
           icon={Users}
           subtitle="Across all active tours"
         />
         <MetricCard 
           title="Pending Actions"
-          value={metrics.unassignedCrewCount}
+          value={data.data.no_crew}
           icon={AlertTriangle}
           subtitle="Crew assignments needed"
         />

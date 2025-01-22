@@ -907,9 +907,11 @@ export default function Dashboard2(data) {
           <div className="bg-white rounded-lg shadow p-6 dark:bg-[#24303f]">
             <h2 className="text-lg font-medium text-gray-900 mb-4 dark:text-white">Today's Schedule</h2>
             <div className="space-y-4">
-              {schedule.map(tour => (
-                <ScheduleItem key={tour.id} tour={tour} />
-              ))}
+              {
+                data.data.booking_today.length == 0 && (
+                <div className="text-lg font-medium text-gray-300 mb-4 dark:text-gray-600">No Schedule Today</div>
+              )
+              }
             </div>
           </div>
         </div>

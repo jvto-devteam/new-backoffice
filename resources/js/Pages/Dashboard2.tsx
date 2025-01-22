@@ -872,31 +872,31 @@ export default function Dashboard2(data) {
               } */}
                 {
                   data.data.no_crew != 0 && (
-                    <AlertItem type="warning" message="Trip Doesn't have a crew" count={`${data.data.no_crew} trip`} />
+                    <AlertItem type="error" message="Trip Doesn't have a crew" count={`${data.data.no_crew} trip`} />
                   )
                 }
     
                 {
                   data.data.no_trip_media != 0 && (
-                    <AlertItem type="warning" message="Trip Doesn't have trip media" count={`${data.data.no_trip_media} trip`} />
+                    <AlertItem type="error" message="Trip Doesn't have trip media" count={`${data.data.no_trip_media} trip`} />
                   )
                 }
     
                 {
                   data.data.no_pickup_drop != 0 && (
-                    <AlertItem type="warning" message="Trip Doesn't have pickup or drop location" count={`${data.data.no_pickup_drop} trip`} />
+                    <AlertItem type="error" message="Trip Doesn't have pickup or drop location" count={`${data.data.no_pickup_drop} trip`} />
                   )
     }
     
                 {
                   data.data.no_tshirt != 0 && (
-                    <AlertItem type="warning" message="Trip Doesn't have t-shirt" count={`${data.data.no_tshirt} trip`} />
+                    <AlertItem type="error" message="Trip Doesn't have t-shirt" count={`${data.data.no_tshirt} trip`} />
                   )
                 }
     
                 {
                   data.data.no_hotel != 0 && (
-                    <AlertItem type="warning" message="Trip Doesn't have hotel" count={`${data.data.no_hotel} trip`} />
+                    <AlertItem type="error" message="Trip Doesn't have hotel" count={`${data.data.no_hotel} trip`} />
                   )
                 }
     

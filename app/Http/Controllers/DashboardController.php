@@ -24,10 +24,11 @@ class DashboardController extends Controller
             $query->where('status','booked');
         }])->count();
 
-        $data['no_crew'] = Booking::where('travel_date_start','like','%'.date('Y-m-d').'%')
+        $data['no_crew'] = Booking::where('travel_date_start','>=',date('Y-m-d'))
         ->whereDoesntHave('guideDriver')
         ->where('status','booked')
         ->count();
+
 
         return Inertia::render('Dashboard2',['data' => $data]);
     }

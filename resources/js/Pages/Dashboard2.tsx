@@ -703,7 +703,7 @@ export default function Dashboard2(data) {
   );
 
   // Alert Component
-  const AlertItem = ({ type, message, timestamp }) => (
+  const AlertItem = ({ type, message, count }) => (
     <div className={`
       p-4 rounded-lg mb-3
       ${type === 'error' ? 'bg-red-50 border-l-4 border-red-400' :
@@ -719,7 +719,7 @@ export default function Dashboard2(data) {
         `}>
           {message}
         </span>
-        <span className="text-xs text-gray-500">{timestamp}</span>
+        <span className="font-bold text-sm text-gray-500">{count}</span>
       </div>
     </div>
   );
@@ -866,9 +866,40 @@ export default function Dashboard2(data) {
           <div className="bg-white rounded-lg shadow p-6 dark:bg-[#24303f]">
             <h2 className="text-lg font-medium text-gray-900 mb-4 dark:text-white">Recent Alerts</h2>
             <div className="space-y-3">
-              {alerts.map(alert => (
-                <AlertItem key={alert.id} {...alert} />
-              ))}
+            {/* {
+                data.data.no_crew != 0 && (
+                )
+              } */}
+                {
+                  data.data.no_crew != 0 && (
+                    <AlertItem type="warning" message="Trip Doesn't have a crew" count={`${data.data.no_crew} trip`} />
+                  )
+                }
+    
+                {
+                  data.data.no_trip_media != 0 && (
+                    <AlertItem type="warning" message="Trip Doesn't have trip media" count={`${data.data.no_trip_media} trip`} />
+                  )
+                }
+    
+                {
+                  data.data.no_pickup_drop != 0 && (
+                    <AlertItem type="warning" message="Trip Doesn't have pickup or drop location" count={`${data.data.no_pickup_drop} trip`} />
+                  )
+    }
+    
+                {
+                  data.data.no_tshirt != 0 && (
+                    <AlertItem type="warning" message="Trip Doesn't have t-shirt" count={`${data.data.no_tshirt} trip`} />
+                  )
+                }
+    
+                {
+                  data.data.no_hotel != 0 && (
+                    <AlertItem type="warning" message="Trip Doesn't have hotel" count={`${data.data.no_hotel} trip`} />
+                  )
+                }
+    
             </div>
           </div>
 

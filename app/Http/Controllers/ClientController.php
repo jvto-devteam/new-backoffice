@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Country;
+use App\Models\Package;
 use Inertia\Inertia;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -16,13 +17,15 @@ class ClientController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $country = $request->input('country');
+        $package = $request->input('package');
+        $export = $request->input('export');        
         $perPage = 10;
 
         $query = Booking::select('id','user_id','total_pax','travel_date_start','media_link','grand_total','payment','special_requirements')->with(['user.country','bookingDetail' => function($q){
             $q->select('id','package_id','booking_id','xss','xxs','xs','s','m','l','xl','xxl','xxxl')->with('package',function($qq){
                 $qq->select('id','name','package_code');
             });
-        }])->where('status', 'booked')->where('agent_id', 2)->where('travel_date_start','like','%2025%')->orderBy('travel_date_start','asc');
+        },'bookAddOn.addOn'])->where('status', 'booked')->where('agent_id', 2)->where('travel_date_start','like','%2025%')->orderBy('travel_date_start','asc');
         // Apply search
         if ($search) {
             $query->whereHas('user',function($q) use ($search) {
@@ -37,14 +40,46 @@ class ClientController extends Controller
         }
     
         // Apply country filter
+        if ($package) {
+            $query->whereHas('bookingDetail', function($q) use ($package) {
+                $q->where('package_id', $package);
+            });
+        }        
+        // Apply country filter
         if ($country) {
             $query->whereHas('user.country', function($q) use ($country) {
                 $q->where('id', $country);
             });
         }        
 
-        $clients = $query->orderBy('id', 'desc')
-            ->paginate($perPage)
+        if ($export) {
+            $clients = $query->get()->map(function($client) {
+                return [
+                    'Boooking ID' => $client->id,
+                    'Name' => $client->user->name,
+                    'Country' => $client->user->country?->long_name ?? '-',
+                    'Email' => $client->user->email,
+                    'Phone' => $client->user->phone,
+                    'Package' => $client->bookingDetail[0]->package->name ?? '-',
+                    'Package Code' => $client->bookingDetail[0]->package->package_code,
+                    'Number of Pax' => $client->total_pax ?? 0,
+                    'Trip Date' => $client->travel_date_start ?? '-',
+                    'Grand Total' => $client->grand_total + $client->book_add_on_total,
+                    'Payment' => $client->payment,
+                    'Balance' => ($client->grand_total + $client->book_add_on_total) - $client->payment,
+                    'Payment Status' => ($client->grand_total + $client->book_add_on_total) - $client->payment == 0 ? 'Paid' : 'Unpaid',
+                ];
+            });
+    
+            $filename = 'client_data_' . date('Y-m-d_His') . '.xls';
+            
+            header("Content-type: application/vnd-ms-excel");
+            header("Content-Disposition: attachment; filename=$filename");
+            
+            return view('exports.clients', compact('clients'));
+        }        
+
+        $clients = $query->paginate($perPage)
             ->through(function($client) {
                 return [
                     'id' => $client->id,
@@ -71,14 +106,17 @@ class ClientController extends Controller
                     'xxxl' => $client->bookingDetail[0]->xxxl,
                     'package_code' => $client->bookingDetail[0]->package->package_code,
                     'balance' => ($client->grand_total+$client->book_add_on_total)-$client->payment,
-                    'payment_status' => ($client->grand_total+$client->book_add_on_total)-$client->payment == 0 ? 'Paid' : 'Unpaid' ,
+                    'payment_status' => ($client->grand_total+$client->book_add_on_total)-$client->payment == 0 ? 'Paid' : 'Unpaid',
+                    'add_on' => $client->bookAddOn,
                 ];
             });
         
         $countries = Country::orderBy('long_name')->get(['id', 'long_name']);
+        $packages = Package::where('is_publish','1')->orWhere('package_platform','klook')->orderBy('package_code')->get(['id','package_code','name']);
         return Inertia::render('Client/Index', [
             'clients' => $clients,
-            'filters' => $request->only(['search', 'start_date', 'end_date', 'country']),
+            'packages' => $packages,
+            'filters' => $request->only(['search', 'start_date', 'end_date', 'country', 'package']),
             'countries' => $countries,
         ]);
     }

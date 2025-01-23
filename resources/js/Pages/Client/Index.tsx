@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Head, router } from '@inertiajs/react';
 import Authenticated from '@/Layouts/Main';
 import { 
@@ -12,8 +12,14 @@ import {
     DollarSign,
     Shirt,
     FileText,
+    Check, 
+    ChevronsUpDown,
+    ChevronDown,    
+    Filter, 
+    Download,   
     X,
 } from 'lucide-react';
+
 import {
     Table,
     TableBody,
@@ -24,16 +30,196 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 
+// SearchableSelect Component
+const SearchableSelect = ({
+    options,
+    value,
+    onChange,
+    placeholder,
+    searchValue,
+    onSearchChange,
+    open,
+    setOpen,
+    displayKey
+}) => {
+    const selectRef = useRef(null);
+    const searchInputRef = useRef(null);
 
-// Progress Bar Component
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (selectRef.current && !selectRef.current.contains(event.target)) {
+                setOpen(false);
+                onSearchChange('');
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [setOpen, onSearchChange]);
+
+    const handleSearchChange = (e) => {
+        e.preventDefault();
+        onSearchChange(e.target.value);
+        searchInputRef.current?.focus();
+    };
+
+    const [searchQuery, setSearchQuery] = useState('');
+
+    return (
+        <div className="relative w-full" ref={selectRef}>
+            <button
+                type="button"
+                onClick={() => setOpen(!open)}
+                className="w-full px-3 py-2 bg-gray-50 border border-input rounded-md text-left focus:outline-none focus:border-blue-500 transition-colors flex justify-between items-center"
+            >
+                <span className="truncate text-gray-700">
+                    {value ? options.find(item => item.id === value)?.[displayKey] : placeholder}
+                </span>
+                <ChevronsUpDown className="h-4 w-4 text-gray-400" />
+            </button>
+
+            {open && (
+                <div className="absolute z-50 w-full mt-1 bg-white rounded shadow-lg border">
+                    <div className="sticky top-0 bg-white border-b px-3 py-2">
+                        <div className="flex items-center">
+                            <Search className="h-4 w-4 text-gray-400 mr-2" />
+                            <input
+                                ref={searchInputRef}
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-transparent border-none focus:outline-none"
+                                placeholder="Search..."
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        </div>
+                    </div>
+                    <div className="max-h-60 overflow-auto">
+                        {options
+                            .filter(item => 
+                                item[displayKey].toLowerCase().includes(searchQuery.toLowerCase())
+                            )
+                            .map(item => (
+                                <div
+                                    key={item.id}
+                                    onClick={() => {
+                                        onChange(item.id);
+                                        setOpen(false);
+                                        setSearchQuery('');
+                                    }}
+                                    className={`px-3 py-2 cursor-pointer flex items-center hover:bg-gray-50 ${
+                                        value === item.id ? 'bg-blue-50' : ''
+                                    }`}
+                                >
+                                    <Check 
+                                        className={`h-4 w-4 mr-2 text-blue-500 ${value === item.id ? 'opacity-100' : 'opacity-0'}`} 
+                                    />
+                                    <span>{item[displayKey]}</span>
+                                </div>
+                            ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+const FilterDropdown = ({ isOpen, onClose, filters, onChange, countries, packages, onSubmit }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border p-4 z-50">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Filters</h3>
+                <Button variant="ghost" size="icon" onClick={onClose}>
+                    <X className="h-4 w-4" />
+                </Button>
+            </div>
+            
+            <form onSubmit={onSubmit} className="space-y-4">
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Search</label>
+                    <Input
+                        type="text"
+                        placeholder="Search clients..."
+                        value={filters.search}
+                        onChange={(e) => onChange('search', e.target.value)}
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Date Range</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Input
+                            type="date"
+                            value={filters.startDate}
+                            onChange={(e) => onChange('startDate', e.target.value)}
+                            className="w-full"
+                        />
+                        <Input
+                            type="date"
+                            value={filters.endDate}
+                            onChange={(e) => onChange('endDate', e.target.value)}
+                            className="w-full"
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Country</label>
+                    <SearchableSelect 
+                        options={countries.map(country => ({
+                            id: country.id, 
+                            name: country.long_name
+                        }))}
+                        value={filters.selectedCountry}
+                        onChange={(value) => onChange('selectedCountry', value)}
+                        placeholder="Select Country"
+                        open={filters.countryOpen}
+                        setOpen={(value) => onChange('countryOpen', value)}
+                        displayKey="name"
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Package</label>
+                    <SearchableSelect 
+                        options={packages.map(pkg => ({
+                            id: pkg.id, 
+                            name: `${pkg.package_code} - ${pkg.name}`
+                        }))}
+                        value={filters.selectedPackage}
+                        onChange={(value) => onChange('selectedPackage', value)}
+                        placeholder="Select Package"
+                        open={filters.packageOpen}
+                        setOpen={(value) => onChange('packageOpen', value)}
+                        displayKey="name"
+                    />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                            onChange('search', '');
+                            onChange('startDate', '');
+                            onChange('endDate', '');
+                            onChange('selectedCountry', null);
+                            onChange('selectedPackage', null);
+                        }}
+                    >
+                        Reset
+                    </Button>
+                    <Button type="submit">
+                        Apply Filters
+                    </Button>
+                </div>
+            </form>
+        </div>
+    );
+};
+// ProgressBar Component
 const ProgressBar = ({ percentage, status }) => {
     const getStatusColor = (status) => {
         switch (status.toLowerCase()) {
@@ -57,7 +243,7 @@ const ProgressBar = ({ percentage, status }) => {
     );
 };
 
-// Payment Status Badge Component
+// PaymentStatusBadge Component
 const PaymentStatusBadge = ({ status }) => {
     const getStatusStyle = (status) => {
         const baseStyle = "px-2 py-1 rounded-full text-xs font-medium";
@@ -79,12 +265,12 @@ const PaymentStatusBadge = ({ status }) => {
         </span>
     );
 };
+
+// TShirtSizeGrid Component
 const TShirtSizeGrid = ({ sizes }) => {
-    // Filter out sizes with quantity 0 or undefined
     const nonEmptySizes = Object.entries(sizes)
         .filter(([_, quantity]) => quantity > 0)
         .sort((a, b) => {
-            // Define size order for sorting
             const sizeOrder = ['xss', 'xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'];
             return sizeOrder.indexOf(a[0]) - sizeOrder.indexOf(b[0]);
         });
@@ -104,9 +290,11 @@ const TShirtSizeGrid = ({ sizes }) => {
         </div>
     );
 };
-// Details Modal Component
+
+// DetailsModal Component
 const DetailsModal = ({ isOpen, onClose, client }) => {
     if (!isOpen) return null;
+
     const tshirtSizes = {
         xss: client.xss || 0,
         xs: client.xs || 0,
@@ -119,10 +307,26 @@ const DetailsModal = ({ isOpen, onClose, client }) => {
     };
 
     const totalShirts = Object.values(tshirtSizes).reduce((sum, qty) => sum + qty, 0);
+
+    const formatDate = (dateStr) => {
+        if (!dateStr || dateStr === '-') return '-';
+        return new Date(dateStr).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'IDR'
+        }).format(amount);
+    };
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
             <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                {/* Modal Header */}
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-semibold">Client Details</h3>
                     <Button variant="ghost" size="icon" onClick={onClose}>
@@ -130,9 +334,7 @@ const DetailsModal = ({ isOpen, onClose, client }) => {
                     </Button>
                 </div>
 
-                {/* Modal Content */}
                 <div className="space-y-6">
-                    {/* Payment Details Section */}
                     <div className="space-y-4">
                         <h4 className="font-medium text-gray-900">Payment Information</h4>
                         <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
@@ -161,7 +363,51 @@ const DetailsModal = ({ isOpen, onClose, client }) => {
                         </div>
                     </div>
 
-                    {/* T-Shirt Section */}
+                    {client.add_on && client.add_on.length > 0 && (
+                        <div className="space-y-4">
+                            <h4 className="font-medium text-gray-900">Additional Services</h4>
+                            <div className="overflow-x-auto rounded-lg border border-gray-200">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                                            <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Add On</th>
+                                            <th scope="col" className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                                            <th scope="col" className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                            <th scope="col" className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                        {client.add_on.map((addon, index) => (
+                                            <tr key={index}>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{index + 1}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{addon.add_on.add_on}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right">{addon.qty}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right">{formatCurrency(addon.add_on.price)}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right">
+                                                    {formatCurrency(addon.qty * addon.add_on.price)}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr className="bg-gray-50">
+                                            <td colSpan="4" className="px-4 py-2 text-sm font-medium text-gray-900 text-right">
+                                                Total Additional Services:
+                                            </td>
+                                            <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">
+                                                {formatCurrency(client.add_on.reduce((total, addon) => 
+                                                    total + (addon.qty * addon.add_on.price), 0
+                                                ))}
+                                            </td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <p className="text-xs text-gray-500 italic">*Total additional services are included in the grand total above</p>
+                        </div>
+                    )}                    
+
                     {totalShirts > 0 && (
                         <div className="space-y-4">
                             <div className="flex items-center justify-between">
@@ -174,7 +420,6 @@ const DetailsModal = ({ isOpen, onClose, client }) => {
                         </div>
                     )}
 
-                    {/* Special Requirements Section */}
                     <div className="space-y-4">
                         <h4 className="font-medium text-gray-900">Special Requirements</h4>
                         <div className="bg-gray-50 p-4 rounded-lg">
@@ -188,54 +433,128 @@ const DetailsModal = ({ isOpen, onClose, client }) => {
                 </div>
             </div>
         </div>
-    );};
-
-const formatDate = (dateStr) => {
-    if (!dateStr || dateStr === '-') return '-';
-    return new Date(dateStr).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
+    );
 };
 
-const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'IDR'
-    }).format(amount);
-};
-
-export default function ClientIndex({ clients, filters, countries }) {
+// Main Component
+export default function Index({ clients, filters, countries, packages }) {
     const [search, setSearch] = useState(filters.search || '');
+    const [startDate, setStartDate] = useState(filters.start_date || '');
+    const [endDate, setEndDate] = useState(filters.end_date || '');
+    const [selectedCountry, setSelectedCountry] = useState(filters.country || null);
+    const [selectedPackage, setSelectedPackage] = useState(filters.package || null);
     const [selectedClient, setSelectedClient] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    
+    const [countryOpen, setCountryOpen] = useState(false);
+    const [packageOpen, setPackageOpen] = useState(false);
 
+    const [filterState, setFilterState] = useState({
+        search: filters.search || '',
+        startDate: filters.start_date || '',
+        endDate: filters.end_date || '',
+        selectedCountry: filters.country || null,
+        selectedPackage: filters.package || null,
+        countryOpen: false,
+        packageOpen: false
+    });
+    
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const filterRef = useRef(null);    
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (filterRef.current && !filterRef.current.contains(event.target)) {
+                setIsFilterOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleFilterChange = (key, value) => {
+        setFilterState(prev => ({
+            ...prev,
+            [key]: value
+        }));
+    };
     const handleSearch = (e) => {
         e.preventDefault();
         router.get(
             '/client-management',
-            { search: search },
+            { 
+                search: search,
+                start_date: startDate,
+                end_date: endDate,
+                country: selectedCountry,
+                package: selectedPackage
+            },
             {
                 preserveState: true,
                 preserveScroll: true,
             }
         );
     };
+    const handleFilterSubmit = (e) => {
+        e.preventDefault();
+        router.get(
+            '/client-management',
+            { 
+                search: filterState.search,
+                start_date: filterState.startDate,
+                end_date: filterState.endDate,
+                country: filterState.selectedCountry,
+                package: filterState.selectedPackage
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            }
+        );
+        setIsFilterOpen(false);
+    };    
 
     const handlePageChange = (url) => {
         router.get(url, {
-            search: search
+            search: search,
+            start_date: startDate,
+            end_date: endDate,
+            country: selectedCountry,
+            package: selectedPackage
         }, {
             preserveState: true,
             preserveScroll: true
         });
     };
 
+    const formatDate = (dateStr) => {
+        if (!dateStr || dateStr === '-') return '-';
+        return new Date(dateStr).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'IDR'
+        }).format(amount);
+    };
+
     const openDetailsModal = (client) => {
         setSelectedClient(client);
         setIsModalOpen(true);
     };
+
+    const handleExport = () => {
+        const params = new URLSearchParams({
+            ...filterState,
+            export: true
+        });
+        window.location.href = `/client-management?${params.toString()}`;
+    };    
 
     return (
         <Authenticated>
@@ -244,16 +563,36 @@ export default function ClientIndex({ clients, filters, countries }) {
             <div className="p-6 space-y-6">
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Client Management</h1>
-                    
-                    <form onSubmit={handleSearch} className="flex w-full max-w-sm gap-2">
-                        <Input
-                            type="text"
-                            placeholder="Search clients..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full"
-                        />
-                    </form>
+                    <div className="flex gap-2">
+                        <Button
+                            onClick={handleExport}
+                            variant="outline"
+                            className="gap-2"
+                        >
+                            <Download className="h-4 w-4" />
+                            Export Excel
+                        </Button>
+                        <div className="relative" ref={filterRef}>
+                            <Button
+                                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                                variant="outline"
+                                className="gap-2"
+                            >
+                                <Filter className="h-4 w-4" />
+                                Filters
+                            </Button>
+
+                            <FilterDropdown 
+                                isOpen={isFilterOpen}
+                                onClose={() => setIsFilterOpen(false)}
+                                filters={filterState}
+                                onChange={handleFilterChange}
+                                countries={countries}
+                                packages={packages}
+                                onSubmit={handleFilterSubmit}
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 {/* Responsive Table */}
@@ -273,13 +612,13 @@ export default function ClientIndex({ clients, filters, countries }) {
                             {clients.data.map((client) => (
                                 <TableRow key={client.id}>
                                     <TableCell className="font-medium">
-                                        {/* <div className="text-blue-600">
-                                            {client.user_id}
-                                        </div> */}
-                                        <div className="font-bold">
+                                        <div className="font-bold text-blue-600">
+                                            Booking ID : {client.id}
+                                        </div>
+                                        <div className="font-bold mt-2">
                                             {client.name}
                                         </div>
-                                        <div className="mt-2 flex gap-1">
+                                        <div className="mt-1 flex gap-1">
                                             <Users className="w-4 h-4" />
                                             {client.numb_of_pax} pax
                                         </div>

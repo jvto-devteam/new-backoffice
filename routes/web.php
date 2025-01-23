@@ -15,6 +15,7 @@ use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ShortLinkController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\FinanceController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -66,6 +67,12 @@ Route::prefix('bookings')->group(function () {
     Route::post('/store', [BookingController::class, 'store']);
 });
 
+Route::prefix('finance')->group(function () {
+    Route::get('/invoice-manager', [FinanceController::class, 'invoice']);
+    Route::get('/expense-manager', [FinanceController::class, 'expense']);
+    Route::get('/monthly-settlement', [FinanceController::class, 'settlement']);
+    Route::get('/profit-loss-summary', [FinanceController::class, 'profitLoss']);
+});
 Route::prefix('package-inventory')->group(function () {
     Route::get('/flipbook/{url}', [PackageController::class, 'flipbook']);
     Route::get('/{order_channel}', [PackageController::class, 'index']);

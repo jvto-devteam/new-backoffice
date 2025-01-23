@@ -221,7 +221,7 @@ const SummaryCard = ({ icon: Icon, title, value, subtitle, type }) => {
         </div>
     );
 };
-export default function InvoiceManager({booking,summary,packages,filters}){
+export default function ExpenseManager({booking,summary,packages,filters}){
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
@@ -263,7 +263,7 @@ export default function InvoiceManager({booking,summary,packages,filters}){
     const handleFilterSubmit = (e) => {
         e.preventDefault();
         router.get(
-            '/finance/invoice-manager',
+            '/finance/expense-manager',
             { 
                 search: filterState.search,
                 start_date: filterState.startDate,
@@ -280,11 +280,11 @@ export default function InvoiceManager({booking,summary,packages,filters}){
     };
     return (
         <Authenticated>
-            <Head title="Invoice Manager" />
+            <Head title="Expense Manager" />
             
             <div className="p-6 space-y-6 bg-white rounded-xl dark:bg-[#24303f]">
                 <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Invoice Manager</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Expense Manager</h1>
                     <div className="relative" ref={filterRef}>
                         <Button
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -306,36 +306,29 @@ export default function InvoiceManager({booking,summary,packages,filters}){
                     </div>                    
                 </div>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4">
                     <SummaryCard
-                        icon={Handshake}
-                        value={`${summary.paid}`}
-                        subtitle="Status Invoice Paid"
-                        type="paid"
+                        icon={BookUser}
+                        value={`${summary.bookings}`}
+                        subtitle="Total Bookings"
                         />
                     <SummaryCard
                         icon={FileText}
-                        value={summary.dp_paid}
-                        subtitle="Status Invoice DP Paid"
-                        type="dp"
+                        value={formatCurrency(summary.total_expense)}
+                        subtitle="Total Expense"
                         />
                     <SummaryCard
-                        icon={Clock}
-                        value={summary.unpaid}
-                        subtitle="Status Invoice Unpaid"
-                        type="unpaid"
-                    />
+                        icon={Handshake}
+                        value={formatCurrency(summary.paid)}
+                        subtitle="Expense Paid"
+                        type="paid"
+                        />
                     <SummaryCard
-                        icon={BookUser}
-                        value={summary.paxs}
-                        subtitle="Total Participants"
+                        type="unpaid"
+                        icon={Clock}
+                        value={formatCurrency(summary.unpaid)}
+                        subtitle="Expense Unpaid"
                     />
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border flex items-center gap-4">
-                        <div className="flex-1">
-                            <p className="text-2xl font-bold text-blue-600">{formatCurrency(summary.grand_total)}</p>
-                            <p className="text-sm text-gray-500">From {summary.bookings} Invoices</p>
-                        </div>
-                    </div>
                 </div>
 
 
@@ -345,8 +338,11 @@ export default function InvoiceManager({booking,summary,packages,filters}){
                     <TableHeader className="bg-gray-100 dark:bg-[#1a222c]">
                         <TableRow>
                             <TableHead>Booking Details</TableHead>
-                            <TableHead>Package Info</TableHead>
-                            <TableHead>Financial Summary</TableHead>
+                            <TableHead className="w-1/4">Package Info</TableHead>
+                            <TableHead>Total Invoice</TableHead>
+                            <TableHead>Total Expense</TableHead>
+                            <TableHead>Profit</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -372,38 +368,33 @@ export default function InvoiceManager({booking,summary,packages,filters}){
                                             <span className="font-bold">{data.package_code}</span>
                                         </div>
                                         <div className="text-sm text-gray-600">{data.package}</div>
-                                        <div className="font-medium">
-                                            {formatCurrency(data.total_per_pax)} per pax
-                                        </div>
                                     </div>
                                 </TableCell>
                                 <TableCell>
                                     <div className="space-y-1">
-                                        <div className="flex justify-between">
-                                            <span>Total:</span>
-                                            <span>{formatCurrency(data.total)}</span>
-                                        </div>
-                                        <div className="flex justify-between">
-                                            <span>Add On:</span>
-                                            <span>{formatCurrency(data.total_add_on)}</span>
-                                        </div>
-                                        <div className=" flex justify-between">
-                                            <span>Grand Total:</span>
+                                        <span>{formatCurrency(data.total)}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="space-y-1">
+                                        <span>{formatCurrency(data.expense)}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="space-y-1">
+                                        <span>{formatCurrency(data.total-data.expense)}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="space-y-1">
+                                        <div className=" flex justify-between text-green-600">
+                                            <span>Paid:</span>
                                             <span>{formatCurrency(data.grand_total)}</span>
                                         </div>
-                                        {
-                                            (data.balance == 0) ? (
-                                                <div className="text-green-600 flex justify-between ">
-                                                    <span>Status:</span>
-                                                    <span>Paid</span>
-                                                </div>
-                                            ) : (
-                                                <div className="text-red-600 flex justify-between ">
-                                                    <span>Balance:</span>
-                                                    <span>{formatCurrency(data.balance)}</span>
-                                                </div>
-                                            )
-                                        }
+                                        <div className="flex justify-between  text-red-600">
+                                            <span>Unpaid:</span>
+                                            <span>{formatCurrency(data.balance)}</span>
+                                        </div>
                                     </div>
                                 </TableCell>
                                 <TableHead>

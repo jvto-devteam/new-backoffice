@@ -65,9 +65,8 @@ const SearchableSelect = ({
         onSearchChange(e.target.value);
         searchInputRef.current?.focus();
     };
-
-    const [searchQuery, setSearchQuery] = useState('');
-
+    
+    const [searchQuery, setSearchQuery] = useState('');    
     return (
         <div className="relative w-full" ref={selectRef}>
             <button
@@ -76,7 +75,7 @@ const SearchableSelect = ({
                 className="w-full px-3 py-2 bg-gray-50 border border-input rounded-md text-left focus:outline-none focus:border-blue-500 transition-colors flex justify-between items-center"
             >
                 <span className="truncate text-gray-700">
-                    {value ? options.find(item => item.id === value)?.[displayKey] : placeholder}
+                    {value ? options.find(item => item.id.toString() === value.toString())?.[displayKey] : placeholder}
                 </span>
                 <ChevronsUpDown className="h-4 w-4 text-gray-400" />
             </button>

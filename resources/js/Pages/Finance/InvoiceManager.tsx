@@ -8,7 +8,7 @@ import {
     Users, 
     Package, 
     MoreVertical,
-    Clock, FileText, DollarSign, Handshake,BookUser
+    Clock, FileText, DollarSign, Handshake,BookUser,Filter, X, Search, ChevronsUpDown, Check
 } from 'lucide-react';
 
 import {
@@ -21,6 +21,173 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+const SearchableSelect = ({ options, value, onChange, placeholder, open, setOpen, displayKey }) => {
+    const selectRef = useRef(null);
+    const [searchQuery, setSearchQuery] = useState('');
+    
+    useEffect(() => {
+        const handleClickOutside = (event) => {            
+            if (selectRef.current && !selectRef.current.contains(event.target)) {
+                setOpen(false);
+            }
+        };
+        if (open) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [setOpen]);
+
+    return (
+        <div className="relative w-full" ref={selectRef}>
+            <button
+                type="button"
+                onClick={() => setOpen(!open)}
+                className="w-full px-3 py-2 bg-gray-50 border border-input rounded-md text-left focus:outline-none focus:border-blue-500 transition-colors flex justify-between items-center"
+            >
+                <span className="truncate text-gray-700">
+                    {value ? options.find(item => item.id.toString() === value.toString())?.[displayKey] : placeholder}
+                </span>
+                <ChevronsUpDown className="h-4 w-4 text-gray-400" />
+            </button>
+
+            {open && (
+                <div className="absolute z-50 w-full mt-1 bg-white rounded shadow-lg border">
+                    <div className="sticky top-0 bg-white border-b px-3 py-2">
+                        <div className="flex items-center">
+                            <Search className="h-4 w-4 text-gray-400 mr-2" />
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full bg-transparent border-none focus:outline-none"
+                                placeholder="Search..."
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        </div>
+                    </div>
+                    <div className="max-h-60 overflow-auto">
+                        {options
+                            .filter(item => 
+                                item[displayKey].toLowerCase().includes(searchQuery.toLowerCase())
+                            )
+                            .map(item => (
+                                <div
+                                    key={item.id}
+                                    onClick={() => {
+                                        onChange(item.id);
+                                        setOpen(false);
+                                        setSearchQuery('');
+                                    }}
+                                    className={`px-3 py-2 cursor-pointer flex items-center hover:bg-gray-50 ${
+                                        value === item.id ? 'bg-blue-50' : ''
+                                    }`}
+                                >
+                                    <Check 
+                                        className={`h-4 w-4 mr-2 text-blue-500 ${value === item.id ? 'opacity-100' : 'opacity-0'}`} 
+                                    />
+                                    <span>{item[displayKey]}</span>
+                                </div>
+                            ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+const FilterDropdown = ({ isOpen, onClose, filters, onChange, packages, onSubmit }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border p-4 z-50">
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Filters</h3>
+                <Button variant="ghost" size="icon" onClick={onClose}>
+                    <X className="h-4 w-4" />
+                </Button>
+            </div>
+            
+            <form onSubmit={onSubmit} className="space-y-4">
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Search</label>
+                    <Input
+                        type="text"
+                        placeholder="Search clients..."
+                        value={filters.search}
+                        onChange={(e) => onChange('search', e.target.value)}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Date Range</label>
+                    <div className="grid grid-cols-2 gap-2">
+                        <Input
+                            type="date"
+                            value={filters.startDate}
+                            onChange={(e) => onChange('startDate', e.target.value)}
+                            className="w-full"
+                        />
+                        <Input
+                            type="date"
+                            value={filters.endDate}
+                            onChange={(e) => onChange('endDate', e.target.value)}
+                            className="w-full"
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Package</label>
+                    <SearchableSelect 
+                        options={packages.map(pkg => ({
+                            id: pkg.id, 
+                            name: `${pkg.package_code} - ${pkg.name}`
+                        }))}
+                        value={filters.selectedPackage}
+                        onChange={(value) => onChange('selectedPackage', value)}
+                        placeholder="Select Package"
+                        open={filters.packageOpen}
+                        setOpen={(value) => onChange('packageOpen', value)}
+                        displayKey="name"
+                    />
+                </div>
+
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Order Channel</label>
+                    <SearchableSelect 
+                        options={[
+                            { id: 'jvto', name: 'JVTO' },
+                            { id: 'klook', name: 'KLOOK' }
+                        ]}
+                        value={filters.selectedChannel}
+                        onChange={(value) => onChange('selectedChannel', value)}
+                        placeholder="Select Order Channel"
+                        open={filters.channelOpen}
+                        setOpen={(value) => onChange('channelOpen', value)}
+                        displayKey="name"
+                    />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                            onChange('search', '');
+                            onChange('startDate', '');
+                            onChange('endDate', '');
+                            onChange('selectedPackage', null);
+                            onChange('selectedChannel', null);
+                        }}
+                    >
+                        Reset
+                    </Button>
+                    <Button type="submit">Apply Filters</Button>
+                </div>
+            </form>
+        </div>
+    );
+};
+
 const SummaryCard = ({ icon: Icon, title, value, subtitle, type }) => {
     const badgeColors = {
         paid: 'bg-green-100 text-green-600',
@@ -54,14 +221,63 @@ const SummaryCard = ({ icon: Icon, title, value, subtitle, type }) => {
         </div>
     );
 };
-export default function InvoiceManager({booking,summary}){
+export default function InvoiceManager({booking,summary,packages,filters}){
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
             currency: 'IDR'
         }).format(amount);
     };
+    const [filterState, setFilterState] = useState({
+        search: filters.search || '',
+        startDate: filters.start_date || '',
+        endDate: filters.end_date || '',
+        selectedPackage: filters.package || '',
+        selectedChannel: filters.channel || '',
+        packageOpen: false,
+        channelOpen: false
+    });
+    
+    
+    const [isFilterOpen, setIsFilterOpen] = useState(false);
+    const filterRef = useRef(null);
 
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (filterRef.current && !filterRef.current.contains(event.target)) {
+                setIsFilterOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const handleFilterChange = (key, value) => {
+        setFilterState(prev => ({
+            ...prev,
+            [key]: value
+        }));
+    };
+
+    const handleFilterSubmit = (e) => {
+        e.preventDefault();
+        router.get(
+            '/finance/invoice-manager',
+            { 
+                search: filterState.search,
+                start_date: filterState.startDate,
+                end_date: filterState.endDate,
+                package: filterState.selectedPackage,
+                channel: filterState.selectedChannel,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+            }
+        );
+        setIsFilterOpen(false);
+    };
     return (
         <Authenticated>
             <Head title="Invoice Manager" />
@@ -69,6 +285,25 @@ export default function InvoiceManager({booking,summary}){
             <div className="p-6 space-y-6 bg-white rounded-xl dark:bg-[#24303f]">
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Invoice Manager</h1>
+                    <div className="relative" ref={filterRef}>
+                        <Button
+                            onClick={() => setIsFilterOpen(!isFilterOpen)}
+                            variant="outline"
+                            className="gap-2"
+                        >
+                            <Filter className="h-4 w-4" />
+                            Filters
+                        </Button>
+
+                        <FilterDropdown 
+                            isOpen={isFilterOpen}
+                            onClose={() => setIsFilterOpen(false)}
+                            filters={filterState}
+                            onChange={handleFilterChange}
+                            packages={packages}
+                            onSubmit={handleFilterSubmit}
+                        />
+                    </div>                    
                 </div>
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">

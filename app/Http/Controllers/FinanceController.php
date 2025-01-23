@@ -3,18 +3,50 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\Package;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class FinanceController extends Controller
 {
     function invoice(Request $request){
+        $search = $request->input('search');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $package = $request->input('package');
+        $channel = $request->input('channel');
         $perPage = 10;
         $query = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','payment')->with(['user.country','bookingDetail' => function($q){
             $q->select('id','package_id','booking_id')->with('package',function($qq){
                 $qq->select('id','name','package_code');
             });
         }])->where('status', 'booked')->where('agent_id', 2)->where('travel_date_start','like','%2025%')->orderBy('travel_date_start','asc');
+        if ($search) {
+            $query->whereHas('user',function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($startDate && $endDate) {
+            $query->whereBetween('travel_date_start', [$startDate, $endDate]);
+        }
+    
+        // Apply package filter
+        if ($package) {
+            $query->whereHas('bookingDetail', function($q) use ($package) {
+                $q->where('package_id', $package);
+            });
+        }
+        // Apply channel filter
+        if ($channel) {
+            if($channel == 'klook'){
+                $query->where('booking_category_id',3);
+            }
+            else{
+                $query->where('booking_category_id','!=',3);
+            }
+        }
+
         $bookings = $query->get();
         $summary = [
             'bookings' => $query->count(),
@@ -50,10 +82,13 @@ class FinanceController extends Controller
                     'payment_status' => $booking->payment == 0 ? 'Unpaid' : (($booking->grand_total+$booking->book_add_on_total)-$booking->payment == 0 ? 'Paid' : 'DP Paid'),
                 ];
             });
+        $packages = Package::where('is_publish','1')->orWhere('package_platform','klook')->orderBy('package_code')->get(['id','package_code','name']);
 
         return Inertia::render('Finance/InvoiceManager', [
             'booking' => $booking,
             'summary' => $summary,
+            'packages' => $packages,
+            'filters' => $request->only(['search','start_date', 'end_date','package','channel']),
         ]);
         
     }

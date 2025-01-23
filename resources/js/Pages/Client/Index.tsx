@@ -560,7 +560,7 @@ export default function Index({ clients, filters, countries, packages }) {
         <Authenticated>
             <Head title="Client Management" />
             
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-6 bg-white rounded-xl dark:bg-[#24303f]">
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Client Management</h1>
                     <div className="flex gap-2">
@@ -598,7 +598,7 @@ export default function Index({ clients, filters, countries, packages }) {
                 {/* Responsive Table */}
                 <div className="rounded-md border bg-white dark:bg-[#24303f]">
                     <Table>
-                        <TableHeader>
+                        <TableHeader className="bg-gray-100 dark:bg-[#1a222c]">
                             <TableRow>
                                 <TableHead>Name</TableHead>
                                 <TableHead>Country</TableHead>

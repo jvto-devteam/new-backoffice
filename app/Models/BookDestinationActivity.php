@@ -15,6 +15,7 @@ class BookDestinationActivity extends Model
      * @var array
      */
     protected $fillable = [
+        'destination_id',
         'destination_activity_id',
         'qty',
         'price',
@@ -30,5 +31,10 @@ class BookDestinationActivity extends Model
     public function destinationActivity()
     {
         return $this->belongsTo(DestinationActivity::class);
+    }
+     
+    public function destination()
+    {
+        return $this->belongsTo(Destination::class);
     }
 }

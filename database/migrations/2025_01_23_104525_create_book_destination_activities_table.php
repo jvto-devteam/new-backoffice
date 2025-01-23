@@ -15,6 +15,7 @@ class CreateBookDestinationActivitiesTable extends Migration
     {
         Schema::create('book_destination_activities', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('destination_id');
             $table->unsignedBigInteger('destination_activity_id');
             $table->integer('qty');
             $table->decimal('price', 10, 2);
@@ -27,6 +28,10 @@ class CreateBookDestinationActivitiesTable extends Migration
             // Foreign key constraint
             $table->foreign('destination_activity_id')
                   ->references('id')->on('destination_activities')
+                  ->onDelete('cascade');
+
+            $table->foreign('destination_id')
+                  ->references('id')->on('destinations')
                   ->onDelete('cascade');
         });
     }

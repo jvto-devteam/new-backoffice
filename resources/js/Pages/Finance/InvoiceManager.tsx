@@ -346,7 +346,10 @@ export default function InvoiceManager({booking,summary,packages,filters}){
                         <TableRow>
                             <TableHead>Booking Details</TableHead>
                             <TableHead>Package Info</TableHead>
-                            <TableHead>Financial Summary</TableHead>
+                            <TableHead>Grand Total</TableHead>
+                            <TableHead>Payment</TableHead>
+                            <TableHead>Balance</TableHead>
+                            <TableHead>Status</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                         </TableRow>
                     </TableHeader>
@@ -372,38 +375,28 @@ export default function InvoiceManager({booking,summary,packages,filters}){
                                             <span className="font-bold">{data.package_code}</span>
                                         </div>
                                         <div className="text-sm text-gray-600">{data.package}</div>
-                                        <div className="font-medium">
-                                            {formatCurrency(data.total_per_pax)} per pax
-                                        </div>
                                     </div>
                                 </TableCell>
                                 <TableCell>
                                     <div className="space-y-1">
-                                        <div className="flex justify-between">
-                                            <span>Total:</span>
-                                            <span>{formatCurrency(data.total)}</span>
+                                        <span>{formatCurrency(data.grand_total)}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="space-y-1">
+                                        <span>{formatCurrency(data.payment)}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="space-y-1">
+                                        <span>{formatCurrency(data.balance)}</span>
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="space-y-1">
+                                        <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs ${data.payment_status == 'Paid' ? 'bg-green-100 text-green-700' : (data.payment_status == 'Unpaid' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700')}`}>
+                                            {data.payment_status}
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span>Add On:</span>
-                                            <span>{formatCurrency(data.total_add_on)}</span>
-                                        </div>
-                                        <div className=" flex justify-between">
-                                            <span>Grand Total:</span>
-                                            <span>{formatCurrency(data.grand_total)}</span>
-                                        </div>
-                                        {
-                                            (data.balance == 0) ? (
-                                                <div className="text-green-600 flex justify-between ">
-                                                    <span>Status:</span>
-                                                    <span>Paid</span>
-                                                </div>
-                                            ) : (
-                                                <div className="text-red-600 flex justify-between ">
-                                                    <span>Balance:</span>
-                                                    <span>{formatCurrency(data.balance)}</span>
-                                                </div>
-                                            )
-                                        }
                                     </div>
                                 </TableCell>
                                 <TableHead>

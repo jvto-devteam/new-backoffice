@@ -18,10 +18,11 @@ class ClientController extends Controller
         $endDate = $request->input('end_date');
         $country = $request->input('country');
         $package = $request->input('package');
-        $export = $request->input('export');        
+        $channel = $request->input('channel');
+        $export = $request->input('export');
         $perPage = 10;
 
-        $query = Booking::select('id','user_id','total_pax','travel_date_start','media_link','grand_total','payment','special_requirements')->with(['user.country','bookingDetail' => function($q){
+        $query = Booking::select('id','booking_category_id','user_id','total_pax','travel_date_start','media_link','grand_total','payment','special_requirements')->with(['user.country','bookingDetail' => function($q){
             $q->select('id','package_id','booking_id','xss','xxs','xs','s','m','l','xl','xxl','xxxl')->with('package',function($qq){
                 $qq->select('id','name','package_code');
             });
@@ -39,12 +40,21 @@ class ClientController extends Controller
             $query->whereBetween('travel_date_start', [$startDate, $endDate]);
         }
     
-        // Apply country filter
+        // Apply package filter
         if ($package) {
             $query->whereHas('bookingDetail', function($q) use ($package) {
                 $q->where('package_id', $package);
             });
-        }        
+        }
+        // Apply channel filter
+        if ($channel) {
+            if($channel == 'klook'){
+                $query->where('booking_category_id',3);
+            }
+            else{
+                $query->where('booking_category_id','!=',3);
+            }
+        }
         // Apply country filter
         if ($country) {
             $query->whereHas('user.country', function($q) use ($country) {
@@ -60,6 +70,7 @@ class ClientController extends Controller
                     'Country' => $client->user->country?->long_name ?? '-',
                     'Email' => $client->user->email,
                     'Phone' => $client->user->phone,
+                    'Order Channel' => $client->booking_category_id == 3 ? 'KLOOK' : 'JVTO',
                     'Package' => $client->bookingDetail[0]->package->name ?? '-',
                     'Package Code' => $client->bookingDetail[0]->package->package_code,
                     'Number of Pax' => $client->total_pax ?? 0,
@@ -94,6 +105,7 @@ class ClientController extends Controller
                     'trip_date' => $client->travel_date_start ?? '-',
                     'special_requirements' => $client->special_requirements ?? '-',
                     'grand_total' => $client->grand_total+$client->book_add_on_total,
+                    'channel' => $client->booking_category_id == 3 ? 'KLOOK' : 'JVTO',
                     'payment' => $client->payment,
                     'xss' => $client->bookingDetail[0]->xss,
                     'xss' => $client->bookingDetail[0]->xss,
@@ -116,7 +128,7 @@ class ClientController extends Controller
         return Inertia::render('Client/Index', [
             'clients' => $clients,
             'packages' => $packages,
-            'filters' => $request->only(['search', 'start_date', 'end_date', 'country', 'package']),
+            'filters' => $request->only(['search', 'start_date', 'end_date', 'country', 'package','channel']),
             'countries' => $countries,
         ]);
     }

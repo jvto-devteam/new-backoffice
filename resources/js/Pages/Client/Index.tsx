@@ -45,17 +45,19 @@ const SearchableSelect = ({
 }) => {
     const selectRef = useRef(null);
     const searchInputRef = useRef(null);
-
+    
     useEffect(() => {
-        const handleClickOutside = (event) => {
+        const handleClickOutside = (event) => {            
+            
             if (selectRef.current && !selectRef.current.contains(event.target)) {
                 setOpen(false);
-                onSearchChange('');
+                // onSearchChange('');
             }
         };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
+        if (open) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
     }, [setOpen, onSearchChange]);
 
     const handleSearchChange = (e) => {
@@ -197,6 +199,31 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, countries, package
                     />
                 </div>
 
+                <div className="space-y-2">
+                    <label className="text-sm font-medium">Order Channel</label>
+                    <SearchableSelect 
+                        options={[
+                            {
+                                id : 'jvto',
+                                name : 'JVTO',
+                            },
+                            {
+                                id : 'klook',
+                                name : 'KLOOK',
+                            }
+                        ].map(chn => ({
+                            id: chn.id, 
+                            name: `${chn.name}`
+                        }))}
+                        value={filters.selectedChannel}
+                        onChange={(value) => onChange('selectedChannel', value)}
+                        placeholder="Select Order Channel"
+                        open={filters.channelOpen}
+                        setOpen={(value) => onChange('channelOpen', value)}
+                        displayKey="name"
+                    />
+                </div>
+
                 <div className="flex justify-end gap-2 pt-2">
                     <Button
                         type="button"
@@ -207,6 +234,7 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, countries, package
                             onChange('endDate', '');
                             onChange('selectedCountry', null);
                             onChange('selectedPackage', null);
+                            onChange('selectedChannel', null);
                         }}
                     >
                         Reset
@@ -443,11 +471,13 @@ export default function Index({ clients, filters, countries, packages }) {
     const [endDate, setEndDate] = useState(filters.end_date || '');
     const [selectedCountry, setSelectedCountry] = useState(filters.country || null);
     const [selectedPackage, setSelectedPackage] = useState(filters.package || null);
+    const [selectedChannel, setSelectedChannel] = useState(filters.channel || null);
     const [selectedClient, setSelectedClient] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     
     const [countryOpen, setCountryOpen] = useState(false);
     const [packageOpen, setPackageOpen] = useState(false);
+    const [channelOpen, setChannelOpen] = useState(false);
 
     const [filterState, setFilterState] = useState({
         search: filters.search || '',
@@ -455,8 +485,10 @@ export default function Index({ clients, filters, countries, packages }) {
         endDate: filters.end_date || '',
         selectedCountry: filters.country || null,
         selectedPackage: filters.package || null,
+        selectedChannel: filters.channel || null,
         countryOpen: false,
-        packageOpen: false
+        packageOpen: false,
+        channelOpen: false
     });
     
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -487,7 +519,8 @@ export default function Index({ clients, filters, countries, packages }) {
                 start_date: startDate,
                 end_date: endDate,
                 country: selectedCountry,
-                package: selectedPackage
+                package: selectedPackage,
+                channel: selectedChannel,
             },
             {
                 preserveState: true,
@@ -504,7 +537,9 @@ export default function Index({ clients, filters, countries, packages }) {
                 start_date: filterState.startDate,
                 end_date: filterState.endDate,
                 country: filterState.selectedCountry,
-                package: filterState.selectedPackage
+                package: filterState.selectedPackage,
+                channel: filterState.selectedChannel,
+
             },
             {
                 preserveState: true,
@@ -520,7 +555,8 @@ export default function Index({ clients, filters, countries, packages }) {
             start_date: startDate,
             end_date: endDate,
             country: selectedCountry,
-            package: selectedPackage
+            package: selectedPackage,
+            channel: selectedChannel,
         }, {
             preserveState: true,
             preserveScroll: true
@@ -612,15 +648,21 @@ export default function Index({ clients, filters, countries, packages }) {
                             {clients.data.map((client) => (
                                 <TableRow key={client.id}>
                                     <TableCell className="font-medium">
-                                        <div className="font-bold text-blue-600">
-                                            Booking ID : {client.id}
-                                        </div>
-                                        <div className="font-bold mt-2">
+                                        <div className="font-bold">
                                             {client.name}
                                         </div>
                                         <div className="mt-1 flex gap-1">
                                             <Users className="w-4 h-4" />
                                             {client.numb_of_pax} pax
+                                        </div>
+                                        <div className="mt-2">
+                                            {
+                                                client.channel == 'KLOOK' ? (
+                                                    <span className="bg-orange-200 text-orange-600 rounded-full text-xs font-bold px-2 py-1">KLOOK</span>
+                                                ) : (
+                                                    <span className="bg-blue-200 text-blue-600 rounded-full text-xs font-bold px-2 py-1">JVTO</span>
+                                                )
+                                            }
                                         </div>
                                     </TableCell>
                                     <TableCell>{client.country}</TableCell>
@@ -649,9 +691,15 @@ export default function Index({ clients, filters, countries, packages }) {
                                         <div className="space-y-1">
                                             <div className="flex items-center gap-2">
                                                 <Calendar className="w-4 h-4" />
+                                                Booking ID : {client.id}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <Calendar className="w-4 h-4" />
                                                 {formatDate(client.trip_date)}
                                             </div>
-                                            {client.trip_media !== '-' && (
+                                        </div>
+                                        {client.trip_media !== '-' && (
+                                            <div className="mt-2">
                                                 <a 
                                                     href={client.trip_media}
                                                     target="_blank"
@@ -660,8 +708,8 @@ export default function Index({ clients, filters, countries, packages }) {
                                                 >
                                                     View Trip Media
                                                 </a>
-                                            )}
-                                        </div>
+                                            </div>
+                                        )}
                                     </TableCell>
                                     <TableCell>
                                         <Button

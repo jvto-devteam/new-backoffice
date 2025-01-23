@@ -15,6 +15,21 @@ class FinanceController extends Controller
                 $qq->select('id','name','package_code');
             });
         }])->where('status', 'booked')->where('agent_id', 2)->where('travel_date_start','like','%2025%')->orderBy('travel_date_start','asc');
+        $bookings = $query->get();
+        $summary = [
+            'bookings' => $query->count(),
+            'grand_total' => $query->sum('grand_total'),
+            'paxs' => $query->sum('total_pax'),
+            'paid' => $bookings->filter(function($booking) {
+                return ($booking->grand_total + $booking->book_add_on_total) - $booking->payment == 0;
+            })->count(),
+            'dp_paid' => $bookings->filter(function($booking) {
+                return $booking->payment > 0 && ($booking->grand_total + $booking->book_add_on_total) - $booking->payment > 0;
+            })->count(),
+            'unpaid' => $bookings->filter(function($booking) {
+                return $booking->payment == 0;
+            })->count(),            
+        ];
        
         $booking = $query->paginate($perPage)
             ->through(function($booking) {
@@ -32,12 +47,13 @@ class FinanceController extends Controller
                     'grand_total' => $booking->grand_total+$booking->book_add_on_total,
                     'payment' => $booking->payment,
                     'balance' => ($booking->grand_total+$booking->book_add_on_total)-$booking->payment,
-                    'payment_status' => ($booking->grand_total+$booking->book_add_on_total)-$booking->payment == 0 ? 'Paid' : 'Unpaid',
+                    'payment_status' => $booking->payment == 0 ? 'Unpaid' : (($booking->grand_total+$booking->book_add_on_total)-$booking->payment == 0 ? 'Paid' : 'DP Paid'),
                 ];
             });
 
         return Inertia::render('Finance/InvoiceManager', [
             'booking' => $booking,
+            'summary' => $summary,
         ]);
         
     }

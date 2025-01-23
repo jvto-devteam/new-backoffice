@@ -278,6 +278,15 @@ export default function ExpenseManager({booking,summary,packages,filters}){
         );
         setIsFilterOpen(false);
     };
+    const formatDate = (dateStr) => {
+        if (!dateStr || dateStr === '-') return '-';
+        return new Date(dateStr).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    };
+
     return (
         <Authenticated>
             <Head title="Expense Manager" />
@@ -337,8 +346,9 @@ export default function ExpenseManager({booking,summary,packages,filters}){
                     <Table>
                     <TableHeader className="bg-gray-100 dark:bg-[#1a222c]">
                         <TableRow>
-                            <TableHead>Booking Details</TableHead>
-                            <TableHead className="w-1/4">Package Info</TableHead>
+                        <TableHead className="w-48">Client</TableHead>
+                            <TableHead className="w-48">Trip Details</TableHead>
+                            <TableHead className="w-96">Package Info</TableHead>
                             <TableHead>Total Invoice</TableHead>
                             <TableHead>Total Expense</TableHead>
                             <TableHead>Profit</TableHead>
@@ -350,16 +360,34 @@ export default function ExpenseManager({booking,summary,packages,filters}){
                         {booking.data.map((data) => (
                             <TableRow key={data.id}>
                                 <TableCell>
-                                    <div className="space-y-1">
-                                        <div className="text-blue-600 font-bold">
-                                            Booking ID: {data.id}
-                                        </div>
-                                        <div className="font-semibold">{data.name}</div>
-                                        <div className="flex items-center gap-1 text-gray-600">
-                                            <Users className="w-4 h-4" />
-                                            <span>{data.numb_of_pax} pax</span>
-                                        </div>
+                                    <div className="font-bold">
+                                        {data.name}
                                     </div>
+                                    <div className="mt-1 flex gap-1">
+                                        <Users className="w-4 h-4" />
+                                        {data.numb_of_pax} pax
+                                    </div>
+                                    <div className="mt-2">
+                                        {
+                                            data.channel == 'KLOOK' ? (
+                                                <span className="bg-orange-200 text-orange-600 rounded-full text-xs font-bold px-2 py-1">KLOOK</span>
+                                            ) : (
+                                                <span className="bg-blue-200 text-blue-600 rounded-full text-xs font-bold px-2 py-1">JVTO</span>
+                                            )
+                                        }
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                <div className="space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="w-4 h-4" />
+                                        Booking ID : {data.id}
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="w-4 h-4" />
+                                        {formatDate(data.trip_date)}
+                                    </div>
+                                </div>
                                 </TableCell>
                                 <TableCell>
                                     <div className="space-y-1">

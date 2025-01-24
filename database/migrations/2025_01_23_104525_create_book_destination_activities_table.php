@@ -15,6 +15,7 @@ class CreateBookDestinationActivitiesTable extends Migration
     {
         Schema::create('book_destination_activities', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('booking_id');
             $table->unsignedBigInteger('destination_id');
             $table->unsignedBigInteger('destination_activity_id');
             $table->integer('qty');
@@ -32,6 +33,10 @@ class CreateBookDestinationActivitiesTable extends Migration
 
             $table->foreign('destination_id')
                   ->references('id')->on('destinations')
+                  ->onDelete('cascade');
+
+            $table->foreign('booking_id')
+                  ->references('id')->on('bookings')
                   ->onDelete('cascade');
         });
     }

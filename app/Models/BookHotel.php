@@ -29,4 +29,9 @@ class BookHotel extends Model
         return $this->hasMany(BookRoomHotel::class, 'book_hotel_id');
     }
 
+    public function bookHotelMeal()
+    {
+        return $this->hasMany(BookHotelMeal::class, 'book_hotel_id');
+    }
+
 }

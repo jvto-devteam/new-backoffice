@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddPaymentFieldsToBookRoomHotelsTable extends Migration
+class AddIsDefaultToOthersActivitiesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,8 @@ class AddPaymentFieldsToBookRoomHotelsTable extends Migration
      */
     public function up()
     {
-        Schema::table('book_hotels', function (Blueprint $table) {
-            $table->enum('is_debt', ['0', '1'])->nullable()->after('paid_at');
+        Schema::table('others_activities', function (Blueprint $table) {
+            $table->enum('is_default', ['0', '1'])->default('1')->after('price');
         });
     }
 
@@ -25,8 +25,8 @@ class AddPaymentFieldsToBookRoomHotelsTable extends Migration
      */
     public function down()
     {
-        Schema::table('book_hotels', function (Blueprint $table) {
-            $table->dropColumn(['is_debt']);
+        Schema::table('others_activities', function (Blueprint $table) {
+            $table->dropColumn('is_default');
         });
     }
 }

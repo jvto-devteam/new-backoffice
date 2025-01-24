@@ -70,6 +70,7 @@ Route::prefix('bookings')->group(function () {
 Route::prefix('finance')->group(function () {
     Route::get('/invoice-manager', [FinanceController::class, 'invoice']);
     Route::get('/expense-manager', [FinanceController::class, 'expense']);
+    Route::get('/expense-manager/{id}/edit', [FinanceController::class, 'editExpense']);
     Route::get('/monthly-settlement', [FinanceController::class, 'settlement']);
     Route::get('/profit-loss-summary', [FinanceController::class, 'profitLoss']);
 });

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link } from '@inertiajs/react';
 import { Head, router } from '@inertiajs/react';
 import Authenticated from '@/Layouts/Main';
 import { 
@@ -8,7 +9,7 @@ import {
     Users, 
     Package, 
     MoreVertical,
-    Clock, FileText, DollarSign, Handshake,BookUser,Filter, X, Search, ChevronsUpDown, Check
+    Clock, FileText, DollarSign, Handshake,BookUser,Filter, X, Search, ChevronsUpDown, Check, Pencil
 } from 'lucide-react';
 
 import {
@@ -426,12 +427,14 @@ export default function ExpenseManager({booking,summary,packages,filters}){
                                     </div>
                                 </TableCell>
                                 <TableHead>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                >
-                                    <MoreVertical className="h-4 w-4" />
-                                </Button>
+                                    <Link href={`/finance/expense-manager/${data.id}/edit`}>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                    </Link>
                                 </TableHead>
                             </TableRow>
                         ))}

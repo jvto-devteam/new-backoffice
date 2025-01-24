@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BookHotel;
 use App\Models\Booking;
+use App\Models\BookRoomHotel;
 use App\Models\Package;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -173,5 +175,31 @@ class FinanceController extends Controller
             'packages' => $packages,
             'filters' => $filters,
         ]);
+    }
+    function editExpense($id){
+        $bookRoom = BookHotel::select('id','booking_id','hotel_id')->with(['hotel' => function($query){
+            $query->select('id','name');
+        },'bookRoom' => function($query){
+            $query->select('id','book_hotel_id','room_hotel_id','quantity','subtotal')->with(['roomHotel' => function($q){
+                $q->select('id','room_name','rate');
+            }]);
+        }])->where('booking_id',$id)
+        ->get()
+        ->map(function($booking) {
+            $booking->bookRoom->map(function($room) {
+                if ($room->subtotal === null) {
+                    $room->subtotal = $room->roomHotel->rate * $room->quantity;
+                    $room->save();
+                }
+                return $room;
+            });
+            return $booking;
+        });
+        // return $bookRoom;    
+
+        return Inertia::render('Finance/EditExpenseManager', [
+            'accommodations' => $bookRoom,
+        ]);
+
     }
 }

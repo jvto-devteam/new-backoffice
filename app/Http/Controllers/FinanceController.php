@@ -10,7 +10,10 @@ use App\Models\BookHotelMeal;
 use App\Models\Booking;
 use App\Models\BookOthersActivity;
 use App\Models\BookRoomHotel;
+use App\Models\Car;
 use App\Models\CarConfiguration;
+use App\Models\CrewRole;
+use App\Models\DestinationActivity;
 use App\Models\Itinerary;
 use App\Models\OthersActivity;
 use App\Models\Package;
@@ -249,6 +252,18 @@ class FinanceController extends Controller
             return $booking;
         });
 
+        if($booking->agent_id == 1){
+            $channel = 'twt';
+        }
+        else if($booking->agent_id == 2){
+            if($booking->booking_category_id == 3){
+                $channel = 'klook';
+            }
+            else{
+                $channel = 'jvto';
+            }
+        }
+
         $cekDestinations = BookDestinationActivity::where('booking_id',$id)->count();
         $cekOthers = BookOthersActivity::where('booking_id',$id)->count();
         $packageId = $booking->bookingDetail[0]->package_id;
@@ -420,12 +435,33 @@ class FinanceController extends Controller
             $query->select('id','role');
         }])->where('booking_id',$id)->get();
 
+        $listForNewItems['destinations'] = DestinationActivity::with(['destination' => function($query){
+            $query->select('id','name');
+        }])->select('id','destination_id','name','price');
+        if($channel == 'twt'){
+            $orderChannelID = 2;
+            $listForNewItems['destinations'] = $listForNewItems['destinations']->where('is_default_twt','1');
+        }
+        else if($channel == 'jvto'){
+            $orderChannelID = 1;
+            $listForNewItems['destinations'] = $listForNewItems['destinations']->where('is_default_jvto','1');
+        }
+        else if($channel == 'klook'){
+            $orderChannelID = 3;
+            $listForNewItems['destinations'] = $listForNewItems['destinations']->where('is_default_klook','1');
+        }
+        $listForNewItems['destinations'] = $listForNewItems['destinations']->get()->groupBy(fn($item) => $item->destination->name);
+        $listForNewItems['others'] = OthersActivity::get();
+        $listForNewItems['cars'] = Car::whereIn('id',[1,2,5,21])->get();
+        $listForNewItems['crews'] = CrewRole::where('order_channel_id',$orderChannelID)->get();
+
         return Inertia::render('Finance/EditExpenseManager', [
             'booking' => $booking,
             'accommodations' => $bookRoom,
             'destinations' => $destinations,
             'resources' => $resources,
             'others' => $others,
+            'listForNewItems' => $listForNewItems
         ]);
     }
 }

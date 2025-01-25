@@ -459,56 +459,7 @@ const BookingInfo = ({ booking }) => {
     </div>
   );
 };
-const DestinationTable = ({ items, onItemStatusChange, onTotalChange }) => {
-  const [activityStates, setActivityStates] = useState(
-    items.map(item => ({
-      quantity: item.qty,
-      price: parseFloat(item.price),
-      isPaid: item.status_paid === 'paid',
-      isDebt: item.is_debt === '1'
-    }))
-  );
-
-  const allPaid = activityStates.every(state => state.isPaid);
-  const anyPaid = activityStates.some(state => state.isPaid);
-
-  const handleQuantityChange = (index, value) => {
-    const newStates = [...activityStates];
-    newStates[index].quantity = value;
-    setActivityStates(newStates);
-  };
-
-  const handlePriceChange = (index, value) => {
-    const newStates = [...activityStates];
-    newStates[index].price = value;
-    setActivityStates(newStates);
-  };
-
-  const handlePaidChange = (index, checked) => {
-    const newStates = [...activityStates];
-    newStates[index].isPaid = checked;
-    if (checked) {
-      newStates[index].isDebt = false;
-    }
-    setActivityStates(newStates);
-    onItemStatusChange(items[index].id, checked, false);
-  };
-
-  const handleDebtChange = (index, checked) => {
-    const newStates = [...activityStates];
-    newStates[index].isDebt = checked;
-    setActivityStates(newStates);
-    onItemStatusChange(items[index].id, activityStates[index].isPaid, checked);
-  };
-
-  const total = useMemo(() => 
-    activityStates.reduce((sum, state) => sum + (state.quantity * state.price), 0)
-  , [activityStates]);
-
-  useEffect(() => {
-    onTotalChange(total);
-  }, [total, onTotalChange]);
-
+const DestinationTable = ({ items, onItemChange, onItemDelete  }) => {
   return (
     <div className="mb-10">
       <table className="w-full">
@@ -520,6 +471,7 @@ const DestinationTable = ({ items, onItemStatusChange, onTotalChange }) => {
             <th className="px-3 w-24 text-right">QTY</th>
             <th className="px-3 w-40 text-right">PRICE</th>
             <th className="px-3 w-40 text-right">SUBTOTAL</th>
+            <th className="px-3 w-16"></th>
           </tr>
         </thead>
         <tbody>
@@ -530,8 +482,8 @@ const DestinationTable = ({ items, onItemStatusChange, onTotalChange }) => {
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={activityStates[index].isPaid}
-                      onChange={(e) => handlePaidChange(index, e.target.checked)}
+                      checked={item.isPaid}
+                      onChange={(e) => onItemChange(index, 'isPaid', e.target.checked)}
                       className="w-4 h-4"
                     />
                     <span>Paid</span>
@@ -539,10 +491,10 @@ const DestinationTable = ({ items, onItemStatusChange, onTotalChange }) => {
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={activityStates[index].isDebt}
-                      onChange={(e) => handleDebtChange(index, e.target.checked)}
+                      checked={item.isDebt}
+                      onChange={(e) => onItemChange(index, 'isDebt', e.target.checked)}
                       className="w-4 h-4"
-                      disabled={activityStates[index].isPaid}
+                      disabled={item.isPaid}
                     />
                     <span>Hutang</span>
                   </label>
@@ -553,144 +505,148 @@ const DestinationTable = ({ items, onItemStatusChange, onTotalChange }) => {
               <td className="px-3">
                 <input
                   type="number"
-                  value={activityStates[index].quantity}
-                  onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 0)}
+                  value={item.quantity}
+                  onChange={(e) => onItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
                   className="w-16 p-1 border rounded text-right disabled:bg-gray-100"
                   min="1"
-                  disabled={activityStates[index].isPaid}
+                  disabled={item.isPaid}
                 />
               </td>
               <td className="px-3">
                 <input
                   type="text"
-                  value={formatCurrency(activityStates[index].price)}
-                  onChange={(e) => handlePriceChange(index, parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+                  value={formatCurrency(item.price)}
+                  onChange={(e) => onItemChange(index, 'price', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
                   className="w-32 p-1 border rounded text-right disabled:bg-gray-100"
-                  disabled={activityStates[index].isPaid}
+                  disabled={item.isPaid}
                 />
               </td>
-              <td className={`px-3 text-right ${anyPaid ? 'line-through text-gray-400' : ''}`}>
-                {formatCurrency(activityStates[index].quantity * activityStates[index].price)}
+              <td className={`px-3 text-right ${item.isPaid ? 'line-through text-gray-400' : ''}`}>
+                {formatCurrency(item.quantity * item.price)}
               </td>
+              <td className="px-3">
+               {!item.isPaid && (
+                 <button 
+                   onClick={() => onItemDelete(index)}
+                   className="text-red-600 hover:text-red-800"
+                 >
+                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                   </svg>
+                 </button>
+               )}
+             </td>              
             </tr>
           ))}
         </tbody>
         <tfoot>
           <tr>
             <td colSpan="5" className="px-3 py-4 text-right font-medium">Total</td>
-            <td className={`px-3 text-right font-medium ${anyPaid ? 'line-through text-gray-400' : ''}`}>
-              {formatCurrency(total)}
+            <td className="px-3 text-right font-medium">
+              {formatCurrency(items.reduce((sum, item) => sum + (item.quantity * item.price), 0))}
             </td>
+            <td></td>
             <td></td>
           </tr>
         </tfoot>
       </table>
     </div>
   );
-};
-
-const Destination = ({ name, items, onStatusChange }) => {
-  const [currentTotal, setCurrentTotal] = useState(
-    items.reduce((sum, item) => sum + (parseFloat(item.qty) * parseFloat(item.price)), 0)
-  );
-
-  const handleTotalChange = (newTotal) => {
-    setCurrentTotal(newTotal);
-    onStatusChange(name, newTotal);
-  };
-
-  const handleItemStatusChange = (itemId, isPaid, isDebt) => {
-    onStatusChange(name, currentTotal, { itemId, isPaid, isDebt });
-  };
-
+ };
+ 
+ const Destination = ({ name, items, onItemChange,onItemDelete  }) => {
   return (
     <div className="mt-4 border rounded-md p-3">
       <div className="flex justify-between items-center mb-4">
         <h3 className="font-bold mt-2">
-        <span className="px-3 py-2 bg-blue-100 text-blue-800 rounded-full">
-          {name}
-        </span>
+          <span className="px-3 py-2 bg-blue-100 text-blue-800 rounded-full">
+            {name}
+          </span>
         </h3>
       </div>
       <DestinationTable 
-        items={items} 
-        onTotalChange={handleTotalChange}
-        onItemStatusChange={handleItemStatusChange}
+        items={items}
+        onItemChange={onItemChange}
+        onItemDelete={onItemDelete}        
       />
     </div>
   );
-};
-
-const DestinationsCard = ({ destinations, onTotalsChange = () => {} }) => {
+ };
+ 
+ const DestinationsCard = ({ destinations, onTotalsChange = () => {} }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [destinationStatus, setDestinationStatus] = useState(
-    Object.fromEntries(Object.entries(destinations).map(([name, items]) => [
-      name,
-      {
-        amount: items.reduce((sum, item) => sum + (parseFloat(item.qty) * parseFloat(item.price)), 0),
-        items: items.map(item => ({
-          id: item.id,
-          isPaid: item.status_paid === 'paid',
-          isDebt: item.is_debt === '1'
-        }))
+  const [destinationData, setDestinationData] = useState(() => {
+    const data = {};
+    Object.entries(destinations).forEach(([name, destItems]) => {
+      data[name] = destItems.map(item => ({
+        ...item,
+        id: item.id,
+        quantity: parseInt(item.qty),
+        price: parseFloat(item.price),
+        isPaid: item.status_paid === 'paid',
+        isDebt: item.is_debt === '1',
+        destination_activity: item.destination_activity
+      }));
+    });
+    return data;
+  });
+ 
+  const handleItemChange = (destName, index, field, value) => {
+    setDestinationData(prev => {
+      const newData = { ...prev };
+      newData[destName] = [...prev[destName]];
+      if (field === 'isPaid' && value === true) {
+        newData[destName][index] = {
+          ...newData[destName][index],
+          [field]: value,
+          isDebt: false
+        };
+      } else {
+        newData[destName][index] = {
+          ...newData[destName][index],
+          [field]: value
+        };
       }
-    ]))
-  );
-
+      return newData;
+    });
+  };
+ 
   const totals = useMemo(() => {
     let total = 0;
     let paid = 0;
     let debt = 0;
-
-    Object.entries(destinationStatus).forEach(([destName, status]) => {
-      total += status.amount;
-      destinations[destName].forEach((item, index) => {
-        const subtotal = parseFloat(item.qty) * parseFloat(item.price);
-        const itemStatus = status.items.find(i => i.id === item.id);
-        if (itemStatus?.isPaid) {
+ 
+    Object.values(destinationData).forEach(items => {
+      items.forEach(item => {
+        const subtotal = item.quantity * item.price;
+        total += subtotal;
+        if (item.isPaid) {
           paid += subtotal;
-        } else if (itemStatus?.isDebt) {
+        } else if (item.isDebt) {
           debt += subtotal;
         }
       });
     });
-
-    const result = {
+ 
+    return {
       totalAmount: total,
       paidAmount: paid,
       debtAmount: debt,
       balanceAmount: total - paid
     };
-    onTotalsChange(result);
-    return result
-
-  }, [destinationStatus, destinations]);
-
-  const handleStatusChange = (destinationName, amount, itemStatus) => {
-    setDestinationStatus(prev => {
-      const newStatus = { ...prev };
-      newStatus[destinationName] = {
-        ...newStatus[destinationName],
-        amount
-      };
-
-      if (itemStatus) {
-        const itemIndex = newStatus[destinationName].items.findIndex(
-          item => item.id === itemStatus.itemId
-        );
-        if (itemIndex !== -1) {
-          newStatus[destinationName].items[itemIndex] = {
-            ...newStatus[destinationName].items[itemIndex],
-            isPaid: itemStatus.isPaid,
-            isDebt: itemStatus.isDebt
-          };
-        }
-      }
-
-      return newStatus;
+  }, [destinationData]);
+ 
+  useEffect(() => {
+    onTotalsChange(totals);
+  }, [totals, onTotalsChange]);
+  const handleItemDelete = (destName, index) => {
+    setDestinationData(prev => {
+      const newData = { ...prev };
+      newData[destName] = [...prev[destName]];
+      newData[destName].splice(index, 1);
+      return newData;
     });
   };
-
   return (
     <div className="bg-white rounded shadow">
       <div 
@@ -717,22 +673,24 @@ const DestinationsCard = ({ destinations, onTotalsChange = () => {} }) => {
           </div>
         </div>
       </div>
-
+ 
       {isExpanded && (
         <div className="p-4">
-          {Object.entries(destinations).map(([name, items]) => (
+          {Object.entries(destinationData).map(([name, items]) => (
             <Destination 
               key={name} 
               name={name}
               items={items}
-              onStatusChange={handleStatusChange}
+              onItemChange={(index, field, value) => handleItemChange(name, index, field, value)}
+              onItemDelete={(index) => handleItemDelete(name, index)}
             />
           ))}
         </div>
       )}
     </div>
   );
-};
+ };
+
 const OthersCard = ({ others, onTotalsChange = () => {} }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [itemStates, setItemStates] = useState(

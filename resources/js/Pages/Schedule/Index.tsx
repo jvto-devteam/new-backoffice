@@ -5,7 +5,7 @@ import {format, parse, addDays} from 'date-fns';
 import {
     ChevronDown, ChevronRight, Search, Calendar,
     Hotel, Car, DollarSign, AlertCircle, Package,
-    Users, Clock, MapPin, LifeBuoy, Backpack
+    Users, Clock, MapPin, LifeBuoy, Backpack,Eye
 } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
 import { 
@@ -214,7 +214,7 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                     </h3>
                     <div className="space-y-4">
                         {booking.booking_itinerary.map((item, idx) => (
-                            item.activity_start.destination && (
+                            item.activity_start && item.activity_start.destination && (
                                 <div key={idx} className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
                                     <div className="flex items-center">
                                         <span className="font-medium text-gray-600 dark:text-gray-300 mr-2">Day {item.day}</span>
@@ -328,7 +328,58 @@ const BookingDetails = ({ isOpen, onClose, booking }) => {
                         <div className="mt-6">
                             <h4 className="text-md font-medium mb-3">Payment History</h4>
                             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg overflow-hidden">
-                                {/* Payment history table */}
+                            <div className="relative overflow-x-auto">
+                            <table className="w-full text-sm text-gray-500 dark:text-gray-400">
+                                <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                    <tr>
+                                        <th scope="col" className="text-left px-6 py-3 whitespace-nowrap">
+                                            Date
+                                        </th>
+                                        <th scope="col" className="text-left px-6 py-3">
+                                            Description
+                                        </th>
+                                        <th scope="col" className="text-left px-6 py-3">
+                                            Payment Method
+                                        </th>
+                                        <th scope="col" className="px-6 py-3 text-right">
+                                            Nominal
+                                        </th>
+                                        <th scope="col" className="px-6 py-3">
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {booking.booking_payment.map((item, index) => (
+                                        <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                            <td className="px-6 py-4 align-top">
+                                                <div className="whitespace-nowrap">{format(item.created_at, 'dd MMM yyyy')}</div>
+                                                <div className="text-gray-400 text-xs">{format(item.created_at, 'HH:mm')}</div>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {item.description}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {item.payment_method.name}
+                                            </td>
+                                            <td className="px-6 py-4 text-right font-medium">
+                                                {formatRupiah(item.nominal)}
+                                            </td>
+                                            <td className="px-6 py-4 font-medium">
+                                                {
+                                                    item.reference ? (
+                                                        <a href={item.reference} target="_blank">
+                                                            <button type="button" className="px-3 py-2 text-xs font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                                                                <Eye className="h-4 w-4"/>
+                                                            </button>
+                                                        </a>
+                                                    ) : '-'
+                                                }
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            </div>
                             </div>
                         </div>
                     )}
@@ -434,7 +485,7 @@ const BookingRow = ({no, booking, isExpanded, onToggle}) => {
                 </td>
                 <td className="py-3 align-top space-y-1">
                     {booking.booking_itinerary.map((data,index) => {
-                        return data.activity_start.destination ? (
+                        return data.activity_start && data.activity_start.destination ? (
                             <div key={index} className="text-sm">
                                 #{data.day} {data.activity_start.destination.name}
                             </div>

@@ -57,7 +57,7 @@ class ScheduleController extends Controller
                 $data['selectedCategory'] = $bookingCategory->name;
             }
             $data['bookingCategory'] = BookingCategory::get();
-            $data['booking'] = Booking::with(['bookingPayment.paymentMethod','bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination'])->whereBetween('travel_date_start', [$data['filters']['startDate'],$data['filters']['endDate']]);
+            $data['booking'] = Booking::with(['bookingPayment.paymentMethod','bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination'])->where('travel_date_start', 'like', "$data[year]-$data[month]%");;
             if ($request->vendor) {
                 $data['agent'] = Agent::find($request->vendor);
                 $data['booking'] = $data['booking']->where('agent_id', $request->vendor);
@@ -78,6 +78,17 @@ class ScheduleController extends Controller
                     $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id','!=',3);
                 }
                 else if ($request->channel == 'TWT') {
+                    $data['booking'] = $data['booking']->where('agent_id', '1');
+                }
+            }
+            if ($request->source) {
+                if ($request->source == 'KLOOK') {
+                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id',3);
+                }
+                else if ($request->source == 'JVTO') {
+                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id','!=',3);
+                }
+                else if ($request->source == 'TWT') {
                     $data['booking'] = $data['booking']->where('agent_id', '1');
                 }
             }

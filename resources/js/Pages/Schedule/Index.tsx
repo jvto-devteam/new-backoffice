@@ -1,5 +1,6 @@
 import Main from '@/Layouts/Main';
 import React, { useState } from 'react';
+import { router } from '@inertiajs/react';
 import {
   ChevronDown,
   ChevronRight,
@@ -16,9 +17,13 @@ import {
   Filter,
   MapPin,
   Clock,
-  DollarSign
+  DollarSign,
+  FileSpreadsheet,
+  ArrowRight,
+  FileText,
 } from 'lucide-react';
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { format, parse, addDays } from 'date-fns';
 function formatCurrency(amountString) {
     if (!amountString) return 'IDR 0';
@@ -34,31 +39,30 @@ function formatCurrency(amountString) {
     }).format(numericValue);
   }
 // Enhanced DateRangePicker with modern styling
-function DateRangePicker({ startDate, endDate, onChange }) {
-  return (
-    <div className="flex items-center">
-      <div className="relative">
-        <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
-        <input
-          type="date"
-          className="pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
-          value={startDate}
-          onChange={(e) => onChange(e.target.value, endDate)}
-        />
-      </div>
-      <div className="relative">
-        <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
-        <input
-          type="date"
-          className="pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
-          value={endDate}
-          onChange={(e) => onChange(startDate, e.target.value)}
-        />
-      </div>
-    </div>
-  );
-}
 
+const DateRangePicker = ({ startDate, endDate, onChange }) => (
+  <div className="flex items-center gap-2">
+    <div className="relative flex-1">
+      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
+      <input
+        type="date"
+        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
+        value={startDate}
+        onChange={(e) => onChange(e.target.value, endDate)}
+      />
+    </div>
+    <ArrowRight className="h-4 w-4 text-gray-400" />
+    <div className="relative flex-1">
+      <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
+      <input
+        type="date"
+        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
+        value={endDate}
+        onChange={(e) => onChange(startDate, e.target.value)}
+      />
+    </div>
+  </div>
+);
 // Enhanced Alert Component
 const Alert = ({message}) => (
   <div className="flex items-center px-3 py-1.5 bg-red-50 text-red-600 rounded-full text-sm font-medium animate-fadeIn group hover:bg-red-100 transition-colors duration-200">
@@ -79,13 +83,23 @@ const SizeBadge = ({ size, count }) => {
 
 const Index = ({data}) => {
   // State management code remains the same
-  const [bookings] = useState(data.booking);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedChannel, setSelectedChannel] = useState("");
-  const [pickupFilter, setPickupFilter] = useState("");
-  const [paymentStatus, setPaymentStatus] = useState("");
-  const [startDate, setStartDate] = useState("2025-02-01");
-  const [endDate, setEndDate] = useState("2025-03-31");
+  const [filters, setFilters] = React.useState({
+    search: data.filters.search,
+    startDate: data.filters.startDate,
+    endDate: data.filters.endDate,
+    channel: data.filters.channel,
+    // paymentStatus: data.filters.status
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log(filters);
+    
+    router.get('/booking-overview', filters, {
+      preserveState: true,
+      preserveScroll: true
+    });
+  };  
   const [expandedBookingId, setExpandedBookingId] = useState(null);
 
   // Enhanced source color mapping
@@ -106,60 +120,111 @@ const Index = ({data}) => {
           {/* Enhanced Filter Section */}
           <Card className="transition-all duration-300 hover:shadow-lg">
             <CardContent className="p-6 pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Search */}
-                <div className="relative col-span-1 md:col-span-2 lg:col-span-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
-                  <input
-                    type="text"
-                    placeholder="Search by guest name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
-                  />
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <div className="grid items-end grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {/* Search Input */}
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Guest Name
+                    </label>
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
+                      <input
+                        type="text"
+                        placeholder="Search by guest name..."
+                        value={filters.search}
+                        onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date Range */}
+                  <div className="col-span-1 md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Date Range
+                    </label>
+                    <DateRangePicker
+                      startDate={filters.startDate}
+                      endDate={filters.endDate}
+                      onChange={(start, end) => setFilters(prev => ({ ...prev, startDate: start, endDate: end }))}
+                    />
+                  </div>
+
+                  {/* Channel Select */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Channel
+                    </label>
+                    <div className="relative">
+                      <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
+                      <select
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm appearance-none bg-white"
+                        value={filters.channel}
+                        onChange={(e) => setFilters(prev => ({ ...prev, channel: e.target.value }))}
+                      >
+                        <option value="">All Channels</option>
+                        <option value="TWT">TWT</option>
+                        <option value="KLOOK">KLOOK</option>
+                        <option value="JVTO">JVTO</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Payment Status Select */}
+                  {/* <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Payment Status
+                    </label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
+                      <select
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm appearance-none bg-white"
+                        value={filters.paymentStatus}
+                        onChange={(e) => setFilters(prev => ({ ...prev, paymentStatus: e.target.value }))}
+                      >
+                        <option value="">All Payments</option>
+                        <option value="Paid">Paid</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Overdue">Overdue</option>
+                      </select>
+                    </div>
+                  </div> */}
+                  {/* Submit Button */}
+                </div>
+                <div className='flex justify-between'>
+                  <div>
+                    <Button
+                      type="submit"
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                    >
+                      <Filter className="h-4 w-4" />
+                      Apply Filters
+                    </Button>
+                  </div>
+                  <div className='flex gap-2'>
+                    <a href={`/booking-overview?channel=${filters.channel}&endDate=${filters.endDate}&search=${filters.search}&startDate=${filters.startDate}&export=true`}>
+                      <Button
+                        type="button"
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                      >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Export Excel
+                      </Button>
+                    </a>
+                    <a href={`/booking-overview?channel=${filters.channel}&endDate=${filters.endDate}&search=${filters.search}&startDate=${filters.startDate}&pdf=true`}>
+                      <Button
+                        type="button"
+                        className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                      >
+                        <FileText className="h-4 w-4" />
+                        Export PDF
+                      </Button>
+                    </a>
+                  </div>
                 </div>
 
-                {/* Date Range */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-1">
-                  <DateRangePicker
-                    startDate={startDate}
-                    endDate={endDate}
-                    onChange={(start, end) => {
-                      setStartDate(start);
-                      setEndDate(end);
-                    }}
-                  />
-                </div>
-
-                {/* Enhanced Selects */}
-                <div className="relative">
-                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
-                  <select
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm appearance-none bg-white"
-                    value={selectedChannel}
-                    onChange={(e) => setSelectedChannel(e.target.value)}
-                  >
-                    <option value="">All Channels</option>
-                    <option value="TWT">TWT</option>
-                    <option value="KLOOK">KLOOK</option>
-                    <option value="JVTO">JVTO</option>
-                  </select>
-                </div>
-
-                <div className="relative">
-                  <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4"/>
-                  <select
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm appearance-none bg-white"
-                    value={paymentStatus}
-                    onChange={(e) => setPaymentStatus(e.target.value)}
-                  >
-                    <option value="">All Payments</option>
-                    <option value="Paid">Paid</option>
-                    <option value="Pending">Pending</option>
-                    <option value="Overdue">Overdue</option>
-                  </select>
-                </div>
-              </div>
+              </form>
             </CardContent>
           </Card>
 

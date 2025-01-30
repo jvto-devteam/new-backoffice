@@ -11,12 +11,21 @@ use App\Models\Hotel;
 use App\Models\Package;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use PDF;
+
 
 class ScheduleController extends Controller
 {
     function index(Request $request) {
         $pageInfo = 'Booking Overview';
         $pageTitle = 'Booking Overview';
+        $data['filters'] = [
+            'search' => $request->search ? $request->search : '',
+            'startDate' => $request->startDate ? $request->startDate : date('Y-m-01'),
+            'endDate' => $request->endDate ? $request->endDate : date('Y-m-t'),
+            'channel' => $request->channel ? $request->channel : '',
+            'paymentStatus' => $request->paymentStatus ? $request->paymentStatus : ''
+        ];
 
         $startEnd = explode(" to ", $request->start_end);
         $data['startDate'] = $request->start_end ? $startEnd[0] : date('Y-m-01');
@@ -48,7 +57,7 @@ class ScheduleController extends Controller
                 $data['selectedCategory'] = $bookingCategory->name;
             }
             $data['bookingCategory'] = BookingCategory::get();
-            $data['booking'] = Booking::with(['bookingPayment.paymentMethod','bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination'])->where('travel_date_start', 'like', "$data[year]-$data[month]%");
+            $data['booking'] = Booking::with(['bookingPayment.paymentMethod','bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination'])->whereBetween('travel_date_start', [$data['filters']['startDate'],$data['filters']['endDate']]);
             if ($request->vendor) {
                 $data['agent'] = Agent::find($request->vendor);
                 $data['booking'] = $data['booking']->where('agent_id', $request->vendor);
@@ -61,15 +70,15 @@ class ScheduleController extends Controller
                     }
                 }
             }
-            if ($request->source) {
-                if ($request->source == '3') {
-                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id',$request->source);
+            if ($request->channel) {
+                if ($request->channel == 'KLOOK') {
+                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id',3);
                 }
-                if ($request->source == '2') {
-                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id','!=','3');
+                else if ($request->channel == 'JVTO') {
+                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id','!=',3);
                 }
-                else{
-                    $data['booking'] = $data['booking']->where('agent_id', $request->source);
+                else if ($request->channel == 'TWT') {
+                    $data['booking'] = $data['booking']->where('agent_id', '1');
                 }
             }
             if($request->package_id){
@@ -88,8 +97,8 @@ class ScheduleController extends Controller
 
                 $data['booking'] = $data['booking']->where('id', $booking_id);
             }
-            if ($request->customer_name) {
-                $customer_name = $request->customer_name;
+            if ($request->search) {
+                $customer_name = $request->search;
                 $data['booking'] = $data['booking']->whereHas('user', function ($query) use ($customer_name) {
                     $query->where('name', "like", "%" . $customer_name . "%");
                 });
@@ -139,7 +148,27 @@ class ScheduleController extends Controller
             return $e->getMessage();
         }
         // return $data;
-        return Inertia::render('Schedule/Index',['data' => $data]);
+        if($request->export){
+            return \view('exports.schedule-excel', $data);
+        }
+        else if($request->pdf){
+            // return view('exports.pdf-schedule', $data);
+            $pdf = PDF::loadView('exports.pdf-schedule', $data)->setPaper('A4', 'landscape')->setOptions([
+                'margin_top' => 5,
+                'margin_bottom' => 5,
+                'margin_left' => 5,
+                'margin_right' => 5,
+            ]);
+                // Download or display the PDF
+            $name = "_".$data['filters']['startDate']."_".$data['filters']['endDate']."_";
+            $name .= request()->channel ? request()->channel : 'all';
+        
+            $name = 'Schedule'.$name.'.pdf';
+            return $pdf->download($name);
+        }
+        else{
+            return Inertia::render('Schedule/Index',['data' => $data]);
+        }
     }
 
     function bookingList(Request $request){

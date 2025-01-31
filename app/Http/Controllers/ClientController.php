@@ -22,7 +22,7 @@ class ClientController extends Controller
         $export = $request->input('export');
         $perPage = 10;
 
-        $query = Booking::select('id','booking_category_id','user_id','total_pax','travel_date_start','media_link','grand_total','payment','special_requirements')->with(['user.country','bookingDetail' => function($q){
+        $query = Booking::select('id','booking_category_id','user_id','total_pax','travel_date_start','media_link','grand_total','payment','special_requirements','balance')->with(['user.country','bookingDetail' => function($q){
             $q->select('id','package_id','booking_id','xss','xxs','xs','s','m','l','xl','xxl','xxxl')->with('package',function($qq){
                 $qq->select('id','name','package_code');
             });
@@ -64,7 +64,7 @@ class ClientController extends Controller
 
         if ($export) {
             $clients = $query->get()->map(function($client) {
-                return [
+                $return =  [
                     'Boooking ID' => $client->id,
                     'Name' => $client->user->name,
                     'Country' => $client->user->country?->long_name ?? '-',
@@ -76,10 +76,18 @@ class ClientController extends Controller
                     'Number of Pax' => $client->total_pax ?? 0,
                     'Trip Date' => $client->travel_date_start ?? '-',
                     'Grand Total' => $client->grand_total + $client->book_add_on_total,
-                    'Payment' => $client->payment,
-                    'Balance' => ($client->grand_total + $client->book_add_on_total) - $client->payment,
-                    'Payment Status' => ($client->grand_total + $client->book_add_on_total) - $client->payment == 0 ? 'Paid' : 'Unpaid',
                 ];
+                if($return['Order Channel'] == 'KLOOK'){
+                    $return['Payment'] = '-';
+                    $return['Balance'] = '-';
+                    $return['Payment Status]'] = '-';
+                }
+                else{
+                    $return['Payment'] = $client->payment;
+                    $return['Balance'] = ($client->grand_total + $client->book_add_on_total) - $client->payment;
+                    $return['Payment Status'] = $client->payment == 0 ? 'Unpaid' : ($client->balance <= 0 ? 'Paid' : 'DP Paid');
+                }
+                return $return;
             });
     
             $filename = 'client_data_' . date('Y-m-d_His') . '.xls';
@@ -89,7 +97,6 @@ class ClientController extends Controller
             
             return view('exports.clients', compact('clients'));
         }        
-
         $clients = $query->paginate($perPage)
             ->through(function($client) {
                 return [
@@ -117,12 +124,12 @@ class ClientController extends Controller
                     'xxl' => $client->bookingDetail[0]->xxl,
                     'xxxl' => $client->bookingDetail[0]->xxxl,
                     'package_code' => $client->bookingDetail[0]->package->package_code,
-                    'balance' => ($client->grand_total+$client->book_add_on_total)-$client->payment,
-                    'payment_status' => ($client->grand_total+$client->book_add_on_total)-$client->payment == 0 ? 'Paid' : 'Unpaid',
+                    'balance' => $client->balance,
+                    'payment_status' => $client->payment == 0 ? 'Unpaid' : ($client->balance <= 0 ? 'Paid' : 'DP Paid'),
                     'add_on' => $client->bookAddOn,
                 ];
-            });
-        
+        });
+
         $countries = Country::orderBy('long_name')->get(['id', 'long_name']);
         $packages = Package::where('is_publish','1')->orWhere('package_platform','klook')->orderBy('package_code')->get(['id','package_code','name']);
         return Inertia::render('Client/Index', [

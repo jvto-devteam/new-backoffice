@@ -33,7 +33,7 @@ class FinanceController extends Controller
             $q->select('id','package_id','booking_id')->with('package',function($qq){
                 $qq->select('id','name','package_code');
             });
-        },'bookingPayment.paymentMethod'])->where('status', 'booked')->where('agent_id', 2)->orderBy('travel_date_start','asc');
+        },'bookingPayment.paymentMethod','bookAddOn.addOn'])->where('status', 'booked')->where('agent_id', 2)->where('booking_category_id','!=','3')->orderBy('travel_date_start','asc');
         if ($search) {
             $query->whereHas('user',function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%");
@@ -94,7 +94,8 @@ class FinanceController extends Controller
                     'payment' => $booking->payment,
                     'balance' => $booking->balance,
                     'payment_status' => $booking->payment == 0 ? 'Unpaid' : ($booking->balance <= 0 ? 'Paid' : 'DP Paid'),
-                    'booking_payment' => $booking->bookingPayment
+                    'booking_payment' => $booking->bookingPayment,
+                    'add_on' => $booking->bookAddOn,
                 ];
             });
         $packages = Package::where('is_publish','1')->orWhere('package_platform','klook')->orderBy('package_code')->get(['id','package_code','name']);

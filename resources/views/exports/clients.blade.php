@@ -15,8 +15,22 @@
         <tbody>
             @foreach($clients as $client)
                 <tr>
-                    @foreach($client as $value)
-                        <td>{{ $value }}</td>
+                    @foreach($client as $key =>  $value)
+                        @php
+                            $bg = "";
+                            if($key == 'Payment Status'){
+                                if($value == 'Paid'){
+                                    $bg = "#00aa00";
+                                }
+                                else if($value=='DP Paid'){
+                                    $bg = "#caca00";
+                                }
+                                else if($value=='Unpaid'){
+                                    $bg = "#ff4a4a";
+                                }
+                            }
+                        @endphp
+                        <td {{$key == 'Payment Status' ? "bgcolor=$bg" : ''}}>{{ $value }}</td>
                     @endforeach
                 </tr>
             @endforeach

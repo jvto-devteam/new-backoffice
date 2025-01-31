@@ -153,7 +153,7 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, packages, onSubmit
                     />
                 </div>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                     <label className="text-sm font-medium">Order Channel</label>
                     <SearchableSelect 
                         options={[
@@ -167,7 +167,7 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, packages, onSubmit
                         setOpen={(value) => onChange('channelOpen', value)}
                         displayKey="name"
                     />
-                </div>
+                </div> */}
 
                 <div className="flex justify-end gap-2 pt-2">
                     <Button
@@ -315,7 +315,53 @@ export default function InvoiceManager({booking,summary,packages,filters}){
         }
     }, [openDropdownId]);
 
+    const ProgressBar = ({ percentage, status }) => {
+        const getStatusColor = (status) => {
+            switch (status.toLowerCase()) {
+                case 'paid': return 'bg-green-500';
+                case 'dp paid': return 'bg-yellow-500';
+                case 'unpaid': return 'bg-red-500';
+                default: return 'bg-gray-500';
+            }
+        };
+    
+        return (
+            <div className="relative w-full">
+                <div className="w-full h-2 bg-gray-200 rounded-full">
+                    <div
+                        className={`h-full rounded-full ${getStatusColor(status)}`}
+                        style={{ width: `${percentage}%` }}
+                    />
+                </div>
+                <span className="text-xs text-gray-600 mt-1 block">{percentage}% paid</span>
+            </div>
+        );
+    };
 
+// PaymentStatusBadge Component
+const PaymentStatusBadge = ({ status }) => {
+    const getStatusStyle = (status) => {
+        const baseStyle = "px-2 py-1 rounded-full text-xs font-medium";
+        switch (status.toLowerCase()) {
+            case 'paid':
+                return `${baseStyle} bg-green-100 text-green-800`;
+            case 'dp paid':
+                return `${baseStyle} bg-yellow-100 text-yellow-800`;
+            case 'unpaid':
+                return `${baseStyle} bg-red-100 text-red-800`;
+            default:
+                return `${baseStyle} bg-gray-100 text-gray-800`;
+        }
+    };
+
+    return (
+        <span className={getStatusStyle(status)}>
+            {status}
+        </span>
+    );
+};
+
+    
     const PaymentHistory = ({ isOpen, onClose, selectedBooking }) => {
         if (!selectedBooking) return null;
             
@@ -332,7 +378,133 @@ export default function InvoiceManager({booking,summary,packages,filters}){
                 <div className="fixed inset-0 flex items-center justify-center p-4">
                     <Dialog.Panel className="mx-auto max-w-4xl w-full bg-white dark:bg-gray-800 rounded-xl shadow-xl">
                         <div className="p-6 space-y-6 max-h-[calc(100vh-250px)] overflow-y-auto">
-                        <h4 className="text-md font-medium mb-3">Payment History</h4>
+                        <div className="space-y-4">
+                                <h4 className="font-medium text-gray-900">Packages</h4>
+                                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                                    <table className="min-w-full divide-y divide-gray-200 table-fixed">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">No</th>
+                                                <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase w-80">Name</th>
+                                                <th scope="col" className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Pax</th>
+                                                <th scope="col" className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Price Per Pax</th>
+                                                <th scope="col" className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            <tr>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">1</td>
+                                                <td className="px-4 py-2 text-sm text-gray-900">
+                                                    <div className="font-medium">{selectedBooking.package_code}</div>
+                                                    <div>
+                                                        {selectedBooking.package}
+                                                    </div>
+                                                </td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right">{selectedBooking.numb_of_pax}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right">{formatCurrency(selectedBooking.total/selectedBooking.numb_of_pax)}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right">
+                                                    {formatCurrency(selectedBooking.total)}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-gray-50">
+                                                <td colSpan="4" className="px-4 py-2 text-sm font-medium text-gray-900 text-right">
+                                                    Total
+                                                </td>
+                                                <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">
+                                                    {formatCurrency(selectedBooking.total)}
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                        </div>
+                        
+                        {selectedBooking.add_on && selectedBooking.add_on.length > 0 && (
+                            <div className="space-y-4">
+                                <h4 className="font-medium text-gray-900">Additional Services</h4>
+                                <div className="overflow-x-auto rounded-lg border border-gray-200">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">No</th>
+                                                <th scope="col" className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Add On</th>
+                                                <th scope="col" className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                                                <th scope="col" className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                                <th scope="col" className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white divide-y divide-gray-200">
+                                            {selectedBooking.add_on.map((addon, index) => (
+                                                <tr key={index}>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{index + 1}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{addon.add_on.add_on}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right">{addon.qty}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right">{formatCurrency(addon.add_on.price)}</td>
+                                                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right">
+                                                        {formatCurrency(addon.qty * addon.add_on.price)}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr className="bg-gray-50">
+                                                <td colSpan="4" className="px-4 py-2 text-sm font-medium text-gray-900 text-right">
+                                                    Total Additional Services:
+                                                </td>
+                                                <td className="px-4 py-2 text-sm font-medium text-gray-900 text-right">
+                                                    {formatCurrency(selectedBooking.add_on.reduce((total, addon) => 
+                                                        total + (addon.qty * addon.add_on.price), 0
+                                                    ))}
+                                                </td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                                {/* <p className="text-xs text-gray-500 italic">*Total additional services are included in the grand total above</p> */}
+                            </div>
+                        )}
+
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                                <div>
+                                    <p className="text-sm text-gray-600">Grand Total</p>
+                                    <p className="font-medium">{formatCurrency(selectedBooking.grand_total)}</p>
+                                </div>
+                                {
+                                    selectedBooking.channel == 'JVTO' && (
+                                        <>
+                                            <div>
+                                                <p className="text-sm text-gray-600">Amount Paid</p>
+                                                <p className="font-medium">{formatCurrency(selectedBooking.payment)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-600">Balance</p>
+                                                <p className="font-medium">{formatCurrency(selectedBooking.balance)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm text-gray-600">Status</p>
+                                                <PaymentStatusBadge status={selectedBooking.payment_status} />
+                                            </div>
+                                        </>
+                                )
+                                }
+                            </div>
+                            {
+                                selectedBooking.channel == 'JVTO' && (
+                                    <div className="w-full">
+                                        <ProgressBar 
+                                            percentage={Math.round((selectedBooking.payment / selectedBooking.grand_total) * 100)} 
+                                            status={selectedBooking.payment_status}
+                                        />
+                                    </div>
+                                )
+                            }
+
+                        </div>
+
+                        <h4 className="text-md font-medium mb-3 text-gray-900">Payment History</h4>
                             <div className="bg-gray-50 dark:bg-gray-800 rounded-lg overflow-hidden">
                                 <div className="relative overflow-x-auto">
                                     <table className="w-full text-sm text-gray-500 dark:text-gray-400">
@@ -583,7 +755,7 @@ export default function InvoiceManager({booking,summary,packages,filters}){
                                                             }}
                                                             className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                                                         >
-                                                            Payment History
+                                                            Details
                                                         </button>
                                                         <button 
                                                         onClick={(e) => {

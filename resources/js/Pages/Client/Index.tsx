@@ -251,7 +251,7 @@ const ProgressBar = ({ percentage, status }) => {
     const getStatusColor = (status) => {
         switch (status.toLowerCase()) {
             case 'paid': return 'bg-green-500';
-            case 'partial': return 'bg-yellow-500';
+            case 'dp paid': return 'bg-yellow-500';
             case 'unpaid': return 'bg-red-500';
             default: return 'bg-gray-500';
         }
@@ -277,7 +277,7 @@ const PaymentStatusBadge = ({ status }) => {
         switch (status.toLowerCase()) {
             case 'paid':
                 return `${baseStyle} bg-green-100 text-green-800`;
-            case 'partial':
+            case 'dp paid':
                 return `${baseStyle} bg-yellow-100 text-yellow-800`;
             case 'unpaid':
                 return `${baseStyle} bg-red-100 text-red-800`;
@@ -363,31 +363,47 @@ const DetailsModal = ({ isOpen, onClose, client }) => {
 
                 <div className="space-y-6">
                     <div className="space-y-4">
-                        <h4 className="font-medium text-gray-900">Payment Information</h4>
+                        {
+                            client.channel == 'JVTO' && (
+                                <h4 className="font-medium text-gray-900">Payment Information</h4>
+                            )
+                        }
+
                         <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
                             <div>
                                 <p className="text-sm text-gray-600">Grand Total</p>
                                 <p className="font-medium">{formatCurrency(client.grand_total)}</p>
                             </div>
-                            <div>
-                                <p className="text-sm text-gray-600">Amount Paid</p>
-                                <p className="font-medium">{formatCurrency(client.payment)}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600">Balance</p>
-                                <p className="font-medium">{formatCurrency(client.balance)}</p>
-                            </div>
-                            <div>
-                                <p className="text-sm text-gray-600">Status</p>
-                                <PaymentStatusBadge status={client.payment_status} />
-                            </div>
+                            {
+                                client.channel == 'JVTO' && (
+                                    <>
+                                        <div>
+                                            <p className="text-sm text-gray-600">Amount Paid</p>
+                                            <p className="font-medium">{formatCurrency(client.payment)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600">Balance</p>
+                                            <p className="font-medium">{formatCurrency(client.balance)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-600">Status</p>
+                                            <PaymentStatusBadge status={client.payment_status} />
+                                        </div>
+                                    </>
+                               )
+                            }
                         </div>
-                        <div className="w-full">
-                            <ProgressBar 
-                                percentage={Math.round((client.payment / client.grand_total) * 100)} 
-                                status={client.payment_status}
-                            />
-                        </div>
+                        {
+                            client.channel == 'JVTO' && (
+                                <div className="w-full">
+                                    <ProgressBar 
+                                        percentage={Math.round((client.payment / client.grand_total) * 100)} 
+                                        status={client.payment_status}
+                                    />
+                                </div>
+                            )
+                        }
+
                     </div>
 
                     {client.add_on && client.add_on.length > 0 && (
@@ -468,10 +484,10 @@ export default function Index({ clients, filters, countries, packages }) {
     const [search, setSearch] = useState(filters.search || '');
     const [startDate, setStartDate] = useState(filters.start_date || '');
     const [endDate, setEndDate] = useState(filters.end_date || '');
-    const [selectedCountry, setSelectedCountry] = useState(filters.country || null);
-    const [selectedPackage, setSelectedPackage] = useState(filters.package || null);
-    const [selectedChannel, setSelectedChannel] = useState(filters.channel || null);
-    const [selectedClient, setSelectedClient] = useState(null);
+    const [selectedCountry, setSelectedCountry] = useState(filters.country || '');
+    const [selectedPackage, setSelectedPackage] = useState(filters.package || '');
+    const [selectedChannel, setSelectedChannel] = useState(filters.channel || '');
+    const [selectedClient, setSelectedClient] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     
     const [countryOpen, setCountryOpen] = useState(false);
@@ -482,9 +498,9 @@ export default function Index({ clients, filters, countries, packages }) {
         search: filters.search || '',
         startDate: filters.start_date || '',
         endDate: filters.end_date || '',
-        selectedCountry: filters.country || null,
-        selectedPackage: filters.package || null,
-        selectedChannel: filters.channel || null,
+        selectedCountry: filters.country || '',
+        selectedPackage: filters.package || '',
+        selectedChannel: filters.channel || '',
         countryOpen: false,
         packageOpen: false,
         channelOpen: false
@@ -538,7 +554,6 @@ export default function Index({ clients, filters, countries, packages }) {
                 country: filterState.selectedCountry,
                 package: filterState.selectedPackage,
                 channel: filterState.selectedChannel,
-
             },
             {
                 preserveState: true,
@@ -550,12 +565,12 @@ export default function Index({ clients, filters, countries, packages }) {
 
     const handlePageChange = (url) => {
         router.get(url, {
-            search: search,
-            start_date: startDate,
-            end_date: endDate,
-            country: selectedCountry,
-            package: selectedPackage,
-            channel: selectedChannel,
+            search: filterState.search,
+            start_date: filterState.startDate,
+            end_date: filterState.endDate,
+            country: filterState.selectedCountry,
+            package: filterState.selectedPackage,
+            channel: filterState.selectedChannel,
         }, {
             preserveState: true,
             preserveScroll: true
@@ -583,15 +598,8 @@ export default function Index({ clients, filters, countries, packages }) {
         setIsModalOpen(true);
     };
 
-    const handleExport = () => {
-        const params = new URLSearchParams({
-            ...filterState,
-            export: true
-        });
-        window.location.href = `/client-management?${params.toString()}`;
-    };    
-
     return (
+        
         <Authenticated>
             <Head title="Client Management" />
             
@@ -599,14 +607,15 @@ export default function Index({ clients, filters, countries, packages }) {
                 <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Client Management</h1>
                     <div className="flex gap-2">
-                        <Button
-                            onClick={handleExport}
-                            variant="outline"
-                            className="gap-2"
-                        >
-                            <Download className="h-4 w-4" />
-                            Export Excel
-                        </Button>
+                        <a href={`/client-management?channel=${filterState.selectedChannel}&country=${filterState.selectedCountry}&end_date=${filterState.endDate}&package=${filterState.selectedPackage}&search=${filterState.search}&start_date=${filterState.startDate}&export=true`}>
+                            <Button
+                                variant="outline"
+                                className="gap-2"
+                            >
+                                <Download className="h-4 w-4" />
+                                Export Excel
+                            </Button>
+                        </a>
                         <div className="relative" ref={filterRef}>
                             <Button
                                 onClick={() => setIsFilterOpen(!isFilterOpen)}

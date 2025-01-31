@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Head, router } from '@inertiajs/react';
 import Authenticated from '@/Layouts/Main';
+import {format} from 'date-fns';
 import { 
     Calendar, 
     Phone, 
@@ -8,8 +9,9 @@ import {
     Users, 
     Package, 
     MoreVertical,
-    Clock, FileText, DollarSign, Handshake,BookUser,Filter, X, Search, ChevronsUpDown, Check
+    Clock, FileText, DollarSign, Handshake,BookUser,Filter, X, Search, ChevronsUpDown, Check,Eye
 } from 'lucide-react';
+import { Dialog } from '@headlessui/react';
 
 import {
     Table,
@@ -286,6 +288,122 @@ export default function InvoiceManager({booking,summary,packages,filters}){
             day: 'numeric'
         });
     };
+    const [openDropdownId, setOpenDropdownId] = useState(null);
+    const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+    const [selectedBooking, setSelectedBooking] = useState(null);
+    const dropdownRefs = useRef({});
+
+    const handleOpenDetails = (bookingData) => {
+        console.log('Opening details for:', bookingData); // Tambahkan logging
+        setSelectedBooking(bookingData);
+        setShowDetailsDialog(true);  // Pastikan ini dipanggil setelah setSelectedBooking
+        setOpenDropdownId(null);
+    };
+    
+        // Handle outside clicks for dropdown
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (openDropdownId && dropdownRefs.current[openDropdownId] && 
+                !dropdownRefs.current[openDropdownId].contains(event.target)) {
+                setOpenDropdownId(null);
+            }
+        };
+
+        if (openDropdownId) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [openDropdownId]);
+
+
+    const PaymentHistory = ({ isOpen, onClose, selectedBooking }) => {
+        if (!selectedBooking) return null;
+            
+        return (
+            <Dialog 
+                open={isOpen} 
+                onClose={onClose}
+                className="relative z-50"
+            >
+                <div className="fixed inset-0">
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-all duration-300" aria-hidden="true" />
+                </div>        
+                
+                <div className="fixed inset-0 flex items-center justify-center p-4">
+                    <Dialog.Panel className="mx-auto max-w-4xl w-full bg-white dark:bg-gray-800 rounded-xl shadow-xl">
+                        <div className="p-6 space-y-6 max-h-[calc(100vh-250px)] overflow-y-auto">
+                        <h4 className="text-md font-medium mb-3">Payment History</h4>
+                            <div className="bg-gray-50 dark:bg-gray-800 rounded-lg overflow-hidden">
+                                <div className="relative overflow-x-auto">
+                                    <table className="w-full text-sm text-gray-500 dark:text-gray-400">
+                                        <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                                            <tr>
+                                                <th scope="col" className="text-left px-6 py-3 whitespace-nowrap">
+                                                    Date
+                                                </th>
+                                                <th scope="col" className="text-left px-6 py-3">
+                                                    Description
+                                                </th>
+                                                <th scope="col" className="text-left px-6 py-3">
+                                                    Payment Method
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-right">
+                                                    Nominal
+                                                </th>
+                                                <th scope="col" className="px-6 py-3">
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {selectedBooking.booking_payment.map((item, index) => (
+                                                <tr key={index} className="bg-white border-b dark:bg-gray-800 dark:border-gray-700">
+                                                    <td className="px-6 py-4 align-top">
+                                                        <div className="whitespace-nowrap">{format(item.created_at, 'dd MMM yyyy')}</div>
+                                                        <div className="text-gray-400 text-xs">{format(item.created_at, 'HH:mm')}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {item.description}
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        {item.payment_method.name}
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right font-medium">
+                                                        {formatCurrency(item.nominal)}
+                                                    </td>
+                                                    <td className="px-6 py-4 font-medium">
+                                                        {
+                                                            item.reference ? (
+                                                                <a href={item.reference} target="_blank">
+                                                                    <button type="button" className="px-3 py-2 text-xs font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                                                                        <Eye className="h-4 w-4"/>
+                                                                    </button>
+                                                                </a>
+                                                            ) : '-'
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                        <tfoot>
+                                            <tr>
+                                                <th colSpan="3" scope="col" className="text-left px-6 py-3 whitespace-nowrap" >
+                                                Payment Received
+                                                </th>
+                                                <th scope="col" className="text-right px-6 py-3 whitespace-nowrap" >
+                                                    {formatCurrency(selectedBooking.payment)}
+                                                </th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+                    </Dialog.Panel>
+                </div>
+            </Dialog>
+        );
+    };    
 
     return (
         <Authenticated>
@@ -421,20 +539,71 @@ export default function InvoiceManager({booking,summary,packages,filters}){
                                     </div>
                                 </TableCell>
                                 <TableCell>
-                                    <div className="space-y-1">
-                                        <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs ${data.payment_status == 'Paid' ? 'bg-green-100 text-green-700' : (data.payment_status == 'Unpaid' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700')}`}>
-                                            {data.payment_status}
-                                        </div>
-                                    </div>
+                                    {
+                                        data.channel == 'JVTO' && (
+                                            <div className="space-y-1">
+                                                <div className={`inline-flex items-center px-3 py-1 rounded-full text-xs ${data.payment_status == 'Paid' ? 'bg-green-100 text-green-700' : (data.payment_status == 'Unpaid' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700')}`}>
+                                                    {data.payment_status}
+                                                </div>
+                                            </div>
+                                        )
+                                    }
                                 </TableCell>
-                                <TableHead>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                >
-                                    <MoreVertical className="h-4 w-4" />
-                                </Button>
-                                </TableHead>
+                                <TableCell>
+                                    {
+                                        data.channel == 'JVTO' && (
+                                            <div className="relative"  ref={el => dropdownRefs.current[data.id] = el}>
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setOpenDropdownId(openDropdownId === data.id ? null : data.id);
+                                                    }}
+                                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full transition-colors duration-150"
+                                                >
+                                                    <svg 
+                                                        xmlns="http://www.w3.org/2000/svg" 
+                                                        className="h-5 w-5 text-gray-500" 
+                                                        viewBox="0 0 20 20" 
+                                                        fill="currentColor"
+                                                    >
+                                                        <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                                    </svg>
+                                                </button>
+
+                                                {openDropdownId === data.id && (
+                                                    <div 
+                                                        className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 py-1"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        <button 
+                                                            onClick={(e) => {
+                                                                e.preventDefault();
+                                                                e.stopPropagation();
+                                                                handleOpenDetails(data);
+                                                            }}
+                                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                                        >
+                                                            Payment History
+                                                        </button>
+                                                        <button 
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            window.open(`https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/${data.id}`, '_blank');
+                                                            if(data.total_add_on && data.total_add_on != 0) {
+                                                            window.open(`https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/${data.id}?addon=true`, '_blank');
+                                                            }
+                                                        }}
+
+                                                            className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                                        >
+                                                            View Invoice
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    }
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -470,6 +639,14 @@ export default function InvoiceManager({booking,summary,packages,filters}){
                         </div>
                     </div>
                 )}
+                <PaymentHistory 
+                    isOpen={showDetailsDialog}
+                    onClose={() => {
+                        setShowDetailsDialog(false);
+                        setSelectedBooking(null);
+                    }}
+                    selectedBooking={selectedBooking}  // <- Nama prop sudah sesuai
+                />                                
             </div>
         </Authenticated>
     );

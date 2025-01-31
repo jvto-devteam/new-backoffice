@@ -29,11 +29,11 @@ class FinanceController extends Controller
         $package = $request->input('package');
         $channel = $request->input('channel');
         $perPage = 10;
-        $query = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','payment')->with(['user.country','bookingDetail' => function($q){
+        $query = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','payment','balance','booking_category_id')->with(['user.country','bookingDetail' => function($q){
             $q->select('id','package_id','booking_id')->with('package',function($qq){
                 $qq->select('id','name','package_code');
             });
-        }])->where('status', 'booked')->where('agent_id', 2)->where('travel_date_start','like','%2025%')->orderBy('travel_date_start','asc');
+        },'bookingPayment.paymentMethod'])->where('status', 'booked')->where('agent_id', 2)->orderBy('travel_date_start','asc');
         if ($search) {
             $query->whereHas('user',function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%");
@@ -62,17 +62,17 @@ class FinanceController extends Controller
 
         $bookings = $query->get();
         $summary = [
-            'bookings' => $query->count(),
-            'grand_total' => $query->sum('grand_total'),
-            'paxs' => $query->sum('total_pax'),
+            'bookings' => $bookings->count(),
+            'grand_total' => $bookings->sum('grand_total')+$bookings->sum('book_add_on_total'),
+            'paxs' => $bookings->sum('total_pax'),
             'paid' => $bookings->filter(function($booking) {
-                return ($booking->grand_total + $booking->book_add_on_total) - $booking->payment == 0;
+                return $booking->booking_category_id != 3 && $booking->balance <= 0;
             })->count(),
             'dp_paid' => $bookings->filter(function($booking) {
-                return $booking->payment > 0 && ($booking->grand_total + $booking->book_add_on_total) - $booking->payment > 0;
+                return $booking->booking_category_id != 3 && $booking->payment > 0 && $booking->balance > 0;
             })->count(),
             'unpaid' => $bookings->filter(function($booking) {
-                return $booking->payment == 0;
+                return $booking->booking_category_id != 3 && $booking->payment == 0;
             })->count(),            
         ];
        
@@ -82,6 +82,7 @@ class FinanceController extends Controller
                     'id' => $booking->id,
                     'user_id' => $booking->user_id,
                     'name' => $booking->user->name,
+                    'channel' => $booking->booking_category_id == 3 ? 'KLOOK' : 'JVTO',
                     'package_code' => $booking->bookingDetail[0]->package->package_code,
                     'package' => $booking->bookingDetail[0]->package->name ?? '-',
                     'numb_of_pax' => $booking->total_pax ?? 0,
@@ -91,8 +92,9 @@ class FinanceController extends Controller
                     'total_add_on' => $booking->book_add_on_total,
                     'grand_total' => $booking->grand_total+$booking->book_add_on_total,
                     'payment' => $booking->payment,
-                    'balance' => ($booking->grand_total+$booking->book_add_on_total)-$booking->payment,
-                    'payment_status' => $booking->payment == 0 ? 'Unpaid' : (($booking->grand_total+$booking->book_add_on_total)-$booking->payment == 0 ? 'Paid' : 'DP Paid'),
+                    'balance' => $booking->balance,
+                    'payment_status' => $booking->payment == 0 ? 'Unpaid' : ($booking->balance <= 0 ? 'Paid' : 'DP Paid'),
+                    'booking_payment' => $booking->bookingPayment
                 ];
             });
         $packages = Package::where('is_publish','1')->orWhere('package_platform','klook')->orderBy('package_code')->get(['id','package_code','name']);

@@ -13,7 +13,8 @@ import {
   Hotel,  // Ditambahkan
   Train,  // Ditambahkan 
   MapPin,  // Ditambahkan 
-  AlertCircle  
+  AlertCircle,
+  Clock
 } from 'lucide-react';
 
 /********************************************************************************************
@@ -316,7 +317,7 @@ const initialBookings = [
       if (pickupFilter) {
         const locations = [
           b.pickup.meeting_point?.toLowerCase(),
-          b.dropoff.meeting_point?.toLowerCase()
+          b.dropoff.drop_point?.toLowerCase()
         ];
         hasPickup = locations.some((loc) => loc?.includes(pickupFilter.toLowerCase()));
       }
@@ -512,7 +513,7 @@ const initialBookings = [
                             </td>
 
                             {/* Pickup Details */}
-                            <td className="py-3 px-4 align-top space-y-1">
+                            <td className="py-3 px-4 align-top space-y-2">
                                 <div className="flex">
                                     {booking.pickup.meeting_point === "Surabaya Airport" ? (
                                         <div>
@@ -540,9 +541,9 @@ const initialBookings = [
                                     </span>
                                     )}
                                 </div>
-                                <div className="text-xs text-gray-500">
+                                <div className="text-xs">
                                     {booking.pickup.pickup_time ? (
-                                    <>⏰ {booking.pickup.pickup_time}</>
+                                    <div className="flex"><Clock className="w-4 h-4 mr-1" /> <span className="text-gray-500"> {booking.pickup.pickup_time}</span></div>
                                     ) : (
                                     <span className="flex items-center text-red-500">
                                         <AlertCircle className="w-4 h-4 mr-1" />
@@ -553,37 +554,37 @@ const initialBookings = [
                                 </td>
 
                             {/* Drop-off Details */}
-                            <td className="py-3 px-4 align-top space-y-1">
+                            <td className="py-3 px-4 align-top space-y-2">
                                 <div className="flex">
-                                    {booking.dropoff.meeting_point === "Surabaya Airport" ? (
+                                    {booking.dropoff.drop_point === "Surabaya Airport" ? (
                                         <div>
                                             <Plane className="inline-block w-4 h-4 mr-1" />
                                         </div>
-                                    ) : booking.dropoff.meeting_point === "Surabaya Hotel" ? (
+                                    ) : booking.dropoff.drop_point === "Surabaya Hotel" ? (
                                         <div>
                                             <Hotel className="inline-block w-4 h-4 mr-1" />
                                         </div>
-                                    ) : booking.dropoff.meeting_point === "Surabaya Train Station" ? (
+                                    ) : booking.dropoff.drop_point === "Surabaya Train Station" ? (
                                         <div>
                                             <Train className="inline-block w-4 h-4 mr-1" />
                                         </div>
                                     ) : (
-                                        booking.dropoff.meeting_point_value && (
+                                        booking.dropoff.drop_point_value && (
                                             <div>
                                                 <MapPin className="inline-block w-4 h-4 mr-1" />
                                             </div>
                                         )
                                     )}
-                                    {booking.dropoff.meeting_point_value || (
+                                    {booking.dropoff.drop_point_value || (
                                     <span className="flex items-center text-red-500">
                                         <AlertCircle className="w-4 h-4 mr-1" />
                                         No dropoff location
                                     </span>
                                     )}
                                 </div>
-                                <div className="text-xs text-gray-500">
-                                    {booking.dropoff.pickup_time ? (
-                                    <>⏰ {booking.dropoff.pickup_time}</>
+                                <div className="text-xs">
+                                    {booking.dropoff.drop_time ? (
+                                    <div className="flex"><Clock className="w-4 h-4 mr-1" /> <span className="text-gray-500"> {booking.pickup.pickup_time}</span></div>
                                     ) : (
                                     <span className="flex items-center text-red-500">
                                         <AlertCircle className="w-4 h-4 mr-1" />

@@ -255,12 +255,12 @@ class ScheduleController extends Controller
                     'pickup' => [
                         'meeting_point' => $booking->meeting_point,
                         'meeting_point_value' => $booking->meeting_point_value,
-                        'pickup_time' => $booking->pickup_time,
+                        'pickup_time' => date("H:i",strtotime($booking->pickup_time)),
                     ],
                     'dropoff' => [
-                        'meeting_point' => $booking->drop_point,
-                        'meeting_point_value' => $booking->drop_point_value,
-                        'pickup_time' => $booking->drop_time,
+                        'drop_point' => $booking->drop_point,
+                        'drop_point_value' => $booking->drop_point_value,
+                        'drop_time' => date("H:i",strtotime($booking->drop_time)),
                     ],
                     'itinerary' => $itinerary,
                     'hotels' => $hotels,

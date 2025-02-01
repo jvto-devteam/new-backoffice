@@ -46,6 +46,54 @@ function DateRangePicker({ startDate, endDate, onChange }) {
     </div>
   );
 }
+const DateRangeSelector = ({ startDate, endDate, onChange }) => {
+  // Helper function to format dates for display
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  return (
+    <div className="flex flex-col space-y-2">
+      <label className="text-sm font-medium text-gray-700">Date Range</label>
+      <div className="flex items-center space-x-2">
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Calendar className="h-4 w-4 text-gray-400" />
+          </div>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => onChange(e.target.value, endDate)}
+            className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+        
+        <span className="text-gray-500">—</span>
+        
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Calendar className="h-4 w-4 text-gray-400" />
+          </div>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => onChange(startDate, e.target.value)}
+            className="block w-full pl-10 pr-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+      </div>
+      
+      <div className="text-xs text-gray-500">
+        Selected: {formatDate(startDate)} - {formatDate(endDate)}
+      </div>
+    </div>
+  );
+};
 
 // Helper function to format currency
 function formatCurrency(amount) {
@@ -233,8 +281,8 @@ const initialBookings = [
     const [selectedChannel, setSelectedChannel] = useState('');
     const [pickupFilter, setPickupFilter] = useState('');
     const [paymentStatus, setPaymentStatus] = useState('');
-    const [startDate, setStartDate] = useState('2025-01-01');
-    const [endDate, setEndDate] = useState('2025-12-31');
+    const [startDate, setStartDate] = useState('2025-02-01');
+    const [endDate, setEndDate] = useState('2025-02-28');
   
     // State to track which booking is expanded
     const [expandedBookingId, setExpandedBookingId] = useState(null);
@@ -252,7 +300,7 @@ const initialBookings = [
       const bookingEnd = new Date(b.date.end);
       const filterStart = new Date(startDate);
       const filterEnd = new Date(endDate);
-      const isWithinRange = bookingStart >= filterStart && bookingEnd <= filterEnd;
+      const isWithinRange = bookingStart >= filterStart && bookingStart <= filterEnd;
   
       // Search term (ID or Guest)
       const matchesSearch =
@@ -313,8 +361,9 @@ const initialBookings = [
                     </div>
                     <div className="mt-4 md:mt-0">
                         <img
-                        src="https://via.placeholder.com/400x200.png?text=Venice+Image"
+                        src="https://javavolcano-touroperator.com/assets/img/download.png"
                         alt="Venice"
+                        width="100"
                         className="rounded-lg"
                         />
                     </div>
@@ -323,7 +372,7 @@ const initialBookings = [
             
                 {/* Filter Bar */}
                 <div className="bg-white p-4 shadow rounded-md mb-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     {/* Date Range */}
                     <div className="flex flex-col border p-3 rounded">
                         <label className="font-medium text-gray-800 mb-2">Date Range</label>
@@ -335,7 +384,7 @@ const initialBookings = [
                     </div>
             
                     {/* Search by ID/Guest */}
-                    <div className="flex flex-col border p-3 rounded">
+                    <div className="flex flex-col border p-3 rounded  min-w-[280px]">
                         <label className="font-medium text-gray-800 mb-2">Search</label>
                         <input
                         type="text"

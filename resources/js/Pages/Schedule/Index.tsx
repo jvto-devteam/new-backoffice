@@ -339,16 +339,16 @@ const initialBookings = [
                 {/* Gradient header area (like the MS Rewards style) */}
                 <div className="bg-gradient-to-r from-blue-200 via-blue-50 to-blue-200 p-6 flex items-center justify-between">
                     <div>
-                    <h1 className="text-2xl font-bold mb-1">Hi</h1>
-                    <div className="text-sm text-gray-700">Level 1</div>
+                    <h1 className="text-2xl font-bold mb-1">Booking</h1>
+                    <div className="text-sm text-gray-700">Booking Overview</div>
                     </div>
                     <div className="text-right">
-                    <div className="text-sm text-gray-600">
+                    {/* <div className="text-sm text-gray-600">
                         Total Value: {formatCurrency(bookings.reduce((sum, b) => sum + b.financial.invoice.total, 0))}
                     </div>
                     <div className="text-xs text-gray-600">
                         Total Profit: {formatCurrency(bookings.reduce((sum, b) => sum + b.financial.profit, 0))}
-                    </div>
+                    </div> */}
                     </div>
                 </div>
             
@@ -358,7 +358,7 @@ const initialBookings = [
                     <div>
                         <h2 className="text-2xl font-bold">Plan a trip</h2>
                         <p className="text-gray-700">Explore the vibrant city of Venice</p>
-                        <button className="mt-2 px-4 py-2 bg-black text-white rounded hover:opacity-90">Take a look</button>
+                        <button className="mt-2 px-4 py-2 bg-black text-white rounded hover:opacity-90">+ Add Booking</button>
                     </div>
                     <div className="mt-4 md:mt-0">
                         <img

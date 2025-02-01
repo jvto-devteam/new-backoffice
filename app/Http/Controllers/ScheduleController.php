@@ -153,6 +153,144 @@ class ScheduleController extends Controller
                 }
             }
             $data['booking'] = $data['booking']->where('status', $status)->orderBy($data['order_by'], $data['order_type'])->get();
+
+            $data['booking'] = $data['booking']->map(function($booking){
+                $orderChannel = $booking->agent_id == 1 ? 'TWT' : ($booking->agent_id == 2 && $booking->booking_category_id == 3 ? 'KLOOK' : 'JVTO');
+                $itinerary = [];
+                $hotels = [];
+                foreach ($booking->bookingItinerary as $key => $value) {
+                    $itinerary[]= [
+                        'day' => $value->day,
+                        'itinerary' => $value->itinerary,
+                    ];
+                    if(count($value->bookHotel) != 0){
+                        $night = $value->day - 1;
+                        $hotels[]= [
+                            'day' => $value->day,
+                            'checkIn' => date('d M Y',strtotime($booking->travel_date_start." +$night days")),
+                            'hotel' => $value->bookHotel[0]->hotel->name,
+                            'rooms' => [],
+                        ];
+                        foreach ($value->bookHotel[0]->bookRoom as $index => $data) {
+                            $hotels[$key]['rooms'] = [
+                                'roomName' => $data->roomHotel->room_name,
+                                'quantity' => $data->quantity,
+                            ];
+                        }
+                    }
+                }
+                $tshirtSizes = [];
+                if($booking->bookingDetail[0]->xss != 0){
+                    array_push($tshirtSizes, "XSS x ".$booking->bookingDetail[0]->xss);
+                }
+                if($booking->bookingDetail[0]->xxs != 0){
+                    array_push($tshirtSizes, "XXS x ".$booking->bookingDetail[0]->xxs);
+                }
+                if($booking->bookingDetail[0]->xs != 0){
+                    array_push($tshirtSizes, "XS x ".$booking->bookingDetail[0]->xs);
+                }
+                if($booking->bookingDetail[0]->s != 0){
+                    array_push($tshirtSizes, "S x ".$booking->bookingDetail[0]->s);
+                }
+                if($booking->bookingDetail[0]->m != 0){
+                    array_push($tshirtSizes, "M x ".$booking->bookingDetail[0]->m);
+                }
+                if($booking->bookingDetail[0]->l != 0){
+                    array_push($tshirtSizes, "L x ".$booking->bookingDetail[0]->l);
+                }
+                if($booking->bookingDetail[0]->xl != 0){
+                    array_push($tshirtSizes, "XL x ".$booking->bookingDetail[0]->xl);
+                }
+                if($booking->bookingDetail[0]->xxl != 0){
+                    array_push($tshirtSizes, "XXL x ".$booking->bookingDetail[0]->xxl);
+                }
+                if($booking->bookingDetail[0]->xxxl != 0){
+                    array_push($tshirtSizes, "XXXL x ".$booking->bookingDetail[0]->xxxl);
+                }
+                $tshirtSize = implode(', ',$tshirtSizes);
+                
+                $vehicles = [];
+                if(count($booking->bookCar)!=0){
+                    foreach ($booking->bookCar as $key => $value) {
+                        array_push($vehicles,$value->car->name);
+                    };
+                }
+                
+                $drivers = [];
+                $guides = [];
+
+                if(count($booking->guideDriver) != 0){
+                    foreach ($booking->guideDriver as $key => $value) {
+                        if($value->type == 'driver'){
+                            array_push($drivers,$value->person->name);
+                        }
+                        else{
+                            $guides[] = [
+                                'name' => $value->person->name,
+                                'type' => $value->guide_ijen == '0' ? 'Escort' : 'Ijen',
+                            ];
+                        }
+                    };
+                }
+                $invoiceLinks = [];
+                if($orderChannel == 'JVTO'){
+                    array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/".$booking->id);
+                    if($booking->book_add_on_total != 0){
+                        array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/".$booking->id."?addon=true");
+                    }
+                }
+
+                return [
+                    'id' => $orderChannel."-".$booking->id,
+                    'orderChannel' => $orderChannel,
+                    'guest' => $booking->user->name,
+                    'package' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->name : $booking->package_duration."D ".($booking->package_duration-1)."N Package",
+                    'date' => [
+                        'start' => date('d M y',strtotime($booking->travel_date_start)),
+                        'end' => date('d M y',strtotime($booking->travel_date_end)),
+                        'days' => date('D',strtotime($booking->travel_date_start))." - ".date('D',strtotime($booking->travel_date_end)),
+                    ],
+                    'pickup' => [
+                        'meeting_point' => $booking->meeting_point,
+                        'meeting_point_value' => $booking->meeting_point_value,
+                        'pickup_time' => $booking->pickup_time,
+                    ],
+                    'dropoff' => [
+                        'meeting_point' => $booking->drop_point,
+                        'meeting_point_value' => $booking->drop_point_value,
+                        'pickup_time' => $booking->drop_time,
+                    ],
+                    'itinerary' => $itinerary,
+                    'hotels' => $hotels,
+                    'tshirtSize' => $tshirtSize,
+                    'vehicles' => $vehicles,
+                    'drivers' => $drivers,
+                    'guides' => $guides,
+                    'financial' => [
+                        'invoice' => [
+                            'total' => $booking->grand_total+$booking->book_add_on_total,
+                            'invoiceLink' => $invoiceLinks,
+                        ],
+                        'expense' => [
+                            'total' => $booking->expense_internal_total,
+                            'expenseLink' => $booking->expense_file_internal,
+                        ],
+                        'profit' =>  $booking->grand_total+$booking->book_add_on_total-$booking->expense_internal_total
+                    ],
+                    'paymentHistory' => $booking->bookingPayment->map(function($payment){
+                        return [
+                            'nominal' => $payment->nominal,
+                            'paymentMethod' => $payment->paymentMethod->name,
+                            'description' => $payment->description,
+                            'reference' => $payment->reference,
+                            'date' => date('d M y H:i',strtotime($payment->created_at)),
+                        ];
+                    }),
+                    'notes' => $booking->note,
+                ];
+            });
+
+            // return $data['booking']; 
             $data['package'] = Package::with('duration')->where('is_publish','1')->get();
 
         } catch (\Illuminate\Database\QueryException $e) {

@@ -241,6 +241,7 @@ class ScheduleController extends Controller
                 }
 
                 return [
+                    'booking_id' => $booking->id,
                     'id' => $orderChannel."-".$booking->id,
                     'orderChannel' => $orderChannel,
                     'guest' => $booking->user->name,
@@ -271,6 +272,8 @@ class ScheduleController extends Controller
                     'drivers' => $drivers,
                     'guides' => $guides,
                     'financial' => [
+                        'payment' =>  $booking->payment,
+                        'balance' =>  $booking->balance,
                         'invoice' => [
                             'total' => $booking->grand_total+$booking->book_add_on_total,
                             'invoiceLink' => $invoiceLinks,

@@ -1,6 +1,6 @@
 import Main from '@/Layouts/Main';
 
-import React, { useState } from 'react';
+import React, { useState,useRef,useEffect,useMemo } from 'react';
 import { format } from 'date-fns';
 import {Link} from '@inertiajs/react';
 import {
@@ -14,8 +14,10 @@ import {
   Train,  // Ditambahkan 
   MapPin,  // Ditambahkan 
   AlertCircle,
-  Clock,Ticket
+  Clock,Ticket,
+  MoreVertical,X
 } from 'lucide-react';
+import { Button } from "@/components/ui/button";
 
 /********************************************************************************************
  * This version showcases how you can blend the original booking dashboard layout
@@ -105,175 +107,7 @@ function formatCurrency(amount) {
     minimumFractionDigits: 0,
   }).format(amount);
 }
-// Example initial data
-const initialBookings = [
-    {
-      "id": "JVTO-867",
-      "orderChannel": "JVTO",
-      "guest": "Tan Day Peng",
-      "package": "Ultimate East Java Experience: 5D4N Ijen Crater, Tumpak Sewu & Bromo",
-      "date": {
-        "start": "08 Jan 2025",
-        "end": "12 Jan 2025",
-        "days": "Wed - Sun"
-      },
-      "pickup": {
-        "meeting_point": "Surabaya Airport",
-        "meeting_point_value": "MH871",
-        "pickup_time": "09:30:00"
-      },
-      "dropoff": {
-        "meeting_point": "Surabaya Airport",
-        "meeting_point_value": "MH872",
-        "pickup_time": "13:50:00"
-      },
-      "itinerary": [
-        { "day": 1, "itinerary": "Surabaya Airport - Bondowoso" },
-        { "day": 2, "itinerary": "Ijen Crater - Papuma Beach Sunset" },
-        { "day": 3, "itinerary": "Tumpak Sewu - Bromo Area" },
-        { "day": 4, "itinerary": "Bromo Sunrise - Surabaya City" },
-        { "day": 5, "itinerary": "Hotel - Surabaya Airport" }
-      ],
-      "hotels": [
-        {
-          "day": 1,
-          "checkIn": "08 Jan 2025",
-          "hotel": "Grand Padis Hotel",
-          "rooms": { "roomName": "Extra Bed", "quantity": 1 }
-        },
-        {
-          "day": 2,
-          "checkIn": "09 Jan 2025",
-          "hotel": "Doho Homestay",
-          "rooms": { "roomName": "Family", "quantity": 1 }
-        },
-        {
-          "day": 3,
-          "checkIn": "10 Jan 2025",
-          "hotel": "Joglo Kecombrang Bromo",
-          "rooms": { "roomName": "Family", "quantity": 1 }
-        },
-        {
-          "day": 4,
-          "checkIn": "11 Jan 2025",
-          "hotel": "Holiday Inn Express Surabaya Centerpoint, an IHG Hotel",
-          "rooms": { "roomName": "Twin", "quantity": 3 }
-        }
-      ],
-      "tshirtSize": "XS x 1, S x 1, M x 3, L x 1, XL x 1",
-      "vehicles": ["Avanza Pratama", "Hiace"],
-      "drivers": [],
-      "guides": [
-        { "name": "Taufik", "type": "Escort" },
-        { "name": "Rendi", "type": "Ijen" }
-      ],
-      "financial": {
-        "invoice": {
-          "total": 28000000,
-          "invoiceLink": ["https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/867"]
-        },
-        "expense": {
-          "total": 20070000,
-          "expenseLink": "https://1drv.ms/x/s!AghHmKdq9e7UhfU59yPwVJiQ-eLJ-g?e=aeXlxz"
-        },
-        "profit": 7930000
-      },
-      "paymentHistory": [
-        {
-          "nominal": 2800000,
-          "paymentMethod": "Debit/Credit Card",
-          "description": "Down Payment",
-          "reference": "https://checkout.xendit.co/web/673d919b569aeb83628cd0d6",
-          "date": "20 Nov 2024 15:13"
-        },
-        {
-          "nominal": 25200000,
-          "paymentMethod": "Cash",
-          "description": "Full Payment",
-          "reference": null,
-          "date": "08 Jan 2025 16:59"
-        }
-      ],
-      "notes": null
-    },
-    {
-      "id": "JVTO-898",
-      "orderChannel": "JVTO",
-      "guest": "Ting Yang Leow",
-      "package": "East Java Highlights: 3D2N Bromo & Ijen Tour",
-      "date": {
-        "start": "12 Jan 2025",
-        "end": "14 Jan 2025",
-        "days": "Sun - Tue"
-      },
-      "pickup": {
-        "meeting_point": "Surabaya Hotel",
-        "meeting_point_value": "DoubleTree by Hilton Surabaya",
-        "pickup_time": "10:30:00"
-      },
-      "dropoff": {
-        "meeting_point": "Others",
-        "meeting_point_value": "Separate: Surabaya and Ketapang Harbour",
-        "pickup_time": null
-      },
-      "itinerary": [
-        { "day": 1, "itinerary": "Surabaya Hotel - Bromo Area" },
-        { "day": 2, "itinerary": "Bromo Sunrise - Bondowoso" },
-        { "day": 3, "itinerary": "Ijen Crater - Surabaya City" }
-      ],
-      "hotels": [
-        {
-          "day": 1,
-          "checkIn": "12 Jan 2025",
-          "hotel": "Whizz Bromo",
-          "rooms": { "roomName": "Capsule", "quantity": 2 }
-        },
-        {
-          "day": 2,
-          "checkIn": "13 Jan 2025",
-          "hotel": "Baratha Hotel and Resto",
-          "rooms": { "roomName": "Deluxe Twin", "quantity": 1 }
-        }
-      ],
-      "tshirtSize": "S x 2",
-      "vehicles": ["Ertiga"],
-      "drivers": ["Holili"],
-      "guides": [
-        { "name": "Gufron", "type": "Escort" }
-      ],
-      "financial": {
-        "invoice": {
-          "total": 5450000,
-          "invoiceLink": [
-            "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/898",
-            "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/898?addon=true"
-          ]
-        },
-        "expense": {
-          "total": 5141000,
-          "expenseLink": "https://1drv.ms/x/s!AghHmKdq9e7UhfVDwXVAz5W1UFYVWw?e=6eYWnG"
-        },
-        "profit": 309000
-      },
-      "paymentHistory": [
-        {
-          "nominal": 545000,
-          "paymentMethod": "Debit/Credit Card",
-          "description": "Down Payment",
-          "reference": null,
-          "date": "15 Dec 2024 21:05"
-        },
-        {
-          "nominal": 5605000,
-          "paymentMethod": "Debit/Credit Card",
-          "description": "Full Payment",
-          "reference": "https://xen.to/J83z_fXj",
-          "date": "20 Dec 2024 16:45"
-        }
-      ],
-      "notes": null
-    }
-  ];
+
   export default function Index({data}) {
     // Local state
     const [bookings] = useState(data.booking);
@@ -334,6 +168,455 @@ const initialBookings = [
   
       return isWithinRange && matchesSearch && matchesChannel && hasPickup && matchesPayment;
     });
+    const [selectedBooking, setSelectedBooking] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [apiError, setApiError] = useState(null);
+    const [modalPlottingData, setModalPlottingData] = useState(null); 
+
+    const CustomMultiSelect = ({ 
+      options, 
+      value = [], 
+      onChange,
+      placeholder = "Select..." 
+  }) => {
+      const [isOpen, setIsOpen] = useState(false);
+      const [search, setSearch] = useState('');
+      const dropdownRef = useRef(null);
+      const [tooltip, setTooltip] = useState({ show: false, text: '', x: 0, y: 0 });
+  
+      useEffect(() => {
+          const handleClickOutside = (event) => {
+              if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                  setIsOpen(false);
+              }
+          };
+  
+          document.addEventListener('mousedown', handleClickOutside);
+          return () => document.removeEventListener('mousedown', handleClickOutside);
+      }, []);
+  
+      const showTooltip = (e, scheduleInfo) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          setTooltip({
+              show: true,
+              text: scheduleInfo,
+              x: rect.left + (rect.width / 2),
+              y: rect.top - 10
+          });
+      };
+  
+      const hideTooltip = () => {
+          setTooltip({ show: false, text: '', x: 0, y: 0 });
+      };
+  
+      const filteredOptions = options.filter(option => 
+          option.label.toLowerCase().includes(search.toLowerCase())
+      );
+  
+      const toggleOption = (option) => {
+          if (option.disabled) return;
+          
+          const isSelected = value.find(item => item.value === option.value);
+          if (isSelected) {
+              onChange(value.filter(item => item.value !== option.value));
+          } else {
+              onChange([...value, option]);
+          }
+      };
+  
+      const removeOption = (optionToRemove) => {
+          onChange(value.filter(option => option.value !== optionToRemove.value));
+      };
+  
+      return (
+          <>
+              {/* Fixed position tooltip */}
+              {tooltip.show && (
+                  <div 
+                      style={{
+                          position: 'fixed',
+                          left: `${tooltip.x}px`,
+                          top: `${tooltip.y}px`,
+                          transform: 'translate(-50%, -100%)',
+                          zIndex: 1000
+                      }}
+                      className="px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap shadow-lg"
+                  >
+                      {tooltip.text}
+                      <div 
+                          className="border-solid border-4 border-transparent border-t-gray-900"
+                          style={{
+                              position: 'absolute',
+                              bottom: '-8px',
+                              left: '50%',
+                              transform: 'translateX(-50%)'
+                          }}
+                      />
+                  </div>
+              )}
+  
+              <div className="relative" ref={dropdownRef}>
+                  {/* Selected items display */}
+                  <div 
+                      className="min-h-[38px] p-1 border rounded-md bg-white flex flex-wrap gap-1 cursor-pointer"
+                      onClick={() => setIsOpen(!isOpen)}
+                  >
+                      {value.length === 0 && (
+                          <span className="p-1 text-gray-500">{placeholder}</span>
+                      )}
+                      {value.map(item => (
+                          <span 
+                              key={item.value} 
+                              className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md flex items-center gap-1 text-sm"
+                          >
+                              {item.label}
+                              <button
+                                  onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeOption(item);
+                                  }}
+                                  className="hover:text-blue-600"
+                              >
+                                  ×
+                              </button>
+                          </span>
+                      ))}
+                  </div>
+  
+                  {/* Dropdown */}
+                  {isOpen && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg">
+                          {/* Search input */}
+                          <div className="p-2 border-b">
+                              <input
+                                  type="text"
+                                  className="w-full px-2 py-1 border rounded-md"
+                                  placeholder="Search..."
+                                  value={search}
+                                  onChange={(e) => setSearch(e.target.value)}
+                                  onClick={(e) => e.stopPropagation()}
+                              />
+                          </div>
+  
+                          {/* Options list */}
+                          <div className="max-h-48 overflow-y-auto">
+                              {filteredOptions.length === 0 ? (
+                                  <div className="p-2 text-gray-500 text-center">No options found</div>
+                              ) : (
+                                  filteredOptions.map(option => (
+                                      <div
+                                          key={option.value}
+                                          className={`p-2 flex items-center gap-2 
+                                              ${option.disabled 
+                                                  ? 'bg-gray-50 cursor-not-allowed text-gray-400' 
+                                                  : 'cursor-pointer hover:bg-gray-100'}
+                                              ${value.find(item => item.value === option.value) ? 'bg-gray-50' : ''}`}
+                                          onClick={() => toggleOption(option)}
+                                      >
+                                          <input
+                                              type="checkbox"
+                                              checked={value.some(item => item.value === option.value)}
+                                              disabled={option.disabled}
+                                              onChange={() => {}}
+                                              className="h-4 w-4"
+                                          />
+                                          <span className="flex-1">{option.label}</span>
+                                          {option.disabled && (
+                                              <div 
+                                                  onMouseEnter={(e) => showTooltip(e, option.scheduleInfo)}
+                                                  onMouseLeave={hideTooltip}
+                                              >
+                                                  <AlertCircle className="h-4 w-4 text-yellow-500" />
+                                              </div>
+                                          )}
+                                      </div>
+                                  ))
+                              )}
+                          </div>
+                      </div>
+                  )}
+              </div>
+          </>
+      );
+  };
+
+    const DetailsModal = ({ isOpen, onClose, booking, plottingData }) => {
+      // Set default values based on booking data      
+      const defaultVehicles = useMemo(() => {
+          return booking?.vehicles?.map(vehicleName => {
+              const vehicle = plottingData?.car?.find(v => v.name === vehicleName);
+              return vehicle ? {
+                  value: vehicle.id,
+                  label: vehicle.name
+              } : null;
+          }).filter(Boolean) || [];
+      }, [booking?.vehicles, plottingData?.car]);
+  
+      const defaultDrivers = useMemo(() => {
+          return booking?.drivers?.map(driverName => {
+              const driver = plottingData?.driver?.find(d => d.name === driverName);
+              return driver ? {
+                  value: driver.id,
+                  label: driver.name
+              } : null;
+          }).filter(Boolean) || [];
+      }, [booking?.drivers, plottingData?.driver]);
+  
+      // Split guides by type
+      const defaultGuides = useMemo(() => {
+          const escortGuides = [];
+          const ijenGuides = [];
+          
+          booking?.guides?.forEach(bookingGuide => {
+              const guide = plottingData?.guide?.find(g => g.name === bookingGuide.name);
+              if (guide) {
+                  const guideOption = {
+                      value: guide.id,
+                      label: guide.name
+                  };
+                  
+                  if (bookingGuide.type === 'Escort') {
+                      escortGuides.push(guideOption);
+                  } else if (bookingGuide.type === 'Ijen') {
+                      ijenGuides.push(guideOption);
+                  }
+              }
+          });
+  
+          return { escortGuides, ijenGuides };
+      }, [booking?.guides, plottingData?.guide]);
+  
+      const [vehicles, setVehicles] = useState(defaultVehicles);
+      const [drivers, setDrivers] = useState(defaultDrivers);
+      const [escortGuides, setEscortGuides] = useState(defaultGuides.escortGuides);
+      const [ijenGuides, setIjenGuides] = useState(defaultGuides.ijenGuides);
+      const [notes, setNotes] = useState(booking?.notes || '');  
+      // Transform API data into options format with IDs
+      const vehicleOptions = useMemo(() => {
+        return plottingData?.car?.map(vehicle => {
+            // Always enable Hiace (id: 5) and Premio (id: 21)
+            const alwaysEnabled = [5, 21].includes(vehicle.id);
+            
+            return {
+                value: vehicle.id,
+                label: vehicle.name,
+                // Only disable if it's not in the alwaysEnabled list and status is 'Tidak Tersedia'
+                disabled: !alwaysEnabled && vehicle.status === 'Tidak Tersedia',
+                scheduleInfo: vehicle.schedule_info
+            };
+        }) || [];
+    }, [plottingData?.car]);
+    
+    const driverOptions = useMemo(() => {
+      return plottingData?.driver?.map(driver => {
+          // Always enable GARAGE (id: 9)
+          const alwaysEnabled = driver.id === 9;
+          
+          return {
+              value: driver.id,
+              label: driver.name,
+              // Only disable if it's not GARAGE and status is 'Tidak Tersedia'
+              disabled: !alwaysEnabled && driver.status === 'Tidak Tersedia',
+              scheduleInfo: driver.schedule_info
+          };
+      }) || [];
+  }, [plottingData?.driver]);
+
+  const escortGuideOptions = useMemo(() => {
+    return plottingData?.guide
+        ?.filter(guide => guide.id !== 56)  // Still exclude Local Ijen from escort
+        .map(guide => ({
+            value: guide.id,
+            label: guide.name,
+            disabled: guide.status === 'Tidak Tersedia' || !guide.dynamic_roles?.includes('Escort'),
+            scheduleInfo: guide.status === 'Tidak Tersedia' 
+                ? guide.schedule_info 
+                : !guide.dynamic_roles?.includes('Escort')
+                ? 'Hanya tersedia untuk Ijen'
+                : undefined
+        })) || [];
+  }, [plottingData?.guide]);
+
+  const ijenGuideOptions = useMemo(() => {
+      return plottingData?.guide
+          ?.map(guide => ({
+              value: guide.id,
+              label: guide.name,
+              disabled: guide.status === 'Tidak Tersedia' || !guide.dynamic_roles?.includes('Ijen'),
+              scheduleInfo: guide.status === 'Tidak Tersedia' 
+                  ? guide.schedule_info 
+                  : !guide.dynamic_roles?.includes('Ijen')
+                  ? 'Hanya tersedia untuk Escort'
+                  : undefined
+          })) || [];
+  }, [plottingData?.guide]);
+
+      const handleSubmit = (e) => {
+          e.preventDefault();
+          // Submit with IDs
+          console.log({
+              vehicles: vehicles.map(v => v.value), // Now contains IDs
+              drivers: drivers.map(d => d.value), // Now contains IDs
+              escortGuides: escortGuides.map(g => ({ 
+                  id: g.value,
+                  type: 'Escort' 
+              })),
+              ijenGuides: ijenGuides.map(g => ({ 
+                  id: g.value,
+                  type: 'Ijen' 
+              })),
+              notes
+          });
+      };
+  
+      if (!isOpen) return null;
+  
+      return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                  <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-semibold">Assign Crew & Vehicle</h3>
+                      <button 
+                          onClick={onClose}
+                          className="text-gray-500 hover:text-gray-700"
+                      >
+                          ×
+                      </button>
+                  </div>
+  
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                      {/* Vehicle Selection */}
+                      <div className="space-y-2">
+                          <label className="block text-sm font-medium">
+                              Vehicles:
+                          </label>
+                          <CustomMultiSelect
+                              options={vehicleOptions}
+                              value={vehicles}
+                              onChange={setVehicles}
+                              placeholder="Select vehicles..."
+                          />
+                      </div>
+  
+                      {/* Driver Selection */}
+                      <div className="space-y-2">
+                          <label className="block text-sm font-medium">
+                              Drivers:
+                          </label>
+                          <CustomMultiSelect
+                              options={driverOptions}
+                              value={drivers}
+                              onChange={setDrivers}
+                              placeholder="Select drivers..."
+                          />
+                      </div>
+  
+                      {/* Escort Guide Selection */}
+                      <div className="space-y-2">
+                          <label className="block text-sm font-medium">
+                              Escort Guides (Optional):
+                          </label>
+                          <CustomMultiSelect
+                              options={escortGuideOptions}
+                              value={escortGuides}
+                              onChange={setEscortGuides}
+                              placeholder="Select escort guides..."
+                          />
+                      </div>
+  
+                      {/* Ijen Guide Selection */}
+                      <div className="space-y-2">
+                          <label className="block text-sm font-medium">
+                              Ijen Guides (Optional):
+                          </label>
+                          <CustomMultiSelect
+                              options={ijenGuideOptions}
+                              value={ijenGuides}
+                              onChange={setIjenGuides}
+                              placeholder="Select ijen guides..."
+                          />
+                      </div>
+  
+                      {/* Special Notes */}
+                      <div className="space-y-2">
+                          <label className="block text-sm font-medium">
+                              Notes:
+                          </label>
+                          <textarea 
+                              className="w-full border border-gray-300 rounded-md p-2 h-24"
+                              placeholder="Enter any special notes..."
+                              value={notes}
+                              onChange={(e) => setNotes(e.target.value)}
+                          />
+                      </div>
+  
+                      {/* Action Buttons */}
+                      <div className="flex space-x-3 pt-4">
+                          <button
+                              type="button"
+                              onClick={onClose}
+                              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                          >
+                              Cancel
+                          </button>
+                          <button
+                              type="submit"
+                              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                          >
+                              Save
+                          </button>
+                      </div>
+                  </form>
+              </div>
+          </div>
+      );
+  };
+    const handleMoreVerticalClick = async (booking) => {
+        try {        
+            setIsLoading(true);
+            setApiError(null);
+            
+            // Format the URL with query parameters
+            const url = `https://javavolcano-touroperator.com/backoffice/plotting/get-plotting?id=${booking.booking_id}&order_channel=${booking.orderChannel.toLowerCase()}`;
+            
+            // Make the GET request
+            const response = await fetch(url, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Origin': `https://new-backoffice.javavolcano-touroperator.com`
+                },
+                mode: 'cors'
+            });
+    
+            if (!response.ok) {
+                throw new Error('Failed to fetch booking details');
+            }
+    
+            const plottingData = await response.json();
+            
+            // After successful API call, open the modal with the plotting data
+            openDetailsModal(booking, plottingData);
+            
+        } catch (error) {
+            console.error('Error fetching booking details:', error);
+            setApiError(error.message);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    
+    // Update the openDetailsModal function
+    const openDetailsModal = (booking, plottingData) => {
+        setSelectedBooking(booking);
+        setModalPlottingData(plottingData);
+        setIsModalOpen(true);
+    };  
+
     return (
         <Main>
             <div className="w-full mx-auto">
@@ -457,6 +740,7 @@ const initialBookings = [
                     <th className="py-3 px-4 min-w-40">Vehicle & Crew</th>
                     <th className="py-3 px-4">Financial</th>
                     <th className="py-3 px-4 w-40">Notes</th>
+                    <th className="py-3 px-4"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -483,7 +767,7 @@ const initialBookings = [
 
                             {/* Date Column */}
                             <td className="py-3 px-4 align-top">
-                            <div>{format(booking.date.start, 'dd MMM')} - {format(booking.date.end, 'dd MMM')}</div>
+                            <div className="text-blue-600 font-bold">{format(booking.date.start, 'dd MMM')} - {format(booking.date.end, 'dd MMM')}</div>
                             <div className="text-xs text-gray-400">{booking.date.days}</div>
                             </td>
 
@@ -704,45 +988,68 @@ const initialBookings = [
 
                             {/* Financial */}
 {/* Financial */}
-<td className="py-3 px-4 align-top">
-                      <div className="text-sm">
-                        {booking.financial.invoice.invoiceLink ? (
-                          <div 
-                            onClick={() => {
-                              booking.financial.invoice.invoiceLink.forEach(link => 
-                                window.open(link, '_blank')
-                              );
-                            }}
-                            className="text-blue-500 cursor-pointer hover:text-blue-700"
-                          >
-                            Invoice: {formatCurrency(booking.financial.invoice.total)}
-                          </div>
-                        ) : (
-                          <div className="text-blue-500">
-                            Invoice: {formatCurrency(booking.financial.invoice.total)}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {booking.financial.expense.expenseLink ? (
-                          <div 
-                            onClick={() => window.open(booking.financial.expense.expenseLink, '_blank')}
-                            className="cursor-pointer hover:text-blue-600"
-                          >
-                            Expenses: {formatCurrency(booking.financial.expense.total)}
-                          </div>
-                        ) : (
-                          <span>Expenses: {formatCurrency(booking.financial.expense.total)}</span>
-                        )}
-                      </div>
-                      <div className="text-xs text-green-600 font-medium">
-                        Profit: {formatCurrency(booking.financial.profit)}
-                      </div>
-                    </td>
+                            <td className="py-3 px-4 align-top">
+                              <div className="text-sm">
+                                {booking.financial.invoice.invoiceLink ? (
+                                  <div 
+                                    onClick={() => {
+                                      booking.financial.invoice.invoiceLink.forEach(link => 
+                                        window.open(link, '_blank')
+                                      );
+                                    }}
+                                    className="text-blue-500 cursor-pointer hover:text-blue-700"
+                                  >
+                                    Invoice: {formatCurrency(booking.financial.invoice.total)}
+                                  </div>
+                                ) : (
+                                  <div className="text-blue-500">
+                                    Invoice: {formatCurrency(booking.financial.invoice.total)}
+                                  </div>
+                                )}
+                              </div>
+                              {
+                                booking.orderChannel == 'JVTO' && (
+                                  <>
+                                    <div className="text-xs text-gray-600">
+                                        <span>Deposit: {formatCurrency(booking.financial.payment)}</span>
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                        <span>Balance: {formatCurrency(booking.financial.balance)}</span>
+                                    </div>
+                                  </>
+                                )
+                              }
+                              <div className="text-xs text-gray-600">
+                                {booking.financial.expense.expenseLink ? (
+                                  <div 
+                                    onClick={() => window.open(booking.financial.expense.expenseLink, '_blank')}
+                                    className="cursor-pointer hover:text-blue-600"
+                                  >
+                                    Expenses: {formatCurrency(booking.financial.expense.total)}
+                                  </div>
+                                ) : (
+                                  <span>Expenses: {formatCurrency(booking.financial.expense.total)}</span>
+                                )}
+                              </div>
+                              <div className="text-xs text-green-600 font-medium">
+                                Profit: {formatCurrency(booking.financial.profit)}
+                              </div>
+                            </td>
                             {/* Notes */}
                             <td className="py-3 px-4 align-top">
-                            <div className="text-xs text-gray-600">{booking.notes || '-'}</div>
+                              <div className="text-xs text-gray-600">{booking.notes || '-'}</div>
                             </td>
+                            <td className="py-3 px-4 align-top">
+                              <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleMoreVerticalClick(booking)}
+                                  disabled={isLoading}                              
+                              >
+                                  <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </td>
+
                         </tr>
                         {/* Expanded row for details */}
                         {isExpanded && (
@@ -812,6 +1119,15 @@ const initialBookings = [
                 </tbody>
                 </table>
             </div>
+            {selectedBooking && (
+              <DetailsModal 
+                  isOpen={isModalOpen}
+                  onClose={() => setIsModalOpen(false)}
+                  booking={selectedBooking}
+                  plottingData={modalPlottingData}
+              />
+              )}
+
             </div>
         </Main>
 

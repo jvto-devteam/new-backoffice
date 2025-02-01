@@ -274,6 +274,7 @@ class ScheduleController extends Controller
                     'financial' => [
                         'payment' =>  $booking->payment,
                         'balance' =>  $booking->balance,
+                        'paymentMethod' =>  $booking->outstanding_payment_method,
                         'invoice' => [
                             'total' => $booking->grand_total+$booking->book_add_on_total,
                             'invoiceLink' => $invoiceLinks,

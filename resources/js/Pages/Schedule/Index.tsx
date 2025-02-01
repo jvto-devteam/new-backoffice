@@ -988,7 +988,7 @@ function formatCurrency(amount) {
 
                             {/* Financial */}
 {/* Financial */}
-                            <td className="py-3 px-4 align-top">
+                            <td className="py-3 px-4 align-top space-y-1">
                               <div className="text-sm">
                                 {booking.financial.invoice.invoiceLink ? (
                                   <div 
@@ -1015,6 +1015,9 @@ function formatCurrency(amount) {
                                     </div>
                                     <div className="text-xs text-gray-600">
                                         <span>Balance: {formatCurrency(booking.financial.balance)}</span>
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                        <span>Payment Method: {booking.financial.paymentMethod ? booking.financial.paymentMethod.toUpperCase() : '-'}</span>
                                     </div>
                                   </>
                                 )

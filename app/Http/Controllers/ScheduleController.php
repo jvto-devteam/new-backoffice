@@ -244,6 +244,8 @@ class ScheduleController extends Controller
                     'id' => $orderChannel."-".$booking->id,
                     'orderChannel' => $orderChannel,
                     'guest' => $booking->user->name,
+                    'total_pax' => $booking->total_pax,
+                    'duration' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->duration->day."D ".$booking->bookingDetail[0]->package->duration->night."N" : $booking->package_duration."D ".($booking->package_duration-1)."N",
                     'package' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->name : $booking->package_duration."D ".($booking->package_duration-1)."N Package",
                     'date' => [
                         'start' => date('d M y',strtotime($booking->travel_date_start)),

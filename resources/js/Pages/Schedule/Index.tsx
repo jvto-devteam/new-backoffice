@@ -2,6 +2,7 @@ import Main from '@/Layouts/Main';
 
 import React, { useState } from 'react';
 import { format } from 'date-fns';
+import {Link} from '@inertiajs/react';
 import {
   ChevronDown,
   ChevronRight,
@@ -447,14 +448,14 @@ const initialBookings = [
                 <table className="min-w-full text-left text-sm text-gray-700">
                 <thead className="bg-gray-100 text-gray-600 text-sm uppercase">
                     <tr>
-                    <th className="py-3 px-4">#</th>
-                    <th className="py-3 px-4">Date</th>
+                    <th className="py-3 px-4 min-w-15">#</th>
+                    <th className="py-3 px-4 min-w-35">Date</th>
                     <th className="py-3 px-4">Guest & Pax</th>
                     <th className="py-3 px-4">Pickup</th>
                     <th className="py-3 px-4">Drop-off</th>
-                    <th className="py-3 px-4">Vehicle & Crew</th>
+                    <th className="py-3 px-4 min-w-40">Vehicle & Crew</th>
                     <th className="py-3 px-4">Financial</th>
-                    <th className="py-3 px-4">Notes</th>
+                    <th className="py-3 px-4 w-40">Notes</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -465,7 +466,7 @@ const initialBookings = [
                         <React.Fragment key={booking.id}>
                         <tr className="border-b">
                             {/* Expand/Collapse Button + Row Index */}
-                            <td className="py-3 px-4 align-top">
+                            <td className="py-3 px-2 align-top">
                             <button
                                 onClick={() => setExpandedBookingId(isExpanded ? null : booking.id)}
                                 className="text-gray-600 hover:text-gray-800 mr-2"
@@ -481,23 +482,33 @@ const initialBookings = [
 
                             {/* Date Column */}
                             <td className="py-3 px-4 align-top">
-                            <div>{booking.date.start} - {booking.date.end}</div>
+                            <div>{format(booking.date.start, 'dd MMM')} - {format(booking.date.end, 'dd MMM')}</div>
                             <div className="text-xs text-gray-400">{booking.date.days}</div>
                             </td>
 
                             {/* Guest & Package */}
-                            <td className="py-3 px-4 align-top">
-                            <div className="font-medium">{booking.guest}</div>
-                            <div className="text-xs text-gray-500">{booking.package}</div>
-                            <div className="mt-1">
+                            <td className="py-3 px-4 align-top space-y-1">
+                            <div>
                                 <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full 
                                 ${booking.orderChannel === 'JVTO' ? 'bg-blue-100 text-blue-800' :
-                                    booking.orderChannel === 'TWT' ? 'bg-green-100 text-green-800' :
-                                    booking.orderChannel === 'KLOOK' ? 'bg-purple-100 text-purple-800' :
+                                    booking.orderChannel === 'TWT' ? 'bg-yellow-100 text-yellow-800' :
+                                    booking.orderChannel === 'KLOOK' ? 'bg-green-100 text-green-800' :
                                     'bg-gray-100 text-gray-800'}`}>
                                 {booking.id}
                                 </span>
                             </div>
+                            {booking.orderChannel != 'TWT' ? (
+                              <div className="font-medium underline">
+                                <Link href={`/client-management?channel=&country=&end_date=&package=&search=${booking.guest}&start_date=`}>
+                                  {booking.guest}
+                                </Link>
+                              </div>
+                            ) : (
+                              <div className="font-medium">
+                                  {booking.guest}
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-500">{booking.duration} / {booking.total_pax} PAX</div>
                             </td>
 
                             {/* Pickup Details */}
@@ -583,7 +594,7 @@ const initialBookings = [
                                 </td>
 
                             {/* Vehicle & Crew */}
-                            <td className="py-3 px-4 align-top space-y-1 tracking-wider">
+                            <td className="py-3 px-4 align-top space-y-1">
                                 <div className="space-y-1">
                                     {booking.vehicles && booking.vehicles.length > 0 ? (
                                     booking.vehicles.map((vehicle, idx) => (

@@ -14,7 +14,7 @@ import {
   Train,  // Ditambahkan 
   MapPin,  // Ditambahkan 
   AlertCircle,
-  Clock
+  Clock,Ticket
 } from 'lucide-react';
 
 /********************************************************************************************
@@ -516,8 +516,39 @@ const initialBookings = [
                             <td className="py-3 px-4 align-top space-y-2">
                                 <div className="flex">
                                     {booking.pickup.meeting_point === "Surabaya Airport" ? (
+                                      booking.pickup.meeting_point_arrival ? (
+                                        <>
+                                          <div>
+                                              <Plane className="inline-block w-4 h-4 mr-1" />
+                                          </div>
+                                          <div>{booking.pickup.meeting_point_arrival}</div>
+                                        </>
+                                      ) : (
+                                      <span className="flex items-center text-red-500">
+                                          <AlertCircle className="w-4 h-4 mr-1" />
+                                          No pickup location
+                                      </span>
+                                      )
+                                      ) : booking.pickup.meeting_point === "Surabaya Train Station" ? (
+                                        booking.pickup.meeting_point ? (
+                                          <>
+                                            <div>
+                                                <Train className="inline-block w-4 h-4 mr-1" />
+                                            </div>
+                                            <div>{booking.pickup.meeting_point_arrival}</div>
+                                          </>
+                                        ) : (
+                                          <span className="flex items-center text-red-500">
+                                              <AlertCircle className="w-4 h-4 mr-1" />
+                                              No pickup location
+                                          </span>
+                                        )
+                                    ) : ""}
+                                </div>
+                                <div className="flex">
+                                    {booking.pickup.meeting_point === "Surabaya Airport" ? (
                                         <div>
-                                            <Plane className="inline-block w-4 h-4 mr-1" />
+                                            <Ticket className="inline-block w-4 h-4 mr-1" />
                                         </div>
                                     ) : booking.pickup.meeting_point === "Surabaya Hotel" ? (
                                         <div>
@@ -525,7 +556,7 @@ const initialBookings = [
                                         </div>
                                     ) : booking.pickup.meeting_point === "Surabaya Train Station" ? (
                                         <div>
-                                            <Train className="inline-block w-4 h-4 mr-1" />
+                                            <Ticket className="inline-block w-4 h-4 mr-1" />
                                         </div>
                                     ) : (
                                             booking.pickup.meeting_point_value && (
@@ -555,10 +586,41 @@ const initialBookings = [
 
                             {/* Drop-off Details */}
                             <td className="py-3 px-4 align-top space-y-2">
+                            <div className="flex">
+                                    {booking.dropoff.drop_point === "Surabaya Airport" ? (
+                                      booking.dropoff.drop_point_arrival ? (
+                                        <>
+                                          <div>
+                                              <Plane className="inline-block w-4 h-4 mr-1" />
+                                          </div>
+                                          <div>{booking.dropoff.drop_point_arrival}</div>
+                                        </>
+                                      ) : (
+                                      <span className="flex items-center text-red-500">
+                                          <AlertCircle className="w-4 h-4 mr-1" />
+                                          No dropoff location
+                                      </span>
+                                      )
+                                      ) : booking.dropoff.drop_point === "Surabaya Train Station" ? (
+                                        booking.dropoff.drop_point ? (
+                                          <>
+                                            <div>
+                                                <Train className="inline-block w-4 h-4 mr-1" />
+                                            </div>
+                                            <div>{booking.dropoff.drop_point_arrival}</div>
+                                          </>
+                                        ) : (
+                                          <span className="flex items-center text-red-500">
+                                              <AlertCircle className="w-4 h-4 mr-1" />
+                                              No dropoff location
+                                          </span>
+                                        )
+                                    ) : ""}
+                                </div>
                                 <div className="flex">
                                     {booking.dropoff.drop_point === "Surabaya Airport" ? (
                                         <div>
-                                            <Plane className="inline-block w-4 h-4 mr-1" />
+                                            <Ticket className="inline-block w-4 h-4 mr-1" />
                                         </div>
                                     ) : booking.dropoff.drop_point === "Surabaya Hotel" ? (
                                         <div>
@@ -566,7 +628,7 @@ const initialBookings = [
                                         </div>
                                     ) : booking.dropoff.drop_point === "Surabaya Train Station" ? (
                                         <div>
-                                            <Train className="inline-block w-4 h-4 mr-1" />
+                                            <Ticket className="inline-block w-4 h-4 mr-1" />
                                         </div>
                                     ) : (
                                         booking.dropoff.drop_point_value && (

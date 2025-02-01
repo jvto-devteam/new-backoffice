@@ -254,11 +254,13 @@ class ScheduleController extends Controller
                     ],
                     'pickup' => [
                         'meeting_point' => $booking->meeting_point,
+                        'meeting_point_arrival' => $booking->meeting_point_arrival,
                         'meeting_point_value' => $booking->meeting_point_value,
                         'pickup_time' => date("H:i",strtotime($booking->pickup_time)),
                     ],
                     'dropoff' => [
                         'drop_point' => $booking->drop_point,
+                        'drop_point_arrival' => $booking->drop_point_arrival,
                         'drop_point_value' => $booking->drop_point_value,
                         'drop_time' => date("H:i",strtotime($booking->drop_time)),
                     ],

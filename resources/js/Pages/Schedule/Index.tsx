@@ -1,7 +1,7 @@
 import Main from '@/Layouts/Main';
 
 import React, { useState,useRef,useEffect,useMemo } from 'react';
-import { format } from 'date-fns';
+import { format,addDays } from 'date-fns';
 import {Link} from '@inertiajs/react';
 import {
   ChevronDown,
@@ -728,18 +728,18 @@ function formatCurrency(amount) {
                     </div>
                 </div>
                 {/* Bookings Table */}
-            <div className="bg-white shadow rounded-md p-4 mb-8">
+            <div className="bg-white shadow rounded-md p-4 mb-8 overflow-x-auto">
                 <table className="min-w-full text-left text-sm text-gray-700">
                 <thead className="bg-gray-100 text-gray-600 text-sm uppercase">
                     <tr>
                     <th className="py-3 px-4 min-w-15">#</th>
                     <th className="py-3 px-4 min-w-35">Date</th>
-                    <th className="py-3 px-4">Guest & Pax</th>
-                    <th className="py-3 px-4">Pickup</th>
-                    <th className="py-3 px-4">Drop-off</th>
+                    <th className="py-3 px-4 min-w-35">Guest & Pax</th>
+                    <th className="py-3 px-4 min-w-45">Pickup</th>
+                    <th className="py-3 px-4 min-w-45">Drop-off</th>
                     <th className="py-3 px-4 min-w-40">Vehicle & Crew</th>
-                    <th className="py-3 px-4">Financial</th>
-                    <th className="py-3 px-4 w-40">Notes</th>
+                    <th className="py-3 px-4 min-w-50">Financial</th>
+                    <th className="py-3 px-4 min-w-40 md:min-w-1">Notes</th>
                     <th className="py-3 px-4"></th>
                     </tr>
                 </thead>
@@ -990,14 +990,14 @@ function formatCurrency(amount) {
 {/* Financial */}
                             <td className="py-3 px-4 align-top space-y-1">
                               <div className="text-sm">
-                                {booking.financial.invoice.invoiceLink ? (
+                                {booking.financial.invoice.invoiceLink.length ? (
                                   <div 
                                     onClick={() => {
                                       booking.financial.invoice.invoiceLink.forEach(link => 
                                         window.open(link, '_blank')
                                       );
                                     }}
-                                    className="text-blue-500 cursor-pointer hover:text-blue-700"
+                                    className="text-blue-500 underline cursor-pointer hover:text-blue-700"
                                   >
                                     Invoice: {formatCurrency(booking.financial.invoice.total)}
                                   </div>
@@ -1026,7 +1026,7 @@ function formatCurrency(amount) {
                                 {booking.financial.expense.expenseLink ? (
                                   <div 
                                     onClick={() => window.open(booking.financial.expense.expenseLink, '_blank')}
-                                    className="cursor-pointer hover:text-blue-600"
+                                    className="cursor-pointer underline hover:text-blue-600"
                                   >
                                     Expenses: {formatCurrency(booking.financial.expense.total)}
                                   </div>
@@ -1064,7 +1064,7 @@ function formatCurrency(amount) {
                                     <h3 className="font-medium mb-2">Itinerary Overview</h3>
                                     <ul className="space-y-1 list-disc list-inside text-gray-700">
                                     {booking.itinerary.map((item, idx) => (
-                                        <li key={idx}>Day {item.day}: {item.itinerary}</li>
+                                        <li key={idx}><span className="font-semibold"> Day {item.day}</span>: {item.itinerary}</li>
                                     ))}
                                     </ul>
                                 </div>
@@ -1075,7 +1075,8 @@ function formatCurrency(amount) {
                                     <div className="space-y-2 text-gray-700">
                                     {booking.hotels.map((acc, index) => (
                                         <div key={index}>
-                                        <span className="text-sm font-semibold mr-2">Day {acc.day}:</span>
+                                        <div className="text-sm font-semibold mr-2">Day {acc.day}:</div>
+                                        <span className="text-sm font-medium">Check In {format(addDays(booking.date.start, acc.day - 1), 'dd-MMM')}: </span>                                        
                                         <span className="mr-2">{acc.hotel}</span>
                                         <span className="text-xs text-gray-500">
                                             {acc.rooms.roomName} x {acc.rooms.quantity}

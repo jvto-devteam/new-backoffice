@@ -1,8 +1,9 @@
 import Main from '@/Layouts/Main';
-
+import { router } from '@inertiajs/react'
 import React, { useState,useRef,useEffect,useMemo } from 'react';
 import { format,addDays } from 'date-fns';
 import {Link} from '@inertiajs/react';
+import Swal, {Toast} from '@/utils/swal';
 import {
   ChevronDown,
   ChevronRight,
@@ -110,8 +111,7 @@ function formatCurrency(amount) {
 
   export default function Index({data}) {
     // Local state
-    const [bookings] = useState(data.booking);
-  
+    const [bookings, setBookings] = useState(data.booking);  
     // Filter states
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedChannel, setSelectedChannel] = useState('');
@@ -452,23 +452,68 @@ function formatCurrency(amount) {
           })) || [];
   }, [plottingData?.guide]);
 
-      const handleSubmit = (e) => {
-          e.preventDefault();
-          // Submit with IDs
-          console.log({
-              vehicles: vehicles.map(v => v.value), // Now contains IDs
-              drivers: drivers.map(d => d.value), // Now contains IDs
-              escortGuides: escortGuides.map(g => ({ 
-                  id: g.value,
-                  type: 'Escort' 
-              })),
-              ijenGuides: ijenGuides.map(g => ({ 
-                  id: g.value,
-                  type: 'Ijen' 
-              })),
-              notes
-          });
-      };
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        setIsLoading(true);
+        setApiError(null);
+
+        const paramData = {
+            booking_id: booking.booking_id,
+            vehicles: vehicles.map(v => v.value),
+            drivers: drivers.map(d => d.value),
+            escortGuides: escortGuides.map(g => g.value),
+            ijenGuides: ijenGuides.map(g => g.value),
+            notes: notes
+        };
+
+        // Use Inertia to make the POST request
+        router.post('/plotting', paramData, {
+            onSuccess: (page) => {
+                setIsLoading(false);
+                setIsModalOpen(false);
+                
+                if (page.props.flash.message) {
+                    // Update the booking data in the parent component
+                    const updatedBookings = bookings.map(b => {
+                        if (b.booking_id === booking.booking_id) {
+                            return {
+                                ...b,
+                                vehicles: vehicles.map(v => v.label),
+                                drivers: drivers.map(d => d.label),
+                                guides: [
+                                    ...escortGuides.map(g => ({ type: 'Escort', name: g.label })),
+                                    ...ijenGuides.map(g => ({ type: 'Ijen', name: g.label }))
+                                ],
+                                notes: notes
+                            };
+                        }
+                        return b;
+                    });
+
+                    // Update state
+                    setBookings(updatedBookings);
+
+                    Toast.fire({
+                        icon: 'success',
+                        title: 'Crew and vehicle assigned successfully'
+                    });
+                }
+            },
+            onError: (errors) => {
+                setIsLoading(false);
+                setApiError(errors);
+                
+                Swal.fire({
+                    title: 'Error!',
+                    text: errors.error || 'Failed to assign crew and vehicle',
+                    icon: 'error',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#d33'
+                });
+            },
+            preserveScroll: true
+        });
+    };
   
       if (!isOpen) return null;
   
@@ -561,11 +606,38 @@ function formatCurrency(amount) {
                               Cancel
                           </button>
                           <button
-                              type="submit"
-                              className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                          >
-                              Save
-                          </button>
+                                type="submit"
+                                disabled={isLoading}
+                                className={`flex-1 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <svg 
+                                            className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" 
+                                            xmlns="http://www.w3.org/2000/svg" 
+                                            fill="none" 
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle 
+                                                className="opacity-25" 
+                                                cx="12" 
+                                                cy="12" 
+                                                r="10" 
+                                                stroke="currentColor" 
+                                                strokeWidth="4"
+                                            ></circle>
+                                            <path 
+                                                className="opacity-75" 
+                                                fill="currentColor" 
+                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                            ></path>
+                                        </svg>
+                                        Saving...
+                                    </>
+                                ) : (
+                                    'Save'
+                                )}
+                            </button>
                       </div>
                   </form>
               </div>
@@ -737,7 +809,7 @@ function formatCurrency(amount) {
                     <th className="py-3 px-4 min-w-35">Guest & Pax</th>
                     <th className="py-3 px-4 min-w-45">Pickup</th>
                     <th className="py-3 px-4 min-w-45">Drop-off</th>
-                    <th className="py-3 px-4 min-w-40">Vehicle & Crew</th>
+                    <th className="py-3 px-4 min-w-50">Vehicle & Crew</th>
                     <th className="py-3 px-4 min-w-50">Financial</th>
                     <th className="py-3 px-4 min-w-40 md:min-w-1">Notes</th>
                     <th className="py-3 px-4"></th>
@@ -1129,6 +1201,8 @@ function formatCurrency(amount) {
                   onClose={() => setIsModalOpen(false)}
                   booking={selectedBooking}
                   plottingData={modalPlottingData}
+                  setBookings={setBookings}  // Add this prop
+                  bookings={bookings}                    
               />
               )}
 

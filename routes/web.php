@@ -35,6 +35,7 @@ use Inertia\Inertia;
 
 Route::get('/', [DashboardController::class,'index']);
 Route::get('/booking-overview', [ScheduleController::class,'index']);
+Route::post('/plotting', [ScheduleController::class,'plotting']);
 Route::get('/booking-list', [ScheduleController::class,'bookingList']);
 Route::get('/booking-analist', [ScheduleController::class,'bookingAnalist']);
 Route::get('/expense-package', [ExpenseController::class,'expensePackage']);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { router } from '@inertiajs/react';
 import Authenticated from '@/Layouts/Main';
 import { Head } from '@inertiajs/react';
 import CurrencyInput from 'react-currency-input-field';
@@ -180,269 +181,23 @@ const LocationForm = ({ type, value, onChange, className = '' }) => {
     );
 };
 
-const countries = [
-  { label: "Indonesia", value: "ID" },
-  { label: "Singapore", value: "SG" },
-  { label: "Malaysia", value: "MY" },
-  { label: "Thailand", value: "TH" },
-  { label: "Vietnam", value: "VN" },
-  { label: "Philippines", value: "PH" },
-];
-
-const packages = [
-  { 
-    label: "2D1N Geopark and Bromo Adventure", 
-    value: "2D1N",
-    prices:[
-      { 
-        start: 2,
-        end: 2,
-        pricePerPax: 1500000
-      },
-      { 
-        start: 3,
-        end: 5,
-        pricePerPax: 1400000
-      },
-      {
-        start: 6,
-        end: 9,
-        pricePerPax: 1200000
-      },
-      {
-        start: 10,
-        end: 0,
-        pricePerPax: 1000000
-      },
-    ]
-  },
-  { 
-    label: "3D2N Mount Bromo Sunrise Tour", 
-    value: "3D2N",
-    prices:[
-      { 
-        start: 2,
-        end: 2,
-        pricePerPax: 2000000
-      },
-      { 
-        start: 3,
-        end: 5,
-        pricePerPax: 1900000
-      },
-      {
-        start: 6,
-        end: 9,
-        pricePerPax: 1700000
-      },
-      {
-        start: 10,
-        end: 0,
-        pricePerPax: 1500000
-      },
-    ]
-  },
-  { 
-    label: "4D3N Bromo Trekking Experience", 
-    value: "4D3N",
-    prices:[
-      { 
-        start: 2,
-        end: 2,
-        pricePerPax: 2500000
-      },
-      { 
-        start: 3,
-        end: 5,
-        pricePerPax: 2300000
-      },
-      {
-        start: 6,
-        end: 9,
-        pricePerPax: 2100000
-      },
-      {
-        start: 10,
-        end: 0,
-        pricePerPax: 1900000
-      },
-    ]
-  },
-  { 
-    label: "2D1N Ijen Crater and Blue Fire", 
-    value: "2D1N_IJEN",
-    prices:[
-      { 
-        start: 2,
-        end: 2,
-        pricePerPax: 1600000
-      },
-      { 
-        start: 3,
-        end: 5,
-        pricePerPax: 1500000
-      },
-      {
-        start: 6,
-        end: 9,
-        pricePerPax: 1300000
-      },
-      {
-        start: 10,
-        end: 0,
-        pricePerPax: 1100000
-      },
-    ]
-  },
-  { 
-    label: "3D2N Ijen, Bromo, and Madakaripura Tour", 
-    value: "3D2N_COMBO",
-    prices:[
-      { 
-        start: 2,
-        end: 2,
-        pricePerPax: 2800000
-      },
-      { 
-        start: 3,
-        end: 5,
-        pricePerPax: 2600000
-      },
-      {
-        start: 6,
-        end: 9,
-        pricePerPax: 2400000
-      },
-      {
-        start: 10,
-        end: 0,
-        pricePerPax: 2200000
-      },
-    ]
-  }
-];
-
-const addOns = [
-  { 
-      value: "extraMeal", 
-      label: "Extra Meal", 
-      defaultPrice: 100000 
-  },
-  { 
-      value: "insurance", 
-      label: "Travel Insurance", 
-      defaultPrice: 50000 
-  },
-  { 
-      value: "photo", 
-      label: "Photography Session", 
-      defaultPrice: 250000 
-  },
-  { 
-      value: "guide", 
-      label: "Local Guide", 
-      defaultPrice: 300000 
-  },
-  { 
-      value: "", 
-      label: "No Add-On", 
-      defaultPrice: 0 
-  }
-];
-
 const typeOptions = [
-  { value: 'Regular', label: 'Regular' },
-  { value: 'VIP', label: 'VIP' },
+  { value: 1, label: 'Regular' },
+  { value: 2, label: 'Student' },
 ];
 
-const activityOptions = [
-  { 
-      id: 'airport_pickup', 
-      name: 'Airport Pickup',
-      itinerary: 'Pickup from airport and transfer to hotel' 
-  },
-  { 
-      id: 'hotel_checkin', 
-      name: 'Hotel Check-in',
-      itinerary: 'Check-in at designated hotel and rest' 
-  },
-  { 
-      id: 'bromo_tour', 
-      name: 'Bromo Tour',
-      itinerary: 'Sunrise tour at Mount Bromo, exploring volcanic landscape' 
-  },
-  { 
-      id: 'madakaripura', 
-      name: 'Madakaripura Waterfall',
-      itinerary: 'Visit and explore the majestic Madakaripura Waterfall' 
-  },
-  { 
-      id: 'hotel_checkout', 
-      name: 'Hotel Check-out',
-      itinerary: 'Check-out from hotel and prepare for departure' 
-  },
-  { 
-      id: 'airport_dropoff', 
-      name: 'Airport Drop-off',
-      itinerary: 'Transfer from hotel to airport' 
-  }
-];
 
-const hotelOptions = [
-  { id: 'bromo_view', name: 'Bromo View Hotel' },
-  { id: 'lava_view', name: 'Lava View Hotel' },
-  { id: 'jiwa_jawa', name: 'Jiwa Jawa Resort' },
-];
-
-const hotelRoomOptions = {
-  'bromo_view': [
-      { id: 'standard_bromo', name: 'Standard Room - Bromo View' },
-      { id: 'deluxe_bromo', name: 'Deluxe Room - Bromo View' },
-      { id: 'suite_bromo', name: 'Suite Room - Bromo View' }
-  ],
-  'lava_view': [
-      { id: 'standard_lava', name: 'Standard Room - Lava View' },
-      { id: 'deluxe_lava', name: 'Deluxe Room - Lava View' },
-      { id: 'suite_lava', name: 'Suite Room - Lava View' }
-  ],
-  'jiwa_jawa': [
-      { id: 'standard_jiwa', name: 'Standard Room - Jiwa Jawa' },
-      { id: 'deluxe_jiwa', name: 'Deluxe Room - Jiwa Jawa' },
-      { id: 'suite_jiwa', name: 'Suite Room - Jiwa Jawa' }
-  ]
-};
 const discountTypes = [
   { value: 'percent', label: 'Percent' },
   { value: 'nominal', label: 'Nominal' }
 ];
 
-const discountCodes = [
-  { 
-      code: 'PROMO10', 
-      type: 'percent', 
-      value: 10,
-      description: '10% Off for First Booking'
-  },
-  { 
-      code: 'FIXEDOFF100', 
-      type: 'nominal', 
-      value: 100000,
-      description: 'Fixed Rp 100,000 Discount'
-  },
-  { 
-      code: 'EARLYBIRD', 
-      type: 'percent', 
-      value: 15,
-      description: '15% Off Early Bird Promo'
-  }
-];
-
-const AddBooking = () => {
+const AddBooking = ({channel,countries,packages,startActivityOptions,endActivityOptions,hotelOptions,hotelRoomOptions,addOns,discountCodes}) => {
   const [searchValues, setSearchValues] = useState({
     country: "",
     package: "",
     addOns: ""
-  });
+  });  
 
   const [openType, setOpenType] = useState(false);
   const [openCountry, setOpenCountry] = useState(false);
@@ -460,9 +215,10 @@ const AddBooking = () => {
       code: '',
       value: 0
   });
-  const [isShuttle, setIsShuttle] = useState(false);  
+  const [isShuttle, setIsShuttle] = useState(false); 
   
   const [formData, setFormData] = useState({
+    channel: channel,   
     customer: '',
     numOfPax: '',
     bookingDate: '',
@@ -470,7 +226,7 @@ const AddBooking = () => {
     email: '',
     phone: '',
     nationality: '',
-    type: 'Regular',
+    type: 1,
     tripDate: '',
     dateOfIssue: '',
     dueDate: '',
@@ -508,6 +264,9 @@ const AddBooking = () => {
     discountCode: '',
     packageDays: [],  
     pricePerPax : 0,
+    totalPrice : 0,    
+    bookingCodeOrigin: '',
+    bookingFileOrigin: null,     
     isShuttle: false,
     isSendWa: false,    
   });
@@ -545,10 +304,9 @@ const AddBooking = () => {
   };  
 
   const getPackageDays = (packageValue) => {
-    if (!packageValue) return 0;
-    return parseInt(packageValue.substring(0, 1)); // Mengambil angka pertama dari value (e.g., "2D1N" => 2)
-  };  
-
+    const selectedPackage = packages.find(pkg => pkg.value === packageValue);
+    return selectedPackage ? selectedPackage.day : 0;
+  };
 
   const RoomSelection = ({ dayIndex, roomIndex, roomSelection, onChange, onDelete }) => {
     return (
@@ -690,36 +448,58 @@ const AddBooking = () => {
   };
 
   const calculateSummary = () => {
-      // Harga per pax
-      const pricePerPax = formData.pricePerPax || 0;
+    // For TWT, calculate price per pax by dividing total price by number of pax
+    if (channel === 'TWT') {
+      const totalPackage = parseInt(formData.totalPrice) || 0;
+      const numOfPax = formData.numOfPax || 1;
+      const pricePerPax = formData.pricePerPax;
       
-      // Jumlah peserta
-      const numOfPax = formData.numOfPax || 0;
       
-      // Total paket
-      const totalPackage = pricePerPax * numOfPax;
-      
-      // Total add-on
+      // Calculate total add-on
       const totalAddOn = addOnItems.reduce((total, item) => total + item.subtotal, 0);
-      
-      // Subtotal
-      const subTotal = totalPackage + totalAddOn;
-
-      // Diskon
+      // Calculate discount
       const discount = calculateDiscount(totalPackage);
       
-      // Grand total
-      const grandTotal = subTotal - discount;
-
+      // Calculate grand total
+      const grandTotal = totalPackage + totalAddOn - discount;
+  
       return {
-          pricePerPax,
-          totalPackage,
-          totalAddOn,
-          discount,
-          subTotal,
-          grandTotal
+        pricePerPax: pricePerPax, // Total price divided by number of pax
+        totalPackage,
+        totalAddOn,
+        discount,
+        subTotal: totalPackage + totalAddOn,
+        grandTotal
       };
-  };  
+    }
+  
+    // Existing calculation for other channels
+    const pricePerPax = parseInt(formData.pricePerPax) || 0;
+    const numOfPax = formData.numOfPax || 1;
+    
+    // Total package calculation
+    const totalPackage = pricePerPax * numOfPax;
+    
+    // Calculate total add-on
+    const totalAddOn = addOnItems.reduce((total, item) => total + item.subtotal, 0);
+    
+    // Calculate discount
+    const discount = calculateDiscount(totalPackage);
+    
+    // Calculate grand total
+    const subTotal = totalPackage + totalAddOn;
+    const grandTotal = subTotal - discount;
+  
+    return {
+      pricePerPax,
+      totalPackage,
+      totalAddOn,
+      discount,
+      subTotal,
+      grandTotal
+    };
+  };
+
   useEffect(() => {
     if (formData.packageName && !isCustomPackage) {
       const selectedPackage = packages.find(pkg => pkg.value === formData.packageName);
@@ -740,152 +520,236 @@ const AddBooking = () => {
     }));
   }, [addOnItems]);
 
-  const renderStep1 = () => (
-    <div className="space-y-6 border rounded-lg">
-      <div className="bg-gray-800 text-white p-4 rounded-t-lg">
-        <h2 className="text-lg font-semibold">Customer Information</h2>
-      </div>
-      <div className="space-y-6 p-6 pt-0">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Customer Name</label>
-            <input
-              type="text"
-              name="customer"
-              value={formData.customer}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              placeholder="Enter customer name"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Number of Pax</label>
-            <input
-              type="number"
-              name="numOfPax"
-              value={formData.numOfPax}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              placeholder="Enter number of pax"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Travel Date</label>
-            <input
-              type="date"
-              name="travelDate"
-              value={formData.travelDate}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-            />
-          </div>
-        </div>
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      channel
+    }));
+  }, [channel]);  
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              placeholder="Enter email address"
-            />
+  console.log(channel);
+  
+  const renderStep1 = () => {
+    // Function to check if a field should be rendered based on channel
+    const shouldRenderField = (fieldName) => {
+      switch (channel) {
+        case 'KLOOK':
+          const klookExcludedFields = ['type', 'dueDate'];
+          return !klookExcludedFields.includes(fieldName);
+        case 'JVTO':
+          return true;
+        case 'TWT':
+          const twtAllowedFields = [
+            'customer', 
+            'numOfPax', 
+            'travelDate', 
+            'bookingDate', 
+            'bookingCodeOrigin', 
+            'bookingFileOrigin',
+            'sizes'
+          ];
+          return twtAllowedFields.includes(fieldName);
+        default:
+          return true;
+      }
+    };
+  
+    return (
+      <div className="space-y-6 border rounded-lg">
+        <div className="bg-gray-800 text-white p-4 rounded-t-lg">
+          <h2 className="text-lg font-semibold">Customer Information</h2>
+        </div>
+        <div className="space-y-6 p-6 pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {shouldRenderField('customer') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Customer Name</label>
+                <input
+                  type="text"
+                  name="customer"
+                  value={formData.customer}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                  placeholder="Enter customer name"
+                />
+              </div>
+            )}
+  
+            {shouldRenderField('numOfPax') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Number of Pax</label>
+                <input
+                  type="number"
+                  name="numOfPax"
+                  value={formData.numOfPax}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                  placeholder="Enter number of pax"
+                />
+              </div>
+            )}
+  
+            {shouldRenderField('travelDate') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Travel Date</label>
+                <input
+                  type="date"
+                  name="travelDate"
+                  value={formData.travelDate}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                />
+              </div>
+            )}
           </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Phone</label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              placeholder="Enter phone number"
-            />
-          </div>
-          <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Nationality</label>
-              <SearchableSelect 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {shouldRenderField('email') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Email</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                  placeholder="Enter email address"
+                />
+              </div>
+            )}
+  
+            {shouldRenderField('phone') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Phone</label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                  placeholder="Enter phone number"
+                />
+              </div>
+            )}
+  
+            {shouldRenderField('nationality') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Nationality</label>
+                <SearchableSelect 
                   options={countries.map(country => ({
-                      id: country.value,
-                      name: country.label
+                    id: country.value,
+                    name: country.label
                   }))}
                   value={formData.nationality}
                   onChange={(value) => setFormData(prev => ({
-                      ...prev,
-                      nationality: value
+                    ...prev,
+                    nationality: value
                   }))}
                   placeholder="Select country"
                   open={openCountry}
                   setOpen={setOpenCountry}
                   displayKey="name"
-              />
+                />
+              </div>
+            )}
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Type</label>
-              <SearchableSelect 
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {shouldRenderField('type') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Type</label>
+                <SearchableSelect 
                   options={typeOptions.map(type => ({
-                      id: type.value,
-                      name: type.label
+                    id: type.value,
+                    name: type.label
                   }))}
                   value={formData.type}
                   onChange={(value) => setFormData(prev => ({
-                      ...prev,
-                      type: value
+                    ...prev,
+                    type: value
                   }))}
                   placeholder="Select type"
                   open={openType}
                   setOpen={setOpenType}
                   displayKey="name"
-              />
-          </div>
-
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Booking Date</label>
-            <input
-              type="date"
-              name="bookingDate"
-              value={formData.bookingDate}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Due Date</label>
-            <input
-              type="date"
-              name="dueDate"
-              value={formData.dueDate}
-              onChange={handleInputChange}
-              className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-3">Tshirt Distribution</label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 md:grid-cols-6 gap-4">
-            {Object.entries(formData.sizes).map(([size, value]) => (
-              <div key={size} className="space-y-2">
-                <label className="block text-xs font-medium text-gray-600 uppercase">{size}</label>
-                <input
-                  type="number"
-                  value={value}
-                  onChange={(e) => handleSizeChange(size, e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
-                  min="0"
                 />
               </div>
-            ))}
+            )}
+            {shouldRenderField('bookingDate') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Booking Date</label>
+                <input
+                  type="date"
+                  name="bookingDate"
+                  value={formData.bookingDate}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                />
+              </div>
+            )}
+            {(channel === 'KLOOK' || channel === 'TWT') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Booking Code (Origin)</label>
+                <input
+                  type="text"
+                  name="bookingCodeOrigin"
+                  value={formData.bookingCodeOrigin}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                  placeholder="Enter booking code"
+                />
+              </div>
+            )}
+            {(channel === 'KLOOK' || channel === 'TWT') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Booking File (Origin)</label>
+                <input
+                  type="file"
+                  name="bookingFileOrigin"
+                  onChange={(e) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      bookingFileOrigin: e.target.files[0]
+                    }));
+                  }}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                />
+              </div>
+            )}
+            {shouldRenderField('dueDate') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Due Date</label>
+                <input
+                  type="date"
+                  name="dueDate"
+                  value={formData.dueDate}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                />
+              </div>
+            )}
+          </div>
+    
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">Tshirt Distribution</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 md:grid-cols-6 gap-4">
+              {Object.entries(formData.sizes).map(([size, value]) => (
+                <div key={size} className="space-y-2">
+                  <label className="block text-xs font-medium text-gray-600 uppercase">{size}</label>
+                  <input
+                    type="number"
+                    value={value}
+                    onChange={(e) => handleSizeChange(size, e.target.value)}
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition duration-200"
+                    min="0"
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderStep2 = () => (
     <div className="space-y-6 border rounded-lg">
@@ -971,14 +835,39 @@ const AddBooking = () => {
     </div>
   );
   const renderStep3 = () => {
-      const packageDays = getPackageDays(formData.packageName);
-
-      const handlePackageSelection = (value) => {
-        const selectedPackage = packages.find(pkg => pkg.value === value);
+    const handlePackageSelection = (value) => {
+      const selectedPackage = packages.find(pkg => pkg.value === value);
+      
+      // Specific handling for TWT channel
+      if (channel === 'TWT') {
+        // Directly set total price based on number of pax
+        const totalPrice = selectedPackage.prices[0].pricePerPax * (formData.numOfPax || 1);
+        
+        setFormData(prev => ({
+          ...prev,
+          packageName: value,
+          pricePerPax: totalPrice, // Set total price instead of price per pax
+          packageDays: Array(selectedPackage.prices[0].start).fill().map(() => ({
+            startActivity: '',
+            endActivity: '',
+            itinerary: '',
+            hotel: '',
+            meals: {
+              breakfast: true,
+              lunch: false,
+              dinner: false
+            },
+            rooms: [{ 
+              room: '',
+              quantity: 1
+            }]
+          }))
+        }));
+      } else {
+        // Existing logic for other channels
         const packageDays = getPackageDays(value);
         
         setFormData(prev => {
-          // Dapatkan harga per pax berdasarkan jumlah pax yang sudah dipilih
           const pricePerPax = selectedPackage 
             ? getPricePerPax(selectedPackage.prices, prev.numOfPax || 2) 
             : 0;
@@ -1004,399 +893,495 @@ const AddBooking = () => {
             }))
           };
         });
-      };    
+      }
+    };
   
-      const handleActivityChange = (dayIndex, field, value) => {
-        setFormData(prev => {
-            const updatedDays = [...prev.packageDays];
-            if (!updatedDays[dayIndex]) {
-                updatedDays[dayIndex] = {};
-            }
+    const handleActivityChange = (dayIndex, field, value) => {
+      setFormData(prev => {
+          const updatedDays = [...prev.packageDays];
+          if (!updatedDays[dayIndex]) {
+              updatedDays[dayIndex] = {};
+          }
+          
+          // Dapatkan itinerary dari aktivitas yang dipilih
+          const selectedActivity = field === 'startActivity' 
+          ? startActivityOptions.find(activity => activity.id === value)
+          : endActivityOptions.find(activity => activity.id === value)          
+          // Update aktivitas
+          updatedDays[dayIndex][field] = value;
+          
+          // Generate itinerary gabungan jika kedua aktivitas sudah dipilih
+          if (field === 'startActivity') {
+            const endActivity = updatedDays[dayIndex].endActivity;
+            const startItinerary = selectedActivity ? selectedActivity.itinerary : '';
+            const endItinerary = endActivity 
+              ? endActivityOptions.find(activity => activity.id === endActivity)?.itinerary 
+              : '';
             
-            // Dapatkan itinerary dari aktivitas yang dipilih
-            const selectedActivity = activityOptions.find(activity => activity.id === value);
+            updatedDays[dayIndex].itinerary = endItinerary
+              ? `${startItinerary} - ${endItinerary}`
+              : startItinerary;
+          } else if (field === 'endActivity') {
+            const startActivity = updatedDays[dayIndex].startActivity;
+            const endItinerary = selectedActivity ? selectedActivity.itinerary : '';
+            const startItinerary = startActivity 
+              ? startActivityOptions.find(activity => activity.id === startActivity)?.itinerary 
+              : '';
             
-            // Update aktivitas
-            updatedDays[dayIndex][field] = value;
-            
-            // Generate itinerary gabungan jika kedua aktivitas sudah dipilih
-            if (field === 'startActivity') {
-                // Jika start activity berubah, cek apakah end activity sudah ada
-                const endActivity = updatedDays[dayIndex].endActivity;
-                const startItinerary = selectedActivity ? selectedActivity.itinerary : '';
-                const endItinerary = endActivity 
-                    ? activityOptions.find(activity => activity.id === endActivity)?.itinerary 
-                    : '';
-                
-                updatedDays[dayIndex].itinerary = endItinerary
-                    ? `${startItinerary} - ${endItinerary}`
-                    : startItinerary;
-            } else if (field === 'endActivity') {
-                // Jika end activity berubah, cek apakah start activity sudah ada
-                const startActivity = updatedDays[dayIndex].startActivity;
-                const endItinerary = selectedActivity ? selectedActivity.itinerary : '';
-                const startItinerary = startActivity 
-                    ? activityOptions.find(activity => activity.id === startActivity)?.itinerary 
-                    : '';
-                
-                updatedDays[dayIndex].itinerary = startItinerary
-                    ? `${startItinerary} - ${endItinerary}`
-                    : endItinerary;
-            }
-    
-            return { ...prev, packageDays: updatedDays };
-        });
-      };
-
-      const handleRoomChange = (dayIndex, roomIndex, field, value) => {
+            updatedDays[dayIndex].itinerary = startItinerary
+              ? `${startItinerary} - ${endItinerary}`
+              : endItinerary;
+          }
+      
+  
+          return { ...prev, packageDays: updatedDays };
+      });
+    };
+  
+    const handleRoomChange = (dayIndex, roomIndex, field, value) => {
+      setFormData(prev => {
+          const updatedDays = [...prev.packageDays];
+          if (!updatedDays[dayIndex].rooms) {
+              updatedDays[dayIndex].rooms = [];
+          }
+          if (!updatedDays[dayIndex].rooms[roomIndex]) {
+              updatedDays[dayIndex].rooms[roomIndex] = { room: '', quantity: 1 };
+          }
+          
+          // Jika field adalah 'room', reset room jika hotel berubah
+          if (field === 'room') {
+              updatedDays[dayIndex].rooms[roomIndex] = {
+                  room: value,
+                  quantity: 1
+              };
+          } else {
+              updatedDays[dayIndex].rooms[roomIndex] = {
+                  ...updatedDays[dayIndex].rooms[roomIndex],
+                  [field]: value
+              };
+          }
+          
+          return { ...prev, packageDays: updatedDays };
+      });
+    };    
+  
+    const addRoom = (dayIndex) => {
         setFormData(prev => {
             const updatedDays = [...prev.packageDays];
             if (!updatedDays[dayIndex].rooms) {
                 updatedDays[dayIndex].rooms = [];
             }
-            if (!updatedDays[dayIndex].rooms[roomIndex]) {
-                updatedDays[dayIndex].rooms[roomIndex] = { room: '', quantity: 1 };
-            }
-            
-            // Jika field adalah 'room', reset room jika hotel berubah
-            if (field === 'room') {
-                updatedDays[dayIndex].rooms[roomIndex] = {
-                    room: value,
-                    quantity: 1
-                };
-            } else {
-                updatedDays[dayIndex].rooms[roomIndex] = {
-                    ...updatedDays[dayIndex].rooms[roomIndex],
-                    [field]: value
-                };
-            }
-            
+            updatedDays[dayIndex].rooms.push({ 
+                room: '', 
+                quantity: 1
+            });
             return { ...prev, packageDays: updatedDays };
         });
-      };    
+    };
   
-      const addRoom = (dayIndex) => {
-          setFormData(prev => {
-              const updatedDays = [...prev.packageDays];
-              if (!updatedDays[dayIndex].rooms) {
-                  updatedDays[dayIndex].rooms = [];
-              }
-              updatedDays[dayIndex].rooms.push({ 
-                  room: '', 
-                  quantity: 1
-              });
-              return { ...prev, packageDays: updatedDays };
-          });
-      };
+    const deleteRoom = (dayIndex, roomIndex) => {
+        setFormData(prev => {
+            const updatedDays = [...prev.packageDays];
+            updatedDays[dayIndex].rooms.splice(roomIndex, 1);
+            return { ...prev, packageDays: updatedDays };
+        });
+    };
   
-      const deleteRoom = (dayIndex, roomIndex) => {
-          setFormData(prev => {
-              const updatedDays = [...prev.packageDays];
-              updatedDays[dayIndex].rooms.splice(roomIndex, 1);
-              return { ...prev, packageDays: updatedDays };
-          });
-      };
-  
-      return (
-          <div className="space-y-6 border rounded-lg">
-              <div className="bg-gray-800 text-white p-4 rounded-t-lg">
-                  <h2 className="text-lg font-semibold">Package Selection</h2>
-              </div>
-              <div className="space-y-6 p-6 pt-0">
-              <div className="flex items-center justify-between mb-4">
-                      <label className="block text-sm font-medium text-gray-700">
-                          Custom Package
-                      </label>
-                      <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                          <input
-                              type="checkbox"
-                              name="toggle"
-                              id="custom-package-toggle"
-                              checked={isCustomPackage}
-                              onChange={() => {
-                                  setIsCustomPackage(!isCustomPackage);
-                                  // Reset package selection and price
-                                  setFormData(prev => ({
-                                      ...prev,
-                                      packageName: '',
-                                      packageDays: [],
-                                      pricePerPax: 0
-                                  }));
-                              }}
-                              className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                          />
-                          <label
-                              htmlFor="custom-package-toggle"
-                              className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${
-                                  isCustomPackage 
-                                      ? 'bg-blue-500' 
-                                      : 'bg-gray-300'
-                              }`}
-                          />
-                      </div>
-                  </div>
+    return (
+      <div className="space-y-6 border rounded-lg">
+        <div className="bg-gray-800 text-white p-4 rounded-t-lg">
+          <h2 className="text-lg font-semibold">Package Selection</h2>
+        </div>
+        <div className="space-y-6 p-6 pt-0">
+          {/* For TWT, disable custom package and force package selection */}
+          {channel === 'TWT' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                    Package Duration (Days)
+                </label>
+                <input
+                    type="number"
+                    value={customPackageDuration}
+                    onChange={(e) => {
+                    const duration = Math.max(1, parseInt(e.target.value) || 1);
+                    setCustomPackageDuration(duration);
+                    setFormData(prev => ({
+                        ...prev,
+                        packageName: 'Custom',
+                        packageDays: Array(duration).fill().map(() => ({
+                        startActivity: '',
+                        endActivity: '',
+                        itinerary: '',
+                        hotel: '',
+                        meals: {
+                            breakfast: true,
+                            lunch: false,
+                            dinner: false
+                        },
+                        rooms: [{ 
+                            room: '',
+                            quantity: 1
+                        }]
+                        }))
+                    }));
+                    }}
+                    min="1"
+                    max="10"
+                    className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                    placeholder="Enter number of days"
+                />
+                </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {!isCustomPackage ? (
+                <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                    Total Price (IDR)
+                </label>
+                <CurrencyInput
+                    id="total-price"
+                    name="totalPrice"
+                    prefix="Rp "
+                    decimalSeparator=","
+                    groupSeparator="."
+                    value={formData.totalPrice}
+                    onValueChange={(value) => {
+                    setFormData(prev => ({
+                        ...prev,
+                        totalPrice: value || 0,
+                        pricePerPax: ((value || 0) / (prev.numOfPax || 1)).toFixed(0) // Hitung price per pax
+                    }));
+                    }}
+                    className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                    placeholder="Enter total price"
+                />
+                </div>
+            </div>
+            )}  
+          {/* Existing package selection for other channels */}
+          {channel !== 'TWT' && (
+            <>
+                <div className="flex items-center justify-between mb-4">
+                    <label className="block text-sm font-medium text-gray-700">
+                        Custom Package
+                    </label>
+                    <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input
+                        type="checkbox"
+                        name="toggle"
+                        id="custom-package-toggle"
+                        checked={isCustomPackage}
+                        onChange={() => {
+                            setIsCustomPackage(!isCustomPackage);
+                            // Reset package selection and price
+                            setFormData(prev => ({
+                            ...prev,
+                            packageName: '',
+                            packageDays: [],
+                            pricePerPax: 0
+                            }));
+                        }}
+                        className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                        />
+                        <label
+                        htmlFor="custom-package-toggle"
+                        className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${
+                            isCustomPackage 
+                            ? 'bg-blue-500' 
+                            : 'bg-gray-300'
+                        }`}
+                        />
+                    </div>
+                </div>
+                {!isCustomPackage ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                            Package Name
+                        </label>
+                        <SearchableSelect 
+                            options={packages.map(pkg => ({
+                            id: pkg.value,
+                            name: pkg.label
+                            }))}
+                            value={formData.packageName}
+                            onChange={handlePackageSelection}
+                            placeholder="Select package"
+                            open={openPackage}
+                            setOpen={setOpenPackage}
+                            displayKey="name"
+                        />
+                        </div>
+            
+                        <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                            Price Per Pax (IDR)
+                        </label>
+                        <CurrencyInput
+                            id="price-per-pax"
+                            name="pricePerPax"
+                            prefix="Rp "
+                            decimalSeparator=","
+                            groupSeparator="."
+                            value={formData.pricePerPax}
+                            onValueChange={(value) => {
+                            setFormData(prev => ({
+                                ...prev,
+                                pricePerPax: value || 0
+                            }));
+                            }}
+                            className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                            placeholder="Enter price per pax"
+                        />
+                        {!isCustomPackage && (
+                            <p className="text-xs text-gray-500 mt-1">
+                            Default price can be manually adjusted
+                            </p>
+                        )}
+                        </div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                            Package Duration (Days)
+                        </label>
+                        <input
+                            type="number"
+                            value={customPackageDuration}
+                            onChange={(e) => {
+                            const duration = Math.max(1, parseInt(e.target.value) || 1);
+                            setCustomPackageDuration(duration);
+                            setFormData(prev => ({
+                                ...prev,
+                                packageName: 'Custom',
+                                packageDays: Array(duration).fill().map(() => ({
+                                startActivity: '',
+                                endActivity: '',
+                                itinerary: '',
+                                hotel: '',
+                                meals: {
+                                    breakfast: true,
+                                    lunch: false,
+                                    dinner: false
+                                },
+                                rooms: [{ 
+                                    room: '',
+                                    quantity: 1
+                                }]
+                                }))
+                            }));
+                            }}
+                            min="1"
+                            max="10"
+                            className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                            placeholder="Enter number of days"
+                        />
+                        </div>
+            
+                        <div className="space-y-2">
+                        <label className="block text-sm font-medium text-gray-700">
+                            Price Per Pax (IDR)
+                        </label>
+                        <CurrencyInput
+                            id="custom-price-per-pax"
+                            name="pricePerPax"
+                            prefix="Rp "
+                            decimalSeparator=","
+                            groupSeparator="."
+                            value={formData.pricePerPax}
+                            onValueChange={(value) => {
+                            setFormData(prev => ({
+                                ...prev,
+                                pricePerPax: value || 0
+                            }));
+                            }}
+                            className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                            placeholder="Enter price per pax"
+                        />
+                        </div>
+                    </div>
+                )}
+            </>
+
+            )}
+  
+          {/* Existing package details rendering */}
+          {(formData.packageName || formData.packageDays.length > 0) && (
+            <div className="mt-6 space-y-4">
+              {formData.packageDays.map((day, index) => (
+                <div key={index} className="border rounded-lg space-y-4">
+                    <div 
+                        className="flex justify-between items-center p-4 cursor-pointer rounded-t-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+                        onClick={() => toggleDayExpansion(index)}
+                    >
+                        <h3 className="font-medium text-lg text-gray-600">Day {index + 1}</h3>
+                        <button className="text-gray-900 hover:text-gray-900">
+                            {expandedDays[index] ? (
+                                <ChevronUp className="h-5 w-5" />
+                            ) : (
+                                <ChevronDown className="h-5 w-5" />
+                            )}
+                        </button>
+                    </div>          
+                    {expandedDays[index] && (
+                    <div className="px-6 pb-6 pt-4 space-y-4">                                                      
+                      <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                              <label className="block text-sm font-medium text-gray-700">
-                                  Package Name
-                              </label>
+                              <label className="block text-sm font-medium text-gray-700">Start Activity</label>
                               <SearchableSelect 
-                                options={packages.map(pkg => ({
-                                  id: pkg.value,
-                                  name: pkg.label
-                                }))}
-                                value={formData.packageName}
-                                onChange={handlePackageSelection}
-                                placeholder="Select package"
-                                open={openPackage}
-                                setOpen={setOpenPackage}
-                                displayKey="name"
-                              />
+                                    options={startActivityOptions}
+                                    value={day.startActivity}
+                                    onChange={(value) => handleActivityChange(index, 'startActivity', value)}
+                                    placeholder="Select start activity"
+                                    open={dropdowns[`day-${index}-start-activity`] || false}
+                                    setOpen={(value) => handleDropdownChange(`day-${index}-start-activity`, value)}
+                                    displayKey="name"
+                                />
                           </div>
-                      ) : (
                           <div className="space-y-2">
-                              <label className="block text-sm font-medium text-gray-700">
-                                  Package Duration (Days)
-                              </label>
-                              <input
-                                  type="number"
-                                  value={customPackageDuration}
-                                  onChange={(e) => {
-                                      const duration = Math.max(1, parseInt(e.target.value) || 1);
-                                      setCustomPackageDuration(duration);
-                                      setFormData(prev => ({
-                                          ...prev,
-                                          packageName: 'Custom',
-                                          packageDays: Array(duration).fill().map(() => ({
-                                              startActivity: '',
-                                              endActivity: '',
-                                              itinerary: '',
-                                              hotel: '',
-                                              meals: {
-                                                  breakfast: true,
-                                                  lunch: false,
-                                                  dinner: false
-                                              },
-                                              rooms: [{ 
-                                                  room: '',
-                                                  quantity: 1
-                                              }]
-                                          }))
-                                      }));
-                                  }}
-                                  min="1"
-                                  max="10"
-                                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                                  placeholder="Enter number of days"
-                              />
+                              <label className="block text-sm font-medium text-gray-700">End Activity</label>
+                              <SearchableSelect 
+                                    options={endActivityOptions}
+                                    value={day.endActivity}
+                                    onChange={(value) => handleActivityChange(index, 'endActivity', value)}
+                                    placeholder="Select end activity"
+                                    open={dropdowns[`day-${index}-end-activity`] || false}
+                                    setOpen={(value) => handleDropdownChange(`day-${index}-end-activity`, value)}
+                                    displayKey="name"
+                                />
                           </div>
-                      )}
-
-                      {/* Input Price Per Pax */}
-                      <div className="space-y-2">
-                          <label className="block text-sm font-medium text-gray-700">
-                              Price Per Pax (IDR)
-                          </label>
-                          <CurrencyInput
-                              id="price-per-pax"
-                              name="pricePerPax"
-                              prefix="Rp "
-                              decimalSeparator=","
-                              groupSeparator="."
-                              value={formData.pricePerPax}
-                              onValueChange={(value) => {
-                                  setFormData(prev => ({
-                                      ...prev,
-                                      pricePerPax: value || 0
-                                  }));
-                              }}
-                              className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                              placeholder="Enter price per pax"
-                          />
-                          {!isCustomPackage && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                  Default price can be manually adjusted
-                              </p>
-                          )}
                       </div>
-                  </div>
   
-                  {(formData.packageName || formData.packageDays.length > 0) && (
-                      <div className="mt-6 space-y-4">
-                          {formData.packageDays.map((day, index) => (
-                              <div key={index} className="border rounded-lg space-y-4">
-                                  <div 
-                                      className="flex justify-between items-center p-4 cursor-pointer rounded-t-lg bg-gray-100 hover:bg-gray-200 transition-colors"
-                                      onClick={() => toggleDayExpansion(index)}
-                                  >
-                                      <h3 className="font-medium text-lg text-gray-600">Day {index + 1}</h3>
-                                      <button className="text-gray-900 hover:text-gray-900">
-                                          {expandedDays[index] ? (
-                                              <ChevronUp className="h-5 w-5" />
-                                          ) : (
-                                              <ChevronDown className="h-5 w-5" />
-                                          )}
-                                      </button>
-                                  </div>          
-                                  {expandedDays[index] && (
-                                  <div className="px-6 pb-6 pt-4 space-y-4">                                                      
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-medium text-gray-700">Start Activity</label>
-                                            <SearchableSelect 
-                                                options={activityOptions}
-                                                value={day.startActivity}
-                                                onChange={(value) => handleActivityChange(index, 'startActivity', value)}
-                                                placeholder="Select start activity"
-                                                open={dropdowns[`day-${index}-start-activity`] || false}
-                                                setOpen={(value) => handleDropdownChange(`day-${index}-start-activity`, value)}
-                                                displayKey="name"
-                                            />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="block text-sm font-medium text-gray-700">End Activity</label>
-                                            <SearchableSelect 
-                                                options={activityOptions}
-                                                value={day.endActivity}
-                                                onChange={(value) => handleActivityChange(index, 'endActivity', value)}
-                                                placeholder="Select end activity"
-                                                open={dropdowns[`day-${index}-end-activity`] || false}
-                                                setOpen={(value) => handleDropdownChange(`day-${index}-end-activity`, value)}
-                                                displayKey="name"
-                                            />
-                                        </div>
-                                    </div>
-    
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium text-gray-700">Itinerary</label>
-                                        <textarea
-                                            value={day.itinerary || ''}
-                                            onChange={(e) => handleActivityChange(index, 'itinerary', e.target.value)}
-                                            className="w-full px-4 py-2 rounded-lg border"
-                                            rows={4}
-                                            placeholder="Itinerary will be auto-generated based on selected activities"
-                                        />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium text-gray-700">Hotel</label>
+                      <div className="space-y-2">
+                          <label className="block text-sm font-medium text-gray-700">Itinerary</label>
+                          <textarea
+                              value={day.itinerary || ''}
+                              onChange={(e) => handleActivityChange(index, 'itinerary', e.target.value)}
+                              className="w-full px-4 py-2 rounded-lg border"
+                              rows={4}
+                              placeholder="Itinerary will be auto-generated based on selected activities"
+                          />
+                      </div>
+  
+                      <div className="space-y-2">
+                          <label className="block text-sm font-medium text-gray-700">Hotel</label>
+                          <SearchableSelect 
+                              options={hotelOptions}
+                              value={day.hotel}
+                              onChange={(value) => handleActivityChange(index, 'hotel', value)}
+                              placeholder="Select hotel"
+                              open={dropdowns[`day-${index}-hotel`] || false}
+                              setOpen={(value) => handleDropdownChange(`day-${index}-hotel`, value)}
+                              displayKey="name"
+                          />
+                      </div>
+  
+                      <div className="space-y-2">
+                          <label className="block text-sm font-medium text-gray-700">Meals Hotel</label>
+                          <div className="flex gap-4">
+                              <label className="flex items-center space-x-2">
+                                  <input
+                                      type="checkbox"
+                                      checked={day.meals?.breakfast}
+                                      onChange={(e) => handleActivityChange(index, 'meals', {
+                                          ...day.meals,
+                                          breakfast: e.target.checked
+                                      })}
+                                      className="rounded border-gray-300"
+                                  />
+                                  <span>Breakfast</span>
+                              </label>
+                              <label className="flex items-center space-x-2">
+                                  <input
+                                      type="checkbox"
+                                      checked={day.meals?.lunch}
+                                      onChange={(e) => handleActivityChange(index, 'meals', {
+                                          ...day.meals,
+                                          lunch: e.target.checked
+                                      })}
+                                      className="rounded border-gray-300"
+                                  />
+                                  <span>Lunch</span>
+                              </label>
+                              <label className="flex items-center space-x-2">
+                                  <input
+                                      type="checkbox"
+                                      checked={day.meals?.dinner}
+                                      onChange={(e) => handleActivityChange(index, 'meals', {
+                                          ...day.meals,
+                                          dinner: e.target.checked
+                                      })}
+                                      className="rounded border-gray-300"
+                                  />
+                                  <span>Dinner</span>
+                              </label>
+                          </div>
+                      </div>
+  
+                      <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                              <label className="block text-sm font-medium text-gray-700">Rooms</label>
+                              <button
+                                  type="button"
+                                  onClick={() => addRoom(index)}
+                                  className="text-sm text-blue-600 hover:text-blue-700"
+                              >
+                                  + Add Room
+                              </button>
+                          </div>
+                          <div className="space-y-3">
+                            {day.rooms?.map((roomSelection, roomIndex) => (
+                                <div key={roomIndex} className="flex gap-4 items-start">
+                                    <div className="flex-1">
                                         <SearchableSelect 
-                                            options={hotelOptions}
-                                            value={day.hotel}
-                                            onChange={(value) => handleActivityChange(index, 'hotel', value)}
-                                            placeholder="Select hotel"
-                                            open={dropdowns[`day-${index}-hotel`] || false}
-                                            setOpen={(value) => handleDropdownChange(`day-${index}-hotel`, value)}
+                                            options={
+                                                // Filter room options berdasarkan hotel yang dipilih
+                                                day.hotel 
+                                                    ? hotelRoomOptions[day.hotel] || [] 
+                                                    : []
+                                            }
+                                            value={roomSelection.room}
+                                            onChange={(value) => handleRoomChange(index, roomIndex, 'room', value)}
+                                            placeholder="Select room type"
+                                            disabled={!day.hotel} // Disable jika belum memilih hotel
+                                            open={dropdowns[`day-${index}-room-${roomIndex}`] || false}
+                                            setOpen={(value) => handleDropdownChange(`day-${index}-room-${roomIndex}`, value)}
                                             displayKey="name"
                                         />
                                     </div>
-    
-                                    <div className="space-y-2">
-                                        <label className="block text-sm font-medium text-gray-700">Meals Hotel</label>
-                                        <div className="flex gap-4">
-                                            <label className="flex items-center space-x-2">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={day.meals?.breakfast}
-                                                    onChange={(e) => handleActivityChange(index, 'meals', {
-                                                        ...day.meals,
-                                                        breakfast: e.target.checked
-                                                    })}
-                                                    className="rounded border-gray-300"
-                                                />
-                                                <span>Breakfast</span>
-                                            </label>
-                                            <label className="flex items-center space-x-2">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={day.meals?.lunch}
-                                                    onChange={(e) => handleActivityChange(index, 'meals', {
-                                                        ...day.meals,
-                                                        lunch: e.target.checked
-                                                    })}
-                                                    className="rounded border-gray-300"
-                                                />
-                                                <span>Lunch</span>
-                                            </label>
-                                            <label className="flex items-center space-x-2">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={day.meals?.dinner}
-                                                    onChange={(e) => handleActivityChange(index, 'meals', {
-                                                        ...day.meals,
-                                                        dinner: e.target.checked
-                                                    })}
-                                                    className="rounded border-gray-300"
-                                                />
-                                                <span>Dinner</span>
-                                            </label>
-                                        </div>
+                                    <div className="w-24">
+                                        <input
+                                            type="number"
+                                            value={roomSelection.quantity}
+                                            onChange={(e) => handleRoomChange(index, roomIndex, 'quantity', e.target.value)}
+                                            className="w-full px-3 py-2 border rounded-md"
+                                            placeholder="Qty"
+                                            min="1"
+                                        />
                                     </div>
-    
-                                    <div className="space-y-2">
-                                        <div className="flex justify-between items-center">
-                                            <label className="block text-sm font-medium text-gray-700">Rooms</label>
-                                            <button
-                                                type="button"
-                                                onClick={() => addRoom(index)}
-                                                className="text-sm text-blue-600 hover:text-blue-700"
-                                            >
-                                                + Add Room
-                                            </button>
-                                        </div>
-                                        <div className="space-y-3">
-                                          {day.rooms?.map((roomSelection, roomIndex) => (
-                                              <div key={roomIndex} className="flex gap-4 items-start">
-                                                  <div className="flex-1">
-                                                      <SearchableSelect 
-                                                          options={
-                                                              // Filter room options berdasarkan hotel yang dipilih
-                                                              day.hotel 
-                                                                  ? hotelRoomOptions[day.hotel] || [] 
-                                                                  : []
-                                                          }
-                                                          value={roomSelection.room}
-                                                          onChange={(value) => handleRoomChange(index, roomIndex, 'room', value)}
-                                                          placeholder="Select room type"
-                                                          disabled={!day.hotel} // Disable jika belum memilih hotel
-                                                          open={dropdowns[`day-${index}-room-${roomIndex}`] || false}
-                                                          setOpen={(value) => handleDropdownChange(`day-${index}-room-${roomIndex}`, value)}
-                                                          displayKey="name"
-                                                      />
-                                                  </div>
-                                                  <div className="w-24">
-                                                      <input
-                                                          type="number"
-                                                          value={roomSelection.quantity}
-                                                          onChange={(e) => handleRoomChange(index, roomIndex, 'quantity', e.target.value)}
-                                                          className="w-full px-3 py-2 border rounded-md"
-                                                          placeholder="Qty"
-                                                          min="1"
-                                                      />
-                                                  </div>
-                                                  <button
-                                                      type="button"
-                                                      onClick={() => deleteRoom(index, roomIndex)}
-                                                      className="p-2 text-red-500 hover:text-red-700"
-                                                  >
-                                                      <X className="h-5 w-5" />
-                                                  </button>
-                                              </div>
-                                          ))}
-                                        </div>
-                                    </div>
-                                  </div>
-                                  )}
-                              </div>
-                          ))}
+                                    <button
+                                        type="button"
+                                        onClick={() => deleteRoom(index, roomIndex)}
+                                        className="p-2 text-red-500 hover:text-red-700"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                </div>
+                            ))}
+                          </div>
                       </div>
-                  )}
-              </div>
-          </div>
-      );
+                    </div>
+                    )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
+  
+  
   const renderStep4 = () => (
     <div className="space-y-6 border rounded-lg">
         <div className="bg-gray-800 text-white p-4 rounded-t-lg">
@@ -1529,15 +1514,15 @@ const AddBooking = () => {
                         </label>
                         <SearchableSelect 
                             options={discountCodes.map(discount => ({
-                                id: discount.code,
-                                name: `${discount.code} - ${discount.description}`
+                                id: discount.id,
+                                name: discount.name
                             }))}
-                            value={discountData.code}
+                            value={discountData.id}
                             onChange={(value) => {
-                                const selectedDiscount = discountCodes.find(d => d.code === value);
+                                const selectedDiscount = discountCodes.find(d => d.id === value);
                                 if (selectedDiscount) {
                                     setDiscountData({
-                                        code: value,
+                                        id: value,
                                         type: selectedDiscount.type,
                                         value: selectedDiscount.value
                                     });
@@ -1647,100 +1632,169 @@ const AddBooking = () => {
   };
 
   const handleSubmit = () => {
-    Swal.fire({
-      title: 'Are you sure?',
-      html: `
-          <p>Do you want to submit this booking?</p>
-          <div class="mt-4 flex items-center justify-center">
-              <input 
-                  type="checkbox" 
-                  id="whatsapp-itinerary" 
-                  class="mr-2"
-              />
-              <label for="whatsapp-itinerary">
-                  Send itinerary via WhatsApp
-              </label>
-          </div>
-      `,
-      icon: 'question',
-      showCancelButton: true,
-      confirmButtonText: 'Yes, submit it!',
-      cancelButtonText: 'Cancel'
-  }).then((result) => {
-      if (result.isConfirmed) {
-          // Ambil status checkbox
-          const isWhatsappSelected = document.getElementById('whatsapp-itinerary').checked;
+      Swal.fire({
+          title: 'Are you sure?',
+          html: `
+              <p>Do you want to submit this booking?</p>
+              <div class="mt-4 flex items-center justify-center">
+                  <input 
+                      type="checkbox" 
+                      id="whatsapp-itinerary" 
+                      class="mr-2"
+                  />
+                  ${channel != 'TWT' ? `<label for="whatsapp-itinerary">
+                      Send itinerary via WhatsApp
+                  </label>` : ''}                  
+              </div>
+          `,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Yes, submit it!',
+          cancelButtonText: 'Cancel'
+      }).then((result) => {
+          if (result.isConfirmed) {
+              const isWhatsappSelected = document.getElementById('whatsapp-itinerary').checked;
   
-          // Update formData dengan status kirim WA
-          setFormData(prev => ({
-              ...prev,
-              isSendWa: isWhatsappSelected
-          }));
+              // Create FormData object untuk handling file upload
+              const formDataObj = new FormData();
   
-          // Log semua data
-          console.log('Booking Data:', {
-            customerInfo: {
-              name: formData.customer,
-              email: formData.email,
-              phone: formData.phone,
-              nationality: formData.nationality,
-              numberOfPax: formData.numOfPax,
-              type: formData.type
-          },
-          packageInfo: {
-              packageName: formData.packageName,
-              pricePerPax: formData.pricePerPax,
-              totalPackage: calculateSummary().totalPackage
-          },
-          travelDetails: {
-              bookingDate: formData.bookingDate,
-              travelDate: formData.travelDate,
-              dueDate: formData.dueDate
-          },
-          pickupLocation: {
-              location: formData.pickupLocation,
-              time: formData.pickupTime
-          },
-          dropLocation: {
-              location: formData.dropLocation,
-              time: formData.dropTime
-          },
-          shuttle: formData.isShuttle,
-          tshirtSizes: formData.sizes,
-          addOns: addOnItems,
-          packageDays: formData.packageDays,
-          discount: {
-              type: discountData.type,
-              value: discountData.value
-          },
-          summary: calculateSummary(),
-            sendWhatsapp: isWhatsappSelected
-          });
+              // Basic Information
+              const basicInfo = {
+                  customer: formData.customer,
+                  numOfPax: parseInt(formData.numOfPax) || 0,
+                  travelDate: formData.travelDate,
+                  email: formData.email,
+                  phone: formData.phone,
+                  nationality: formData.nationality,
+                  type: formData.type,
+                  bookingDate: formData.bookingDate,
+                  dueDate: formData.dueDate,
+                  channel: formData.channel,
+                  bookingCodeOrigin: formData.bookingCodeOrigin
+              };
   
-          try {
-              // Logika submit booking
-              Swal.fire({
-                  title: 'Booking Submitted!',
-                  text: isWhatsappSelected 
-                      ? 'Booking submitted and itinerary will be sent via WhatsApp' 
-                      : 'Your booking has been processed successfully.',
-                  icon: 'success'
+              // T-Shirt Sizes
+              const sizes = formData.sizes;
+  
+              // Location Information
+              const locationInfo = {
+                  pickupLocation: formData.pickupLocation,
+                  pickupTime: formData.pickupTime,
+                  dropLocation: formData.dropLocation,
+                  dropTime: formData.dropTime,
+                  isShuttle: formData.isShuttle
+              };
+  
+              // Package Information
+              const packageInfo = {
+                  packageName: formData.packageName,
+                  pricePerPax: parseFloat(formData.pricePerPax) || 0,
+                  totalPrice: parseFloat(formData.totalPrice) || 0,
+                  packageDays: formData.packageDays.map(day => ({
+                      startActivity: day.startActivity,
+                      endActivity: day.endActivity,
+                      itinerary: day.itinerary,
+                      hotel: day.hotel,
+                      meals: day.meals,
+                      rooms: day.rooms.map(room => ({
+                          room: room.room,
+                          quantity: parseInt(room.quantity) || 1
+                      }))
+                  }))
+              };
+  
+              // Add-ons Information
+              const addOnsInfo = addOnItems.map(item => ({
+                  addOn: item.addOn,
+                  price: parseFloat(item.price) || 0,
+                  quantity: parseInt(item.qty) || 1,
+                  subtotal: parseFloat(item.subtotal) || 0
+              }));
+  
+              // Discount Information
+              const discountInfo = {
+                  type: discountData.type,
+                  code: discountData.code,
+                  value: parseFloat(discountData.value) || 0,
+                  discountId: !isCustomDiscount ? discountData.id : null                  
+              };
+  
+              // Summary Calculations
+              const summary = calculateSummary();
+  
+              // Combine all data
+              const completeData = {
+                  ...basicInfo,
+                  sizes,
+                  ...locationInfo,
+                  ...packageInfo,
+                  addOns: addOnsInfo,
+                  discount: discountInfo,
+                  summary,
+                  isSendWa: isWhatsappSelected
+              };
+  
+              // Append all data to FormData
+              Object.keys(completeData).forEach(key => {
+                  if (typeof completeData[key] === 'object') {
+                      formDataObj.append(key, JSON.stringify(completeData[key]));
+                  } else {
+                      formDataObj.append(key, completeData[key]);
+                  }
               });
-          } catch (error) {
-              Swal.fire({
-                  title: 'Error!',
-                  text: 'There was a problem submitting your booking.',
-                  icon: 'error'
+  
+              // Append file if exists
+              if (formData.bookingFileOrigin) {
+                  formDataObj.append('bookingFileOrigin', formData.bookingFileOrigin);
+              }
+              
+              // Post request using Inertia
+              router.post('/bookings', formDataObj, {
+                  onBefore: () => {
+                      // Show loading state
+                      Swal.fire({
+                          title: 'Processing...',
+                          html: 'Please wait while we process your booking.',
+                          allowOutsideClick: false,
+                          didOpen: () => {
+                              Swal.showLoading();
+                          }
+                      });
+                  },
+                  onSuccess: () => {
+                      // Show success message
+                      Swal.fire({
+                          title: 'Success!',
+                          text: isWhatsappSelected 
+                              ? 'Booking submitted and itinerary will be sent via WhatsApp'
+                              : 'Booking has been successfully submitted',
+                          icon: 'success'
+                      }).then(() => {
+                          // Redirect to booking list
+                        //   router.visit('/booking-overview');
+                      });
+                  },
+                  onError: (errors) => {
+                      // Show error message
+                      Swal.fire({
+                          title: 'Error!',
+                          text: 'There was a problem submitting your booking. Please check your input and try again.',
+                          icon: 'error'
+                      });
+                      console.error('Submission errors:', errors);
+                  },
+                  preserveState: true,
+                  preserveScroll: true
               });
           }
-      }
-  });
-  };  
+      });
+  };
+  
 
   return (
     <Authenticated>
       <Head title="Client Management" />
-      <h1 className="text-2xl mb-4 font-bold text-gray-900 dark:text-white">Add Booking</h1>
+      <h1 className="text-2xl mb-4 font-bold text-gray-900 dark:text-white">Add Booking {channel}</h1>
       <Card className="mx-auto bg-white">
         <div className="p-6">
           <div className="mb-8">
@@ -1794,7 +1848,7 @@ const AddBooking = () => {
                             </span>
                         </div>
                         <div className="flex justify-between">
-                            <span className="text-gray-600">Total Package</span>
+                            <span className="text-gray-600">Total Package ({formData.numOfPax} pax)</span>
                             <span className="font-semibold">
                                 Rp {new Intl.NumberFormat('id-ID').format(calculateSummary().totalPackage)}
                             </span>

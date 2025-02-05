@@ -431,6 +431,7 @@ class FinanceController extends Controller
                 $insertCrew->save();
             }
         }
+        
         $resources['cars'] = BookCarActivity::with(['car' => function($query){
             $query->select('id','name');
         }])->where('booking_id',$id)->get();

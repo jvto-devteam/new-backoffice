@@ -12,33 +12,106 @@ const SearchableSelect = ({
 }) => {
     const selectRef = useRef(null);
     const searchInputRef = useRef(null);
-    const [searchQuery, setSearchQuery] = useState('');    
+    const [searchQuery, setSearchQuery] = useState('');
+    const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+    // Filter options berdasarkan search query
+    const filteredOptions = options.filter(item => 
+        item[displayKey].toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            // Pastikan selectRef current ada 
             if (selectRef.current && 
                 !selectRef.current.contains(event.target)) {
-                
-                // Pastikan open state aktif sebelum menutup
                 if (open) {
                     setOpen(false);
-                    setSearchQuery(''); // Reset search query
+                    setSearchQuery('');
+                    setHighlightedIndex(-1); // Reset highlighted index
                 }
             }
         };
 
-        // Tambahkan event listener di document level
         document.addEventListener('mousedown', handleClickOutside);
-
-        // Cleanup event listener
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [open, setOpen]); // Tambahkan open sebagai dependency
+    }, [open, setOpen]);
+
+    // Handle keyboard navigation
+    const handleKeyDown = (e) => {
+        if (!open) {
+            if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                setOpen(true);
+                setHighlightedIndex(0);
+            }
+            return;
+        }
+
+        switch (e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                setHighlightedIndex(prev => 
+                    prev < filteredOptions.length - 1 ? prev + 1 : prev
+                );
+                break;
+
+            case 'ArrowUp':
+                e.preventDefault();
+                setHighlightedIndex(prev => 
+                    prev > 0 ? prev - 1 : prev
+                );
+                break;
+
+            case 'Enter':
+                e.preventDefault();
+                if (highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
+                    onChange(filteredOptions[highlightedIndex].id);
+                    setOpen(false);
+                    setSearchQuery('');
+                    setHighlightedIndex(-1);
+                }
+                break;
+
+            case 'Escape':
+                e.preventDefault();
+                setOpen(false);
+                setSearchQuery('');
+                setHighlightedIndex(-1);
+                break;
+
+            default:
+                break;
+        }
+    };
+
+    // Scroll highlighted item into view
+    // Autofocus search input when dropdown opens
+    useEffect(() => {
+        if (open && searchInputRef.current) {
+            searchInputRef.current.focus();
+        }
+    }, [open]);
+
+    useEffect(() => {
+        if (highlightedIndex >= 0) {
+            const highlightedElement = document.getElementById(`option-${highlightedIndex}`);
+            if (highlightedElement) {
+                highlightedElement.scrollIntoView({
+                    block: 'nearest',
+                    inline: 'nearest'
+                });
+            }
+        }
+    }, [highlightedIndex]);
 
     return (
-        <div className="relative w-full" ref={selectRef}>
+        <div 
+            className="relative w-full" 
+            ref={selectRef}
+            onKeyDown={handleKeyDown}
+        >
             <button
                 type="button"
                 onClick={() => setOpen(!open)}
@@ -59,7 +132,10 @@ const SearchableSelect = ({
                                 ref={searchInputRef}
                                 type="text"
                                 value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onChange={(e) => {
+                                    setSearchQuery(e.target.value);
+                                    setHighlightedIndex(0); // Reset highlight ke item pertama saat search
+                                }}
                                 className="w-full bg-transparent border-none focus:outline-none"
                                 placeholder="Search..."
                                 onClick={(e) => e.stopPropagation()}
@@ -67,28 +143,27 @@ const SearchableSelect = ({
                         </div>
                     </div>
                     <div className="max-h-60 overflow-auto">
-                        {options
-                            .filter(item => 
-                                item[displayKey].toLowerCase().includes(searchQuery.toLowerCase())
-                            )
-                            .map(item => (
-                                <div
-                                    key={item.id}
-                                    onClick={() => {
-                                        onChange(item.id);
-                                        setOpen(false);
-                                        setSearchQuery('');
-                                    }}
-                                    className={`px-3 py-2 cursor-pointer flex items-center hover:bg-gray-50 ${
-                                        value === item.id ? 'bg-blue-50' : ''
-                                    }`}
-                                >
-                                    <Check 
-                                        className={`h-4 w-4 mr-2 text-blue-500 ${value === item.id ? 'opacity-100' : 'opacity-0'}`} 
-                                    />
-                                    <span>{item[displayKey]}</span>
-                                </div>
-                            ))}
+                        {filteredOptions.map((item, index) => (
+                            <div
+                                id={`option-${index}`}
+                                key={item.id}
+                                onClick={() => {
+                                    onChange(item.id);
+                                    setOpen(false);
+                                    setSearchQuery('');
+                                    setHighlightedIndex(-1);
+                                }}
+                                className={`px-3 py-2 cursor-pointer flex items-center
+                                    ${value === item.id ? 'bg-blue-50' : ''}
+                                    ${highlightedIndex === index ? 'bg-gray-100' : 'hover:bg-gray-50'}
+                                `}
+                            >
+                                <Check 
+                                    className={`h-4 w-4 mr-2 text-blue-500 ${value === item.id ? 'opacity-100' : 'opacity-0'}`} 
+                                />
+                                <span>{item[displayKey]}</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
             )}

@@ -688,6 +688,66 @@ function formatCurrency(amount) {
         setModalPlottingData(plottingData);
         setIsModalOpen(true);
     };  
+    const BookingDropdown = () => {
+    const [isOpen, setIsOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    const options = [
+        { label: 'JVTO', href: '/bookings/add-booking/jvto' },
+        { label: 'KLOOK', href: '/bookings/add-booking/klook' },
+        { label: 'TWT', href: '/bookings/add-booking/twt' }
+    ];
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+            setIsOpen(false);
+        }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    return (
+        <div className="relative" ref={dropdownRef}>
+        <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="px-4 py-2 bg-black text-white rounded hover:opacity-90 flex items-center gap-3"
+        >
+            <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className="h-5 w-5" 
+            viewBox="0 0 20 20" 
+            fill="currentColor"
+            >
+            <path 
+                fillRule="evenodd" 
+                d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" 
+                clipRule="evenodd" 
+            />
+            </svg>
+            Add Booking
+            <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        </button>
+        
+        {isOpen && (
+            <div className="absolute right-0 mt-2 w-40 bg-white dark:bg-[#24303f] rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+            {options.map((option) => (
+                <Link
+                key={option.label}
+                href={option.href}
+                className="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors first:rounded-t-lg last:rounded-b-lg"
+                >
+                {option.label}
+                </Link>
+            ))}
+            </div>
+        )}
+        </div>
+    );
+    };
+
 
     return (
         <Main>
@@ -711,11 +771,7 @@ function formatCurrency(amount) {
                 {/* Hero or Banner Section */}
                 <div className="bg-white p-6">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <h2 className="text-2xl font-bold">Plan a trip</h2>
-                        <p className="text-gray-700">Explore the vibrant city of Venice</p>
-                        <button className="mt-2 px-4 py-2 bg-black text-white rounded hover:opacity-90">+ Add Booking</button>
-                    </div>
+                    <BookingDropdown/>
                     <div className="mt-4 md:mt-0">
                         <img
                         src="https://javavolcano-touroperator.com/assets/img/download.png"
@@ -1096,12 +1152,20 @@ function formatCurrency(amount) {
                               }
                               <div className="text-xs text-gray-600">
                                 {booking.financial.expense.expenseLink ? (
-                                  <div 
-                                    onClick={() => window.open(booking.financial.expense.expenseLink, '_blank')}
-                                    className="cursor-pointer underline hover:text-blue-600"
-                                  >
-                                    Expenses: {formatCurrency(booking.financial.expense.total)}
-                                  </div>
+                                    booking.financial.expense.target == '_blank' ? (
+                                        <div 
+                                            onClick={() => window.open(booking.financial.expense.expenseLink, '_blank')}
+                                            className="cursor-pointer underline hover:text-blue-600"
+                                        >
+                                            Expenses: {formatCurrency(booking.financial.expense.total)}
+                                        </div>
+                                    ) : (
+                                        <Link href={booking.financial.expense.expenseLink}>
+                                            <div className="cursor-pointer underline hover:text-blue-600">
+                                                Expenses: {formatCurrency(booking.financial.expense.total)}
+                                            </div>
+                                        </Link>
+                                    )
                                 ) : (
                                   <span>Expenses: {formatCurrency(booking.financial.expense.total)}</span>
                                 )}

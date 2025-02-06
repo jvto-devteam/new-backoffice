@@ -838,15 +838,14 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
     const handlePackageSelection = (value) => {
       const selectedPackage = packages.find(pkg => pkg.value === value);
       
-      // Specific handling for TWT channel
       if (channel === 'TWT') {
-        // Directly set total price based on number of pax
+        // Existing TWT specific logic
         const totalPrice = selectedPackage.prices[0].pricePerPax * (formData.numOfPax || 1);
         
         setFormData(prev => ({
           ...prev,
           packageName: value,
-          pricePerPax: totalPrice, // Set total price instead of price per pax
+          pricePerPax: totalPrice,
           packageDays: Array(selectedPackage.prices[0].start).fill().map(() => ({
             startActivity: '',
             endActivity: '',
@@ -864,23 +863,26 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
           }))
         }));
       } else {
-        // Existing logic for other channels
+        // For other channels
         const packageDays = getPackageDays(value);
         
         setFormData(prev => {
           const pricePerPax = selectedPackage 
             ? getPricePerPax(selectedPackage.prices, prev.numOfPax || 2) 
             : 0;
-      
-          return {
-            ...prev,
-            packageName: value,
-            pricePerPax: pricePerPax,
-            packageDays: Array(packageDays).fill().map(() => ({
-              startActivity: '',
-              endActivity: '',
-              itinerary: '',
-              hotel: '',
+          
+          // Create packageDays array with data from selected package
+          const mappedPackageDays = Array(packageDays).fill().map((_, index) => {
+            // Find itinerary data for current day
+            const dayItinerary = selectedPackage.itineraries.find(it => it.day === index + 1);
+            // Find hotel data for current day
+            const dayHotel = selectedPackage.hotels.find(h => h.day === index + 1);
+            
+            return {
+              startActivity: dayItinerary ? dayItinerary.activity_start_id : '',
+              endActivity: dayItinerary ? dayItinerary.activity_end_id : '',
+              itinerary: dayItinerary ? dayItinerary.itinerary : '',
+              hotel: dayHotel ? dayHotel.hotel_id : '',
               meals: {
                 breakfast: true,
                 lunch: false,
@@ -890,12 +892,18 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
                 room: '',
                 quantity: 1
               }]
-            }))
+            };
+          });
+    
+          return {
+            ...prev,
+            packageName: value,
+            pricePerPax: pricePerPax,
+            packageDays: mappedPackageDays
           };
         });
       }
-    };
-  
+    };  
     const handleActivityChange = (dayIndex, field, value) => {
       setFormData(prev => {
           const updatedDays = [...prev.packageDays];
@@ -1765,13 +1773,11 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
                       // Show success message
                       Swal.fire({
                           title: 'Success!',
-                          text: isWhatsappSelected 
-                              ? 'Booking submitted and itinerary will be sent via WhatsApp'
-                              : 'Booking has been successfully submitted',
+                          text: 'Booking has been successfully submitted',
                           icon: 'success'
                       }).then(() => {
                           // Redirect to booking list
-                        //   router.visit('/booking-overview');
+                          router.visit('/booking-overview');
                       });
                   },
                   onError: (errors) => {

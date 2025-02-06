@@ -201,6 +201,11 @@ class FinanceController extends Controller
         $pax = $booking->total_pax;
         $day = $booking->bookingDetail[0]->package->duration->day;
 
+        $totalAccommodations = 0;
+        $totalDestinations = 0;
+        $totalOthers = 0;
+        $totalResources = 0;
+
         $bookRoom = BookHotel::select('id','booking_id','hotel_id','b','l','d','is_paid','is_debt')->with(['hotel' => function($query){
             $query->select('id','name','lunch_rate','dinner_rate');
         },'bookRoom' => function($query){
@@ -209,47 +214,57 @@ class FinanceController extends Controller
             }]);
         },'bookHotelMeal'])->where('booking_id',$id)
         ->get()
-        ->map(function($booking) use($pax) {
+        ->map(function($booking) use($pax,&$totalAccommodations) {
             if($booking->l == '1'){
                 $cekBookHotelMeals = BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','lunch')->first();
+                $lunchTotal = $cekBookHotelMeals && $cekBookHotelMeals->subtotal ? $cekBookHotelMeals->subtotal : 0;;
                 if(!$cekBookHotelMeals){
-                    $breakfast = new BookHotelMeal;
-                    $breakfast->book_hotel_id = $booking->id;
-                    $breakfast->booking_id = $booking->booking_id;
-                    $breakfast->hotel_id = $booking->hotel_id;
-                    $breakfast->meals = 'lunch';
-                    $breakfast->qty = $pax;
-                    $breakfast->price = $booking->hotel->lunch_rate;
-                    $breakfast->subtotal = $pax*$booking->hotel->lunch_rate;
-                    $breakfast->save();
+                    $lunch = new BookHotelMeal;
+                    $lunch->book_hotel_id = $booking->id;
+                    $lunch->booking_id = $booking->booking_id;
+                    $lunch->hotel_id = $booking->hotel_id;
+                    $lunch->meals = 'lunch';
+                    $lunch->qty = $pax;
+                    $lunch->price = $booking->hotel->lunch_rate;
+                    $lunch->subtotal = $pax*$booking->hotel->lunch_rate;
+                    $lunch->save();
+                    $lunchTotal = $lunch->subtotal;
                 }
+                $totalAccommodations += $lunchTotal;
             }
             else{
                 BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','lunch')->delete();
             }
             if($booking->d == '1'){
                 $cekBookHotelMeals = BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','dinner')->first();
+                $dinnerTotal = $cekBookHotelMeals && $cekBookHotelMeals->subtotal ? $cekBookHotelMeals->subtotal : 0;;
+                
                 if(!$cekBookHotelMeals){
-                    $breakfast = new BookHotelMeal;
-                    $breakfast->book_hotel_id = $booking->id;
-                    $breakfast->booking_id = $booking->booking_id;
-                    $breakfast->hotel_id = $booking->hotel_id;
-                    $breakfast->meals = 'dinner';
-                    $breakfast->qty = $pax;
-                    $breakfast->price = $booking->hotel->dinner_rate;
-                    $breakfast->subtotal = $pax*$booking->hotel->dinner_rate;
-                    $breakfast->save();
+                    $dinner = new BookHotelMeal;
+                    $dinner->book_hotel_id = $booking->id;
+                    $dinner->booking_id = $booking->booking_id;
+                    $dinner->hotel_id = $booking->hotel_id;
+                    $dinner->meals = 'dinner';
+                    $dinner->qty = $pax;
+                    $dinner->price = $booking->hotel->dinner_rate;
+                    $dinner->subtotal = $pax*$booking->hotel->dinner_rate;
+                    $dinner->save();
+
+                    $dinnerTotal = $dinner->subtotal;
                 }
+                $totalAccommodations += $dinnerTotal;
+
             }
             else{
                 BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','dinner')->delete();
             }
 
-            $booking->bookRoom->map(function($room) {
+            $booking->bookRoom->map(function($room) use(&$totalAccommodations) {
                 if ($room->subtotal === null) {
                     $room->subtotal = $room->roomHotel->rate * $room->quantity;
                     $room->save();
                 }
+                $totalAccommodations += $room->subtotal;
                 return $room;
             });
             return $booking;
@@ -347,7 +362,13 @@ class FinanceController extends Controller
             $query->select('id','name');
         },'destinationActivity' => function($query){
             $query->select('id','name','unit');
-        }])->where('booking_id',$id)->get()->groupBy(fn($item) => $item->destination->name);
+        }])->where('booking_id',$id)->get()
+        
+        ->map(function($activity) use (&$totalDestinations) { // Gunakan reference
+            $totalDestinations += $activity->subtotal;
+            return $activity;
+        })
+        ->groupBy(fn($item) => $item->destination->name);
 
         if($cekOthers == 0){
             $getOthers = OthersActivity::where('is_default','1')->get()->map(function($others) use($id,$pax,$day){
@@ -370,7 +391,13 @@ class FinanceController extends Controller
             });
         }
 
-        $others = BookOthersActivity::with('othersActivity')->where('booking_id',$id)->get();
+        $others = BookOthersActivity::with('othersActivity')
+        ->where('booking_id', $id)
+        ->get()
+        ->map(function($other) use (&$totalOthers) { // Gunakan reference
+            $totalOthers += $other->subtotal;
+            return $other;
+        });
 
         $cekCar = CarConfiguration::with(['crewJvtoRole','crewTwtRole','crewKlookRole'])->where('pax',$pax);
         $isCarExist = false;
@@ -432,13 +459,26 @@ class FinanceController extends Controller
             }
         }
         
-        $resources['cars'] = BookCarActivity::with(['car' => function($query){
-            $query->select('id','name');
-        }])->where('booking_id',$id)->get();
-        $resources['crews'] = BookCrewActivity::with(['crewRole' => function($query){
-            $query->select('id','role');
-        }])->where('booking_id',$id)->get();
-
+        $resources['cars'] = BookCarActivity::with(['car' => function($query) {
+            $query->select('id', 'name');
+        }])
+        ->where('booking_id', $id)
+        ->get()
+        ->map(function($car) use (&$totalResources) { // Gunakan reference
+            $totalResources += $car->subtotal;
+            return $car;
+        });
+    
+        $resources['crews'] = BookCrewActivity::with(['crewRole' => function($query) {
+            $query->select('id', 'role');
+        }])
+        ->where('booking_id', $id)
+        ->get()
+        ->map(function($crew) use (&$totalResources) { // Gunakan reference
+            $totalResources += $crew->subtotal;
+            return $crew;
+        });
+        
         $listForNewItems['destinations'] = DestinationActivity::with(['destination' => function($query){
             $query->select('id','name');
         }])->select('id','destination_id','name','price');
@@ -458,7 +498,7 @@ class FinanceController extends Controller
         $listForNewItems['others'] = OthersActivity::get();
         $listForNewItems['cars'] = Car::whereIn('id',[1,2,5,21])->get();
         $listForNewItems['crews'] = CrewRole::where('order_channel_id',$orderChannelID)->get();
-
+        
         return Inertia::render('Finance/EditExpenseManager', [
             'booking' => $booking,
             'accommodations' => $bookRoom,

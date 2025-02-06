@@ -284,7 +284,8 @@ class ScheduleController extends Controller
                         ],
                         'expense' => [
                             'total' => $booking->expense_internal_total,
-                            'expenseLink' => $booking->expense_file_internal,
+                            'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : '/finance/expense-manager/'.$booking->id.'/edit',
+                            'target' => '_blank'
                         ],
                         'profit' =>  $booking->grand_total+$booking->book_add_on_total-$booking->expense_internal_total
                     ],

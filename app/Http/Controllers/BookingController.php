@@ -43,9 +43,11 @@ class BookingController extends Controller
             ];
         });
         $packages = []; 
-        if($channel != 'TWT'){
-            $packages = Package::select('id','name','package_code','duration_id')->with('duration')->with('packagePrice.priceCategory');
-            if($channel == 'JVTO'){
+        if($channel != 'twt'){
+            $packages = Package::select('id','name','package_code','duration_id')->with('duration')->with(['packagePrice.priceCategory','itinerary','packageHotel' => function($q){
+                $q->where('price_plan_id',2);
+            }]);
+            if($channel == 'jvto'){
                 $packages->where('package_platform','!=','klook')->where('is_publish','1');
             }else{
                 $packages->where('package_platform','klook');
@@ -62,6 +64,20 @@ class BookingController extends Controller
                             'start' => $q->priceCategory->start,
                             'end' => $q->priceCategory->end,
                             'pricePerPax' => $q->price,
+                        ];
+                    }),
+                    'itineraries' => $query->itinerary->map(function($q){
+                        return [
+                            'day' => $q->day,
+                            'activity_start_id' => $q->activity_start_id,
+                            'activity_end_id' => $q->activity_end_id,
+                            'itinerary' => $q->title,
+                        ];
+                    }),
+                    'hotels' => $query->packageHotel->map(function($q){
+                        return [
+                            'day' => $q->day,
+                            'hotel_id' => $q->hotel_id,
                         ];
                     })
                 ];
@@ -505,16 +521,18 @@ class BookingController extends Controller
                     $currentRoomIndex = 0;
 
                     foreach ($value['rooms'] as $keyRoom => $valueRoom) {
-                        $getRoomDetails = RoomHotel::find($valueRoom['room']);
-
-                        $bookRoom = new BookRoomHotel();
-                        $bookRoom->booking_id = $booking->id;
-                        $bookRoom->booking_itinerary_id = $bookingItinerary->id;
-                        $bookRoom->book_hotel_id = $bookHotel->id;
-                        $bookRoom->room_hotel_id = $valueRoom['room'];
-                        $bookRoom->quantity = $valueRoom['quantity'];
-                        $bookRoom->subtotal = $bookRoom->quantity * $getRoomDetails->rate;
-                        $bookRoom->save();
+                        if($valueRoom['room'] && $valueRoom['room'] != ''){
+                            $getRoomDetails = RoomHotel::find($valueRoom['room']);
+    
+                            $bookRoom = new BookRoomHotel();
+                            $bookRoom->booking_id = $booking->id;
+                            $bookRoom->booking_itinerary_id = $bookingItinerary->id;
+                            $bookRoom->book_hotel_id = $bookHotel->id;
+                            $bookRoom->room_hotel_id = $valueRoom['room'];
+                            $bookRoom->quantity = $valueRoom['quantity'];
+                            $bookRoom->subtotal = $bookRoom->quantity * $getRoomDetails->rate;
+                            $bookRoom->save();
+                        }
                     }
                 }
                 $startSchedule++;
@@ -522,15 +540,6 @@ class BookingController extends Controller
         }
 
         if ($request->channel == 'KLOOK') {
-            $arrCalc = [
-                'booking_id' => $booking->id,
-                'customer' => $user->name,
-                'date_start' => $booking->travel_date_start,
-                'duration' => $booking->package_duration,
-                'pax' => $booking->total_pax,
-                'package_id' => $bookingDetail->package_id
-            ];
-
             $getGiftCard = GiftCard::get();
             $randomGiftCard = $getGiftCard->random();
 
@@ -563,7 +572,7 @@ class BookingController extends Controller
             $this->generateExpense($booking->id);            
         }
 
-        return dd($request->all());
+        return back()->with('message', 'Booking saved successfully');
     }
 
     function generateExpense($id){
@@ -577,6 +586,11 @@ class BookingController extends Controller
         $pax = $booking->total_pax;
         $day = $booking->bookingDetail[0]->package->duration->day;
 
+        $totalAccommodations = 0;
+        $totalDestinations = 0;
+        $totalOthers = 0;
+        $totalResources = 0;
+
         $bookRoom = BookHotel::select('id','booking_id','hotel_id','b','l','d','is_paid','is_debt')->with(['hotel' => function($query){
             $query->select('id','name','lunch_rate','dinner_rate');
         },'bookRoom' => function($query){
@@ -585,47 +599,57 @@ class BookingController extends Controller
             }]);
         },'bookHotelMeal'])->where('booking_id',$id)
         ->get()
-        ->map(function($booking) use($pax) {
+        ->map(function($booking) use($pax,&$totalAccommodations) {
             if($booking->l == '1'){
                 $cekBookHotelMeals = BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','lunch')->first();
+                $lunchTotal = $cekBookHotelMeals && $cekBookHotelMeals->subtotal ? $cekBookHotelMeals->subtotal : 0;;
                 if(!$cekBookHotelMeals){
-                    $breakfast = new BookHotelMeal;
-                    $breakfast->book_hotel_id = $booking->id;
-                    $breakfast->booking_id = $booking->booking_id;
-                    $breakfast->hotel_id = $booking->hotel_id;
-                    $breakfast->meals = 'lunch';
-                    $breakfast->qty = $pax;
-                    $breakfast->price = $booking->hotel->lunch_rate;
-                    $breakfast->subtotal = $pax*$booking->hotel->lunch_rate;
-                    $breakfast->save();
+                    $lunch = new BookHotelMeal;
+                    $lunch->book_hotel_id = $booking->id;
+                    $lunch->booking_id = $booking->booking_id;
+                    $lunch->hotel_id = $booking->hotel_id;
+                    $lunch->meals = 'lunch';
+                    $lunch->qty = $pax;
+                    $lunch->price = $booking->hotel->lunch_rate;
+                    $lunch->subtotal = $pax*$booking->hotel->lunch_rate;
+                    $lunch->save();
+                    $lunchTotal = $lunch->subtotal;
                 }
+                $totalAccommodations += $lunchTotal;
             }
             else{
                 BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','lunch')->delete();
             }
             if($booking->d == '1'){
                 $cekBookHotelMeals = BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','dinner')->first();
+                $dinnerTotal = $cekBookHotelMeals && $cekBookHotelMeals->subtotal ? $cekBookHotelMeals->subtotal : 0;;
+                
                 if(!$cekBookHotelMeals){
-                    $breakfast = new BookHotelMeal;
-                    $breakfast->book_hotel_id = $booking->id;
-                    $breakfast->booking_id = $booking->booking_id;
-                    $breakfast->hotel_id = $booking->hotel_id;
-                    $breakfast->meals = 'dinner';
-                    $breakfast->qty = $pax;
-                    $breakfast->price = $booking->hotel->dinner_rate;
-                    $breakfast->subtotal = $pax*$booking->hotel->dinner_rate;
-                    $breakfast->save();
+                    $dinner = new BookHotelMeal;
+                    $dinner->book_hotel_id = $booking->id;
+                    $dinner->booking_id = $booking->booking_id;
+                    $dinner->hotel_id = $booking->hotel_id;
+                    $dinner->meals = 'dinner';
+                    $dinner->qty = $pax;
+                    $dinner->price = $booking->hotel->dinner_rate;
+                    $dinner->subtotal = $pax*$booking->hotel->dinner_rate;
+                    $dinner->save();
+
+                    $dinnerTotal = $dinner->subtotal;
                 }
+                $totalAccommodations += $dinnerTotal;
+
             }
             else{
                 BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','dinner')->delete();
             }
 
-            $booking->bookRoom->map(function($room) {
+            $booking->bookRoom->map(function($room) use(&$totalAccommodations) {
                 if ($room->subtotal === null) {
                     $room->subtotal = $room->roomHotel->rate * $room->quantity;
                     $room->save();
                 }
+                $totalAccommodations += $room->subtotal;
                 return $room;
             });
             return $booking;
@@ -675,9 +699,9 @@ class BookingController extends Controller
                     }
                 }
 
-            }])->where('package_id',$packageId)->get()->map(function($itinerary) use($pax,$day,$id){
+            }])->where('package_id',$packageId)->get()->map(function($itinerary) use($pax,$day,$id,&$totalDestinations){
                 if(!empty($itinerary->itineraryDestination->destination->activity)){
-                    $itinerary->itineraryDestination->destination->activity->map(function($activity) use($itinerary,$pax,$day,$id){
+                    $itinerary->itineraryDestination->destination->activity->map(function($activity) use($itinerary,$pax,$day,$id,&$totalDestinations){
                         $formula = str_replace(
                             ['pax', 'day', 'Math.ceil'],
                             ['$pax', '$day', 'ceil'],
@@ -694,10 +718,12 @@ class BookingController extends Controller
                         $bookDestinationActivity->status_paid = "unpaid";
                         $bookDestinationActivity->is_debt = "0";
                         $bookDestinationActivity->save();
+
+                        $totalDestinations += $bookDestinationActivity->subtotal;
                     });
                 }
                 if(!empty($itinerary->itineraryDestination->secondDestination->activity)){
-                    $itinerary->itineraryDestination->secondDestination->activity->map(function($activity) use($itinerary,$pax,$day,$id){
+                    $itinerary->itineraryDestination->secondDestination->activity->map(function($activity) use($itinerary,$pax,$day,$id,&$totalDestinations){
                         $formula = str_replace(
                             ['pax', 'day', 'Math.ceil'],
                             ['$pax', '$day', 'ceil'],
@@ -714,19 +740,17 @@ class BookingController extends Controller
                         $bookDestinationActivity->status_paid = "unpaid";
                         $bookDestinationActivity->is_debt = "0";
                         $bookDestinationActivity->save();
+
+                        $totalDestinations += $bookDestinationActivity->subtotal;
+
                     });
 
                 }
             });
         }
-        $destinations = BookDestinationActivity::select('id','destination_id','destination_activity_id','qty','price','subtotal','status_paid','is_debt')->with(['destination' => function($query){
-            $query->select('id','name');
-        },'destinationActivity' => function($query){
-            $query->select('id','name','unit');
-        }])->where('booking_id',$id)->get()->groupBy(fn($item) => $item->destination->name);
 
         if($cekOthers == 0){
-            $getOthers = OthersActivity::where('is_default','1')->get()->map(function($others) use($id,$pax,$day){
+            $getOthers = OthersActivity::where('is_default','1')->get()->map(function($others) use($id,$pax,$day,&$totalOthers){
                 $insertOthers = new BookOthersActivity;
                 $insertOthers->booking_id = $id;
                 $insertOthers->others_activity_id = $others->id;
@@ -743,6 +767,8 @@ class BookingController extends Controller
                 $insertOthers->subtotal = $insertOthers->qty*$others->price;
                 $insertOthers->status_paid = 'unpaid';
                 $insertOthers->save();
+
+                $totalOthers += $insertOthers->subtotal;
             });
         }
 
@@ -777,6 +803,8 @@ class BookingController extends Controller
                 $insertCar->subtotal = $insertCar->qty*$insertCar->price;
                 $insertCar->status_paid = 'unpaid';
                 $insertCar->save();
+
+                $totalResources += $insertCar->subtotal;
             }
 
             $cekCrewActivities = BookCrewActivity::where('booking_id',$id)->count();
@@ -805,8 +833,16 @@ class BookingController extends Controller
                 $insertCrew->subtotal = $insertCrew->qty*$insertCrew->price;
                 $insertCrew->status_paid = 'unpaid';
                 $insertCrew->save();
+
+                $totalResources += $insertCrew->subtotal;
+
             }
         }
+
+        $totalExpense = $totalAccommodations + $totalDestinations + $totalOthers + $totalResources;
+
+        $booking->expense_internal_total = $totalExpense;
+        $booking->save();
     }
     // function store(Request $request){
     //     // return dd($request->all());

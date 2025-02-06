@@ -902,13 +902,15 @@ function formatCurrency(amount) {
                             {/* Guest & Package */}
                             <td className="py-3 px-4 align-top space-y-1">
                             <div>
-                                <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full 
-                                ${booking.orderChannel === 'JVTO' ? 'bg-blue-100 text-blue-800' :
-                                    booking.orderChannel === 'TWT' ? 'bg-yellow-100 text-yellow-800' :
-                                    booking.orderChannel === 'KLOOK' ? 'bg-green-100 text-green-800' :
-                                    'bg-gray-100 text-gray-800'}`}>
-                                {booking.id}
-                                </span>
+                                <Link href={`bookings/edit-booking/${booking.booking_id}`}>
+                                    <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full 
+                                    ${booking.orderChannel === 'JVTO' ? 'bg-blue-100 text-blue-800' :
+                                        booking.orderChannel === 'TWT' ? 'bg-yellow-100 text-yellow-800' :
+                                        booking.orderChannel === 'KLOOK' ? 'bg-green-100 text-green-800' :
+                                        'bg-gray-100 text-gray-800'}`}>
+                                    {booking.id}
+                                    </span>
+                                </Link>
                             </div>
                             {booking.orderChannel != 'TWT' ? (
                               <div className="font-medium underline">

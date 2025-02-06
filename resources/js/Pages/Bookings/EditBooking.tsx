@@ -3,6 +3,7 @@ import { router } from '@inertiajs/react';
 import Authenticated from '@/Layouts/Main';
 import { Head } from '@inertiajs/react';
 import CurrencyInput from 'react-currency-input-field';
+import { format } from 'date-fns';
 import { Card } from '@/components/ui/card';
 import { Check, ChevronsUpDown,X,ChevronDown,ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -192,7 +193,7 @@ const discountTypes = [
   { value: 'nominal', label: 'Nominal' }
 ];
 
-const AddBooking = ({channel,countries,packages,startActivityOptions,endActivityOptions,hotelOptions,hotelRoomOptions,addOns,discountCodes}) => {
+const AddBooking = ({booking,channel,countries,packages,startActivityOptions,endActivityOptions,hotelOptions,hotelRoomOptions,addOns,discountCodes}) => {
   const [searchValues, setSearchValues] = useState({
     country: "",
     package: "",
@@ -206,70 +207,69 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
   const [activityDropdowns, setActivityDropdowns] = useState({});
   const [expandedDays, setExpandedDays] = useState({});    
   const [currentStep, setCurrentStep] = useState(1);
-  const [isCustomPackage, setIsCustomPackage] = useState(false);
-  const [customPackageDuration, setCustomPackageDuration] = useState('');  
+  const [isCustomPackage, setIsCustomPackage] = useState(!booking.booking_detail[0].package_id ? true : false);
+  const [customPackageDuration, setCustomPackageDuration] = useState(!booking.booking_detail[0].package_id ? booking.package_duration : '');  
   const [addOnItems, setAddOnItems] = useState([]);
-  const [isCustomDiscount, setIsCustomDiscount] = useState(false);
+  const [isCustomDiscount, setIsCustomDiscount] = useState(!booking.discount_id ? true : false );
   const [discountData, setDiscountData] = useState({
-      id : '',
-      type: '',
-      code: '',
-      value: 0
+    id : booking.discount_id ? booking.discount_id : '',
+    type: booking.discount_type,
+    code: booking.discount_id ? booking.discount.name : '',
+    value: booking.discountValue
   });
-  const [isShuttle, setIsShuttle] = useState(false); 
+  const [isShuttle, setIsShuttle] = useState(booking.is_shuttle == '1' ? true : false); 
   
   const [formData, setFormData] = useState({
+    _method : 'PUT',
+    booking_id : booking.id,
     channel: channel,   
-    customer: '',
-    numOfPax: '',
-    bookingDate: '',
-    travelDate: '',
-    email: '',
-    phone: '',
-    nationality: '',
-    type: 1,
-    tripDate: '',
-    dateOfIssue: '',
-    dueDate: '',
+    customer: booking.user.name,
+    numOfPax: booking.total_pax,
+    bookingDate: booking.booking_date,
+    travelDate: booking.travel_date_start,
+    email: booking.user.email,
+    phone: booking.user.phone,
+    nationality: booking.user.country_id,
+    type: booking.booking_category_id,
+    dueDate: format(booking.due_date,'yyyy-MM-dd'),
     sizes: {
-      xss: 0,
-      xxs: 0,
-      xs: 0,
-      s: 0,
-      m: 0,
-      l: 0,
-      xl: 0,
-      xxl: 0,
-      xxxl: 0
+      xss: booking.booking_detail[0].xss,
+      xxs: booking.booking_detail[0].xxs,
+      xs: booking.booking_detail[0].xs,
+      s: booking.booking_detail[0].s,
+      m: booking.booking_detail[0].m,
+      l: booking.booking_detail[0].l,
+      xl: booking.booking_detail[0].xl,
+      xxl: booking.booking_detail[0].xxl,
+      xxxl: booking.booking_detail[0].xxxl
     },
     pickupLocation: {
-      location: '',
-      terminal: '',
-      ticketNumber: '',
-      station: '',
-      hotelName: '',
-      customLocation: ''
+      location: booking.meeting_point,
+      terminal: booking.meeting_point == 'Surabaya Airport' || booking.meeting_point == 'Denpasar Airport' ? booking.meeting_point_arrival : '',
+      ticketNumber: booking.meeting_point == 'Surabaya Airport' || booking.meeting_point == 'Denpasar Airport' || booking.meeting_point == 'Surabaya Train Station' ? booking.meeting_point_value : '',
+      station: booking.meeting_point == 'Surabaya Train Station' ? booking.meeting_point_arrival : '',
+      hotelName: booking.meeting_point == 'Surabaya Hotel' || booking.meeting_point == 'Bali Hotel' ? booking.meeting_point_value : '',
+      customLocation: booking.meeting_point == 'Others' ? booking.meeting_point_value : ''
     },
-    pickupTime: '',
+    pickupTime: booking.pickup_time,
     dropLocation: {
-      location: '',
-      terminal: '',
-      ticketNumber: '',
-      station: '',
-      hotelName: '',
-      customLocation: ''
+      location: booking.drop_point,
+      terminal: booking.drop_point == 'Surabaya Airport' || booking.drop_point == 'Denpasar Airport' ? booking.drop_point_arrival : '',
+      ticketNumber: booking.drop_point == 'Surabaya Airport' || booking.drop_point == 'Denpasar Airport' || booking.drop_point == 'Surabaya Train Station' ? booking.drop_point_value : '',
+      station: booking.drop_point == 'Surabaya Train Station' ? booking.drop_point_arrival : '',
+      hotelName: booking.drop_point == 'Surabaya Hotel' || booking.drop_point == 'Bali Hotel' ? booking.drop_point_value : '',
+      customLocation: booking.drop_point == 'Others' ? booking.drop_point_value : ''
     },
-    dropTime: '',
-    packageName: '',
+    dropTime: booking.drop_time,
+    packageName: booking.booking_detail.length != 0 ? booking.booking_detail[0].package_id : '',
     addOns: [],
-    discountCode: '',
     packageDays: [],  
-    pricePerPax : 0,
-    totalPrice : 0,    
-    bookingCodeOrigin: '',
+    pricePerPax : booking.grand_total_before_disc/booking.total_pax,
+    totalPrice : booking.grand_total_before_disc,
+    bookingCodeOrigin: booking.invoice_code_origin,
     bookingFileOrigin: null,     
-    isShuttle: false,
-    isSendWa: false,    
+    isShuttle: booking.is_shuttle == '1' ? true : false,
+    isSendWa:  booking.is_send_wa == '1' ? true : false,    
   });
 
   const handleInputChange = (e) => {
@@ -402,6 +402,44 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
     }]);
   };
 
+  useEffect(() => {
+    if (booking?.book_add_on) {
+      const mappedItems = booking.book_add_on.map((item) => ({
+        addOn: item.add_on_id,
+        price: item.price,
+        qty: item.qty,
+        subtotal: item.price * item.qty
+      }));
+      
+      setAddOnItems(mappedItems);
+    }
+    
+    setFormData(prev => ({
+      ...prev,
+      packageDays: booking.booking_itinerary.map((item) => ({
+        startActivity: item.activity_start_id,
+        endActivity: item.activity_end_id,
+        itinerary: item.activity,
+        hotel: item.book_hotel && item.book_hotel.length != 0 ? item.book_hotel[0].hotel.id : '',
+        meals: {
+          breakfast: item.book_hotel && item.book_hotel.length != 0 && item.book_hotel[0].b == '1' ? true  : false,
+          lunch: item.book_hotel && item.book_hotel.length != 0 && item.book_hotel[0].l == '1' ? true  : false,
+          dinner: item.book_hotel && item.book_hotel.length != 0 && item.book_hotel[0].d == '1' ? true  : false
+        },
+        rooms: item.book_hotel && item.book_hotel.length != 0 
+        ? item.book_hotel[0].book_room.map((room) => ({
+            room: room.room_hotel_id,
+            quantity: room.quantity
+          }))
+        : [{ 
+            room: '',
+            quantity: 1
+          }]
+      }))
+    }));   
+
+  }, [booking]);
+
   const removeAddOnItem = (indexToRemove) => {
       setAddOnItems(addOnItems.filter((_, index) => index !== indexToRemove));
   };
@@ -527,8 +565,6 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
       channel
     }));
   }, [channel]);  
-
-  console.log(channel);
   
   const renderStep1 = () => {
     // Function to check if a field should be rendered based on channel
@@ -1646,12 +1682,13 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
       Swal.fire({
           title: 'Are you sure?',
           html: `
-              <p>Do you want to submit this booking?</p>
+              <p>Do you want to update this booking?</p>
               <div class="mt-4 flex items-center justify-center">
                   <input 
                       type="checkbox" 
                       id="whatsapp-itinerary" 
                       class="mr-2"
+                      ${formData.isSendWa == '1' ? 'checked' : 'true'}
                   />
                   ${channel != 'TWT' ? `<label for="whatsapp-itinerary">
                       Send itinerary via WhatsApp
@@ -1660,7 +1697,7 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
           `,
           icon: 'question',
           showCancelButton: true,
-          confirmButtonText: 'Yes, submit it!',
+          confirmButtonText: 'Yes, update it!',
           cancelButtonText: 'Cancel'
       }).then((result) => {
           if (result.isConfirmed) {
@@ -1671,6 +1708,7 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
   
               // Basic Information
               const basicInfo = {
+                  booking_id: formData.booking_id,
                   customer: formData.customer,
                   numOfPax: parseInt(formData.numOfPax) || 0,
                   travelDate: formData.travelDate,
@@ -1744,6 +1782,8 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
                   summary,
                   isSendWa: isWhatsappSelected
               };
+              console.log(completeData);
+              
   
               // Append all data to FormData
               Object.keys(completeData).forEach(key => {
@@ -1760,7 +1800,7 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
               }
               
               // Post request using Inertia
-              router.post('/bookings', formDataObj, {
+              router.post('/bookings/update-bookings', formDataObj, {
                   onBefore: () => {
                       // Show loading state
                       Swal.fire({
@@ -1776,7 +1816,7 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
                       // Show success message
                       Swal.fire({
                           title: 'Success!',
-                          text: 'Booking has been successfully submitted',
+                          text: 'Booking has been successfully updated',
                           icon: 'success'
                       }).then(() => {
                           // Redirect to booking list
@@ -1787,7 +1827,7 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
                       // Show error message
                       Swal.fire({
                           title: 'Error!',
-                          text: 'There was a problem submitting your booking. Please check your input and try again.',
+                          text: 'There was a problem updating your booking. Please check your input and try again.',
                           icon: 'error'
                       });
                       console.error('Submission errors:', errors);
@@ -1803,7 +1843,7 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
   return (
     <Authenticated>
       <Head title="Client Management" />
-      <h1 className="text-2xl mb-4 font-bold text-gray-900 dark:text-white">Add Booking {channel}</h1>
+      <h1 className="text-2xl mb-4 font-bold text-gray-900 dark:text-white">Edit Booking {channel}</h1>
       <Card className="mx-auto bg-white">
         <div className="p-6">
           <div className="mb-8">
@@ -1914,7 +1954,7 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
                         }}
                         className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-200"
                     >
-                        {currentStep === 5 ? 'Submit' : 'Next'}
+                        {currentStep === 5 ? 'Update' : 'Next'}
                     </button>
                 </div>
             </div>            

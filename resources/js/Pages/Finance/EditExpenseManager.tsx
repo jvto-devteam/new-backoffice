@@ -84,6 +84,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                   onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 0)}
                   className="w-16 p-1 border rounded text-right disabled:bg-gray-100"
                   min="1"
+                  readonly="true"
                   disabled={isPaid}
                 />
               </td>
@@ -93,6 +94,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                   value={formatCurrency(roomStates[index].rate)}
                   onChange={(e) => handleRateChange(index, parseInt(e.target.value.replace(/\D/g, '')) || 0)}
                   className="w-32 p-1 border rounded text-right disabled:bg-gray-100"
+                  readonly="true"
                   disabled={isPaid}
                 />
               </td>
@@ -216,6 +218,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                    onChange={(e) => handleQuantityChange('lunch', parseInt(e.target.value) || 0)}
                    className="w-16 p-1 border rounded text-right disabled:bg-gray-100"
                    min="1"
+                   readonly="true"
                    disabled={isPaid}
                  />
                </td>
@@ -225,6 +228,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                    value={formatCurrency(mealStates.lunch.price)}
                    onChange={(e) => handlePriceChange('lunch', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
                    className="w-32 p-1 border rounded text-right disabled:bg-gray-100"
+                   readonly="true"
                    disabled={isPaid}
                  />
                </td>
@@ -256,6 +260,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                    onChange={(e) => handleQuantityChange('dinner', parseInt(e.target.value) || 0)}
                    className="w-16 p-1 border rounded text-right disabled:bg-gray-100"
                    min="1"
+                   readonly="true"
                    disabled={isPaid}
                  />
                </td>
@@ -265,6 +270,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                    value={formatCurrency(mealStates.dinner.price)}
                    onChange={(e) => handlePriceChange('dinner', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
                    className="w-32 p-1 border rounded text-right disabled:bg-gray-100"
+                   readonly="true"
                    disabled={isPaid}
                  />
                </td>

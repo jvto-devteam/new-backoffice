@@ -121,4 +121,9 @@ class Booking extends Model
         return $this->belongsTo(Discount::class, 'discount_id');
     }
 
+    public function discount()
+    {
+        return $this->belongsTo(Discount::class, 'discount_id');
+    }
+
 }

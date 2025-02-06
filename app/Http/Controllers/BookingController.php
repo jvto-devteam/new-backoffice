@@ -118,122 +118,104 @@ class BookingController extends Controller
             'endActivityOptions' => $endActivities,
         ]);
     }
-    // function create($orderChannel){
-    //     $data['packages'] = Package::select('id','name','overview','duration_id','category_id','start_destination_id','end_destination_id','id_url','url')->with([
-    //         'duration' => function($query){
-    //             $query->select('id','name','day','night');
-    //         },
-    //         'category' => function($query){
-    //             $query->select('id','name');
-    //         },
-    //         'itinerary' => function($query) use($orderChannel){
-    //             $query->select('id','package_id','day','title','activity')->with(
-    //                 [
-    //                     'itineraryDestination' => function($q) use($orderChannel){
-    //                         $q->select('id','itinerary_id','destination_id','second_destination_id')->with('destination',function($qq) use($orderChannel){
-    //                             $qq->select('id','name','gallery_id','activity_id')->with(['gallery' => function($qqq){
-    //                                 $qqq->select('id','image','caption','alt_text');
-    //                             },'activityDestination' => function($qqq){
-    //                                 $qqq->select('id','name');
-    //                             },'activity' => function($qqq) use($orderChannel){
-    //                                 $qqq->select('id','destination_id','name','unit','formula','price');
-    //                                 if($orderChannel == 'jvto'){
-    //                                     $qqq->where('is_default_jvto','1');
-    //                                 }
-    //                                 else if($orderChannel == 'klook'){
-    //                                     $qqq->where('is_default_klook','1');
-    //                                 }
-    //                                 else if($orderChannel == 'twt'){
-    //                                     $qqq->where('is_default_twt','1');
-    //                                 }
-    //                             }]);
-    //                         })->with('secondDestination',function($qq) use($orderChannel){
-    //                             $qq->select('id','name','gallery_id','activity_id')->with(['gallery' => function($qqq) use($orderChannel){
-    //                                 $qqq->select('id','image','caption','alt_text');
-    //                             },'activityDestination' => function($qqq){
-    //                                 $qqq->select('id','name');
-    //                             },'activity' => function($qqq) use($orderChannel){
-    //                                 $qqq->select('id','destination_id','name','unit','formula','price');
-    //                                 if($orderChannel == 'jvto'){
-    //                                     $qqq->where('is_default_jvto','1');
-    //                                 }
-    //                                 else if($orderChannel == 'klook'){
-    //                                     $qqq->where('is_default_klook','1');
-    //                                 }
-    //                                 else if($orderChannel == 'twt'){
-    //                                     $qqq->where('is_default_twt','1');
-    //                                 }
-    //                             }]);
-    //                         });
-    //                     },
-    //                     'itineraryMeals' => function($q){
-    //                         $q->select('id','itinerary_id','breakfast','lunch','dinner')->where('price_plan_id',2);
-    //                     }
-    //                 ]
-    //             );
-    //         },
-    //         'startDestination' => function($query){
-    //             $query->select('id','name');
-    //         },
-    //         'endDestination' => function($query){
-    //             $query->select('id','name');
-    //         },
-    //         'packageBanner' => function($query){
-    //             $query->select('id','package_id','gallery_id')->with('gallery',function($q){
-    //                 $q->select('id','image','caption','alt_text');
-    //             });
-    //         },
-    //         'packageHotel' => function($query){
-    //             $query->select('id','hotel_id','package_id','day')->with('hotel',function($q){
-    //                 $q->select('id','name','banner','address','url','map_url','lunch_rate','dinner_rate')->with('roomHotelConfiguration',function($qq){
-    //                     $qq->select('id','hotel_id','room_id','pax','qty')->with('room',function($qqq){
-    //                         $qqq->select('id','room_name','rate');
-    //                     });
-    //                 });
-    //             })->where('price_plan_id',2)->orderBy('day','asc');
-    //         },
-    //         'packagePrice' => function($query){
-    //             $query->select('id','package_id','price_category_id','price','price_before_disc')->with('priceCategory', function($q){
-    //                 $q->select('id','temp_text','start','end')->orderBy('start','asc');
-    //             })->where('price_plan_id',2);
-    //         }
-    //     ]);
-    //     if($orderChannel == 'jvto'){
-    //         $data['packages'] = $data['packages']->where('is_publish', '1');
-    //     }
-    //     else{
-    //         $data['packages'] = $data['packages']->where('package_platform', 'klook');
-    //     }
+    function edit($id){
+        $booking = Booking::select('*','discount as discountValue')->with(['user','bookingDetail.package','discount','bookAddOn','bookingItinerary.bookHotel.hotel','bookingItinerary.bookHotel.bookRoom.roomHotel'])->where('id',$id)->first();
 
-    //     $data['packages'] = $data['packages']->get()
-    //     ->sortBy(fn($package) => $package->duration->day);
+        if($booking->agent_id == 1){
+            $channel = 'twt';
+        }
+        else if($booking->agent_id == 2){
+            if($booking->booking_category_id != 3){
+                $channel = 'jvto';
+            }
+            else{
+                $channel = 'klook';
+            }
+        }
+        $countries = Country::orderBy('long_name','asc')->get()->map(function($query){
+            return [
+                'value' => $query->id,
+                'label' => $query->long_name,
+            ];
+        });
+        $packages = []; 
+        if($channel != 'twt'){
+            $packages = Package::select('id','name','package_code','duration_id')->with('duration')->with(['packagePrice.priceCategory','itinerary','packageHotel' => function($q){
+                $q->where('price_plan_id',2);
+            }]);
+            if($channel == 'jvto'){
+                $packages->where('package_platform','!=','klook')->where('is_publish','1');
+            }else{
+                $packages->where('package_platform','klook');
+            }
+            $packages = $packages->orderBy('package_code','asc')->get();
+            $packages = $packages->map(function($query){
+                return [
+                    'value' => $query->id,
+                    'label' => $query->package_code." - ".$query->name,
+                    'day' => $query->duration->day,
+                    'night' => $query->duration->night,
+                    'prices' => $query->packagePrice->map(function($q){
+                        return [
+                            'start' => $q->priceCategory->start,
+                            'end' => $q->priceCategory->end,
+                            'pricePerPax' => $q->price,
+                        ];
+                    }),
+                    'itineraries' => $query->itinerary->map(function($q){
+                        return [
+                            'day' => $q->day,
+                            'activity_start_id' => $q->activity_start_id,
+                            'activity_end_id' => $q->activity_end_id,
+                            'itinerary' => $q->title,
+                        ];
+                    }),
+                    'hotels' => $query->packageHotel->map(function($q){
+                        return [
+                            'day' => $q->day,
+                            'hotel_id' => $q->hotel_id,
+                        ];
+                    })
+                ];
+            });
+        }
 
-    //     $data['car_configuration'] = CarConfiguration::select('id','car_id','pax','price','crew_jvto_role_id','crew_twt_role_id','crew_klook_role_id')
-    //     ->with(['car' => function($query){
-    //         $query->select('id','name');
-    //     },'crewJvtoRole' => function($query){
-    //         $query->select('id','order_channel_id','role','rate');
-    //     },'crewTwtRole' => function($query){
-    //         $query->select('id','order_channel_id','role','rate');
-    //     },'crewKlookRole' => function($query){
-    //         $query->select('id','order_channel_id','role','rate');
-    //     }]);
-    //     if($orderChannel == 'jvto'){
-    //         $data['car_configuration'] = $data['car_configuration']->where('crew_jvto_role_id','!=',null);
-    //     }
-    //     else{
-    //         $data['car_configuration'] = $data['car_configuration']->where('crew_klook_role_id','!=',null);
-    //     }
-    //     $data['car_configuration'] = $data['car_configuration']->orderBy('pax','asc')->get();
-    //     $data['others_activities'] = OthersActivity::select('id','name','unit','formula','price')->get();
-    //     $data['order_channel'] = $orderChannel;
-
-    //     // return $data['packages'];
-
-    //     $data['nationality'] = Country::get();
+        $startActivities = ActivityStart::select('id','name','description as itinerary','destination_id')->orderBy('name','asc')->get();
+        $endActivities = ActivityEnd::select('id','name','description as itinerary')->orderBy('name','asc')->get();
+        $hotels = Hotel::with('roomHotel')->select('id','name','destination_id')->orderBy('id','asc')->get();
+        $addOns = AddOn::select('id as value','add_on as label','price as defaultPrice')->orderBy('label','asc')->get();
+        $discountCodes = Discount::select('id','name','type','disc as value')->where('is_isic','0')->whereNull('user_id')->get();
         
-    //     return Inertia::render('Bookings/Create',['data' => $data]);
-    // }
+
+        return Inertia::render('Bookings/EditBooking', [
+            'booking' => $booking,
+            'channel' => strtoupper($channel),
+            'countries' => $countries,
+            'packages' => $packages,
+            'hotelOptions' => $hotels->map(function($query){
+                return [
+                    'id' => $query->id,
+                    'name' => $query->name,
+                    'destination_id' => $query->destination_id,
+                ];
+            }),
+            'hotelRoomOptions' => $hotels->groupBy('id')->map(function($rooms) {
+                return $rooms->flatMap(function($room) {
+                    return $room->roomHotel->map(function($roomDetail) {
+                        return [
+                            'id' => $roomDetail->id,
+                            'name' => $roomDetail->room_name,
+                        ];
+                    });
+                })->values();
+            }),
+            'startActivityOptions' => $startActivities,
+            'addOns' => $addOns,
+            'discountCodes' => $discountCodes,
+            'endActivityOptions' => $endActivities,
+        ]);
+    }
+
     function store(Request $request){
         // return $request->all();
         $user = new User;
@@ -295,8 +277,8 @@ class BookingController extends Controller
         $booking->agent_id = $agent_id;
         $booking->booking_category_id = $booking_category_id;
         $booking->booking_date = $request->bookingDate ? $request->bookingDate : date('Y-m-d');
-        $booking->due_date = $request->due_date;
-        $booking->invoice_code_origin = $request->invoice_code_origin;
+        $booking->due_date = $request->dueDate;
+        $booking->invoice_code_origin = $request->bookingCodeOrigin;
         $booking->booking_numb = $code;
         $booking->user_id = $user->id;
         $booking->travel_date_start = $request->travelDate;
@@ -314,6 +296,9 @@ class BookingController extends Controller
             $booking->meeting_point_arrival = $pickupLocation['station'];
             $booking->meeting_point_value = $pickupLocation['ticketNumber'];
         }
+        if($pickupLocation['location'] == 'Surabaya Hotel' || $pickupLocation['location'] == 'Bali Hotel'){
+            $booking->meeting_point_value = $pickupLocation['hotelName'];
+        }
         if($pickupLocation['location'] == 'Others'){
             $booking->pickup = $pickupLocation['customLocation'];
             $booking->meeting_point_value = $pickupLocation['customLocation'];
@@ -330,6 +315,9 @@ class BookingController extends Controller
         if($dropLocation['location'] == 'Surabaya Train Station'){
             $booking->drop_point_arrival = $dropLocation['station'];
             $booking->drop_point_value = $dropLocation['ticketNumber'];
+        }
+        if($dropLocation['location'] == 'Surabaya Hotel' || $dropLocation['location'] == 'Bali Hotel'){
+            $booking->drop_point_value = $dropLocation['hotelName'];
         }
         if($dropLocation['location'] == 'Others'){
             $booking->drop = $dropLocation['customLocation'];
@@ -366,10 +354,10 @@ class BookingController extends Controller
         $booking->url_name = $user->name.$user->id;
         $booking->url = md5($booking->url_name);
 
-        if ($request->isShuttle) {
+        if ($request->isShuttle == 'true') {
             $booking->is_shuttle = '1';
         }
-        if ($request->isSendWa) {
+        if ($request->isSendWa == 'true') {
             $booking->is_send_wa = '1';
             $booking->wa_schedule_trip_information = date('Y-m-d 20:00:00', strtotime($booking->travel_date_start . " -2 days"));
             $booking->wa_schedule_trip_media = date('Y-m-d 15:00:00', strtotime($booking->travel_date_start . " +$nights days"));
@@ -575,6 +563,446 @@ class BookingController extends Controller
         return back()->with('message', 'Booking saved successfully');
     }
 
+    function update(Request $request){
+        $booking = Booking::where('id', $request->booking_id)->first();
+        $user = User::find($booking->user_id);
+        $user->name = $request->customer;
+        if($request->channel == 'TWT'){
+            $agent_id = 1;
+            $booking_category_id = NULL;
+            $attachment_id = 6;
+        }
+        else{
+            $user->email = $request->email;
+            $user->phone = $request->phone;
+            $user->country_id = $request->nationality;
+            $agent_id = 2;
+            if($request->channel == 'JVTO'){
+                $booking_category_id = $request->type;
+            }
+            else{
+                $booking_category_id = 3;
+                $attachment_id = 7;
+            }
+        }
+        $user->save();
+
+        $monthOld = date('Y-m', strtotime($booking->travel_date_start));
+        $ym = date('Y-m', strtotime($request->travelDate));
+        if($monthOld != $ym){
+            $getBooking = Booking::where('agent_id', $agent_id)->where('travel_date_start', 'like', '%' . $ym . '%');
+            $getBooking = $getBooking->orderBy('booking_numb', 'desc');
+            $count = $getBooking->count();
+            if ($count == 0) {
+                $code = '001';
+            } else {
+                $getBooking = $getBooking->first();
+                $code = (int) $getBooking->booking_numb + 1;
+                $code = sprintf("%03s", $code);
+            }
+    
+            $invoiceCode = [
+                'year' => date("y", strtotime($request->travelDate)),
+                'month' => date("m", strtotime($request->travelDate)),
+                'code' => $code
+            ];        
+            $invoice_number = "JVR/$invoiceCode[code]/$invoiceCode[month]/$invoiceCode[year]";        }
+        else{
+            $invoice_number = $booking->booking_code;
+            $code = $booking->booking_numb;
+        }
+
+        $packageDays = json_decode($request->packageDays, true);
+        $pickupLocation = json_decode($request->pickupLocation, true);
+        $dropLocation = json_decode($request->dropLocation, true);
+        $summary = json_decode($request->summary, true);
+        $discount = json_decode($request->discount, true);
+        $addOns = json_decode($request->addOns, true);
+        $tshirts = json_decode($request->sizes, true);
+        $days = count($packageDays);
+        $nights = $days-1;
+
+        $booking->booking_code = $invoice_number;
+        $booking->custom_code = $invoice_number;
+        $booking->booking_category_id = $booking_category_id;
+        $booking->booking_date = $request->bookingDate ? $request->bookingDate : date('Y-m-d');
+        $booking->due_date = $request->dueDate;
+        $booking->invoice_code_origin = $request->bookingCodeOrigin;
+        $booking->booking_numb = $code;
+        $booking->user_id = $user->id;
+        $booking->travel_date_start = $request->travelDate;
+        $booking->travel_date_end = date('Y-m-d', strtotime($booking->travel_date_start . " +$nights days"));
+        $booking->package_duration = $days;
+        $booking->total_pax = $request->numOfPax;
+
+        //pickup
+        $booking->meeting_point = $pickupLocation['location'];
+        if($pickupLocation['location'] == 'Surabaya Airport' || $pickupLocation['location'] == 'Denpasar Airport'){
+            $booking->meeting_point_arrival = $pickupLocation['terminal'];
+            $booking->meeting_point_value = $pickupLocation['ticketNumber'];
+        }
+        if($pickupLocation['location'] == 'Surabaya Train Station'){
+            $booking->meeting_point_arrival = $pickupLocation['station'];
+            $booking->meeting_point_value = $pickupLocation['ticketNumber'];
+        }
+        if($pickupLocation['location'] == 'Surabaya Hotel' || $pickupLocation['location'] == 'Bali Hotel'){
+            $booking->meeting_point_value = $pickupLocation['hotelName'];
+        }
+        if($pickupLocation['location'] == 'Others'){
+            $booking->pickup = $pickupLocation['customLocation'];
+            $booking->meeting_point_value = $pickupLocation['customLocation'];
+        }
+        else{
+            $booking->pickup = $pickupLocation['location']." ".$booking->meeting_point_arrival." ".$booking->meeting_point_value;
+        }
+        //drop
+        $booking->drop_point = $dropLocation['location'];
+        if($dropLocation['location'] == 'Surabaya Airport' || $dropLocation['location'] == 'Denpasar Airport'){
+            $booking->drop_point_arrival = $dropLocation['terminal'];
+            $booking->drop_point_value = $dropLocation['ticketNumber'];
+        }
+        if($dropLocation['location'] == 'Surabaya Train Station'){
+            $booking->drop_point_arrival = $dropLocation['station'];
+            $booking->drop_point_value = $dropLocation['ticketNumber'];
+        }
+        if($dropLocation['location'] == 'Surabaya Hotel' || $dropLocation['location'] == 'Bali Hotel'){
+            $booking->drop_point_value = $dropLocation['hotelName'];
+        }
+        if($dropLocation['location'] == 'Others'){
+            $booking->drop = $dropLocation['customLocation'];
+            $booking->drop_point_value = $dropLocation['customLocation'];
+        }
+        else{
+            $booking->drop = $dropLocation['location']." ".$booking->drop_point_arrival." ".$booking->meeting_point_value;
+        }
+
+        $booking->pickup_time = $request->pickupTime;
+        $booking->drop_time = $request->dropTime;
+
+        if ($summary['discount'] != 0) {
+            if($discount['discountId']){
+                $booking->discount_id = $discount['discountId'];
+            }
+            $booking->discount_type = $discount['type'];
+            $booking->discount = $discount['value'];
+        }
+
+        $booking->grand_total_before_disc = $summary['totalPackage'];
+        $booking->add_on_total = $summary['totalAddOn'];
+
+        $booking->grand_total = $summary['totalPackage'] - $summary['discount'];
+
+        $booking->balance = $booking->grand_total + $booking->add_on_total -  $booking->payment;
+
+        if ($request->isShuttle == 'true') {
+            $booking->is_shuttle = '1';
+        }
+        else{
+            $booking->is_shuttle = '0';
+        }
+        if ($request->isSendWa == 'true') {
+            $booking->is_send_wa = '1';
+            $booking->wa_schedule_trip_information = date('Y-m-d 20:00:00', strtotime($booking->travel_date_start . " -2 days"));
+            $booking->wa_schedule_trip_media = date('Y-m-d 15:00:00', strtotime($booking->travel_date_start . " +$nights days"));
+            $booking->wa_schedule_trip_media_crew = date('Y-m-d 15:00:00', strtotime($booking->travel_date_start . " -1 days"));
+        }
+        else{
+            $booking->is_send_wa = '0';
+            $booking->wa_schedule_trip_information = null;
+            $booking->wa_schedule_trip_media = null;
+            $booking->wa_schedule_trip_media_crew = null;
+        }
+
+        $booking->save();
+
+        if ($request->hasFile('bookingFileOrigin')) {
+            $fileName = time() . '.' . $request->file('bookingFileOrigin')->extension();
+            $request->file('bookingFileOrigin')->move(public_path('assets/customer-document'), $fileName);
+        
+            // Cek apakah sudah ada dokumen untuk booking_id dan attachment_type_id
+            $bookingDocument = BookingDocument::where('booking_id', $booking->id)
+                ->where('attachment_type_id', $attachment_id)
+                ->first();
+        
+            // Jika ada, hapus file lama terlebih dahulu
+            if ($bookingDocument && $bookingDocument->file) {
+                $oldFilePath = public_path('assets/customer-document/' . $bookingDocument->file);
+                if (file_exists($oldFilePath)) {
+                    unlink($oldFilePath);
+                }
+            } else {
+                // Jika tidak ada dokumen sebelumnya, buat yang baru
+                $bookingDocument = new BookingDocument;
+                $bookingDocument->booking_id = $booking->id;
+                $bookingDocument->user_id = $booking->user_id;
+            }
+        
+            // Simpan data file baru
+            $bookingDocument->attachment_type_id = $attachment_id;
+            $bookingDocument->file = $fileName;
+            $bookingDocument->save();
+        }
+        
+        if ($request->packageName) {
+            $package = Package::find($request->packageName);
+            $invoiceDescription = $package->name;
+            $packageId = $package->id;
+        } else {
+            $invoiceDescription = $booking->package_duration . " Days " . $nights . " Night Package";
+            $packageId = null;
+        }
+
+        $invoiceHistory[] = [
+            'booking_id' => $booking->id,
+            'description' => $invoiceDescription,
+            'rate' => $summary['pricePerPax'],
+            'qty' => $booking->total_pax,
+            'line_total' => $summary['totalPackage'],
+            'type' => 'package',
+            'parent_id' => $packageId,
+        ];
+
+        BookAddOn::where('booking_id',$booking->id)->delete();
+        InvoiceHistory::where('booking_id',$booking->id)->delete();
+        if ($summary['totalAddOn']) {
+            foreach ($addOns as $key => $value) {
+                $bookAddOn = new BookAddOn();
+                $bookAddOn->add_on_id = $value['addOn'];
+                $bookAddOn->booking_id = $booking->id;
+                $bookAddOn->price = $value['price'];
+                $bookAddOn->qty = $value['quantity'];
+                $bookAddOn->save();
+
+
+                $getAddOn = AddOn::find($bookAddOn->add_on_id);
+
+                $invoiceHistory[] = [
+                    'booking_id' => $booking->id,
+                    'description' => $getAddOn->add_on,
+                    'rate' => $bookAddOn->price,
+                    'qty' => $bookAddOn->qty,
+                    'line_total' => $bookAddOn->price * $bookAddOn->qty,
+                    'type' => 'add on',
+                    'parent_id' => $bookAddOn->add_on_id,
+                ];
+            }
+        }    
+        
+        $bookingDetail = BookingDetail::where('booking_id',$booking->id)->first();
+        $bookingDetail->travel_date_start = $booking->travel_date_start;
+        $bookingDetail->travel_date_end = $booking->travel_date_end;
+        $bookingDetail->pax = $booking->total_pax;
+        $bookingDetail->xss = $tshirts['xss'] ? $tshirts['xss'] : 0;
+        $bookingDetail->xxs = $tshirts['xxs'] ? $tshirts['xxs'] : 0;
+        $bookingDetail->xs = $tshirts['xs'] ? $tshirts['xs'] : 0;
+        $bookingDetail->s = $tshirts['s'] ? $tshirts['s'] : 0;
+        $bookingDetail->m = $tshirts['m'] ? $tshirts['m'] : 0;
+        $bookingDetail->l = $tshirts['l'] ? $tshirts['l'] : 0;
+        $bookingDetail->xl = $tshirts['xl'] ? $tshirts['xl'] : 0;
+        $bookingDetail->xxl = $tshirts['xxl'] ? $tshirts['xxl'] : 0;
+        $bookingDetail->xxxl = $tshirts['xxxl'] ? $tshirts['xxxl'] : 0;
+        $bookingDetail->total = 0;
+        $bookingDetail->save();
+        
+        $startSchedule = 0;
+        $daySchedule = date('Y-m-d 20:00:00', strtotime($booking->travel_date_start . " -1 days"));
+        $day = 0;
+
+        WaItinerary::where('booking_id',$booking->id)->delete();
+        BookRoomHotel::where('booking_id',$booking->id)->delete();
+        BookHotel::where('booking_id',$booking->id)->delete();
+        BookingItinerary::where('booking_id',$booking->id)->delete();
+        foreach ($packageDays as $key => $value) {
+            $day++;
+            if ($value['startActivity'] && $value['startActivity'] != '') {
+                $getStart = ActivityStart::find($value['startActivity']);
+                $getEnd = ActivityEnd::find($value['endActivity']);
+
+                if ($getStart->destination_id == 2) {
+                    $updateAtIjen = Booking::find($booking->id);
+                    $plus = $day - 1;
+                    $updateAtIjen->at_bondowoso = date('Y-m-d', strtotime($booking->travel_date_start . " +$plus days"));
+                    $updateAtIjen->save();
+                }
+
+                if ($getStart->destination_id == 1) {
+                    $updateAtBromo = Booking::find($booking->id);
+                    $plus = $day - 1;
+                    $updateAtBromo->at_bromo = date('Y-m-d', strtotime($booking->travel_date_start . " +$plus days"));
+                    $updateAtBromo->save();
+                }
+                $getEndName = '';
+                $getEndId = null;
+                if ($getEnd) {
+                    $getEndName = $getEnd->name;
+                    $getEndId = $getEnd->id;
+                }
+                $bookingItinerary = new BookingItinerary();
+                $bookingItinerary->booking_id = $booking->id;
+                $bookingItinerary->day = $day;
+                $bookingItinerary->activity_start_id = $getStart->id;
+                $bookingItinerary->activity_end_id = $getEndId;
+                $bookingItinerary->itinerary = $getStart->name . ' - ' . $getEndName;
+                $bookingItinerary->activity = $value['itinerary'];
+                $bookingItinerary->b = $value['meals']['breakfast'] ? '1' : '0';
+                $bookingItinerary->l = $value['meals']['lunch'] ? '1' : '0';
+                $bookingItinerary->d = $value['meals']['dinner'] ? '1' : '0';
+                $bookingItinerary->save();
+                if ($request->isSendWa) {
+                    $waItinerary = new WaItinerary();
+                    $waItinerary->booking_id = $booking->id;
+                    $waItinerary->user_id = $booking->user_id;
+                    $waItinerary->day = $day;
+                    $waItinerary->message = "*" . $bookingItinerary->itinerary . "*{br}" . $bookingItinerary->activity;
+                    $waItinerary->schedule = date('Y-m-d 20:00:00', strtotime($daySchedule . " +$startSchedule days"));
+                    $waItinerary->save();
+                }
+                if ($value['hotel'] && $value['hotel'] != '') {
+                    $bookHotel = new BookHotel();
+                    $bookHotel->booking_id = $booking->id;
+                    $bookHotel->booking_itinerary_id = $bookingItinerary->id;
+                    $bookHotel->hotel_id = $value['hotel'];
+                    $bookHotel->b = $value['meals']['breakfast'] ? '1' : '0';
+                    $bookHotel->l = $value['meals']['lunch'] ? '1' : '0';
+                    $bookHotel->d = $value['meals']['dinner'] ? '1' : '0';
+                    $bookHotel->status = NULL;
+                    $bookHotel->save();
+
+                    if ($getStart->destination_id == 1) {
+                        $updateAtBromo = Booking::find($booking->id);
+                        $updateAtBromo->bromo_hotel_id = $value['hotel'];
+                        $updateAtBromo->bromo_hotel_checkin = date('Y-m-d', strtotime($updateAtBromo->at_bromo . " -1 days"));
+                        $updateAtBromo->save();
+                    }
+
+                    $hotelRooms = '';
+                    $currentRoomIndex = 0;
+
+                    foreach ($value['rooms'] as $keyRoom => $valueRoom) {
+                        if($valueRoom['room'] && $valueRoom['room'] != ''){
+                            $getRoomDetails = RoomHotel::find($valueRoom['room']);
+    
+                            $bookRoom = new BookRoomHotel();
+                            $bookRoom->booking_id = $booking->id;
+                            $bookRoom->booking_itinerary_id = $bookingItinerary->id;
+                            $bookRoom->book_hotel_id = $bookHotel->id;
+                            $bookRoom->room_hotel_id = $valueRoom['room'];
+                            $bookRoom->quantity = $valueRoom['quantity'];
+                            $bookRoom->subtotal = $bookRoom->quantity * $getRoomDetails->rate;
+                            $bookRoom->save();
+                        }
+                    }
+                }
+                $startSchedule++;
+            }
+        }
+
+        foreach ($invoiceHistory as $key => $value) {
+            $invoiceHistory = new InvoiceHistory();
+            $invoiceHistory->booking_id = $value['booking_id'];
+            $invoiceHistory->description = $value['description'];
+            $invoiceHistory->rate = $value['rate'];
+            $invoiceHistory->qty = $value['qty'];
+            $invoiceHistory->line_total = $value['line_total'];
+            $invoiceHistory->type = $value['type'];
+            $invoiceHistory->parent_id = $value['parent_id'];
+            $invoiceHistory->save();
+        }
+
+        if($request->channel != 'TWT' ){
+            $this->updateExpense($booking->id);
+        }
+
+        return back()->with('message', 'Booking saved successfully');
+    }
+
+    function updateExpense($id){
+        $booking = Booking::where('id',$id)->first();
+        $pax = $booking->total_pax;
+
+        $totalAccommodations = 0;
+        $totalDestinations = 0;
+        $totalOthers = 0;
+        $totalResources = 0;
+
+
+        $bookRoom = BookHotel::select('id','booking_id','hotel_id','b','l','d','is_paid','is_debt')->with(['hotel' => function($query){
+            $query->select('id','name','lunch_rate','dinner_rate');
+        },'bookRoom' => function($query){
+            $query->select('id','book_hotel_id','room_hotel_id','quantity','subtotal')->with(['roomHotel' => function($q){
+                $q->select('id','room_name','rate');
+            }]);
+        },'bookHotelMeal'])->where('booking_id',$id)
+        ->get()
+        ->map(function($booking) use($pax,&$totalAccommodations) {
+            if($booking->l == '1'){
+                $cekBookHotelMeals = BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','lunch')->first();
+                
+                $lunch = $cekBookHotelMeals;
+                if(!$cekBookHotelMeals){
+                    $lunch = new BookHotelMeal;
+                    $lunch->book_hotel_id = $booking->id;
+                    $lunch->booking_id = $booking->booking_id;
+                    $lunch->hotel_id = $booking->hotel_id;
+                }
+                $lunch->meals = 'lunch';
+                $lunch->qty = $pax;
+                $lunch->price = $booking->hotel->lunch_rate;
+                $lunch->subtotal = $pax*$booking->hotel->lunch_rate;
+                $lunch->save();
+                $lunchTotal = $lunch->subtotal;
+
+                $totalAccommodations += $lunchTotal;
+            }
+            else{
+                BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','lunch')->delete();
+            }
+            if($booking->d == '1'){
+                $cekBookHotelMeals = BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','dinner')->first();
+ 
+                $dinner = $cekBookHotelMeals;
+                if(!$cekBookHotelMeals){
+                    $dinner = new BookHotelMeal;
+                    $dinner->book_hotel_id = $booking->id;
+                    $dinner->booking_id = $booking->booking_id;
+                    $dinner->hotel_id = $booking->hotel_id;
+                }
+                $dinner->meals = 'dinner';
+                $dinner->qty = $pax;
+                $dinner->price = $booking->hotel->dinner_rate;
+                $dinner->subtotal = $pax*$booking->hotel->dinner_rate;
+                $dinner->save();
+                
+                $dinnerTotal = $dinner->subtotal;
+                $totalAccommodations += $dinnerTotal;
+
+            }
+            else{
+                BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','dinner')->delete();
+            }
+
+            $booking->bookRoom->map(function($room) use(&$totalAccommodations) {
+                if ($room->subtotal === null) {
+                    $room->subtotal = $room->roomHotel->rate * $room->quantity;
+                    $room->save();
+                }
+                $totalAccommodations += $room->subtotal;
+                return $room;
+            });
+            return $booking;
+        });
+
+        $bookDestinationActivity = BookDestinationActivity::where('booking_id',$id)->sum('subtotal');
+        $bookOthers = BookOthersActivity::where('booking_id',$id)->sum('subtotal');
+        $bookCarActivity = BookCarActivity::where('booking_id',$id)->sum('subtotal');
+        $bookCrewActivity = BookCrewActivity::where('booking_id',$id)->sum('subtotal');
+
+        $totalExpense = $totalAccommodations + $bookDestinationActivity + $bookOthers + $bookCarActivity + $bookCrewActivity;
+
+        $booking->expense_internal_total = $totalExpense;
+        $booking->save();
+    }
+    
     function generateExpense($id){
         $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id')->with(['user' => function($query){
             $query->select('id','name');
@@ -602,19 +1030,21 @@ class BookingController extends Controller
         ->map(function($booking) use($pax,&$totalAccommodations) {
             if($booking->l == '1'){
                 $cekBookHotelMeals = BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','lunch')->first();
-                $lunchTotal = $cekBookHotelMeals && $cekBookHotelMeals->subtotal ? $cekBookHotelMeals->subtotal : 0;;
+                
+                $lunch = $cekBookHotelMeals;
                 if(!$cekBookHotelMeals){
                     $lunch = new BookHotelMeal;
                     $lunch->book_hotel_id = $booking->id;
                     $lunch->booking_id = $booking->booking_id;
                     $lunch->hotel_id = $booking->hotel_id;
-                    $lunch->meals = 'lunch';
-                    $lunch->qty = $pax;
-                    $lunch->price = $booking->hotel->lunch_rate;
-                    $lunch->subtotal = $pax*$booking->hotel->lunch_rate;
-                    $lunch->save();
-                    $lunchTotal = $lunch->subtotal;
                 }
+                $lunch->meals = 'lunch';
+                $lunch->qty = $pax;
+                $lunch->price = $booking->hotel->lunch_rate;
+                $lunch->subtotal = $pax*$booking->hotel->lunch_rate;
+                $lunch->save();
+                $lunchTotal = $lunch->subtotal;
+
                 $totalAccommodations += $lunchTotal;
             }
             else{
@@ -622,21 +1052,21 @@ class BookingController extends Controller
             }
             if($booking->d == '1'){
                 $cekBookHotelMeals = BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','dinner')->first();
-                $dinnerTotal = $cekBookHotelMeals && $cekBookHotelMeals->subtotal ? $cekBookHotelMeals->subtotal : 0;;
-                
+ 
+                $dinner = $cekBookHotelMeals;
                 if(!$cekBookHotelMeals){
                     $dinner = new BookHotelMeal;
                     $dinner->book_hotel_id = $booking->id;
                     $dinner->booking_id = $booking->booking_id;
                     $dinner->hotel_id = $booking->hotel_id;
-                    $dinner->meals = 'dinner';
-                    $dinner->qty = $pax;
-                    $dinner->price = $booking->hotel->dinner_rate;
-                    $dinner->subtotal = $pax*$booking->hotel->dinner_rate;
-                    $dinner->save();
-
-                    $dinnerTotal = $dinner->subtotal;
                 }
+                $dinner->meals = 'dinner';
+                $dinner->qty = $pax;
+                $dinner->price = $booking->hotel->dinner_rate;
+                $dinner->subtotal = $pax*$booking->hotel->dinner_rate;
+                $dinner->save();
+                
+                $dinnerTotal = $dinner->subtotal;
                 $totalAccommodations += $dinnerTotal;
 
             }
@@ -717,9 +1147,10 @@ class BookingController extends Controller
                         $bookDestinationActivity->subtotal = $bookDestinationActivity->qty*$activity->price;
                         $bookDestinationActivity->status_paid = "unpaid";
                         $bookDestinationActivity->is_debt = "0";
-                        $bookDestinationActivity->save();
 
                         $totalDestinations += $bookDestinationActivity->subtotal;
+                        $bookDestinationActivity->save();
+
                     });
                 }
                 if(!empty($itinerary->itineraryDestination->secondDestination->activity)){
@@ -843,6 +1274,13 @@ class BookingController extends Controller
 
         $booking->expense_internal_total = $totalExpense;
         $booking->save();
+
+        return [
+            'accomodations' => $totalAccommodations,
+            'destinations' => $totalDestinations,
+            'others' => $totalOthers,
+            'resources' => $totalResources,
+        ];
     }
     // function store(Request $request){
     //     // return dd($request->all());

@@ -1,4 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import Swal from '@/utils/swal';
+import { router } from '@inertiajs/react';
 import Authenticated from '@/Layouts/Main';
 
 const formatCurrency = (value) => {
@@ -102,7 +104,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                 {formatCurrency(roomStates[index].quantity * roomStates[index].rate)}
               </td>
               <td className="px-3">
-                {!isPaid && (
+                {/* {!isPaid && (
                   <button 
                     onClick={() => handleDelete(index)}
                     className="text-red-600 hover:text-red-800"
@@ -111,7 +113,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                   </button>
-                )}
+                )} */}
               </td>
             </tr>
           ))}
@@ -236,7 +238,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                  {formatCurrency(mealStates.lunch.qty * mealStates.lunch.price)}
                </td>
                <td className="px-3">
-                 {!isPaid && (
+                 {/* {!isPaid && (
                    <button 
                      onClick={() => handleDelete('lunch')}
                      className="text-red-600 hover:text-red-800"
@@ -245,7 +247,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                      </svg>
                    </button>
-                 )}
+                 )} */}
                </td>              
              </tr>
            )}
@@ -278,7 +280,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                  {formatCurrency(mealStates.dinner.qty * mealStates.dinner.price)}
                </td>
                <td className="px-3">
-                 {!isPaid && (
+                 {/* {!isPaid && (
                    <button 
                      onClick={() => handleDelete('dinner')}
                      className="text-red-600 hover:text-red-800"
@@ -287,7 +289,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                      </svg>
                    </button>
-                 )}
+                 )} */}
                </td>              
              </tr>
            )}
@@ -464,7 +466,7 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
           <div className="flex gap-3">
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
             <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span>
-            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Debt: {formatCurrency(totals.debtAmount)}</span>
+            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Hutang: {formatCurrency(totals.debtAmount)}</span>
             <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span>
           </div>
         </div>
@@ -507,7 +509,7 @@ const BookingInfo = ({ booking }) => {
           <div>
             <h2 className="font-bold text-lg">{booking.user.name}</h2>
             <p className="text-gray-600 text-sm">
-              {booking.booking_detail[0]?.package?.name || 'No Package Selected'}
+              {booking.booking_detail[0]?.package?.name || `${booking.package_duration}D ${booking.package_duration-1}N Packages`}
             </p>
           </div>
           <div className="text-right">
@@ -873,7 +875,7 @@ const DestinationsCard = ({ destinations, onTotalsChange = () => {},listForNewIt
           <div className="flex gap-3">
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
             <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span>
-            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Debt: {formatCurrency(totals.debtAmount)}</span>
+            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Hutang: {formatCurrency(totals.debtAmount)}</span>
             <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span>
           </div>
         </div>
@@ -1154,7 +1156,7 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
           <div className="flex gap-3">
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
             <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span>
-            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Debt: {formatCurrency(totals.debtAmount)}</span>
+            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Hutang: {formatCurrency(totals.debtAmount)}</span>
             <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span>
           </div>
         </div>
@@ -1523,7 +1525,7 @@ const ResourceCard = ({ resources, onTotalsChange = () => {},listForNewItemsCars
           <div className="flex gap-3">
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
             <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span>
-            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Debt: {formatCurrency(totals.debtAmount)}</span>
+            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Hutang: {formatCurrency(totals.debtAmount)}</span>
             <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span>
           </div>
         </div>
@@ -1886,7 +1888,7 @@ const SummaryCard = ({ totals }) => {
             <div className="text-2xl font-bold text-green-900">{formatCurrency(totals.paidAmount)}</div>
           </div>
           <div className="p-4 rounded-lg bg-red-100">
-            <div className="text-red-800 font-medium">Total Debt</div>
+            <div className="text-red-800 font-medium">Total Hutang</div>
             <div className="text-2xl font-bold text-red-900">{formatCurrency(totals.debtAmount)}</div>
           </div>
           <div className="p-4 rounded-lg bg-yellow-100">
@@ -1911,6 +1913,8 @@ export default function EditExpenseManager({ booking,accommodations,destinations
   const [resourceState, setResourceState] = useState({ cars: [], crews: [] });
 
   const handleSubmit = () => {
+    // console.log(resourceState);
+    
     const submitData = {
       booking_id: booking.id,
       accommodations: accommodationState.hotelData?.map(hotel => ({
@@ -1934,6 +1938,8 @@ export default function EditExpenseManager({ booking,accommodations,destinations
         destination: name,
         activities: items.map(item => ({
           id: item.id,
+          destination_id : item.destination_id,
+          destination_activity_id : item.destination_activity_id,
           quantity: item.quantity,
           price: item.price,
           status_paid: item.isPaid ? 'paid' : 'unpaid',
@@ -1953,6 +1959,7 @@ export default function EditExpenseManager({ booking,accommodations,destinations
       resources: {
         cars: resourceState.cars?.map((car, index) => ({
           id: car.id,
+          car_id: resourceState.cars[index].car.id,
           quantity: resourceState.carStates[index].quantity,
           price: resourceState.carStates[index].price,
           status_paid: resourceState.carStates[index].isPaid ? 'paid' : 'unpaid',
@@ -1960,6 +1967,7 @@ export default function EditExpenseManager({ booking,accommodations,destinations
         })) || [],
         crews: resourceState.crews?.map((crew, index) => ({
           id: crew.id,
+          crew_role_id: resourceState.crews[index].crew_role.id,
           quantity: resourceState.crewStates[index].quantity,
           price: resourceState.crewStates[index].price,
           status_paid: resourceState.crewStates[index].isPaid ? 'paid' : 'unpaid',
@@ -1968,7 +1976,43 @@ export default function EditExpenseManager({ booking,accommodations,destinations
       },
       summary: summaryTotals
     };
-  
+
+    router.post(`/finance/expense-manager/${booking.id}/update`, submitData, {
+      onBefore: () => {
+          // Show loading state
+          Swal.fire({
+              title: 'Processing...',
+              html: 'Please wait while we process your expense.',
+              allowOutsideClick: false,
+              didOpen: () => {
+                  Swal.showLoading();
+              }
+          });
+      },
+      onSuccess: () => {
+          // Show success message
+          Swal.fire({
+              title: 'Success!',
+              text: 'Expense has been successfully submitted',
+              icon: 'success'
+          }).then(() => {
+              // Redirect to booking list
+              router.visit(`/finance/expense-manager/${booking.id}/edit`);
+          });
+      },
+      onError: (errors) => {
+          // Show error message
+          Swal.fire({
+              title: 'Error!',
+              text: 'There was a problem submitting your expense. Please check your input and try again.',
+              icon: 'error'
+          });
+          console.error('Submission errors:', errors);
+      },
+      preserveState: true,
+      preserveScroll: true
+    });
+
     console.log('Data to submit:', submitData);
   };
   return (

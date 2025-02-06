@@ -580,9 +580,9 @@ const BookingDropdown = () => {
   const dropdownRef = useRef(null);
 
   const options = [
-    { label: 'JVTO', href: '/bookings/create/jvto' },
-    { label: 'KLOOK', href: '/bookings/create/klook' },
-    { label: 'TWT', href: '/bookings/create/twt' }
+    { label: 'JVTO', href: '/bookings/add-booking/jvto' },
+    { label: 'KLOOK', href: '/bookings/add-booking/klook' },
+    { label: 'TWT', href: '/bookings/add-booking/twt' }
   ];
 
   useEffect(() => {

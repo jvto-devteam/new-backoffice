@@ -418,11 +418,15 @@ export default function ExpenseManager({booking,summary,packages,filters}){
                                     <div className="space-y-1">
                                         <div className=" flex justify-between text-green-600">
                                             <span>Paid:</span>
-                                            <span>{formatCurrency(data.grand_total)}</span>
+                                            <span>{formatCurrency(data.expense_paid)}</span>
                                         </div>
                                         <div className="flex justify-between  text-red-600">
                                             <span>Unpaid:</span>
-                                            <span>{formatCurrency(data.balance)}</span>
+                                            <span>{formatCurrency(data.expense_balance)}</span>
+                                        </div>
+                                        <div className="flex justify-between  text-red-600">
+                                            <span>Debt:</span>
+                                            <span>{formatCurrency(data.expense_debt)}</span>
                                         </div>
                                     </div>
                                 </TableCell>

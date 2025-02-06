@@ -915,7 +915,13 @@ class BookingController extends Controller
         }
 
         if($request->channel != 'TWT' && !$booking->expense_file_internal){
-            $this->updateExpense($booking->id);
+            $cekDestinations = BookDestinationActivity::where('booking_id',$booking->id)->count();
+            if($cekDestinations == 0){
+                $this->generateExpense($booking->id);
+            }
+            else{
+                $this->updateExpense($booking->id);
+            }
         }
 
         return back()->with('message', 'Booking saved successfully');
@@ -1001,10 +1007,27 @@ class BookingController extends Controller
         $bookOthers = BookOthersActivity::where('booking_id',$id)->sum('subtotal');
         $bookCarActivity = BookCarActivity::where('booking_id',$id)->sum('subtotal');
         $bookCrewActivity = BookCrewActivity::where('booking_id',$id)->sum('subtotal');
+        
+        $bookDestinationActivityPaid = BookDestinationActivity::where('booking_id',$id)->where('status_paid','paid')->sum('subtotal');
+        $bookOthersPaid = BookOthersActivity::where('booking_id',$id)->where('status_paid','paid')->sum('subtotal');
+        $bookCarActivityPaid = BookCarActivity::where('booking_id',$id)->where('status_paid','paid')->sum('subtotal');
+        $bookCrewActivityPaid = BookCrewActivity::where('booking_id',$id)->where('status_paid','paid')->sum('subtotal');
+        
+        $bookDestinationActivityDebt = BookDestinationActivity::where('booking_id',$id)->where('is_debt','1')->sum('subtotal');
+        $bookOthersDebt = BookOthersActivity::where('booking_id',$id)->where('is_debt','1')->sum('subtotal');
+        $bookCarActivityDebt = BookCarActivity::where('booking_id',$id)->where('is_debt','1')->sum('subtotal');
+        $bookCrewActivityDebt = BookCrewActivity::where('booking_id',$id)->where('is_debt','1')->sum('subtotal');
 
         $totalExpense = $totalAccommodations + $bookDestinationActivity + $bookOthers + $bookCarActivity + $bookCrewActivity;
 
+        $totalExpensePaid = $bookDestinationActivityPaid + $bookOthersPaid + $bookCarActivityPaid + $bookCrewActivityPaid;
+        $totalExpenseDebt = $bookDestinationActivityDebt + $bookOthersDebt + $bookCarActivityDebt + $bookCrewActivityDebt;
+
         $booking->expense_internal_total = $totalExpense;
+        $booking->total_expense_paid = $totalExpensePaid;
+        $booking->total_expense_balance = $totalExpense - $totalExpensePaid;
+        $booking->total_expense_debt = $totalExpenseDebt;
+
         $booking->save();
     }
     
@@ -1278,6 +1301,10 @@ class BookingController extends Controller
         $totalExpense = $totalAccommodations + $totalDestinations + $totalOthers + $totalResources;
 
         $booking->expense_internal_total = $totalExpense;
+        $booking->total_expense_paid = 0;
+        $booking->total_expense_balance = $totalExpense;
+        $booking->total_expense_debt = 0;
+
         $booking->save();
 
         return [

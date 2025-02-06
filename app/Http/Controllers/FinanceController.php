@@ -119,7 +119,7 @@ class FinanceController extends Controller
         $package = $request->input('package');
         $channel = $request->input('channel');
         $perPage = 10;
-        $query = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','payment','expense_internal_total')->with(['user.country','bookingDetail' => function($q){
+        $query = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','payment','expense_internal_total','total_expense_paid','total_expense_balance','total_expense_debt')->with(['user.country','bookingDetail' => function($q){
             $q->select('id','package_id','booking_id')->with('package',function($qq){
                 $qq->select('id','name','package_code');
             });
@@ -155,8 +155,8 @@ class FinanceController extends Controller
         $summary = [
             'bookings' => $query->count(),
             'total_expense' => $query->sum('expense_internal_total'),
-            'paid' => 1000000,
-            'unpaid' => 2000000,            
+            'paid' => $query->sum('total_expense_paid'),
+            'unpaid' => $query->sum('total_expense_balance'),            
         ];
        
         $booking = $query->paginate($perPage)
@@ -172,6 +172,9 @@ class FinanceController extends Controller
                     'total_per_pax' => $booking->grand_total/$booking->total_pax,
                     'total' => $booking->grand_total,
                     'expense' => $booking->expense_internal_total,
+                    'expense_paid' => $booking->total_expense_paid,
+                    'expense_balance' => $booking->total_expense_balance,
+                    'expense_debt' => $booking->total_expense_debt,
                     'total_add_on' => $booking->book_add_on_total,
                     'grand_total' => $booking->grand_total+$booking->book_add_on_total,
                     'payment' => $booking->payment,
@@ -507,5 +510,125 @@ class FinanceController extends Controller
             'others' => $others,
             'listForNewItems' => $listForNewItems
         ]);
+    }
+    function updateExpense(Request $request){
+        $booking = Booking::where('id',$request->booking_id)->first();
+        if($request->accommodations){
+            foreach ($request->accommodations as $key => $value) {
+                $bookHotel = BookHotel::find($value['hotel_id']);
+                $bookHotel->is_paid = $value['is_paid'];
+                $bookHotel->is_debt = $value['is_debt'];
+                if($bookHotel->is_paid == '1'){
+                    $bookHotel->paid_at = date('Y-m-d H:i:s');
+                }
+                else{
+                    $bookHotel->paid_at = null;
+                }
+                $bookHotel->save();
+                if(count($request->accommodations[$key]['rooms']) != 0){
+                    foreach ($request->accommodations[$key]['rooms'] as $index => $val) {
+                        $bookRoom = BookRoomHotel::find($val['id']);
+                        $bookRoom->quantity = $val['quantity'];
+                        $bookRoom->subtotal = $val['quantity']*$val['rate'];
+                        $bookRoom->save();
+                    }
+                }     
+
+                if(count($request->accommodations[$key]['meals']) != 0){
+                    foreach ($request->accommodations[$key]['meals'] as $index => $val) {
+                        $bookHotelMeals = BookHotelMeal::find($val['id']);
+                        $bookHotelMeals->qty = $val['qty'];
+                        $bookHotelMeals->price = $val['price'];
+                        $bookHotelMeals->subtotal = $val['qty']*$val['price'];
+                        $bookHotelMeals->save();
+                    }
+                }                
+
+            }
+        }
+
+        if($request->destinations){
+            BookDestinationActivity::where('booking_id',$request->booking_id)->delete();
+            foreach ($request->destinations as $key => $value) {
+                foreach ($value['activities'] as $index => $val) {
+                    $bookDestinationActivity = new BookDestinationActivity;
+                    $bookDestinationActivity->booking_id = $request->booking_id;
+                    $bookDestinationActivity->destination_id = $val['destination_id'];
+                    $bookDestinationActivity->destination_activity_id = $val['destination_activity_id'];
+                    $bookDestinationActivity->qty = $val['quantity'];
+                    $bookDestinationActivity->price = $val['price'];
+                    $bookDestinationActivity->subtotal = $val['quantity']*$val['price'];
+                    $bookDestinationActivity->status_paid = $val['status_paid'];
+                    if($bookDestinationActivity->status_paid == 'paid'){
+                        $bookDestinationActivity->paid_date = date('Y-m-d');
+                    }
+                    $bookDestinationActivity->is_debt = $val['is_debt'];
+                    $bookDestinationActivity->save();
+                }
+            }
+        }
+
+        if($request->others){
+            BookOthersActivity::where('booking_id',$request->booking_id)->delete();
+            foreach ($request->others as $key => $value) {
+                $bookOthersActivity = new BookOthersActivity;
+                $bookOthersActivity->booking_id = $request->booking_id;
+                $bookOthersActivity->others_activity_id = $value['others_activity_id'];
+                $bookOthersActivity->qty = $value['quantity'];
+                $bookOthersActivity->price = $value['price'];
+                $bookOthersActivity->subtotal = $value['quantity']*$value['price'];
+                $bookOthersActivity->status_paid = $value['status_paid'];
+                if($bookOthersActivity->status_paid == 'paid'){
+                    $bookOthersActivity->paid_date = date('Y-m-d');
+                }
+                $bookOthersActivity->is_debt = $value['is_debt'];
+                $bookOthersActivity->save();
+            }
+        }
+
+        if($request->resources['cars']){
+            BookCarActivity::where('booking_id',$request->booking_id)->delete();
+            foreach ($request->resources['cars'] as $key => $value) {
+                $bookCarActivity = new BookCarActivity;
+                $bookCarActivity->booking_id = $request->booking_id;
+                $bookCarActivity->car_id = $value['car_id'];
+                $bookCarActivity->qty = $value['quantity'];
+                $bookCarActivity->price = $value['price'];
+                $bookCarActivity->subtotal = $value['quantity']*$value['price'];
+                $bookCarActivity->status_paid = $value['status_paid'];
+                if($bookCarActivity->status_paid == 'paid'){
+                    $bookCarActivity->paid_date = date('Y-m-d');
+                }
+                $bookCarActivity->is_debt = $value['is_debt'];
+                $bookCarActivity->save();
+            }
+        }
+
+        if($request->resources['crews']){
+            BookCrewActivity::where('booking_id',$request->booking_id)->delete();
+            foreach ($request->resources['crews'] as $key => $value) {
+                $bookCrewActivity = new BookCrewActivity;
+                $bookCrewActivity->booking_id = $request->booking_id;
+                $bookCrewActivity->crew_role_id = $value['crew_role_id'];
+                $bookCrewActivity->qty = $value['quantity'];
+                $bookCrewActivity->price = $value['price'];
+                $bookCrewActivity->subtotal = $value['quantity']*$value['price'];
+                $bookCrewActivity->status_paid = $value['status_paid'];
+                if($bookCrewActivity->status_paid == 'paid'){
+                    $bookCrewActivity->paid_date = date('Y-m-d');
+                }
+                $bookCrewActivity->is_debt = $value['is_debt'];
+                $bookCrewActivity->save();
+            }
+        }
+
+        if(!$booking->expense_file_internal){
+            $booking->expense_internal_total = $request->summary['totalAmount'];
+            $booking->total_expense_paid = $request->summary['paidAmount'];
+            $booking->total_expense_balance = $request->summary['balanceAmount'];
+            $booking->total_expense_debt = $request->summary['debtAmount'];
+            $booking->save();
+        }
+        return back()->with('message', 'Expense saved successfully');
     }
 }

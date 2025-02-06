@@ -909,7 +909,7 @@ class BookingController extends Controller
             $invoiceHistory->save();
         }
 
-        if($request->channel != 'TWT' ){
+        if($request->channel != 'TWT' && !$booking->expense_file_internal){
             $this->updateExpense($booking->id);
         }
 

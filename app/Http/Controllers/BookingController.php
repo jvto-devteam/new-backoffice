@@ -327,8 +327,8 @@ class BookingController extends Controller
             $booking->drop = $dropLocation['location']." ".$booking->drop_point_arrival." ".$booking->meeting_point_value;
         }
 
-        $booking->pickup_time = $request->pickupTime;
-        $booking->drop_time = $request->dropTime;
+        $booking->pickup_time = $request->pickupTime && $request->pickupTime != '' ? $request->pickupTime : null;
+        $booking->drop_time = $request->dropTime && $request->dropTime != '' ? $request->dropTime : null;
 
         $booking->dp = 0;
         $booking->dp_no_idr = 0;
@@ -678,8 +678,8 @@ class BookingController extends Controller
             $booking->drop = $dropLocation['location']." ".$booking->drop_point_arrival." ".$booking->meeting_point_value;
         }
 
-        $booking->pickup_time = $request->pickupTime;
-        $booking->drop_time = $request->dropTime;
+        $booking->pickup_time = $request->pickupTime && $request->pickupTime != '' ? $request->pickupTime : null;
+        $booking->drop_time = $request->dropTime && $request->dropTime != '' ? $request->dropTime : null;
 
         if ($summary['discount'] != 0) {
             if($discount['discountId']){
@@ -1008,6 +1008,11 @@ class BookingController extends Controller
         $bookCarActivity = BookCarActivity::where('booking_id',$id)->sum('subtotal');
         $bookCrewActivity = BookCrewActivity::where('booking_id',$id)->sum('subtotal');
         
+        BookDestinationActivity::where('booking_id',$id)->where('is_debt','0')->update(['status_paid' => 'paid']);
+        BookOthersActivity::where('booking_id',$id)->where('is_debt','0')->update(['status_paid' => 'paid']);
+        BookCarActivity::where('booking_id',$id)->where('is_debt','0')->update(['status_paid' => 'paid']);
+        BookCrewActivity::where('booking_id',$id)->where('is_debt','0')->update(['status_paid' => 'paid']);
+        
         $bookDestinationActivityPaid = BookDestinationActivity::where('booking_id',$id)->where('status_paid','paid')->sum('subtotal');
         $bookOthersPaid = BookOthersActivity::where('booking_id',$id)->where('status_paid','paid')->sum('subtotal');
         $bookCarActivityPaid = BookCarActivity::where('booking_id',$id)->where('status_paid','paid')->sum('subtotal');
@@ -1020,12 +1025,12 @@ class BookingController extends Controller
 
         $totalExpense = $totalAccommodations + $bookDestinationActivity + $bookOthers + $bookCarActivity + $bookCrewActivity;
 
-        $totalExpensePaid = $bookDestinationActivityPaid + $bookOthersPaid + $bookCarActivityPaid + $bookCrewActivityPaid;
+        $totalExpensePaid = $totalAccommodations + $bookDestinationActivityPaid + $bookOthersPaid + $bookCarActivityPaid + $bookCrewActivityPaid;
         $totalExpenseDebt = $bookDestinationActivityDebt + $bookOthersDebt + $bookCarActivityDebt + $bookCrewActivityDebt;
 
         $booking->expense_internal_total = $totalExpense;
         $booking->total_expense_paid = $totalExpensePaid;
-        $booking->total_expense_balance = $totalExpense - $totalExpensePaid - $totalExpenseDebt;
+        $booking->total_expense_balance = 0;
         $booking->total_expense_debt = $totalExpenseDebt;
 
         $booking->save();
@@ -1251,6 +1256,11 @@ class BookingController extends Controller
 
         if($isCarExist){
             $cekCar = $cekCar->first();
+            if(!$cekCar){
+                $isCarExist = false;
+            }
+        }
+        if($isCarExist){
 
             $cekCarActivities = BookCarActivity::where('booking_id',$id)->count();
             if($cekCarActivities == 0){
@@ -1301,8 +1311,8 @@ class BookingController extends Controller
         $totalExpense = $totalAccommodations + $totalDestinations + $totalOthers + $totalResources;
 
         $booking->expense_internal_total = $totalExpense;
-        $booking->total_expense_paid = 0;
-        $booking->total_expense_balance = $totalExpense;
+        $booking->total_expense_paid = $totalExpense;
+        $booking->total_expense_balance = 0;
         $booking->total_expense_debt = 0;
 
         $booking->save();

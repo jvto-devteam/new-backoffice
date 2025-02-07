@@ -210,7 +210,8 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
   const [isCustomPackage, setIsCustomPackage] = useState(!booking.booking_detail[0].package_id ? true : false);
   const [customPackageDuration, setCustomPackageDuration] = useState(!booking.booking_detail[0].package_id ? booking.package_duration : '');  
   const [addOnItems, setAddOnItems] = useState([]);
-  const [isCustomDiscount, setIsCustomDiscount] = useState(!booking.discount_id ? true : false );
+  
+  const [isCustomDiscount, setIsCustomDiscount] = useState(booking.discount_id || (!booking.discount_id && !booking.discount)  ? false : true );
   const [discountData, setDiscountData] = useState({
     id : booking.discount_id ? booking.discount_id : '',
     type: booking.discount_type,

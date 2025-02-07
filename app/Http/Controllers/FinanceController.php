@@ -263,6 +263,11 @@ class FinanceController extends Controller
                 BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','dinner')->delete();
             }
 
+            if($booking->is_paid == '0' && (!$booking->is_debt || $booking->is_debt == '0')){
+                $booking->is_paid = '1';
+                $booking->save();
+            }
+
             $booking->bookRoom->map(function($room) use(&$totalAccommodations) {
                 if ($room->subtotal === null) {
                     $room->subtotal = $room->roomHotel->rate * $room->quantity;
@@ -514,7 +519,7 @@ class FinanceController extends Controller
         if($request->accommodations){
             foreach ($request->accommodations as $key => $value) {
                 $bookHotel = BookHotel::find($value['hotel_id']);
-                $bookHotel->is_paid = $value['is_paid'];
+                $bookHotel->is_paid = $value['is_debt'] == '0' ? '1' : '0';
                 $bookHotel->is_debt = $value['is_debt'];
                 if($bookHotel->is_paid == '1'){
                     $bookHotel->paid_at = date('Y-m-d H:i:s');
@@ -571,7 +576,7 @@ class FinanceController extends Controller
                     $bookDestinationActivity->qty = $val['quantity'];
                     $bookDestinationActivity->price = $val['price'];
                     $bookDestinationActivity->subtotal = $val['quantity']*$val['price'];
-                    $bookDestinationActivity->status_paid = $val['status_paid'];
+                    $bookDestinationActivity->status_paid = $val['is_debt'] == '0' ? 'paid' : 'unpaid';
                     if($bookDestinationActivity->status_paid == 'paid'){
                         $bookDestinationActivity->paid_date = date('Y-m-d');
                     }
@@ -603,7 +608,7 @@ class FinanceController extends Controller
                 $bookOthersActivity->qty = $value['quantity'];
                 $bookOthersActivity->price = $value['price'];
                 $bookOthersActivity->subtotal = $value['quantity']*$value['price'];
-                $bookOthersActivity->status_paid = $value['status_paid'];
+                $bookOthersActivity->status_paid = $value['is_debt'] == '0' ? 'paid' : 'unpaid';
                 if($bookOthersActivity->status_paid == 'paid'){
                     $bookOthersActivity->paid_date = date('Y-m-d');
                 }
@@ -621,7 +626,7 @@ class FinanceController extends Controller
                 $bookCarActivity->qty = $value['quantity'];
                 $bookCarActivity->price = $value['price'];
                 $bookCarActivity->subtotal = $value['quantity']*$value['price'];
-                $bookCarActivity->status_paid = $value['status_paid'];
+                $bookCarActivity->status_paid = $value['is_debt'] == '0' ? 'paid' : 'unpaid';
                 if($bookCarActivity->status_paid == 'paid'){
                     $bookCarActivity->paid_date = date('Y-m-d');
                 }
@@ -639,7 +644,7 @@ class FinanceController extends Controller
                 $bookCrewActivity->qty = $value['quantity'];
                 $bookCrewActivity->price = $value['price'];
                 $bookCrewActivity->subtotal = $value['quantity']*$value['price'];
-                $bookCrewActivity->status_paid = $value['status_paid'];
+                $bookCrewActivity->status_paid = $value['is_debt'] == '0' ? 'paid' : 'unpaid';
                 if($bookCrewActivity->status_paid == 'paid'){
                     $bookCrewActivity->paid_date = date('Y-m-d');
                 }
@@ -651,7 +656,7 @@ class FinanceController extends Controller
         if(!$booking->expense_file_internal){
             $booking->expense_internal_total = $request->summary['totalAmount'];
             $booking->total_expense_paid = $request->summary['paidAmount'];
-            $booking->total_expense_balance = $request->summary['balanceAmount'];
+            $booking->total_expense_balance = 0;
             $booking->total_expense_debt = $request->summary['debtAmount'];
             $booking->save();
         }

@@ -87,7 +87,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                   className="w-16 p-1 border rounded text-right disabled:bg-gray-100 dark:text-black"
                   min="1"
                   readonly="true"
-                  disabled={isPaid}
+                  // disabled={isPaid}
                 />
               </td>
               <td className="px-3">
@@ -97,7 +97,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                   onChange={(e) => handleRateChange(index, parseInt(e.target.value.replace(/\D/g, '')) || 0)}
                   className="w-32 p-1 border rounded text-right disabled:bg-gray-100 dark:text-black"
                   readonly="true"
-                  disabled={isPaid}
+                  // disabled={isPaid}
                 />
               </td>
               <td className="px-3 text-right dark:text-black">
@@ -121,7 +121,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
         <tfoot>
           <tr>
             <td colSpan="4" className="dark:text-black px-3 py-4 text-right font-medium">Total</td>
-            <td className={`px-3 text-right font-medium dark:text-black ${isPaid ? 'line-through text-gray-400' : ''}`}>
+            <td className={`px-3 text-right font-medium dark:text-black ${isPaid ? '' : ''}`}>
               {formatCurrency(total)}
             </td>
             <td></td>
@@ -134,7 +134,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
  const MealTable = ({ meals, hotelInfo, pax, isPaid, onTotalChange, onDataChange }) => {
   const [mealStates, setMealStates] = useState({
     lunch: {
-      enabled: hotelInfo.b === '1',
+      enabled: hotelInfo.l === '1',
       qty: meals.find(m => m.meals === 'lunch')?.qty || pax,
       price: meals.find(m => m.meals === 'lunch')?.price || hotelInfo.lunch_rate
     },
@@ -192,7 +192,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
     }));
     
     onDataChange(meals.filter(meal => meal.meals !== type));
-  };
+  };  
  
   return (
     <div className="mb-6">
@@ -221,7 +221,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                    className="w-16 p-1 border rounded text-right disabled:bg-gray-100"
                    min="1"
                    readonly="true"
-                   disabled={isPaid}
+                  //  disabled={isPaid}
                  />
                </td>
                <td className="px-3">
@@ -231,7 +231,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                    onChange={(e) => handlePriceChange('lunch', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
                    className="w-32 dark:text-black p-1 border rounded text-right disabled:bg-gray-100"
                    readonly="true"
-                   disabled={isPaid}
+                  //  disabled={isPaid}
                  />
                </td>
                <td className="px-3 text-right dark:text-black">
@@ -263,7 +263,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                    className="w-16 p-1 border rounded dark:text-black text-right disabled:bg-gray-100"
                    min="1"
                    readonly="true"
-                   disabled={isPaid}
+                  //  disabled={isPaid}
                  />
                </td>
                <td className="px-3">
@@ -273,7 +273,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
                    onChange={(e) => handlePriceChange('dinner', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
                    className="w-32 p-1 border rounded dark:text-black text-right disabled:bg-gray-100"
                    readonly="true"
-                   disabled={isPaid}
+                  //  disabled={isPaid}
                  />
                </td>
                <td className="px-3 text-right dark:text-black">
@@ -298,7 +298,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
            <tfoot>
              <tr>
                <td colSpan="4" className="dark:text-black px-3 py-4 text-right font-medium">Total</td>
-               <td className={`px-3 text-right font-medium dark:text-black ${isPaid ? 'line-through text-gray-400' : ''}`}>
+               <td className={`px-3 text-right font-medium dark:text-black ${isPaid ? '' : ''}`}>
                  {formatCurrency(total)}
                </td>
                <td></td>
@@ -351,7 +351,7 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
         </span>
       </h3>
       <div className="flex gap-4 my-5">
-        <label className="flex items-center gap-2">
+        {/* <label className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={isPaid}
@@ -359,14 +359,14 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
             className="w-4 h-4"
           />
           <span className="dark:text-black">Paid</span>
-        </label>
+        </label> */}
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={isDebt}
             onChange={(e) => handleDebtChange(e.target.checked)}
             className="w-4 h-4"
-            disabled={isPaid}
+            // disabled={isPaid}
           />
           <span className="dark:text-black">Hutang</span>
         </label>
@@ -426,7 +426,7 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
       return {
         total: acc.total + status.amount,
         paid: acc.paid + (status.isPaid ? status.amount : 0),
-        debt: acc.debt + (status.isDebt && !status.isPaid ? status.amount : 0)
+        debt: acc.debt + (status.isDebt ? status.amount : 0)
       };
     }, { total: 0, paid: 0, debt: 0 });
  
@@ -464,10 +464,10 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
             <span className="font-medium dark:text-black">Accommodation</span>
           </div>
           <div className="flex gap-3">
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
-            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span>
+            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
+            {/* <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span> */}
             <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Hutang: {formatCurrency(totals.debtAmount)}</span>
-            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span>
+            {/* <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span> */}
           </div>
         </div>
       </div>
@@ -537,7 +537,7 @@ const DestinationTable = ({ items, onItemChange, onItemDelete  }) => {
       <table className="w-full">
         <thead>
           <tr className="text-left text-gray-600 bg-gray-100">
-            <th className="px-3 w-48 text-center"></th>
+            <th className="px-3 w-24 text-center">HUTANG</th>
             <th className="px-3 py-2 w-16">NO</th>
             <th className="px-3">ACTIVITY</th>
             <th className="px-3 w-24 text-right">QTY</th>
@@ -551,7 +551,7 @@ const DestinationTable = ({ items, onItemChange, onItemDelete  }) => {
             <tr key={item.id} className="border-t border-gray-100">
               <td className="px-3">
                 <div className="flex justify-center gap-4">
-                  <label className="flex items-center gap-2">
+                  {/* <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={item.isPaid}
@@ -559,16 +559,16 @@ const DestinationTable = ({ items, onItemChange, onItemDelete  }) => {
                       className="w-4 h-4 "
                     />
                     <span className="dark:text-black">Paid</span>
-                  </label>
+                  </label> */}
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
                       checked={item.isDebt}
                       onChange={(e) => onItemChange(index, 'isDebt', e.target.checked)}
                       className="w-4 h-4"
-                      disabled={item.isPaid}
+                      // disabled={item.isPaid}
                     />
-                    <span className="dark:text-black">Hutang</span>
+                    {/* <span className="dark:text-black">Hutang</span> */}
                   </label>
                 </div>
               </td>
@@ -581,7 +581,7 @@ const DestinationTable = ({ items, onItemChange, onItemDelete  }) => {
                   onChange={(e) => onItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
                   className="w-16 dark:text-black p-1 border rounded text-right disabled:bg-gray-100"
                   min="1"
-                  disabled={item.isPaid}
+                  // disabled={item.isPaid}
                 />
               </td>
               <td className="px-3">
@@ -590,14 +590,13 @@ const DestinationTable = ({ items, onItemChange, onItemDelete  }) => {
                   value={formatCurrency(item.price)}
                   onChange={(e) => onItemChange(index, 'price', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
                   className="w-32 dark:text-black p-1 border rounded text-right disabled:bg-gray-100"
-                  disabled={item.isPaid}
+                  // disabled={item.isPaid}
                 />
               </td>
-              <td className={`px-3 text-right dark:text-black ${item.isPaid ? 'line-through text-gray-400' : ''}`}>
+              <td className={`px-3 text-right dark:text-black ${item.isPaid ? '' : ''}`}>
                 {formatCurrency(item.quantity * item.price)}
               </td>
               <td className="px-3">
-               {!item.isPaid && (
                  <button 
                    onClick={() => onItemDelete(index)}
                    className="text-red-600 hover:text-red-800"
@@ -606,7 +605,6 @@ const DestinationTable = ({ items, onItemChange, onItemDelete  }) => {
                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                    </svg>
                  </button>
-               )}
              </td>              
             </tr>
           ))}
@@ -856,10 +854,11 @@ const DestinationsCard = ({ destinations, onTotalsChange = () => {},listForNewIt
       items.forEach(item => {
         const subtotal = item.quantity * item.price;
         total += subtotal;
-        if (item.isPaid) {
-          paid += subtotal;
-        } else if (item.isDebt) {
+        if (item.isDebt) {
           debt += subtotal;
+        }
+        else{
+          paid += subtotal;
         }
       });
     });
@@ -923,10 +922,10 @@ const DestinationsCard = ({ destinations, onTotalsChange = () => {},listForNewIt
             <span className="font-medium dark:text-black">Activities</span>
           </div>
           <div className="flex gap-3">
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
-            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span>
+            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
+            {/* <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span> */}
             <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Hutang: {formatCurrency(totals.debtAmount)}</span>
-            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span>
+            {/* <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span> */}
           </div>
         </div>
       </div>
@@ -1204,10 +1203,11 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
     itemStates.forEach((state, index) => {
       const subtotal = state.quantity * state.price;
       total += subtotal;
-      if (state.isPaid) {
-        paid += subtotal;
-      } else if (state.isDebt) {
+      if (state.isDebt) {
         debt += subtotal;
+      }
+      else{
+        paid += subtotal;
       }
     });
 
@@ -1227,9 +1227,7 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
     setItemStates(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleAddItem = (newItem) => {
-    console.log(newItem);
-    
+  const handleAddItem = (newItem) => {    
     const newItemState = {
       id: `new_${Date.now()}`,
       others_activity_id:newItem.others_activity.id,
@@ -1262,10 +1260,10 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
             <span className="font-medium dark:text-black">Others</span>
           </div>
           <div className="flex gap-3">
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
-            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span>
+            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
+            {/* <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span> */}
             <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Hutang: {formatCurrency(totals.debtAmount)}</span>
-            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span>
+            {/* <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span> */}
           </div>
         </div>
       </div>
@@ -1276,7 +1274,7 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
             <table className="w-full">
               <thead>
                 <tr className="text-left text-gray-600 bg-gray-100">
-                  <th className="px-3 w-48 text-center"></th>
+                  <th className="px-3 w-24 text-center">HUTANG</th>
                   <th className="px-3 py-2 w-16">NO</th>
                   <th className="px-3">ACTIVITY</th>
                   <th className="px-3 w-24 text-right">QTY</th>
@@ -1290,7 +1288,7 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
                   <tr key={state.id} className="border-t border-gray-100">
                     <td className="px-3">
                       <div className="flex justify-center gap-4">
-                        <label className="flex items-center gap-2">
+                        {/* <label className="flex items-center gap-2">
                           <input
                             type="checkbox"
                             checked={state.isPaid}
@@ -1298,16 +1296,16 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
                             className="w-4 h-4"
                           />
                           <span className="dark:text-black">Paid</span>
-                        </label>
+                        </label> */}
                         <label className="flex items-center gap-2">
                           <input
                             type="checkbox"
                             checked={state.isDebt}
                             onChange={(e) => handleDebtChange(index, e.target.checked)}
                             className="w-4 h-4"
-                            disabled={state.isPaid}
+                            // disabled={state.isPaid}
                           />
-                          <span className="dark:text-black">Hutang</span>
+                          {/* <span className="dark:text-black">Hutang</span> */}
                         </label>
                       </div>
                     </td>
@@ -1320,7 +1318,7 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
                         onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 0)}
                         className="dark:text-black w-16 p-1 border rounded text-right disabled:bg-gray-100"
                         min="1"
-                        disabled={state.isPaid}
+                        // disabled={state.isPaid}
                       />
                     </td>
                     <td className="px-3">
@@ -1329,14 +1327,13 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
                         value={formatCurrency(state.price)}
                         onChange={(e) => handlePriceChange(index, parseInt(e.target.value.replace(/\D/g, '')) || 0)}
                         className="dark:text-black w-32 p-1 border rounded text-right disabled:bg-gray-100"
-                        disabled={state.isPaid}
+                        // disabled={state.isPaid}
                       />
                     </td>
-                    <td className={`dark:text-black px-3 text-right ${state.isPaid ? 'line-through text-gray-400' : ''}`}>
+                    <td className={`dark:text-black px-3 text-right ${state.isPaid ? '' : ''}`}>
                       {formatCurrency(state.quantity * state.price)}
                     </td>
                     <td className="px-3">
-                      {!state.isPaid && (
                         <button 
                           onClick={() => handleDelete(index)}
                           className="text-red-600 hover:text-red-800"
@@ -1350,7 +1347,6 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
                                   d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
-                      )}
                     </td>                    
                   </tr>
                 ))}
@@ -1400,7 +1396,7 @@ const ResourceTable = ({ items, states, type, onStateChange, onDelete }) => (
     <table className="w-full">
       <thead>
         <tr className="text-left text-gray-600 bg-gray-100">
-          <th className="px-3 w-48 text-center"></th>
+          <th className="px-3 w-24 text-center">HUTANG</th>
           <th className="px-3 py-2 w-16">NO</th>
           <th className="px-3">NAME</th>
           <th className="px-3 w-24 text-right">QTY</th>
@@ -1414,7 +1410,7 @@ const ResourceTable = ({ items, states, type, onStateChange, onDelete }) => (
           <tr key={item.id} className="border-t border-gray-100">
             <td className="px-3">
               <div className="flex justify-center gap-4">
-                <label className="flex items-center gap-2">
+                {/* <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={states[index].isPaid}
@@ -1422,16 +1418,16 @@ const ResourceTable = ({ items, states, type, onStateChange, onDelete }) => (
                     className="w-4 h-4"
                   />
                   <span className="dark:text-black">Paid</span>
-                </label>
+                </label> */}
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={states[index].isDebt}
                     onChange={(e) => onStateChange(index, 'isDebt', e.target.checked)}
                     className="w-4 h-4"
-                    disabled={states[index].isPaid}
+                    // disabled={states[index].isPaid}
                   />
-                  <span className="dark:text-black">Hutang</span>
+                  {/* <span className="dark:text-black">Hutang</span> */}
                 </label>
               </div>
             </td>
@@ -1444,7 +1440,7 @@ const ResourceTable = ({ items, states, type, onStateChange, onDelete }) => (
                 onChange={(e) => onStateChange(index, 'quantity', parseInt(e.target.value) || 0)}
                 className="w-16 dark:text-black p-1 border rounded text-right disabled:bg-gray-100"
                 min="1"
-                disabled={states[index].isPaid}
+                // disabled={states[index].isPaid}
               />
             </td>
             <td className="px-3">
@@ -1453,14 +1449,13 @@ const ResourceTable = ({ items, states, type, onStateChange, onDelete }) => (
                 value={formatCurrency(states[index].price)}
                 onChange={(e) => onStateChange(index, 'price', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
                 className="w-32 dark:text-black p-1 border rounded text-right disabled:bg-gray-100"
-                disabled={states[index].isPaid}
+                // disabled={states[index].isPaid}
               />
             </td>
-            <td className={`px-3 dark:text-black text-right ${states[index].isPaid ? 'line-through text-gray-400' : ''}`}>
+            <td className={`px-3 dark:text-black text-right ${states[index].isPaid ? '' : ''}`}>
               {formatCurrency(states[index].quantity * states[index].price)}
             </td>
             <td className="px-3">
-              {!states[index].isPaid && (
                 <button 
                   onClick={() => onDelete(index)}
                   className="text-red-600 hover:text-red-800"
@@ -1469,7 +1464,6 @@ const ResourceTable = ({ items, states, type, onStateChange, onDelete }) => (
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                   </svg>
                 </button>
-              )}
             </td>              
           </tr>
         ))}
@@ -1567,7 +1561,7 @@ const ResourceCard = ({ resources, onTotalsChange = () => {},listForNewItemsCars
     );
 
     const calculateDebt = (states) => states.reduce((sum, state) => 
-      sum + (state.isDebt && !state.isPaid ? state.quantity * state.price : 0), 0
+      sum + (state.isDebt ? state.quantity * state.price : 0), 0
     );
 
     const carTotal = calculateTotal(carStates);
@@ -1631,10 +1625,10 @@ const ResourceCard = ({ resources, onTotalsChange = () => {},listForNewItemsCars
             <span className="font-medium dark:text-black">Resource Requirements</span>
           </div>
           <div className="flex gap-3">
-            <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
-            <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span>
+            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
+            {/* <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span> */}
             <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Hutang: {formatCurrency(totals.debtAmount)}</span>
-            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span>
+            {/* <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span> */}
           </div>
         </div>
       </div>
@@ -1957,7 +1951,7 @@ const useExpenseData = (initialData) => {
                 
     return {
       totalAmount,
-      paidAmount,
+      paidAmount:totalAmount-debtAmount,
       debtAmount,
       balanceAmount: totalAmount - paidAmount - debtAmount,
       profit: initialData.booking.grand_total - totalAmount
@@ -1981,32 +1975,40 @@ const useExpenseData = (initialData) => {
   };
 };
 
-const SummaryCard = ({ totals }) => {
+const SummaryCard = ({ booking,totals }) => {
   return (
     <div className="bg-white rounded shadow p-4">
       <div className="flex flex-col gap-4">
         <h2 className="font-bold text-xl dark:text-black">Summary</h2>
         <div className="grid grid-cols-5 gap-4">
           <div className="p-4 rounded-lg bg-blue-100">
-            <div className="text-blue-800 font-medium">Total Cost</div>
-            <div className="text-2xl font-bold text-blue-900">{formatCurrency(totals.totalAmount)}</div>
+            <div className="text-blue-800 font-medium">Total Invoice</div>
+            <div className="text-2xl font-bold text-blue-900">{formatCurrency(booking.grand_total+booking.book_add_on_total)}</div>
           </div>
-          <div className="p-4 rounded-lg bg-green-100">
-            <div className="text-green-800 font-medium">Total Paid</div>
-            <div className="text-2xl font-bold text-green-900">{formatCurrency(totals.paidAmount)}</div>
+          <div className="p-4 rounded-lg bg-yellow-100">
+            <div className="text-yellow-800 font-medium">Total Expense</div>
+            <div className="text-2xl font-bold text-yellow-900">{formatCurrency(totals.totalAmount)}</div>
           </div>
           <div className="p-4 rounded-lg bg-red-100">
             <div className="text-red-800 font-medium">Total Hutang</div>
             <div className="text-2xl font-bold text-red-900">{formatCurrency(totals.debtAmount)}</div>
           </div>
-          <div className="p-4 rounded-lg bg-yellow-100">
+          <div className="p-4 rounded-lg bg-orange-100">
+            <div className="text-orange-800 font-medium">Crew Expense</div>
+            <div className="text-2xl font-bold text-orange-900">{formatCurrency(totals.paidAmount)}</div>
+          </div>
+          <div className="p-4 rounded-lg bg-green-100">
+            <div className="text-green-800 font-medium">Profit</div>
+            <div className="text-2xl font-bold text-green-900">{formatCurrency(booking.grand_total+booking.book_add_on_total-totals.totalAmount)}</div>
+          </div>
+          {/* <div className="p-4 rounded-lg bg-yellow-100">
             <div className="text-yellow-800 font-medium">Balance</div>
             <div className="text-2xl font-bold text-yellow-900">{formatCurrency(totals.balanceAmount)}</div>
           </div>
           <div className="p-4 rounded-lg bg-purple-100">
             <div className="text-purple-800 font-medium">Profit</div>
             <div className="text-2xl font-bold text-purple-900">{formatCurrency(totals.profit)}</div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>
@@ -2150,7 +2152,7 @@ export default function EditExpenseManager({ booking,accommodations,destinations
             listForNewItemsCrews={listForNewItems.crews}
             onChange={setResourceState}
           />
-        <SummaryCard totals={summaryTotals} />
+        <SummaryCard booking={booking} totals={summaryTotals} />
         <div className="mt-6 flex justify-end">
           <button
             onClick={handleSubmit}

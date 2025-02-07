@@ -652,10 +652,12 @@ const AddActivityModal = ({
   listForNewItems, 
   onAddActivity, 
   existingItems 
-  }) => {
+}) => {
   const [selectedActivity, setSelectedActivity] = useState('');
+  const [newActivity, setNewActivity] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [price, setPrice] = useState(0);
+  const [isNewActivity, setIsNewActivity] = useState(false);
   
   const availableActivities = useMemo(() => {
     return (listForNewItems[destinationName] || [])
@@ -674,25 +676,43 @@ const AddActivityModal = ({
   };
 
   const handleSubmit = () => {
-    if (selectedActivity) {
+    const activityName = isNewActivity ? newActivity : selectedActivity;
+    if (activityName) {
+      const selectedDestination = listForNewItems[destinationName]?.[0]?.destination_id;
+      const selectedActivityData = listForNewItems[destinationName]?.find(a => a.name === selectedActivity);
+      
       onAddActivity(destinationName, {
-        destination_activity: { name: selectedActivity },
+        destination_id: selectedDestination,
+        destination_activity: { 
+          name: activityName,
+          id: isNewActivity ? null : selectedActivityData?.id 
+        },
+        destination_activity_id: isNewActivity ? null : selectedActivityData?.id,
         quantity: quantity,
-        price: price || getActivityPrice(selectedActivity),
+        price: price || (isNewActivity ? 0 : getActivityPrice(activityName)),
         isPaid: false,
         isDebt: false
       });
-      setSelectedActivity('')
-      setQuantity(1)
-      setPrice(0)
+      setSelectedActivity('');
+      setNewActivity('');
+      setQuantity(1);
+      setPrice(0);
+      setIsNewActivity(false);
       onClose();
     }
   };
 
   const isSubmitDisabled = 
-    !selectedActivity || 
+    (isNewActivity ? !newActivity : !selectedActivity) || 
     quantity <= 0 || 
-    price <= 0;  
+    price <= 0;
+
+  const handleSwitchChange = (checked) => {
+    setIsNewActivity(checked);
+    setSelectedActivity('');
+    setNewActivity('');
+    setPrice(0);
+  };
 
   if (!isOpen) return null;
 
@@ -700,23 +720,51 @@ const AddActivityModal = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-xl w-96">
         <h2 className="text-xl font-bold mb-4">Add New Activity for {destinationName}</h2>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Select Activity</label>
-          <select
-            value={selectedActivity}
-            onChange={(e) => {
-              const activity = e.target.value;
-              setSelectedActivity(activity);
-              setPrice(getActivityPrice(activity));
-            }}
-            className="w-full p-2 border rounded"
-          >
-            <option value="">Select an activity</option>
-            {availableActivities.map((activity) => (
-              <option key={activity} value={activity}>{activity}</option>
-            ))}
-          </select>
+        
+        {/* Switch Toggle */}
+        <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded">
+          <span className="text-sm text-gray-700">New Activity</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={isNewActivity}
+              onChange={(e) => handleSwitchChange(e.target.checked)}
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
         </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">
+            {isNewActivity ? "Enter New Activity" : "Select Activity"}
+          </label>
+          {isNewActivity ? (
+            <input
+              type="text"
+              value={newActivity}
+              onChange={(e) => setNewActivity(e.target.value)}
+              className="w-full p-2 border rounded"
+              placeholder="Enter activity name"
+            />
+          ) : (
+            <select
+              value={selectedActivity}
+              onChange={(e) => {
+                const activity = e.target.value;
+                setSelectedActivity(activity);
+                setPrice(getActivityPrice(activity));
+              }}
+              className="w-full p-2 border rounded"
+            >
+              <option value="">Select an activity</option>
+              {availableActivities.map((activity) => (
+                <option key={activity} value={activity}>{activity}</option>
+              ))}
+            </select>
+          )}
+        </div>
+        
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">Quantity</label>
           <input
@@ -727,6 +775,7 @@ const AddActivityModal = ({
             className="w-full p-2 border rounded"
           />
         </div>
+        
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">Price</label>
           <input
@@ -736,6 +785,7 @@ const AddActivityModal = ({
             className="w-full p-2 border rounded"
           />
         </div>
+        
         <div className="flex justify-end gap-2">
           <button 
             onClick={onClose} 
@@ -745,7 +795,7 @@ const AddActivityModal = ({
           </button>
           <button 
             onClick={handleSubmit} 
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isSubmitDisabled}
           >
             Add Activity
@@ -919,28 +969,30 @@ const DestinationsCard = ({ destinations, onTotalsChange = () => {},listForNewIt
   );
 };
 const AddOthersModal = ({ 
-    isOpen, 
-    onClose, 
-    onAddItem, 
-    listForNewItems,
-    existingItems 
-  }) => {
-    const [selectedActivity, setSelectedActivity] = useState('');
-    const [quantity, setQuantity] = useState(1);
-    const [price, setPrice] = useState(0);
+  isOpen, 
+  onClose, 
+  onAddItem, 
+  listForNewItems,
+  existingItems 
+}) => {
+  const [selectedActivity, setSelectedActivity] = useState('');
+  const [newActivity, setNewActivity] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(0);
+  const [isNewItem, setIsNewItem] = useState(false);
 
-    const availableActivities = useMemo(() => 
-      (listForNewItems || [])
-        .filter(activity => 
-          !existingItems.some(item => 
-            item.others_activity.id === activity.id)
-        )
-        .map(activity => ({
-          id: activity.id,
-          name: activity.name
-        })), 
-      [listForNewItems, existingItems]
-    );
+  const availableActivities = useMemo(() => 
+    (listForNewItems || [])
+      .filter(activity => 
+        !existingItems.some(item => 
+          item.others_activity.id === activity.id)
+      )
+      .map(activity => ({
+        id: activity.id,
+        name: activity.name
+      })), 
+    [listForNewItems, existingItems]
+  );
 
   const getActivityPrice = (activityName) => {
     const activity = listForNewItems.find(a => a.name === activityName);
@@ -948,24 +1000,51 @@ const AddOthersModal = ({
   };
 
   const handleSubmit = () => {
-    if (selectedActivity) {
-      const selectedActivityData = listForNewItems.find(a => a.name === selectedActivity);      
-      onAddItem({
-        others_activity: { id:selectedActivityData.id, name: selectedActivity },
-        quantity: quantity,
-        price: price || getActivityPrice(selectedActivity),
-        status_paid: 'unpaid',
-        is_debt: '0'
-      });
+    const activityName = isNewItem ? newActivity : selectedActivity;
+    if (activityName) {
+      if (isNewItem) {
+        onAddItem({
+          others_activity: { 
+            id: `new_${Date.now()}`,
+            name: activityName 
+          },
+          quantity: quantity,
+          price: price,
+          status_paid: 'unpaid',
+          is_debt: '0'
+        });
+      } else {
+        const selectedActivityData = listForNewItems.find(a => a.name === selectedActivity);
+        onAddItem({
+          others_activity: { 
+            id: selectedActivityData.id, 
+            name: selectedActivity 
+          },
+          quantity: quantity,
+          price: price || getActivityPrice(selectedActivity),
+          status_paid: 'unpaid',
+          is_debt: '0'
+        });
+      }
+      
       setSelectedActivity('');
+      setNewActivity('');
       setQuantity(1);
       setPrice(0);
+      setIsNewItem(false);
       onClose();
     }
   };
 
+  const handleSwitchChange = (checked) => {
+    setIsNewItem(checked);
+    setSelectedActivity('');
+    setNewActivity('');
+    setPrice(0);
+  };
+
   const isSubmitDisabled = 
-    !selectedActivity || 
+    (isNewItem ? !newActivity : !selectedActivity) || 
     quantity <= 0 || 
     price <= 0;
 
@@ -975,9 +1054,35 @@ const AddOthersModal = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-xl w-96">
         <h2 className="text-xl font-bold mb-4">Add New Others Item</h2>
+
+        {/* Switch Toggle */}
+        <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded">
+          <span className="text-sm text-gray-700">New Item</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={isNewItem}
+              onChange={(e) => handleSwitchChange(e.target.checked)}
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
         <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Select Others</label>
-          <select
+          <label className="block text-gray-700 mb-2">
+            {isNewItem ? "Enter New Item" : "Select Others"}
+          </label>
+          {isNewItem ? (
+            <input
+              type="text"
+              value={newActivity}
+              onChange={(e) => setNewActivity(e.target.value)}
+              className="w-full p-2 border rounded"
+              placeholder="Enter item name"
+            />
+          ) : (
+            <select
               value={selectedActivity}
               onChange={(e) => {
                 const activity = e.target.value;
@@ -991,7 +1096,9 @@ const AddOthersModal = ({
                 <option key={activity.id} value={activity.name}>{activity.name}</option>
               ))}
             </select>
+          )}
         </div>
+
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">Quantity</label>
           <input
@@ -1002,6 +1109,7 @@ const AddOthersModal = ({
             className="w-full p-2 border rounded"
           />
         </div>
+
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">Price</label>
           <input
@@ -1011,6 +1119,7 @@ const AddOthersModal = ({
             className="w-full p-2 border rounded"
           />
         </div>
+
         <div className="flex justify-end gap-2">
           <button 
             onClick={onClose} 
@@ -1020,7 +1129,7 @@ const AddOthersModal = ({
           </button>
           <button 
             onClick={handleSubmit} 
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isSubmitDisabled}
           >
             Add Item
@@ -1030,7 +1139,6 @@ const AddOthersModal = ({
     </div>
   );
 };
-
 const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChange = () => {}   }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [items, setItems] = useState([...others]);
@@ -1913,8 +2021,6 @@ export default function EditExpenseManager({ booking,accommodations,destinations
   const [resourceState, setResourceState] = useState({ cars: [], crews: [] });
 
   const handleSubmit = () => {
-    // console.log(resourceState);
-    
     const submitData = {
       booking_id: booking.id,
       accommodations: accommodationState.hotelData?.map(hotel => ({
@@ -1940,6 +2046,7 @@ export default function EditExpenseManager({ booking,accommodations,destinations
           id: item.id,
           destination_id : item.destination_id,
           destination_activity_id : item.destination_activity_id,
+          name: item.destination_activity.id ? null : item.destination_activity.name,          
           quantity: item.quantity,
           price: item.price,
           status_paid: item.isPaid ? 'paid' : 'unpaid',
@@ -1951,6 +2058,7 @@ export default function EditExpenseManager({ booking,accommodations,destinations
         id: item.id, 
         others_activity_id: othersState.itemStates[index].others_activity_id,
         quantity: othersState.itemStates[index].quantity,
+        name: item.others_activity.id.toString().startsWith('new_') ? item.others_activity.name : null, // nama hanya untuk aktivitas baru
         price: othersState.itemStates[index].price,
         status_paid: othersState.itemStates[index].isPaid ? 'paid' : 'unpaid',
         is_debt: othersState.itemStates[index].isDebt ? '1' : '0'

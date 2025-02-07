@@ -488,15 +488,12 @@ class FinanceController extends Controller
         }])->select('id','destination_id','name','price');
         if($channel == 'twt'){
             $orderChannelID = 2;
-            $listForNewItems['destinations'] = $listForNewItems['destinations']->where('is_default_twt','1');
         }
         else if($channel == 'jvto'){
             $orderChannelID = 1;
-            $listForNewItems['destinations'] = $listForNewItems['destinations']->where('is_default_jvto','1');
         }
         else if($channel == 'klook'){
             $orderChannelID = 3;
-            $listForNewItems['destinations'] = $listForNewItems['destinations']->where('is_default_klook','1');
         }
         $listForNewItems['destinations'] = $listForNewItems['destinations']->get()->groupBy(fn($item) => $item->destination->name);
         $listForNewItems['others'] = OthersActivity::get();
@@ -552,6 +549,21 @@ class FinanceController extends Controller
             BookDestinationActivity::where('booking_id',$request->booking_id)->delete();
             foreach ($request->destinations as $key => $value) {
                 foreach ($value['activities'] as $index => $val) {
+                    if(!$val['destination_activity_id']){
+                        $destinationActivity = new DestinationActivity;
+                        $destinationActivity->destination_id = $val['destination_id'];
+                        $destinationActivity->name = $val['name'];
+                        $destinationActivity->destination_activity_code = '';
+                        $destinationActivity->unit = 'no';
+                        $destinationActivity->formula = '1';
+                        $destinationActivity->price = $val['price'];
+                        $destinationActivity->is_default_jvto = '0';
+                        $destinationActivity->is_default_klook = '0';
+                        $destinationActivity->is_default_twt = '0';
+                        $destinationActivity->save();
+
+                        $val['destination_activity_id'] = $destinationActivity->id;
+                    }
                     $bookDestinationActivity = new BookDestinationActivity;
                     $bookDestinationActivity->booking_id = $request->booking_id;
                     $bookDestinationActivity->destination_id = $val['destination_id'];
@@ -572,6 +584,19 @@ class FinanceController extends Controller
         if($request->others){
             BookOthersActivity::where('booking_id',$request->booking_id)->delete();
             foreach ($request->others as $key => $value) {
+                if(empty($value['id'])){
+                    $othersActivity = new OthersActivity;
+                    $othersActivity->name = $value['name'];
+                    $othersActivity->other_activity_code = '';
+                    $othersActivity->unit = 'no';
+                    $othersActivity->formula = '1';
+                    $othersActivity->price = $value['price'];
+                    $othersActivity->is_default = '0';
+                    $othersActivity->save();
+
+                    $value['others_activity_id'] = $othersActivity->id;
+                }
+
                 $bookOthersActivity = new BookOthersActivity;
                 $bookOthersActivity->booking_id = $request->booking_id;
                 $bookOthersActivity->others_activity_id = $value['others_activity_id'];

@@ -333,33 +333,21 @@ export default function ExpenseManager({booking,summary,packages,filters}){
                     </div>                    
                 </div>
                 {/* Summary Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4">
-                    {/* <SummaryCard
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
+                    <SummaryCard
                         icon={BookUser}
                         value={`${summary.bookings}`}
                         subtitle="Total Bookings"
-                        /> */}
+                    />
                     <SummaryCard
                         icon={FileText}
                         value={formatCurrency(summary.total_expense)}
                         subtitle="Total Expense"
                         />
                     <SummaryCard
-                        icon={Handshake}
-                        value={formatCurrency(summary.paid)}
-                        subtitle="Expense Paid"
-                        type="paid"
-                        />
-                    <SummaryCard
-                        type="unpaid"
-                        icon={Clock}
-                        value={formatCurrency(summary.unpaid)}
-                        subtitle="Expense Unpaid"
-                    />
-                    <SummaryCard
                         icon={BookUser}
                         value={formatCurrency(summary.debt)}
-                        subtitle="Total Debt"
+                        subtitle="Total Hutang"
                         type="debt"
                     />
                 </div>
@@ -440,15 +428,11 @@ export default function ExpenseManager({booking,summary,packages,filters}){
                                 <TableCell>
                                     <div className="space-y-1">
                                         <div className="space-x-3 flex justify-between text-green-600">
-                                            <span>Paid:</span>
+                                            <span>Crew Expense:</span>
                                             <span>{formatCurrency(data.expense_paid)}</span>
                                         </div>
-                                        <div className="space-x-3 flex justify-between  text-red-600">
-                                            <span>Unpaid:</span>
-                                            <span>{formatCurrency(data.expense_balance)}</span>
-                                        </div>
                                         <div className="space-x-3 flex justify-between  text-orange-600">
-                                            <span>Debt:</span>
+                                            <span>Hutang:</span>
                                             <span>{formatCurrency(data.expense_debt)}</span>
                                         </div>
                                     </div>

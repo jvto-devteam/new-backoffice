@@ -157,7 +157,8 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, packages, onSubmit
                     <SearchableSelect 
                         options={[
                             { id: 'jvto', name: 'JVTO' },
-                            { id: 'klook', name: 'KLOOK' }
+                            { id: 'klook', name: 'KLOOK' },
+                            { id: 'twt', name: 'TWT' }
                         ]}
                         value={filters.selectedChannel}
                         onChange={(value) => onChange('selectedChannel', value)}
@@ -381,8 +382,10 @@ export default function ExpenseManager({booking,summary,packages,filters}){
                                     </div>
                                     <div className="mt-2">
                                         {
-                                            data.channel == 'KLOOK' ? (
+                                            data.channel === 'KLOOK' ? (
                                                 <span className="bg-orange-200 text-orange-600 rounded-full text-xs font-bold px-2 py-1">KLOOK</span>
+                                            ) : data.channel === 'TWT' ? (
+                                                <span className="bg-yellow-200 text-yellow-600 rounded-full text-xs font-bold px-2 py-1">TWT</span>
                                             ) : (
                                                 <span className="bg-blue-200 text-blue-600 rounded-full text-xs font-bold px-2 py-1">JVTO</span>
                                             )

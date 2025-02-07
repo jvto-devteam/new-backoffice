@@ -380,7 +380,7 @@ class BookingController extends Controller
 
         if ($request->packageName) {
             $package = Package::find($request->packageName);
-            $invoiceDescription = $package->name;
+            $invoiceDescription = $package ? $package->name : $booking->package_duration . " Days " . $nights . " Night Package";
             $packageId = $package->id;
         } else {
             $invoiceDescription = $booking->package_duration . " Days " . $nights . " Night Package";
@@ -747,7 +747,7 @@ class BookingController extends Controller
         
         if ($request->packageName) {
             $package = Package::find($request->packageName);
-            $invoiceDescription = $package->name;
+            $invoiceDescription = $package ? $package->name : $booking->package_duration . " Days " . $nights . " Night Package";
             $packageId = $package->id;
         } else {
             $invoiceDescription = $booking->package_duration . " Days " . $nights . " Night Package";
@@ -1263,7 +1263,7 @@ class BookingController extends Controller
         if($isCarExist){
 
             $cekCarActivities = BookCarActivity::where('booking_id',$id)->count();
-            if($cekCarActivities == 0){
+            if($cekCarActivities == 0 && $cekCar){
                 $insertCar = new BookCarActivity;
                 $insertCar->booking_id = $id;
                 $insertCar->car_id = $cekCar->car_id;
@@ -1277,7 +1277,7 @@ class BookingController extends Controller
             }
 
             $cekCrewActivities = BookCrewActivity::where('booking_id',$id)->count();
-            if($cekCrewActivities == 0){
+            if($cekCrewActivities == 0 && $cekCar){
                 $insertCrew = new BookCrewActivity;
                 $insertCrew->booking_id = $id;
                 

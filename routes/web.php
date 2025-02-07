@@ -77,6 +77,7 @@ Route::prefix('finance')->group(function () {
     Route::get('/expense-manager', [FinanceController::class, 'expense']);
     Route::get('/expense-manager/{id}/edit', [FinanceController::class, 'editExpense']);
     Route::post('/expense-manager/{id}/update', [FinanceController::class, 'updateExpense']);
+    Route::get('/expense-manager/{id}/crew', [FinanceController::class, 'crewExpense']);
     Route::get('/monthly-settlement', [FinanceController::class, 'settlement']);
     Route::get('/profit-loss-summary', [FinanceController::class, 'profitLoss']);
 });

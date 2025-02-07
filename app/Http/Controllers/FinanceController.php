@@ -19,6 +19,9 @@ use App\Models\OthersActivity;
 use App\Models\Package;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use PDF;
+use Illuminate\Support\Str;
+
 
 class FinanceController extends Controller
 {
@@ -119,11 +122,11 @@ class FinanceController extends Controller
         $package = $request->input('package');
         $channel = $request->input('channel');
         $perPage = 10;
-        $query = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','payment','expense_internal_total','total_expense_paid','total_expense_balance','total_expense_debt')->with(['user.country','bookingDetail' => function($q){
+        $query = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','payment','expense_internal_total','total_expense_paid','total_expense_balance','total_expense_debt','booking_category_id','agent_id','package_duration')->with(['user.country','bookingDetail' => function($q){
             $q->select('id','package_id','booking_id')->with('package',function($qq){
                 $qq->select('id','name','package_code');
             });
-        }])->where('status', 'booked')->where('agent_id', 2)->where('travel_date_start','like','%2025%')->orderBy('travel_date_start','asc');
+        }])->where('status', 'booked')->where('travel_date_start','like','%2025%')->orderBy('travel_date_start','asc');
         if ($search) {
             $query->whereHas('user',function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%");
@@ -142,11 +145,14 @@ class FinanceController extends Controller
         }
         // Apply channel filter
         if ($channel) {
-            if($channel == 'klook'){
-                $query->where('booking_category_id',3);
+            if($channel == 'twt'){
+                $query->where('agent_id',1);
+            }
+            else if($channel == 'klook'){
+                $query->where('agent_id',2)->where('booking_category_id',3);
             }
             else{
-                $query->where('booking_category_id','!=',3);
+                $query->where('agent_id',2)->where('booking_category_id','!=',3);
             }
         }
 
@@ -162,12 +168,14 @@ class FinanceController extends Controller
        
         $booking = $query->paginate($perPage)
             ->through(function($booking) {
+                $night = $booking->package_duration-1;
                 return [
                     'id' => $booking->id,
                     'user_id' => $booking->user_id,
                     'name' => $booking->user->name,
-                    'package_code' => $booking->bookingDetail[0]->package->package_code,
-                    'package' => $booking->bookingDetail[0]->package->name ?? '-',
+                    'channel' => $booking->agent_id == 1 ? 'TWT' : ($booking->booking_category_id != 3 ? 'JVTO' : 'KLOOK'),
+                    'package_code' => $booking->bookingDetail[0]->package_id ? $booking->bookingDetail[0]->package->package_code : '-',
+                    'package' => $booking->bookingDetail[0]->package_id ? $booking->bookingDetail[0]->package->name : $booking->package_duration." Days ".$night." Nights" ,
                     'numb_of_pax' => $booking->total_pax ?? 0,
                     'trip_date' => $booking->travel_date_start ?? '-',
                     'total_per_pax' => $booking->grand_total/$booking->total_pax,
@@ -203,7 +211,7 @@ class FinanceController extends Controller
             }]);
         }])->where('id',$id)->first();
         $pax = $booking->total_pax;
-        $day = $booking->bookingDetail[0]->package->duration->day;
+        $day = $booking->package_duration;
 
         $totalAccommodations = 0;
         $totalDestinations = 0;
@@ -428,7 +436,7 @@ class FinanceController extends Controller
             $cekCar = $cekCar->first();
 
             $cekCarActivities = BookCarActivity::where('booking_id',$id)->count();
-            if($cekCarActivities == 0){
+            if($cekCarActivities == 0 && $cekCar){
                 $insertCar = new BookCarActivity;
                 $insertCar->booking_id = $id;
                 $insertCar->car_id = $cekCar->car_id;
@@ -440,7 +448,7 @@ class FinanceController extends Controller
             }
 
             $cekCrewActivities = BookCrewActivity::where('booking_id',$id)->count();
-            if($cekCrewActivities == 0){
+            if($cekCrewActivities == 0 && $cekCar){
                 $insertCrew = new BookCrewActivity;
                 $insertCrew->booking_id = $id;
                 
@@ -661,5 +669,85 @@ class FinanceController extends Controller
             $booking->save();
         }
         return back()->with('message', 'Expense saved successfully');
+    }
+    function crewExpense($id){
+        $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id','booking_date','package_duration')->with(['user' => function($query){
+            $query->select('id','name');
+        }])->where('id',$id)->first();
+        $booking = [
+            'customer_name' => $booking->user->name,
+            'travel_date_start' => date('d F Y', strtotime($booking->travel_date_start)),
+            'total_pax' => $booking->total_pax,
+            'duration' => $booking->package_duration." Days ".($booking->package_duration == 1 ? 1 : $booking->package_duration-1)." Nights",
+        ];
+        
+        $bookRoom = BookHotel::select('id','booking_id','hotel_id','b','l','d','is_paid','is_debt')->with(['hotel' => function($query){
+            $query->select('id','name','lunch_rate','dinner_rate');
+        },'bookRoom' => function($query){
+            $query->select('id','book_hotel_id','room_hotel_id','quantity','subtotal')->with(['roomHotel' => function($q){
+                $q->select('id','room_name','rate');
+            }]);
+        },'bookHotelMeal'])->where('booking_id',$id)
+        ->get()->map(function($query){
+            return [
+                'hotel' => $query->hotel->name,
+                'rooms' => $query->bookRoom->map(function($room){
+                    return [
+                        'room' => $room->roomHotel->room_name,
+                        'quantity' => $room->quantity,
+                        'price' => $room->subtotal/$room->quantity,
+                        'subtotal' => $room->subtotal,
+                    ];
+                }),
+                'meals' => $query->bookHotelMeal->map(function($meals){
+                    return [
+                        'meals' => $meals->dinner,
+                        'quantity' => $meals->quantity,
+                        'price' => $meals->price,
+                        'subtotal' => $meals->subtotal,
+                    ];
+                })
+            ];
+        });
+        
+        $destinations = BookDestinationActivity::select('id','destination_id','destination_activity_id','qty','price','subtotal','status_paid','is_debt')->with(['destination' => function($query){
+            $query->select('id','name');
+        },'destinationActivity' => function($query){
+            $query->select('id','name','unit');
+        }])->where('booking_id',$id)->get();   
+        $resources['cars'] = BookCarActivity::with(['car' => function($query) {
+            $query->select('id', 'name');
+        }])
+        ->where('booking_id', $id)
+        ->get();        
+        return $destinations;
+        $resources['crews'] = BookCrewActivity::with(['crewRole' => function($query) {
+            $query->select('id', 'role');
+        }])
+        ->where('booking_id', $id)
+        ->get();
+        $others = BookOthersActivity::with('othersActivity')
+        ->where('booking_id', $id)
+        ->get()
+        ->map(function($other) use (&$totalOthers) { // Gunakan reference
+            $totalOthers += $other->subtotal;
+            return $other;
+        });
+
+        $data = [
+            'booking' => $booking,
+            'accommodations' => $bookRoom,
+            'destinations' => $destinations,
+            'resources' => $resources,
+            'others' => $others,
+        ];
+        return $data;
+        return view('exports/crew-expense',$data);
+        $pdf = PDF::loadView('exports/crew-expense', $data);
+        $name = Str::slug($booking->user->name);
+        // Opsional: Set paper size dan orientation
+        $pdf->setPaper('A4', 'portrait');
+        return $pdf->download('crew-expense-'.$name.'.pdf');        
+        
     }
 }

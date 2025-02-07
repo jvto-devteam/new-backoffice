@@ -103,7 +103,7 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, packages, onSubmit
     return (
         <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border p-4 z-50">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium">Filters</h3>
+                <h3 className="text-lg font-medium dark:text-black">Filters</h3>
                 <Button variant="ghost" size="icon" onClick={onClose}>
                     <X className="h-4 w-4" />
                 </Button>
@@ -111,7 +111,7 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, packages, onSubmit
             
             <form onSubmit={onSubmit} className="space-y-4">
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Search</label>
+                    <label className="text-sm font-medium dark:text-black">Search</label>
                     <Input
                         type="text"
                         placeholder="Search clients..."
@@ -120,7 +120,7 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, packages, onSubmit
                     />
                 </div>
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Date Range</label>
+                    <label className="text-sm font-medium dark:text-black">Date Range</label>
                     <div className="grid grid-cols-2 gap-2">
                         <Input
                             type="date"
@@ -138,7 +138,7 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, packages, onSubmit
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Package</label>
+                    <label className="text-sm font-medium dark:text-black">Package</label>
                     <SearchableSelect 
                         options={packages.map(pkg => ({
                             id: pkg.id, 
@@ -239,6 +239,20 @@ export default function InvoiceManager({booking,summary,packages,filters}){
         packageOpen: false,
         channelOpen: false
     });
+
+    const handlePageChange = (url) => {
+        router.get(url, {
+            search: filterState.search,
+            start_date: filterState.startDate,
+            end_date: filterState.endDate,
+            package: filterState.selectedPackage,
+            channel: filterState.selectedChannel,
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
     
     
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -588,7 +602,7 @@ const PaymentStatusBadge = ({ status }) => {
                         <Button
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
                             variant="outline"
-                            className="gap-2"
+                            className="gap-2 dark:text-black"
                         >
                             <Filter className="h-4 w-4" />
                             Filters
@@ -632,7 +646,7 @@ const PaymentStatusBadge = ({ status }) => {
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border flex items-center gap-4">
                         <div className="flex-1">
                             <p className="text-2xl font-bold text-blue-600">{formatCurrency(summary.grand_total)}</p>
-                            <p className="text-sm text-gray-500">From {summary.bookings} Invoices</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-100">From {summary.bookings} Invoices</p>
                         </div>
                     </div>
                 </div>
@@ -692,7 +706,7 @@ const PaymentStatusBadge = ({ status }) => {
                                             <Package className="w-4 h-4" />
                                             <span className="font-bold">{data.package_code}</span>
                                         </div>
-                                        <div className="text-sm text-gray-600">{data.package}</div>
+                                        <div className="text-sm text-gray-600 dark:text-gray-100">{data.package}</div>
                                     </div>
                                 </TableCell>
                                 <TableCell>

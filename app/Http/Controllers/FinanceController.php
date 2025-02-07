@@ -28,7 +28,7 @@ class FinanceController extends Controller
         $endDate = $request->get('end_date') ? $request->get('end_date') : date('Y-m-t');
         $package = $request->input('package');
         $channel = $request->input('channel');
-        $perPage = 10;
+        $perPage = 3;
         $query = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','payment','balance','booking_category_id')->with(['user.country','bookingDetail' => function($q){
             $q->select('id','package_id','booking_id')->with('package',function($qq){
                 $qq->select('id','name','package_code');
@@ -157,6 +157,7 @@ class FinanceController extends Controller
             'total_expense' => $query->sum('expense_internal_total'),
             'paid' => $query->sum('total_expense_paid'),
             'unpaid' => $query->sum('total_expense_balance'),            
+            'debt' => $query->sum('total_expense_debt'),            
         ];
        
         $booking = $query->paginate($perPage)

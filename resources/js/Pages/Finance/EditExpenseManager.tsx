@@ -62,7 +62,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
  
   return (
     <div className="mb-6">
-      <h4 className="font-medium mb-2">Rooms</h4>
+      <h4 className="font-medium mb-2 dark:text-black">Rooms</h4>
       <table className="w-full">
         <thead>
           <tr className="text-left text-gray-600 bg-gray-100">
@@ -434,7 +434,7 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
       totalAmount: amounts.total,
       paidAmount: amounts.paid,
       debtAmount: amounts.debt,
-      balanceAmount: amounts.total - amounts.paid
+      balanceAmount: amounts.total - amounts.paid - amounts.debt
     };
     onTotalsChange(result);
     return result;
@@ -461,7 +461,7 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
-            <span className="font-medium">Accommodation</span>
+            <span className="font-medium dark:text-black">Accommodation</span>
           </div>
           <div className="flex gap-3">
             <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
@@ -507,24 +507,24 @@ const BookingInfo = ({ booking }) => {
       <div className="p-4 flex flex-col gap-2">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="font-bold text-lg">{booking.user.name}</h2>
+            <h2 className="font-bold text-lg dark:text-black">{booking.user.name}</h2>
             <p className="text-gray-600 text-sm">
               {booking.booking_detail[0]?.package?.name || `${booking.package_duration}D ${booking.package_duration-1}N Packages`}
             </p>
           </div>
           <div className="text-right">
             <div className="text-gray-500 text-sm">Total Pax:</div>
-            <div className="font-semibold">{booking.total_pax} Pax</div>
+            <div className="font-semibold dark:text-black">{booking.total_pax} Pax</div>
           </div>
         </div>
         <div className="flex justify-between items-center pt-2">
           <div>
-            <div className="text-gray-500 text-sm">Travel Date:</div>
-            <div>{startDate}</div>
+            <div className="text-gray-500 text-sm dark:text-black">Travel Date:</div>
+            <div className="dark:text-black">{startDate}</div>
           </div>
           <div className="text-right">
-            <div className="text-gray-500 text-sm">Grand Total:</div>
-            <div className="font-semibold">{formatCurrency(booking.grand_total)}</div>
+            <div className="text-gray-500 text-sm dark:text-black">Grand Total:</div>
+            <div className="font-semibold dark:text-black">{formatCurrency(booking.grand_total)}</div>
           </div>
         </div>
       </div>
@@ -819,7 +819,7 @@ const DestinationsCard = ({ destinations, onTotalsChange = () => {},listForNewIt
       totalAmount: total,
       paidAmount: paid,
       debtAmount: debt,
-      balanceAmount: total - paid
+      balanceAmount: total - paid - debt
     };
   }, [destinationData]);
 
@@ -1107,7 +1107,7 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
       totalAmount: total,
       paidAmount: paid,
       debtAmount: debt,
-      balanceAmount: total - paid
+      balanceAmount: total - paid - debt
     };
     onTotalsChange(result);
     return result
@@ -1474,7 +1474,7 @@ const ResourceCard = ({ resources, onTotalsChange = () => {},listForNewItemsCars
       totalAmount: carTotal + crewTotal,
       paidAmount: carPaid + crewPaid,
       debtAmount: carDebt + crewDebt,
-      balanceAmount: (carTotal + crewTotal) - (carPaid + crewPaid)
+      balanceAmount: (carTotal + crewTotal) - (carPaid + crewPaid) - (carDebt + crewDebt)
     };
     onTotalsChange(result);
     return result
@@ -1851,7 +1851,7 @@ const useExpenseData = (initialData) => {
       totalAmount,
       paidAmount,
       debtAmount,
-      balanceAmount: totalAmount - paidAmount,
+      balanceAmount: totalAmount - paidAmount - debtAmount,
       profit: initialData.booking.grand_total - totalAmount
     };
   }, [

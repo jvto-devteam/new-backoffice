@@ -102,7 +102,7 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, packages, onSubmit
     return (
         <div className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-lg border p-4 z-50">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium">Filters</h3>
+                <h3 className="text-lg font-medium dark:text-black">Filters</h3>
                 <Button variant="ghost" size="icon" onClick={onClose}>
                     <X className="h-4 w-4" />
                 </Button>
@@ -110,7 +110,7 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, packages, onSubmit
             
             <form onSubmit={onSubmit} className="space-y-4">
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Search</label>
+                    <label className="text-sm font-medium dark:text-black">Search</label>
                     <Input
                         type="text"
                         placeholder="Search clients..."
@@ -119,7 +119,7 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, packages, onSubmit
                     />
                 </div>
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Date Range</label>
+                    <label className="text-sm font-medium dark:text-black">Date Range</label>
                     <div className="grid grid-cols-2 gap-2">
                         <Input
                             type="date"
@@ -137,7 +137,7 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, packages, onSubmit
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Package</label>
+                    <label className="text-sm font-medium dark:text-black">Package</label>
                     <SearchableSelect 
                         options={packages.map(pkg => ({
                             id: pkg.id, 
@@ -153,7 +153,7 @@ const FilterDropdown = ({ isOpen, onClose, filters, onChange, packages, onSubmit
                 </div>
 
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">Order Channel</label>
+                    <label className="text-sm font-medium dark:text-black">Order Channel</label>
                     <SearchableSelect 
                         options={[
                             { id: 'jvto', name: 'JVTO' },
@@ -194,12 +194,14 @@ const SummaryCard = ({ icon: Icon, title, value, subtitle, type }) => {
         paid: 'bg-green-100 text-green-600',
         dp: 'bg-yellow-100 text-yellow-600',
         unpaid: 'bg-red-100 text-red-600',
+        debt: 'bg-orange-100 text-orange-600',
         default: 'bg-blue-100 text-blue-600'
     };
     const iconColors = {
         paid: 'text-green-600',
         dp: 'text-yellow-600',
         unpaid: 'text-red-600',
+        debt: 'text-orange-600',
         default: 'text-blue-600'
     };
 
@@ -226,7 +228,9 @@ export default function ExpenseManager({booking,summary,packages,filters}){
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-US', {
             style: 'currency',
-            currency: 'IDR'
+            currency: 'IDR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0            
         }).format(amount);
     };
     const [filterState, setFilterState] = useState({
@@ -238,6 +242,19 @@ export default function ExpenseManager({booking,summary,packages,filters}){
         packageOpen: false,
         channelOpen: false
     });
+    const handlePageChange = (url) => {
+        router.get(url, {
+            search: filterState.search,
+            start_date: filterState.startDate,
+            end_date: filterState.endDate,
+            package: filterState.selectedPackage,
+            channel: filterState.selectedChannel,
+        }, {
+            preserveState: true,
+            preserveScroll: true
+        });
+    };
+
     
     
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -299,7 +316,7 @@ export default function ExpenseManager({booking,summary,packages,filters}){
                         <Button
                             onClick={() => setIsFilterOpen(!isFilterOpen)}
                             variant="outline"
-                            className="gap-2"
+                            className="gap-2 dark:text-black"
                         >
                             <Filter className="h-4 w-4" />
                             Filters
@@ -317,11 +334,11 @@ export default function ExpenseManager({booking,summary,packages,filters}){
                 </div>
                 {/* Summary Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-4">
-                    <SummaryCard
+                    {/* <SummaryCard
                         icon={BookUser}
                         value={`${summary.bookings}`}
                         subtitle="Total Bookings"
-                        />
+                        /> */}
                     <SummaryCard
                         icon={FileText}
                         value={formatCurrency(summary.total_expense)}
@@ -338,6 +355,12 @@ export default function ExpenseManager({booking,summary,packages,filters}){
                         icon={Clock}
                         value={formatCurrency(summary.unpaid)}
                         subtitle="Expense Unpaid"
+                    />
+                    <SummaryCard
+                        icon={BookUser}
+                        value={formatCurrency(summary.debt)}
+                        subtitle="Total Debt"
+                        type="debt"
                     />
                 </div>
 
@@ -396,7 +419,7 @@ export default function ExpenseManager({booking,summary,packages,filters}){
                                             <Package className="w-4 h-4" />
                                             <span className="font-bold">{data.package_code}</span>
                                         </div>
-                                        <div className="text-sm text-gray-600">{data.package}</div>
+                                        <div className="text-sm text-gray-600 dark:text-gray-100">{data.package}</div>
                                     </div>
                                 </TableCell>
                                 <TableCell>
@@ -416,15 +439,15 @@ export default function ExpenseManager({booking,summary,packages,filters}){
                                 </TableCell>
                                 <TableCell>
                                     <div className="space-y-1">
-                                        <div className=" flex justify-between text-green-600">
+                                        <div className="space-x-3 flex justify-between text-green-600">
                                             <span>Paid:</span>
                                             <span>{formatCurrency(data.expense_paid)}</span>
                                         </div>
-                                        <div className="flex justify-between  text-red-600">
+                                        <div className="space-x-3 flex justify-between  text-red-600">
                                             <span>Unpaid:</span>
                                             <span>{formatCurrency(data.expense_balance)}</span>
                                         </div>
-                                        <div className="flex justify-between  text-red-600">
+                                        <div className="space-x-3 flex justify-between  text-orange-600">
                                             <span>Debt:</span>
                                             <span>{formatCurrency(data.expense_debt)}</span>
                                         </div>

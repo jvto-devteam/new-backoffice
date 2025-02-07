@@ -1025,7 +1025,7 @@ class BookingController extends Controller
 
         $booking->expense_internal_total = $totalExpense;
         $booking->total_expense_paid = $totalExpensePaid;
-        $booking->total_expense_balance = $totalExpense - $totalExpensePaid;
+        $booking->total_expense_balance = $totalExpense - $totalExpensePaid - $totalExpenseDebt;
         $booking->total_expense_debt = $totalExpenseDebt;
 
         $booking->save();

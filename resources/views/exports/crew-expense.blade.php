@@ -80,7 +80,16 @@
                     <br>
                     <strong>Travel Date:</strong> {{ $booking['travel_date_start'] }}
                 </td>
-                <td style="border:none;padding:2px;width:50%;text-align:right;">
+                <td style="vertical-align:top;border:none;padding:2px;width:50%;text-align:right;">
+                    @if ($plotting['drivers'] != '')
+                        <strong>Driver:</strong> {{ $plotting['drivers'] }}<br>
+                    @endif
+                    @if ($plotting['escorts'] != '')
+                        <strong>Escort:</strong> {{ $plotting['escorts'] }}<br>
+                    @endif
+                    @if ($plotting['ijens'] != '')
+                        <strong>Ijen:</strong> {{ $plotting['ijens'] }}<br>
+                    @endif
                 </td>
             </tr>
         </table>

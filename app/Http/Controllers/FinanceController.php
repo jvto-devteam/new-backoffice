@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BookCarActivity;
 use App\Models\BookCrewActivity;
 use App\Models\BookDestinationActivity;
+use App\Models\BookGuideDriver;
 use App\Models\BookHotel;
 use App\Models\BookHotelMeal;
 use App\Models\Booking;
@@ -765,15 +766,35 @@ class FinanceController extends Controller
                 'is_debt' => $query->is_debt,
             ];
         });
-
+        $drivers = [];
+        $escorts = [];
+        $ijens = [];
         $data = [
             'booking' => $booking,
             'accommodations' => $bookRoom,
             'destinations' => $destinations,
             'resources' => $resources,
             'others' => $others,
+            'plotting' => [
+                'drivers' => BookGuideDriver::select('id', 'guide_id')->with(['person' => function ($query) {
+                    $query->select('id', 'name');
+                }])->where('booking_id', $id)->where('type', 'driver')->get()->each(function ($query) use (&$drivers) {
+                    $drivers[] = $query->person->name;
+                }) ? implode(', ', $drivers) : '',
+        
+                'escorts' => BookGuideDriver::select('id', 'guide_id')->with(['person' => function ($query) {
+                    $query->select('id', 'name');
+                }])->where('booking_id', $id)->where('type', 'guide')->where('guide_ijen', '0')->get()->each(function ($query) use (&$escorts) {
+                    $escorts[] = $query->person->name;
+                }) ? implode(', ', $escorts) : '',
+        
+                'ijens' => BookGuideDriver::select('id', 'guide_id')->with(['person' => function ($query) {
+                    $query->select('id', 'name');
+                }])->where('booking_id', $id)->where('type', 'guide')->where('guide_ijen', '1')->get()->each(function ($query) use (&$ijens) {
+                    $ijens[] = $query->person->name;
+                }) ? implode(', ', $ijens) : '',        
+            ]
         ];
-        // return $data;
         // return view('exports/crew-expense',$data);
         $pdf = PDF::loadView('exports/crew-expense', $data);
         $name = Str::slug($booking['customer_name']);

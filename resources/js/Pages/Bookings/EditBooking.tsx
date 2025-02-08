@@ -1704,7 +1704,7 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
           cancelButtonText: 'Cancel'
       }).then((result) => {
           if (result.isConfirmed) {
-              const isWhatsappSelected = document.getElementById('whatsapp-itinerary').checked;
+              const isWhatsappSelected = channel != 'TWT' ? document.getElementById('whatsapp-itinerary').checked : false;
   
               // Create FormData object untuk handling file upload
               const formDataObj = new FormData();

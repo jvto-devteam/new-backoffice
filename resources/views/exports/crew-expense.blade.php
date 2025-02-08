@@ -58,6 +58,10 @@
         .mt-10 {
             margin-top: 10px;
         }
+        .row-paid,.row-paid td{
+            background: #fef2f2;
+            color:#f87575;
+        }
     </style>
 </head>
 <body>
@@ -106,7 +110,7 @@
                 
                 <!-- Rooms -->
                 @foreach($accommodation['rooms'] as $room)
-                    <tr>
+                    <tr {{$accommodation['is_debt'] == '1' ? "class=row-paid" : ""}}>
                         <td>{{ $no++ }}</td>
                         <td>{{ $room['room'] }}</td>
                         <td class="text-right">{{ $room['quantity'] }}</td>
@@ -116,7 +120,7 @@
                             @php $grandTotal += $room['subtotal']; @endphp
                         @else
                             <td class="text-right">-</td>
-                            <td class="text-right" style="color:#3aad6d"><b>PAID</b></td>
+                            <td class="text-right"><b>PAID</b></td>
                         @endif
                     </tr>
                 @endforeach
@@ -125,8 +129,8 @@
                 @if(isset($accommodation['meals']) && count($accommodation['meals']) > 0)
                     @foreach($accommodation['meals'] as $meal)
                         @if($meal['meals'] !== null)
-                            <tr>
-                                <td>{{ $no++ }}</td>
+                        <tr {{$accommodation['is_debt'] == '1' ? "class=row-paid" : ""}}>
+                            <td>{{ $no++ }}</td>
                                 <td>{{ ucfirst($meal['meals']) }}</td>
                                 <td class="text-right">{{ $meal['quantity'] }}</td>
                                 @if($accommodation['is_debt'] != '1')
@@ -135,7 +139,7 @@
                                     @php $grandTotal += $meal['subtotal']; @endphp
                                 @else
                                     <td class="text-right">-</td>
-                                    <td class="text-right" style="color:#3aad6d"><b>PAID</b></td>
+                                    <td class="text-right"><b>PAID</b></td>
                                 @endif
                             </tr>
                         @endif
@@ -149,8 +153,8 @@
                     <td colspan="5">{{ $location }}</td>
                 </tr>
                 @foreach($items as $item)
-                    <tr>
-                        <td>{{ $no++ }}</td>
+                <tr {{$item['is_debt'] == '1' ? "class=row-paid" : ""}}>
+                    <td>{{ $no++ }}</td>
                         <td>{{ $item['item'] }}</td>
                         <td class="text-right">{{ $item['quantity'] }}</td>
                         @if($item['is_debt'] != '1')
@@ -159,7 +163,7 @@
                             @php $grandTotal += $item['subtotal']; @endphp
                         @else
                             <td class="text-right">-</td>
-                            <td class="text-right" style="color:#3aad6d"><b>PAID</b></td>
+                            <td class="text-right"><b>PAID</b></td>
                         @endif
                     </tr>
                 @endforeach
@@ -170,8 +174,8 @@
                 <td colspan="5">Resource Requirements</td>
             </tr>
             @foreach($resources['crews'] as $item)
-                <tr>
-                    <td>{{ $no++ }}</td>
+            <tr {{$item['is_debt'] == '1' ? "class=row-paid" : ""}}>
+                <td>{{ $no++ }}</td>
                     <td>{{ $item['item'] }}</td>
                     <td class="text-right">{{ $item['quantity'] }}</td>
                     @if($item['is_debt'] != '1')
@@ -180,13 +184,13 @@
                         @php $grandTotal += $item['subtotal']; @endphp
                     @else
                         <td class="text-right">-</td>
-                        <td class="text-right" style="color:#3aad6d"><b>PAID</b></td>
+                        <td class="text-right"><b>PAID</b></td>
                     @endif
                 </tr>
             @endforeach
             @foreach($resources['cars'] as $item)
-                <tr>
-                    <td>{{ $no++ }}</td>
+            <tr {{$item['is_debt'] == '1' ? "class=row-paid" : ""}}>
+                <td>{{ $no++ }}</td>
                     <td>{{ $item['item'] }}</td>
                     <td class="text-right">{{ $item['quantity'] }}</td>
                     @if($item['is_debt'] != '1')
@@ -195,7 +199,7 @@
                         @php $grandTotal += $item['subtotal']; @endphp
                     @else
                         <td class="text-right">-</td>
-                        <td class="text-right" style="color:#3aad6d"><b>PAID</b></td>
+                        <td class="text-right"><b>PAID</b></td>
                     @endif
                 </tr>
             @endforeach
@@ -205,8 +209,8 @@
                 <td colspan="5">Others</td>
             </tr>
             @foreach($others as $item)
-                <tr>
-                    <td>{{ $no++ }}</td>
+            <tr {{$item['is_debt'] == '1' ? "class=row-paid" : ""}}>
+                <td>{{ $no++ }}</td>
                     <td>{{ $item['item'] }}</td>
                     <td class="text-right">{{ $item['quantity'] }}</td>
                     @if($item['is_debt'] != '1')
@@ -215,7 +219,7 @@
                         @php $grandTotal += $item['subtotal']; @endphp
                     @else
                         <td class="text-right">-</td>
-                        <td class="text-right" style="color:#3aad6d"><b>PAID</b></td>
+                        <td class="text-right"><b>PAID</b></td>
                     @endif
                 </tr>
             @endforeach

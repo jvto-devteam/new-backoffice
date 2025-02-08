@@ -529,30 +529,32 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
   }, [channel]);  
 
   console.log(channel);
-  const shouldRenderField = (fieldName) => {
-    switch (channel) {
-      case 'KLOOK':
-        const klookExcludedFields = ['type', 'dueDate'];
-        return !klookExcludedFields.includes(fieldName);
-      case 'JVTO':
-        return true;
-      case 'TWT':
-        const twtAllowedFields = [
-          'customer', 
-          'numOfPax', 
-          'travelDate', 
-          'bookingDate', 
-          'bookingCodeOrigin', 
-          'bookingFileOrigin',
-          'sizes'
-        ];
-        return twtAllowedFields.includes(fieldName);
-      default:
-        return true;
-    }
-  };
-
+  
   const renderStep1 = () => {
+    // Function to check if a field should be rendered based on channel
+    const shouldRenderField = (fieldName) => {
+      switch (channel) {
+        case 'KLOOK':
+          const klookExcludedFields = ['type', 'dueDate'];
+          return !klookExcludedFields.includes(fieldName);
+        case 'JVTO':
+          return true;
+        case 'TWT':
+          const twtAllowedFields = [
+            'customer', 
+            'numOfPax', 
+            'travelDate', 
+            'bookingDate', 
+            'bookingCodeOrigin', 
+            'bookingFileOrigin',
+            'sizes'
+          ];
+          return twtAllowedFields.includes(fieldName);
+        default:
+          return true;
+      }
+    };
+  
     return (
       <div className="space-y-6 border rounded-lg">
         <div className="bg-gray-800 text-white p-4 rounded-t-lg">
@@ -588,6 +590,20 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
               </div>
             )}
   
+            {shouldRenderField('travelDate') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Travel Date</label>
+                <input
+                  type="date"
+                  name="travelDate"
+                  value={formData.travelDate}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                />
+              </div>
+            )}
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {shouldRenderField('email') && (
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Email</label>
@@ -601,9 +617,7 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
                 />
               </div>
             )}
-          </div>
   
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {shouldRenderField('phone') && (
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Phone</label>
@@ -639,82 +653,41 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
               </div>
             )}
           </div>
-        </div>
-      </div>
-    );
-  };
-  
-  const renderStep2 = () => (
-    <div className="space-y-6 border rounded-lg">
-      <div className="bg-gray-800 text-white p-4 rounded-t-lg">
-        <h2 className="text-lg font-semibold">Booking Information</h2>
-      </div>
-      <div className="space-y-6 p-6 pt-0">
-        {/* First row: Type, Booking Date, Due Date */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {shouldRenderField('travelDate') && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Travel Date</label>
-              <input
-                type="date"
-                name="travelDate"
-                value={formData.travelDate}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              />
-            </div>
-          )}
 
-          {shouldRenderField('type') && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Type</label>
-              <SearchableSelect 
-                options={typeOptions.map(type => ({
-                  id: type.value,
-                  name: type.label
-                }))}
-                value={formData.type}
-                onChange={(value) => setFormData(prev => ({
-                  ...prev,
-                  type: value
-                }))}
-                placeholder="Select type"
-                open={openType}
-                setOpen={setOpenType}
-                displayKey="name"
-              />
-            </div>
-          )}
-          {shouldRenderField('bookingDate') && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Booking Date</label>
-              <input
-                type="date"
-                name="bookingDate"
-                value={formData.bookingDate}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              />
-            </div>
-          )}
-          {shouldRenderField('dueDate') && (
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Due Date</label>
-              <input
-                type="date"
-                name="dueDate"
-                value={formData.dueDate}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-              />
-            </div>
-          )}
-        </div>
-  
-        {/* Second row: Travel Date and Origin Information */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {(channel === 'KLOOK' || channel === 'TWT') && (
-            <>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {shouldRenderField('type') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Type</label>
+                <SearchableSelect 
+                  options={typeOptions.map(type => ({
+                    id: type.value,
+                    name: type.label
+                  }))}
+                  value={formData.type}
+                  onChange={(value) => setFormData(prev => ({
+                    ...prev,
+                    type: value
+                  }))}
+                  placeholder="Select type"
+                  open={openType}
+                  setOpen={setOpenType}
+                  displayKey="name"
+                />
+              </div>
+            )}
+            {shouldRenderField('bookingDate') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Booking Date</label>
+                <input
+                  type="date"
+                  name="bookingDate"
+                  value={formData.bookingDate}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                />
+              </div>
+            )}
+            {(channel === 'KLOOK' || channel === 'TWT') && (
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Booking Code (Origin)</label>
                 <input
@@ -726,6 +699,8 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
                   placeholder="Enter booking code"
                 />
               </div>
+            )}
+            {(channel === 'KLOOK' || channel === 'TWT') && (
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Booking File (Origin)</label>
                 <input
@@ -740,12 +715,21 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
                   className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                 />
               </div>
-            </>
-          )}
-        </div>
-  
-        {/* T-shirt Distribution section */}
-        {shouldRenderField('sizes') && (
+            )}
+            {shouldRenderField('dueDate') && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">Due Date</label>
+                <input
+                  type="date"
+                  name="dueDate"
+                  value={formData.dueDate}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
+                />
+              </div>
+            )}
+          </div>
+    
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">Tshirt Distribution</label>
             <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 md:grid-cols-6 gap-4">
@@ -763,9 +747,17 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
               ))}
             </div>
           </div>
-        )}
-  
-        {/* Location Information */}
+        </div>
+      </div>
+    );
+  };
+
+  const renderStep2 = () => (
+    <div className="space-y-6 border rounded-lg">
+      <div className="bg-gray-800 text-white p-4 rounded-t-lg">
+        <h2 className="text-lg font-semibold">Booking Information</h2>
+      </div>
+      <div className="space-y-6 p-6 pt-0">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <LocationForm 
@@ -810,40 +802,39 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
             />
           </div>
         </div>
-  
-        {/* Shuttle Service Toggle */}
         <div className="flex items-center justify-between mt-4">
-          <label className="block text-sm font-medium text-gray-700">
-            Shuttle Service
-          </label>
-          <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-            <input
-              type="checkbox"
-              name="shuttle"
-              id="shuttle-toggle"
-              checked={isShuttle}
-              onChange={() => {
-                setIsShuttle(!isShuttle);
-                setFormData(prev => ({
-                  ...prev,
-                  isShuttle: !isShuttle
-                }));
-              }}
-              className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-            />
-            <label
-              htmlFor="shuttle-toggle"
-              className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${
-                isShuttle ? 'bg-blue-500' : 'bg-gray-300'
-              }`}
-            />
-          </div>
+            <label className="block text-sm font-medium text-gray-700">
+                Shuttle Service
+            </label>
+            <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                <input
+                    type="checkbox"
+                    name="shuttle"
+                    id="shuttle-toggle"
+                    checked={isShuttle}
+                    onChange={() => {
+                        setIsShuttle(!isShuttle);
+                        // Reset atau set shuttle-related data if needed
+                        setFormData(prev => ({
+                            ...prev,
+                            isShuttle: !isShuttle
+                        }));
+                    }}
+                    className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                />
+                <label
+                    htmlFor="shuttle-toggle"
+                    className={`toggle-label block overflow-hidden h-6 rounded-full cursor-pointer ${
+                        isShuttle 
+                            ? 'bg-blue-500' 
+                            : 'bg-gray-300'
+                    }`}
+                />
+            </div>
         </div>        
       </div>
     </div>
   );
-
-
   const renderStep3 = () => {
     const handlePackageSelection = (value) => {
       const selectedPackage = packages.find(pkg => pkg.value === value);

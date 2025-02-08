@@ -800,7 +800,9 @@ class FinanceController extends Controller
         $name = Str::slug($booking['customer_name']);
         // Opsional: Set paper size dan orientation
         $pdf->setPaper('A4', 'portrait');
-        return $pdf->download('crew-expense-'.$name.'.pdf');        
-        
+        return $pdf->download('crew-expense-'.$name.'.pdf');                
+    }
+    function settlement(){
+        $booking = Booking::where('status','')->get();
     }
 }

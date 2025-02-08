@@ -55,83 +55,125 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
     onTotalChange(total);
   }, [total, onTotalChange]);
  
-  const handleDelete = (index) => {
-    setRoomStates(prev => prev.filter((_, i) => i !== index));
-    onDataChange(rooms.filter((_, i) => i !== index));
-  };
- 
   return (
     <div className="mb-6">
       <h4 className="font-medium mb-2 dark:text-black">Rooms</h4>
-      <table className="w-full">
-        <thead>
-          <tr className="text-left text-gray-600 bg-gray-100">
-            <th className="px-3 py-2 w-16">NO</th>
-            <th className="px-3">ROOM NAME</th>
-            <th className="px-3 w-24 text-right">QTY</th>
-            <th className="px-3 w-40 text-right">RATE</th>
-            <th className="px-3 w-40 text-right">SUBTOTAL</th>
-            <th className="px-3 w-16"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {rooms.map((room, index) => (
-            <tr key={room.id} className="border-t border-gray-100">
-              <td className="px-3 py-4 text-blue-600">{index + 1}</td>
-              <td className="px-3 dark:text-black">{room.room_hotel.room_name}</td>
-              <td className="px-3">
+      
+      {/* Mobile Card View */}
+      <div className="block lg:hidden space-y-4">
+        {rooms.map((room, index) => (
+          <div key={room.id} className="bg-white shadow rounded-lg p-4">
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full font-medium">
+                  {index + 1}
+                </span>
+                <span className="font-medium dark:text-black">{room.room_hotel.room_name}</span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-3">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Quantity</label>
                 <input
                   type="number"
                   value={roomStates[index].quantity}
                   onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 0)}
-                  className="w-16 p-1 border rounded text-right disabled:bg-gray-100 dark:text-black"
+                  className="w-full p-2 border rounded text-right disabled:bg-gray-100 dark:text-black"
                   min="1"
                   readonly="true"
-                  // disabled={isPaid}
                 />
-              </td>
-              <td className="px-3">
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Rate</label>
                 <input
                   type="text"
                   value={formatCurrency(roomStates[index].rate)}
                   onChange={(e) => handleRateChange(index, parseInt(e.target.value.replace(/\D/g, '')) || 0)}
-                  className="w-32 p-1 border rounded text-right disabled:bg-gray-100 dark:text-black"
+                  className="w-full p-2 border rounded text-right disabled:bg-gray-100 dark:text-black"
                   readonly="true"
-                  // disabled={isPaid}
                 />
-              </td>
-              <td className="px-3 text-right dark:text-black">
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="text-gray-600">Subtotal</span>
+              <span className="font-medium dark:text-black">
                 {formatCurrency(roomStates[index].quantity * roomStates[index].rate)}
-              </td>
-              <td className="px-3">
-                {/* {!isPaid && (
-                  <button 
-                    onClick={() => handleDelete(index)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
-                )} */}
-              </td>
+              </span>
+            </div>
+          </div>
+        ))}
+        
+        {/* Mobile Total */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex justify-between items-center">
+            <span className="font-medium text-gray-600">Total</span>
+            <span className="font-medium text-lg dark:text-black">{formatCurrency(total)}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden lg:block">
+        <table className="w-full">
+          <thead>
+            <tr className="text-left text-gray-600 bg-gray-100">
+              <th className="px-3 py-2 w-16">NO</th>
+              <th className="px-3">ROOM NAME</th>
+              <th className="px-3 w-24 text-right">QTY</th>
+              <th className="px-3 w-40 text-right">RATE</th>
+              <th className="px-3 w-40 text-right">SUBTOTAL</th>
+              <th className="px-3 w-16"></th>
             </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan="4" className="dark:text-black px-3 py-4 text-right font-medium">Total</td>
-            <td className={`px-3 text-right font-medium dark:text-black ${isPaid ? '' : ''}`}>
-              {formatCurrency(total)}
-            </td>
-            <td></td>
-          </tr>
-        </tfoot>
-      </table>
+          </thead>
+          <tbody>
+            {rooms.map((room, index) => (
+              <tr key={room.id} className="border-t border-gray-100">
+                <td className="px-3 py-4 text-blue-600">{index + 1}</td>
+                <td className="px-3 dark:text-black">{room.room_hotel.room_name}</td>
+                <td className="px-3">
+                  <input
+                    type="number"
+                    value={roomStates[index].quantity}
+                    onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 0)}
+                    className="w-16 p-1 border rounded text-right disabled:bg-gray-100 dark:text-black"
+                    min="1"
+                    readonly="true"
+                  />
+                </td>
+                <td className="px-3">
+                  <input
+                    type="text"
+                    value={formatCurrency(roomStates[index].rate)}
+                    onChange={(e) => handleRateChange(index, parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+                    className="w-32 p-1 border rounded text-right disabled:bg-gray-100 dark:text-black"
+                    readonly="true"
+                  />
+                </td>
+                <td className="px-3 text-right dark:text-black">
+                  {formatCurrency(roomStates[index].quantity * roomStates[index].rate)}
+                </td>
+                <td className="px-3"></td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan="4" className="dark:text-black px-3 py-4 text-right font-medium">Total</td>
+              <td className={`px-3 text-right font-medium dark:text-black ${isPaid ? '' : ''}`}>
+                {formatCurrency(total)}
+              </td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
- };
- const MealTable = ({ meals, hotelInfo, pax, isPaid, onTotalChange, onDataChange }) => {
+};
+
+const MealTable = ({ meals, hotelInfo, pax, isPaid, onTotalChange, onDataChange }) => {
   const [mealStates, setMealStates] = useState({
     lunch: {
       enabled: hotelInfo.l === '1',
@@ -144,7 +186,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
       price: meals.find(m => m.meals === 'dinner')?.price || hotelInfo.dinner_rate
     }
   });
- 
+
   const handleQuantityChange = (type, value) => {
     setMealStates(prev => ({
       ...prev,
@@ -159,7 +201,7 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
     });
     onDataChange(newMeals);
   };
- 
+
   const handlePriceChange = (type, value) => {
     setMealStates(prev => ({
       ...prev,
@@ -174,141 +216,215 @@ const RoomTable = ({ rooms, isPaid, onTotalChange, onDataChange }) => {
     });
     onDataChange(newMeals);
   };
- 
+
   const total = useMemo(() => {
     return Object.values(mealStates).reduce((sum, meal) => {
       return sum + (meal.enabled ? meal.qty * meal.price : 0);
     }, 0);
   }, [mealStates]);
- 
+
   useEffect(() => {
     onTotalChange(total);
   }, [total, onTotalChange]);
- 
-  const handleDelete = (type) => {
-    setMealStates(prev => ({
-      ...prev,
-      [type]: { ...prev[type], enabled: false }
-    }));
-    
-    onDataChange(meals.filter(meal => meal.meals !== type));
-  };  
- 
+
+  if (!meals.length) return null;
+
   return (
     <div className="mb-6">
-       <h4 className="font-medium mb-2 dark:text-black">Meals</h4>
-       <table className="w-full">
-         <thead>
-           <tr className="text-left text-gray-600 bg-gray-100">
-             <th className="px-3 py-2 w-16">NO</th>
-             <th className="px-3">MEAL TYPE</th>
-             <th className="px-3 w-24 text-right">QTY</th>
-             <th className="px-3 w-40 text-right">RATE</th>
-             <th className="px-3 w-40 text-right">SUBTOTAL</th>
-             <th className="px-3 w-16"></th>
-           </tr>
-         </thead>
-         <tbody>
-           {mealStates.lunch.enabled && (
-             <tr className="border-t border-gray-100">
-               <td className="px-3 py-4 text-blue-600">1</td>
-               <td className="px-3 dark:text-black">Lunch</td>
-               <td className="px-3 dark:text-black">
-                 <input
-                   type="number"
-                   value={mealStates.lunch.qty}
-                   onChange={(e) => handleQuantityChange('lunch', parseInt(e.target.value) || 0)}
-                   className="w-16 p-1 border rounded text-right disabled:bg-gray-100"
-                   min="1"
-                   readonly="true"
-                  //  disabled={isPaid}
-                 />
-               </td>
-               <td className="px-3">
-                 <input
-                   type="text"
-                   value={formatCurrency(mealStates.lunch.price)}
-                   onChange={(e) => handlePriceChange('lunch', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
-                   className="w-32 dark:text-black p-1 border rounded text-right disabled:bg-gray-100"
-                   readonly="true"
-                  //  disabled={isPaid}
-                 />
-               </td>
-               <td className="px-3 text-right dark:text-black">
-                 {formatCurrency(mealStates.lunch.qty * mealStates.lunch.price)}
-               </td>
-               <td className="px-3">
-                 {/* {!isPaid && (
-                   <button 
-                     onClick={() => handleDelete('lunch')}
-                     className="text-red-600 hover:text-red-800"
-                   >
-                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                     </svg>
-                   </button>
-                 )} */}
-               </td>              
-             </tr>
-           )}
-           {mealStates.dinner.enabled && (
-             <tr className="border-t border-gray-100">
-               <td className="px-3 py-4 text-blue-600">{mealStates.lunch.enabled ? 2 : 1}</td>
-               <td className="px-3 dark:text-black">Dinner</td>
-               <td className="px-3">
-                 <input
-                   type="number"
-                   value={mealStates.dinner.qty}
-                   onChange={(e) => handleQuantityChange('dinner', parseInt(e.target.value) || 0)}
-                   className="w-16 p-1 border rounded dark:text-black text-right disabled:bg-gray-100"
-                   min="1"
-                   readonly="true"
-                  //  disabled={isPaid}
-                 />
-               </td>
-               <td className="px-3">
-                 <input
-                   type="text"
-                   value={formatCurrency(mealStates.dinner.price)}
-                   onChange={(e) => handlePriceChange('dinner', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
-                   className="w-32 p-1 border rounded dark:text-black text-right disabled:bg-gray-100"
-                   readonly="true"
-                  //  disabled={isPaid}
-                 />
-               </td>
-               <td className="px-3 text-right dark:text-black">
-                 {formatCurrency(mealStates.dinner.qty * mealStates.dinner.price)}
-               </td>
-               <td className="px-3">
-                 {/* {!isPaid && (
-                   <button 
-                     onClick={() => handleDelete('dinner')}
-                     className="text-red-600 hover:text-red-800"
-                   >
-                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                     </svg>
-                   </button>
-                 )} */}
-               </td>              
-             </tr>
-           )}
-         </tbody>
-         {(mealStates.lunch.enabled || mealStates.dinner.enabled) && (
-           <tfoot>
-             <tr>
-               <td colSpan="4" className="dark:text-black px-3 py-4 text-right font-medium">Total</td>
-               <td className={`px-3 text-right font-medium dark:text-black ${isPaid ? '' : ''}`}>
-                 {formatCurrency(total)}
-               </td>
-               <td></td>
-             </tr>
-           </tfoot>
-         )}
-       </table>
+      <h4 className="font-medium mb-2 dark:text-black">Meals</h4>
+      
+      {/* Mobile Card View */}
+      <div className="block lg:hidden space-y-4">
+        {mealStates.lunch.enabled && (
+          <div className="bg-white shadow rounded-lg p-4">
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full font-medium">
+                  1
+                </span>
+                <span className="font-medium dark:text-black">Lunch</span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-3">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Quantity</label>
+                <input
+                  type="number"
+                  value={mealStates.lunch.qty}
+                  onChange={(e) => handleQuantityChange('lunch', parseInt(e.target.value) || 0)}
+                  className="w-full p-2 border rounded text-right disabled:bg-gray-100 dark:text-black"
+                  min="1"
+                  readonly="true"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Rate</label>
+                <input
+                  type="text"
+                  value={formatCurrency(mealStates.lunch.price)}
+                  onChange={(e) => handlePriceChange('lunch', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+                  className="w-full p-2 border rounded text-right disabled:bg-gray-100 dark:text-black"
+                  readonly="true"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="text-gray-600">Subtotal</span>
+              <span className="font-medium dark:text-black">
+                {formatCurrency(mealStates.lunch.qty * mealStates.lunch.price)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {mealStates.dinner.enabled && (
+          <div className="bg-white shadow rounded-lg p-4">
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full font-medium">
+                  {mealStates.lunch.enabled ? 2 : 1}
+                </span>
+                <span className="font-medium dark:text-black">Dinner</span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4 mb-3">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Quantity</label>
+                <input
+                  type="number"
+                  value={mealStates.dinner.qty}
+                  onChange={(e) => handleQuantityChange('dinner', parseInt(e.target.value) || 0)}
+                  className="w-full p-2 border rounded text-right disabled:bg-gray-100 dark:text-black"
+                  min="1"
+                  readonly="true"
+                />
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Rate</label>
+                <input
+                  type="text"
+                  value={formatCurrency(mealStates.dinner.price)}
+                  onChange={(e) => handlePriceChange('dinner', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+                  className="w-full p-2 border rounded text-right disabled:bg-gray-100 dark:text-black"
+                  readonly="true"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="text-gray-600">Subtotal</span>
+              <span className="font-medium dark:text-black">
+                {formatCurrency(mealStates.dinner.qty * mealStates.dinner.price)}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile Total */}
+        {(mealStates.lunch.enabled || mealStates.dinner.enabled) && (
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex justify-between items-center">
+              <span className="font-medium text-gray-600">Total</span>
+              <span className="font-medium text-lg dark:text-black">{formatCurrency(total)}</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden lg:block">
+        <table className="w-full">
+          <thead>
+            <tr className="text-left text-gray-600 bg-gray-100">
+              <th className="px-3 py-2 w-16">NO</th>
+              <th className="px-3">MEAL TYPE</th>
+              <th className="px-3 w-24 text-right">QTY</th>
+              <th className="px-3 w-40 text-right">RATE</th>
+              <th className="px-3 w-40 text-right">SUBTOTAL</th>
+              <th className="px-3 w-16"></th>
+            </tr>
+          </thead>
+          <tbody>
+          {mealStates.lunch.enabled && (
+              <tr className="border-t border-gray-100">
+                <td className="px-3 py-4 text-blue-600">1</td>
+                <td className="px-3 dark:text-black">Lunch</td>
+                <td className="px-3">
+                  <input
+                    type="number"
+                    value={mealStates.lunch.qty}
+                    onChange={(e) => handleQuantityChange('lunch', parseInt(e.target.value) || 0)}
+                    className="w-16 p-1 border rounded text-right disabled:bg-gray-100 dark:text-black"
+                    min="1"
+                    readonly="true"
+                  />
+                </td>
+                <td className="px-3">
+                  <input
+                    type="text"
+                    value={formatCurrency(mealStates.lunch.price)}
+                    onChange={(e) => handlePriceChange('lunch', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+                    className="w-32 p-1 border rounded text-right disabled:bg-gray-100 dark:text-black"
+                    readonly="true"
+                  />
+                </td>
+                <td className="px-3 text-right dark:text-black">
+                  {formatCurrency(mealStates.lunch.qty * mealStates.lunch.price)}
+                </td>
+                <td className="px-3"></td>
+              </tr>
+            )}
+
+            {mealStates.dinner.enabled && (
+              <tr className="border-t border-gray-100">
+                <td className="px-3 py-4 text-blue-600">{mealStates.lunch.enabled ? 2 : 1}</td>
+                <td className="px-3 dark:text-black">Dinner</td>
+                <td className="px-3">
+                  <input
+                    type="number"
+                    value={mealStates.dinner.qty}
+                    onChange={(e) => handleQuantityChange('dinner', parseInt(e.target.value) || 0)}
+                    className="w-16 p-1 border rounded text-right disabled:bg-gray-100 dark:text-black"
+                    min="1"
+                    readonly="true"
+                  />
+                </td>
+                <td className="px-3">
+                  <input
+                    type="text"
+                    value={formatCurrency(mealStates.dinner.price)}
+                    onChange={(e) => handlePriceChange('dinner', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+                    className="w-32 p-1 border rounded text-right disabled:bg-gray-100 dark:text-black"
+                    readonly="true"
+                  />
+                </td>
+                <td className="px-3 text-right dark:text-black">
+                  {formatCurrency(mealStates.dinner.qty * mealStates.dinner.price)}
+                </td>
+                <td className="px-3"></td>
+              </tr>
+            )}
+          </tbody>
+          {(mealStates.lunch.enabled || mealStates.dinner.enabled) && (
+            <tfoot>
+              <tr>
+                <td colSpan="4" className="dark:text-black px-3 py-4 text-right font-medium">Total</td>
+                <td className={`px-3 text-right font-medium dark:text-black ${isPaid ? '' : ''}`}>
+                  {formatCurrency(total)}
+                </td>
+                <td></td>
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
     </div>
   );
- };
+};
+
 const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
   const isPaid = hotel.isPaid;
   const isDebt = hotel.isDebt;
@@ -335,10 +451,6 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
     onStatusChange(hotel.id, isPaid, isDebt, roomTotal + newTotal);
   };
  
-  const handlePaidChange = (checked) => {
-    onStatusChange(hotel.id, checked, false, roomTotal + mealTotal);
-  };
- 
   const handleDebtChange = (checked) => {
     onStatusChange(hotel.id, isPaid, checked, roomTotal + mealTotal);
   };
@@ -351,22 +463,12 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
         </span>
       </h3>
       <div className="flex gap-4 my-5">
-        {/* <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            checked={isPaid}
-            onChange={(e) => handlePaidChange(e.target.checked)}
-            className="w-4 h-4"
-          />
-          <span className="dark:text-black">Paid</span>
-        </label> */}
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={isDebt}
             onChange={(e) => handleDebtChange(e.target.checked)}
             className="w-4 h-4"
-            // disabled={isPaid}
           />
           <span className="dark:text-black">Hutang</span>
         </label>
@@ -389,8 +491,9 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
       )}
     </div>
   );
- };
- const AccommodationCard = ({ accommodations, onTotalsChange = () => {}, onChange = () => {} }) => {
+};
+
+const AccommodationCard = ({ accommodations, onTotalsChange = () => {}, onChange = () => {} }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [hotelData, setHotelData] = useState(accommodations);
   const [hotelStatus, setHotelStatus] = useState(
@@ -441,12 +544,11 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
   }, [hotelStatus, onTotalsChange]);
 
   useEffect(() => {
-    // Send full accommodation data to parent
     onChange({
-      hotelData,     // full hotel data
-      hotelStatus   // status tracking
+      hotelData,
+      hotelStatus   
     });
-  }, [hotelData, hotelStatus, onChange]);  
+  }, [hotelData, hotelStatus, onChange]);
  
   return (
     <div className="bg-white rounded shadow">
@@ -465,9 +567,7 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
           </div>
           <div className="flex gap-3">
             <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
-            {/* <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span> */}
             <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Hutang: {formatCurrency(totals.debtAmount)}</span>
-            {/* <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span> */}
           </div>
         </div>
       </div>
@@ -493,8 +593,8 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
       )}
     </div>
   );
- };
- 
+};
+
 const BookingInfo = ({ booking }) => {
   const startDate = new Date(booking.travel_date_start).toLocaleDateString('id-ID', {
     day: 'numeric',
@@ -531,126 +631,196 @@ const BookingInfo = ({ booking }) => {
     </div>
   );
 };
-const DestinationTable = ({ items, onItemChange, onItemDelete  }) => {
+
+const DestinationTable = ({ items, onItemChange, onItemDelete }) => {
   return (
     <div className="mb-10">
-      <table className="w-full">
-        <thead>
-          <tr className="text-left text-gray-600 bg-gray-100">
-            <th className="px-3 w-24 text-center">HUTANG</th>
-            <th className="px-3 py-2 w-16">NO</th>
-            <th className="px-3">ACTIVITY</th>
-            <th className="px-3 w-24 text-right">QTY</th>
-            <th className="px-3 w-40 text-right">PRICE</th>
-            <th className="px-3 w-40 text-right">SUBTOTAL</th>
-            <th className="px-3 w-16"></th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item, index) => (
-            <tr key={item.id} className="border-t border-gray-100">
-              <td className="px-3">
-                <div className="flex justify-center gap-4">
-                  {/* <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={item.isPaid}
-                      onChange={(e) => onItemChange(index, 'isPaid', e.target.checked)}
-                      className="w-4 h-4 "
-                    />
-                    <span className="dark:text-black">Paid</span>
-                  </label> */}
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={item.isDebt}
-                      onChange={(e) => onItemChange(index, 'isDebt', e.target.checked)}
-                      className="w-4 h-4"
-                      // disabled={item.isPaid}
-                    />
-                    {/* <span className="dark:text-black">Hutang</span> */}
-                  </label>
-                </div>
-              </td>
-              <td className="px-3 py-4 text-blue-600">{index + 1}</td>
-              <td className="px-3 dark:text-black">{item.destination_activity.name}</td>
-              <td className="px-3">
+      {/* Mobile Card View */}
+      <div className="block lg:hidden space-y-4">
+        {items.map((item, index) => (
+          <div key={item.id} className="bg-white shadow rounded-lg p-4">
+            {/* Title Row */}
+            <div className="flex justify-between items-center mb-3">
+              <div className="flex items-center gap-2">
+                <span className="w-8 h-8 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full font-medium">
+                  {index + 1}
+                </span>
+                <span className="font-medium dark:text-black">{item.destination_activity.name}</span>
+              </div>
+            </div>
+            
+            {/* Hutang and Delete buttons in one row */}
+            <div className="flex justify-between items-center mb-4">
+              <label className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
+                <input
+                  type="checkbox"
+                  checked={item.isDebt}
+                  onChange={(e) => onItemChange(index, 'isDebt', e.target.checked)}
+                  className="w-4 h-4"
+                />
+                <span className="text-gray-600">Hutang</span>
+              </label>
+              
+              <button 
+                onClick={() => onItemDelete(index)}
+                className="text-red-600 hover:text-red-800 px-3 py-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+            
+            {/* Quantity and Price inputs */}
+            <div className="grid grid-cols-2 gap-4 mb-3">
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Quantity</label>
                 <input
                   type="number"
                   value={item.quantity}
                   onChange={(e) => onItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
-                  className="w-16 dark:text-black p-1 border rounded text-right disabled:bg-gray-100"
+                  className="w-full p-2 border rounded text-right dark:text-black"
                   min="1"
-                  // disabled={item.isPaid}
                 />
-              </td>
-              <td className="px-3">
+              </div>
+              <div>
+                <label className="block text-sm text-gray-600 mb-1">Price</label>
                 <input
                   type="text"
                   value={formatCurrency(item.price)}
                   onChange={(e) => onItemChange(index, 'price', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
-                  className="w-32 dark:text-black p-1 border rounded text-right disabled:bg-gray-100"
-                  // disabled={item.isPaid}
+                  className="w-full p-2 border rounded text-right dark:text-black"
                 />
-              </td>
-              <td className={`px-3 text-right dark:text-black ${item.isPaid ? '' : ''}`}>
+              </div>
+            </div>
+            
+            {/* Subtotal */}
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="text-gray-600">Subtotal</span>
+              <span className="font-medium dark:text-black">
                 {formatCurrency(item.quantity * item.price)}
-              </td>
-              <td className="px-3">
-                 <button 
-                   onClick={() => onItemDelete(index)}
-                   className="text-red-600 hover:text-red-800"
-                 >
-                   <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                   </svg>
-                 </button>
-             </td>              
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan="5" className="px-3 py-4 text-right font-medium dark:text-black">Total</td>
-            <td className="px-3 text-right font-medium dark:text-black">
+              </span>
+            </div>
+          </div>
+        ))}
+        
+        {/* Mobile Total */}
+        <div className="bg-gray-50 rounded-lg p-4">
+          <div className="flex justify-between items-center">
+            <span className="font-medium text-gray-600">Total</span>
+            <span className="font-medium text-lg dark:text-black">
               {formatCurrency(items.reduce((sum, item) => sum + (item.quantity * item.price), 0))}
-            </td>
-            <td></td>
-            <td></td>
-          </tr>
-        </tfoot>
-      </table>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Table View */}
+      <div className="hidden lg:block">
+        <table className="w-full">
+          <thead>
+            <tr className="text-left text-gray-600 bg-gray-100">
+              <th className="px-3 w-24 text-center">HUTANG</th>
+              <th className="px-3 py-2 w-16">NO</th>
+              <th className="px-3">ACTIVITY</th>
+              <th className="px-3 w-24 text-right">QTY</th>
+              <th className="px-3 w-40 text-right">PRICE</th>
+              <th className="px-3 w-40 text-right">SUBTOTAL</th>
+              <th className="px-3 w-16"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item, index) => (
+              <tr key={item.id} className="border-t border-gray-100">
+                <td className="px-3">
+                  <div className="flex justify-center gap-4">
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={item.isDebt}
+                        onChange={(e) => onItemChange(index, 'isDebt', e.target.checked)}
+                        className="w-4 h-4"
+                      />
+                    </label>
+                  </div>
+                </td>
+                <td className="px-3 py-4 text-blue-600">{index + 1}</td>
+                <td className="px-3 dark:text-black">{item.destination_activity.name}</td>
+                <td className="px-3">
+                  <input
+                    type="number"
+                    value={item.quantity}
+                    onChange={(e) => onItemChange(index, 'quantity', parseInt(e.target.value) || 0)}
+                    className="w-16 p-1 border rounded text-right dark:text-black"
+                    min="1"
+                  />
+                </td>
+                <td className="px-3">
+                  <input
+                    type="text"
+                    value={formatCurrency(item.price)}
+                    onChange={(e) => onItemChange(index, 'price', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+                    className="w-32 p-1 border rounded text-right dark:text-black"
+                  />
+                </td>
+                <td className="px-3 text-right dark:text-black">
+                  {formatCurrency(item.quantity * item.price)}
+                </td>
+                <td className="px-3">
+                  <button 
+                    onClick={() => onItemDelete(index)}
+                    className="text-red-600 hover:text-red-800"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colSpan="5" className="px-3 py-4 text-right font-medium dark:text-black">Total</td>
+              <td className="px-3 text-right font-medium dark:text-black">
+                {formatCurrency(items.reduce((sum, item) => sum + (item.quantity * item.price), 0))}
+              </td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
     </div>
   );
 };
- 
-const Destination = ({ name, items, onItemChange,onItemDelete  }) => {
-return (
-  <div className="mt-4 border rounded-md p-3">
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="font-bold mt-2">
-        <span className="px-3 py-2 bg-blue-100 text-blue-800 rounded-full">
-          {name}
-        </span>
-      </h3>
+
+const Destination = ({ name, items, onItemChange, onItemDelete }) => {
+  return (
+    <div className="mt-4 border rounded-md p-3">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="font-bold mt-2">
+          <span className="px-3 py-2 bg-blue-100 text-blue-800 rounded-full">
+            {name}
+          </span>
+        </h3>
+      </div>
+      <DestinationTable 
+        items={items}
+        onItemChange={onItemChange}
+        onItemDelete={onItemDelete}        
+      />
     </div>
-    <DestinationTable 
-      items={items}
-      onItemChange={onItemChange}
-      onItemDelete={onItemDelete}        
-    />
-  </div>
-);
+  );
 };
 
 const AddActivityModal = ({ 
-  isOpen, 
-  onClose, 
-  destinationName, 
-  listForNewItems, 
-  onAddActivity, 
-  existingItems 
-}) => {
+    isOpen, 
+    onClose, 
+    destinationName, 
+    listForNewItems, 
+    onAddActivity, 
+    existingItems 
+  }) => {
   const [selectedActivity, setSelectedActivity] = useState('');
   const [newActivity, setNewActivity] = useState('');
   const [quantity, setQuantity] = useState(1);
@@ -666,7 +836,6 @@ const AddActivityModal = ({
       .map(activity => activity.name);
   }, [destinationName, listForNewItems, existingItems]);
 
-  // Find the price for the selected activity
   const getActivityPrice = (activityName) => {
     const activity = (listForNewItems[destinationName] || [])
       .find(a => a.name === activityName);
@@ -804,7 +973,7 @@ const AddActivityModal = ({
   );
 };
 
-const DestinationsCard = ({ destinations, onTotalsChange = () => {},listForNewItemsDestinations, onChange = () => {} }) => {
+const DestinationsCard = ({ destinations, onTotalsChange = () => {}, listForNewItemsDestinations, onChange = () => {} }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [destinationData, setDestinationData] = useState(() => {
     const data = {};
@@ -822,9 +991,8 @@ const DestinationsCard = ({ destinations, onTotalsChange = () => {},listForNewIt
     return data;
   });
 
-  const [selectedDestination, setSelectedDestination] = useState(null)
+  const [selectedDestination, setSelectedDestination] = useState(null);
 
-  
   const handleItemChange = (destName, index, field, value) => {
     setDestinationData(prev => {
       const newData = { ...prev };
@@ -857,12 +1025,11 @@ const DestinationsCard = ({ destinations, onTotalsChange = () => {},listForNewIt
         if (item.isDebt) {
           debt += subtotal;
         }
-        else{
+        else {
           paid += subtotal;
         }
       });
     });
-    
 
     return {
       totalAmount: total,
@@ -905,10 +1072,7 @@ const DestinationsCard = ({ destinations, onTotalsChange = () => {},listForNewIt
 
   return (
     <div className="bg-white rounded shadow">
-      <div 
-        className="p-4 border-b cursor-pointer" 
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
+      <div className="p-4 border-b cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <div className="flex md:items-center gap-2 md:gap-0 flex-col md:flex-row justify-between">
           <div className="flex items-center gap-2">
             <svg
@@ -923,9 +1087,7 @@ const DestinationsCard = ({ destinations, onTotalsChange = () => {},listForNewIt
           </div>
           <div className="flex gap-3">
             <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
-            {/* <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span> */}
             <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Hutang: {formatCurrency(totals.debtAmount)}</span>
-            {/* <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span> */}
           </div>
         </div>
       </div>
@@ -967,6 +1129,7 @@ const DestinationsCard = ({ destinations, onTotalsChange = () => {},listForNewIt
     </div>
   );
 };
+
 const AddOthersModal = ({ 
   isOpen, 
   onClose, 
@@ -1138,29 +1301,28 @@ const AddOthersModal = ({
     </div>
   );
 };
-const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChange = () => {}   }) => {
+
+const OthersCard = ({ others, onTotalsChange = () => {}, listForNewItems, onChange = () => {} }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [items, setItems] = useState([...others]);
   const [itemStates, setItemStates] = useState(
     others.map(item => ({
       id: item.id,
-      others_activity_id : item.others_activity.id,
+      others_activity_id: item.others_activity.id,
       quantity: item.qty,
       price: parseFloat(item.price),
       isPaid: item.status_paid === 'paid',
       isDebt: item.is_debt === '1'
     }))
   );
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-      // Send full others data to parent
-      onChange({
-        items,
-        itemStates
-      });
-    }, [items, itemStates, onChange]);  
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
+    onChange({
+      items,
+      itemStates
+    });
+  }, [items, itemStates, onChange]);  
 
   const handleQuantityChange = (index, value) => {
     setItemStates(prev => {
@@ -1174,15 +1336,6 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
     setItemStates(prev => {
       const newStates = [...prev];
       newStates[index].price = value;
-      return newStates;
-    });
-  };
-
-  const handlePaidChange = (index, checked) => {
-    setItemStates(prev => {
-      const newStates = [...prev];
-      newStates[index].isPaid = checked;
-      if (checked) newStates[index].isDebt = false;
       return newStates;
     });
   };
@@ -1206,7 +1359,7 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
       if (state.isDebt) {
         debt += subtotal;
       }
-      else{
+      else {
         paid += subtotal;
       }
     });
@@ -1218,8 +1371,7 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
       balanceAmount: total - paid - debt
     };
     onTotalsChange(result);
-    return result
-
+    return result;
   }, [itemStates]);
 
   const handleDelete = (index) => {
@@ -1230,7 +1382,7 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
   const handleAddItem = (newItem) => {    
     const newItemState = {
       id: `new_${Date.now()}`,
-      others_activity_id:newItem.others_activity.id,
+      others_activity_id: newItem.others_activity.id,
       quantity: newItem.quantity,
       price: parseFloat(newItem.price),
       isPaid: false,
@@ -1243,10 +1395,7 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
 
   return (
     <div className="bg-white rounded shadow">
-      <div 
-        className="p-4 border-b cursor-pointer" 
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
+      <div className="p-4 border-b cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         <div className="flex md:items-center gap-2 md:gap-0 flex-col md:flex-row justify-between">
           <div className="flex items-center gap-2">
             <svg
@@ -1261,9 +1410,7 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
           </div>
           <div className="flex gap-3">
             <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
-            {/* <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span> */}
             <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Hutang: {formatCurrency(totals.debtAmount)}</span>
-            {/* <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span> */}
           </div>
         </div>
       </div>
@@ -1271,128 +1418,504 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
       {isExpanded && (
         <div className="p-4">
           <div className="border rounded-md p-3">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left text-gray-600 bg-gray-100">
-                  <th className="px-3 w-24 text-center">HUTANG</th>
-                  <th className="px-3 py-2 w-16">NO</th>
-                  <th className="px-3">ACTIVITY</th>
-                  <th className="px-3 w-24 text-right">QTY</th>
-                  <th className="px-3 w-40 text-right">PRICE</th>
-                  <th className="px-3 w-40 text-right">SUBTOTAL</th>
-                  <th className="px-3 w-16"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {itemStates.map((state, index) => (
-                  <tr key={state.id} className="border-t border-gray-100">
-                    <td className="px-3">
-                      <div className="flex justify-center gap-4">
-                        {/* <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={state.isPaid}
-                            onChange={(e) => handlePaidChange(index, e.target.checked)}
-                            className="w-4 h-4"
-                          />
-                          <span className="dark:text-black">Paid</span>
-                        </label> */}
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={state.isDebt}
-                            onChange={(e) => handleDebtChange(index, e.target.checked)}
-                            className="w-4 h-4"
-                            // disabled={state.isPaid}
-                          />
-                          {/* <span className="dark:text-black">Hutang</span> */}
-                        </label>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4 text-blue-600">{index + 1}</td>
-                    <td className="px-3 dark:text-black">{items[index].others_activity.name}</td>
-                    <td className="px-3">
+            {/* Mobile Card View */}
+            <div className="block lg:hidden space-y-4">
+              {itemStates.map((state, index) => (
+                <div key={state.id} className="bg-white shadow rounded-lg p-4">
+                  {/* Title Row */}
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center gap-2">
+                      <span className="w-8 h-8 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full font-medium">
+                        {index + 1}
+                      </span>
+                      <span className="font-medium dark:text-black">
+                        {items[index].others_activity.name}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Hutang and Delete buttons in one row */}
+                  <div className="flex justify-between items-center mb-4">
+                    <label className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
+                      <input
+                        type="checkbox"
+                        checked={state.isDebt}
+                        onChange={(e) => handleDebtChange(index, e.target.checked)}
+                        className="w-4 h-4"
+                      />
+                      <span className="text-gray-600">Hutang</span>
+                    </label>
+                    
+                    <button 
+                      onClick={() => handleDelete(index)}
+                      className="text-red-600 hover:text-red-800 px-3 py-2"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Quantity and Price inputs */}
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Quantity</label>
                       <input
                         type="number"
                         value={state.quantity}
                         onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 0)}
-                        className="dark:text-black w-16 p-1 border rounded text-right disabled:bg-gray-100"
+                        className="w-full p-2 border rounded text-right dark:text-black"
                         min="1"
-                        // disabled={state.isPaid}
                       />
-                    </td>
-                    <td className="px-3">
+                    </div>
+                    <div>
+                      <label className="block text-sm text-gray-600 mb-1">Price</label>
                       <input
                         type="text"
                         value={formatCurrency(state.price)}
                         onChange={(e) => handlePriceChange(index, parseInt(e.target.value.replace(/\D/g, '')) || 0)}
-                        className="dark:text-black w-32 p-1 border rounded text-right disabled:bg-gray-100"
-                        // disabled={state.isPaid}
+                        className="w-full p-2 border rounded text-right dark:text-black"
                       />
-                    </td>
-                    <td className={`dark:text-black px-3 text-right ${state.isPaid ? '' : ''}`}>
+                    </div>
+                  </div>
+
+                  {/* Subtotal */}
+                  <div className="flex justify-between items-center pt-2 border-t">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span className="font-medium dark:text-black">
                       {formatCurrency(state.quantity * state.price)}
-                    </td>
-                    <td className="px-3">
+                    </span>
+                  </div>
+                </div>
+              ))}
+
+              {/* Mobile Total */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium text-gray-600">Total</span>
+                  <span className="font-medium text-lg dark:text-black">
+                    {formatCurrency(totals.totalAmount)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Table View */}
+            <div className="hidden lg:block">
+              <table className="w-full">
+              <thead>
+                  <tr className="text-left text-gray-600 bg-gray-100">
+                    <th className="px-3 w-24 text-center">HUTANG</th>
+                    <th className="px-3 py-2 w-16">NO</th>
+                    <th className="px-3">ACTIVITY</th>
+                    <th className="px-3 w-24 text-right">QTY</th>
+                    <th className="px-3 w-40 text-right">PRICE</th>
+                    <th className="px-3 w-40 text-right">SUBTOTAL</th>
+                    <th className="px-3 w-16"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {itemStates.map((state, index) => (
+                    <tr key={state.id} className="border-t border-gray-100">
+                      <td className="px-3">
+                        <div className="flex justify-center gap-4">
+                          <label className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={state.isDebt}
+                              onChange={(e) => handleDebtChange(index, e.target.checked)}
+                              className="w-4 h-4"
+                            />
+                          </label>
+                        </div>
+                      </td>
+                      <td className="px-3 py-4 text-blue-600">{index + 1}</td>
+                      <td className="px-3 dark:text-black">{items[index].others_activity.name}</td>
+                      <td className="px-3">
+                        <input
+                          type="number"
+                          value={state.quantity}
+                          onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 0)}
+                          className="w-16 p-1 border rounded text-right dark:text-black"
+                          min="1"
+                        />
+                      </td>
+                      <td className="px-3">
+                        <input
+                          type="text"
+                          value={formatCurrency(state.price)}
+                          onChange={(e) => handlePriceChange(index, parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+                          className="w-32 p-1 border rounded text-right dark:text-black"
+                        />
+                      </td>
+                      <td className="px-3 text-right dark:text-black">
+                        {formatCurrency(state.quantity * state.price)}
+                      </td>
+                      <td className="px-3">
                         <button 
                           onClick={() => handleDelete(index)}
                           className="text-red-600 hover:text-red-800"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" 
-                               className="w-5 h-5" 
-                               viewBox="0 0 24 24" 
-                               fill="none" 
-                               stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                         </button>
-                    </td>                    
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colSpan="5" className="px-3 py-4 text-right font-medium dark:text-black">Total</td>
+                    <td className="px-3 text-right font-medium dark:text-black">
+                      {formatCurrency(totals.totalAmount)}
+                    </td>
+                    <td></td>
                   </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colSpan="5" className="px-3 py-4 text-right font-medium dark:text-black">Total</td>
-                  <td className="px-3 text-right font-medium dark:text-black">
-                    {formatCurrency(totals.totalAmount)}
-                  </td>
-                  <td></td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
+                </tfoot>
+              </table>
+            </div>
+
+            {/* Add Button - Shown in both mobile and desktop */}
             <div className="flex justify-end mt-2">
               <button 
                 onClick={() => setIsModalOpen(true)}
-                className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
+                className="lg:w-auto px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center justify-center gap-2"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
                 </svg>
                 Add New Others
               </button>
-            </div>            
+            </div>
           </div>
         </div>
       )}
+
       <AddOthersModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAddItem={handleAddItem}
         listForNewItems={listForNewItems}
-        existingItems={items}        
+        existingItems={items}
       />
     </div>
   );
 };
+const AddCrewModal = ({ 
+  isOpen, 
+  onClose, 
+  onAddItem, 
+  listForNewItems,
+  existingItems 
+}) => {
+const [selectedCrew, setSelectedCrew] = useState('');
+const [quantity, setQuantity] = useState(1);
+const [price, setPrice] = useState(0);
+
+const availableCrews = useMemo(() => 
+  (listForNewItems || [])
+    .filter(crew => 
+      !existingItems.some(item => 
+        item.crew_role.id === crew.id)
+    )
+    .map(crew => crew.role), 
+  [listForNewItems, existingItems]
+);
+
+const getCrewPrice = (crewRole) => {
+  const crew = listForNewItems.find(c => c.role === crewRole);
+  return crew ? parseFloat(crew.rate) : 0;
+};
+
+const handleSubmit = () => {
+  if (selectedCrew) {
+    const crew = listForNewItems.find(c => c.role === selectedCrew);
+    onAddItem({
+      crew_role: crew,
+      qty: quantity,
+      price: price || getCrewPrice(selectedCrew),
+      status_paid: 'unpaid',
+      is_debt: '0'
+    });
+    setSelectedCrew('');
+    setQuantity(1);
+    setPrice(0);
+    onClose();
+  }
+};
+
+const isSubmitDisabled = 
+  !selectedCrew || 
+  quantity <= 0 || 
+  price <= 0;
+
+if (!isOpen) return null;
+
+return (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+      <h2 className="text-xl font-bold mb-4">Add New Crew</h2>
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Select Crew</label>
+        <select
+          value={selectedCrew}
+          onChange={(e) => {
+            const crew = e.target.value;
+            setSelectedCrew(crew);
+            setPrice(getCrewPrice(crew));
+          }}
+          className="w-full p-2 border rounded"
+        >
+          <option value="">Select a crew</option>
+          {availableCrews.map((crew) => (
+            <option key={crew} value={crew}>{crew}</option>
+          ))}
+        </select>
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Quantity</label>
+        <input
+          type="number"
+          value={quantity}
+          onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+          min="1"
+          className="w-full p-2 border rounded"
+        />
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Price</label>
+        <input
+          type="text"
+          value={formatCurrency(price)}
+          onChange={(e) => setPrice(parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+          className="w-full p-2 border rounded"
+        />
+      </div>
+      <div className="flex justify-end gap-2">
+        <button 
+          onClick={onClose} 
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+        >
+          Cancel
+        </button>
+        <button 
+          onClick={handleSubmit} 
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          disabled={isSubmitDisabled}
+        >
+          Add Crew
+        </button>
+      </div>
+    </div>
+  </div>
+);
+};
+
+const AddTransportationModal = ({ 
+  isOpen, 
+  onClose, 
+  onAddItem, 
+  listForNewItems,
+  existingItems 
+}) => {
+const [selectedTransportation, setSelectedTransportation] = useState('');
+const [quantity, setQuantity] = useState(1);
+const [price, setPrice] = useState(0);
+  
+const availableTransportations = useMemo(() => 
+  (listForNewItems || [])
+    .filter(car => 
+      !existingItems.some(item => 
+        item.car.id === car.id)
+    )
+    .map(car => car.name), 
+  [listForNewItems, existingItems]
+);
+
+const getTransportationPrice = (transportationName) => {
+  const transportation = listForNewItems.find(c => c.name === transportationName);
+  return transportation ? parseFloat(transportation.price) : 0;
+};
+
+const handleSubmit = () => {
+  if (selectedTransportation) {
+    const transportation = listForNewItems.find(c => c.name === selectedTransportation);
+    onAddItem({
+      car: transportation,
+      qty: quantity,
+      price: price || getTransportationPrice(selectedTransportation),
+      status_paid: 'unpaid',
+      is_debt: '0'
+    });
+    setSelectedTransportation('');
+    setQuantity(1);
+    setPrice(0);
+    onClose();
+  }
+};
+
+const isSubmitDisabled = 
+  !selectedTransportation || 
+  quantity <= 0 || 
+  price <= 0;
+
+if (!isOpen) return null;
+
+return (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+      <h2 className="text-xl font-bold mb-4">Add New Transportation</h2>
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Select Transportation</label>
+        <select
+          value={selectedTransportation}
+          onChange={(e) => {
+            const transportation = e.target.value;
+            setSelectedTransportation(transportation);
+            setPrice(getTransportationPrice(transportation));
+          }}
+          className="w-full p-2 border rounded"
+        >
+          <option value="">Select a transportation</option>
+          {availableTransportations.map((transportation) => (
+            <option key={transportation} value={transportation}>{transportation}</option>
+          ))}
+        </select>
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Quantity</label>
+        <input
+          type="number"
+          value={quantity}
+          onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+          min="1"
+          className="w-full p-2 border rounded"
+        />
+      </div>
+      <div className="mb-4">
+        <label className="block text-gray-700 mb-2">Price</label>
+        <input
+          type="text"
+          value={formatCurrency(price)}
+          onChange={(e) => setPrice(parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+          className="w-full p-2 border rounded"
+        />
+      </div>
+      <div className="flex justify-end gap-2">
+        <button 
+          onClick={onClose} 
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+        >
+          Cancel
+        </button>
+        <button 
+          onClick={handleSubmit} 
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          disabled={isSubmitDisabled}
+        >
+          Add Transportation
+        </button>
+      </div>
+    </div>
+  </div>
+);
+};
+
 const ResourceTable = ({ items, states, type, onStateChange, onDelete }) => (
-  <div className="mb-6">
-    <h4 className="font-medium mb-5 mt-3">
-      <span className="px-3 py-2 bg-blue-100 text-blue-800 rounded-full">
-          {type}
-      </span>
-    </h4>
+<div className="mb-6">
+  <h4 className="font-medium mb-5 mt-3">
+    <span className="px-3 py-2 bg-blue-100 text-blue-800 rounded-full">
+      {type}
+    </span>
+  </h4>
+
+  {/* Mobile Card View */}
+  <div className="block lg:hidden space-y-4">
+    {items.map((item, index) => (
+      <div key={item.id} className="bg-white shadow rounded-lg p-4">
+        {/* Title Row */}
+        <div className="flex justify-between items-center mb-3">
+          <div className="flex items-center gap-2">
+            <span className="w-8 h-8 flex items-center justify-center bg-blue-100 text-blue-600 rounded-full font-medium">
+              {index + 1}
+            </span>
+            <span className="font-medium dark:text-black">
+              {type === 'Transportations' ? item.car.name : item.crew_role.role}
+            </span>
+          </div>
+        </div>
+
+        {/* Hutang and Delete buttons in one row */}
+        <div className="flex justify-between items-center mb-4">
+          <label className="flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg">
+            <input
+              type="checkbox"
+              checked={states[index].isDebt}
+              onChange={(e) => onStateChange(index, 'isDebt', e.target.checked)}
+              className="w-4 h-4"
+            />
+            <span className="text-gray-600">Hutang</span>
+          </label>
+          
+          <button 
+            onClick={() => onDelete(index)}
+            className="text-red-600 hover:text-red-800 px-3 py-2"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Quantity and Price inputs */}
+        <div className="grid grid-cols-2 gap-4 mb-3">
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Quantity</label>
+            <input
+              type="number"
+              value={states[index].quantity}
+              onChange={(e) => onStateChange(index, 'quantity', parseInt(e.target.value) || 0)}
+              className="w-full p-2 border rounded text-right dark:text-black"
+              min="1"
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-gray-600 mb-1">Price</label>
+            <input
+              type="text"
+              value={formatCurrency(states[index].price)}
+              onChange={(e) => onStateChange(index, 'price', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+              className="w-full p-2 border rounded text-right dark:text-black"
+            />
+          </div>
+        </div>
+
+        {/* Subtotal */}
+        <div className="flex justify-between items-center pt-2 border-t">
+          <span className="text-gray-600">Subtotal</span>
+          <span className="font-medium dark:text-black">
+            {formatCurrency(states[index].quantity * states[index].price)}
+          </span>
+        </div>
+      </div>
+    ))}
+
+    {/* Mobile Total */}
+    {items.length > 0 && (
+      <div className="bg-gray-50 rounded-lg p-4">
+        <div className="flex justify-between items-center">
+          <span className="font-medium text-gray-600">Total</span>
+          <span className="font-medium text-lg dark:text-black">
+            {formatCurrency(states.reduce((sum, state) => sum + (state.quantity * state.price), 0))}
+          </span>
+        </div>
+      </div>
+    )}
+  </div>
+
+  {/* Desktop Table View */}
+  <div className="hidden lg:block">
     <table className="w-full">
       <thead>
         <tr className="text-left text-gray-600 bg-gray-100">
@@ -1410,37 +1933,27 @@ const ResourceTable = ({ items, states, type, onStateChange, onDelete }) => (
           <tr key={item.id} className="border-t border-gray-100">
             <td className="px-3">
               <div className="flex justify-center gap-4">
-                {/* <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={states[index].isPaid}
-                    onChange={(e) => onStateChange(index, 'isPaid', e.target.checked)}
-                    className="w-4 h-4"
-                  />
-                  <span className="dark:text-black">Paid</span>
-                </label> */}
                 <label className="flex items-center gap-2">
                   <input
                     type="checkbox"
                     checked={states[index].isDebt}
                     onChange={(e) => onStateChange(index, 'isDebt', e.target.checked)}
                     className="w-4 h-4"
-                    // disabled={states[index].isPaid}
                   />
-                  {/* <span className="dark:text-black">Hutang</span> */}
                 </label>
               </div>
             </td>
             <td className="px-3 py-4 text-blue-600">{index + 1}</td>
-            <td className="px-3 dark:text-black">{type === 'Transportations' ? item.car.name : item.crew_role.role}</td>
+            <td className="px-3 dark:text-black">
+              {type === 'Transportations' ? item.car.name : item.crew_role.role}
+            </td>
             <td className="px-3">
               <input
                 type="number"
                 value={states[index].quantity}
                 onChange={(e) => onStateChange(index, 'quantity', parseInt(e.target.value) || 0)}
-                className="w-16 dark:text-black p-1 border rounded text-right disabled:bg-gray-100"
+                className="w-16 p-1 border rounded text-right dark:text-black"
                 min="1"
-                // disabled={states[index].isPaid}
               />
             </td>
             <td className="px-3">
@@ -1448,23 +1961,22 @@ const ResourceTable = ({ items, states, type, onStateChange, onDelete }) => (
                 type="text"
                 value={formatCurrency(states[index].price)}
                 onChange={(e) => onStateChange(index, 'price', parseInt(e.target.value.replace(/\D/g, '')) || 0)}
-                className="w-32 dark:text-black p-1 border rounded text-right disabled:bg-gray-100"
-                // disabled={states[index].isPaid}
+                className="w-32 p-1 border rounded text-right dark:text-black"
               />
             </td>
-            <td className={`px-3 dark:text-black text-right ${states[index].isPaid ? '' : ''}`}>
+            <td className="px-3 text-right dark:text-black">
               {formatCurrency(states[index].quantity * states[index].price)}
             </td>
             <td className="px-3">
-                <button 
-                  onClick={() => onDelete(index)}
-                  className="text-red-600 hover:text-red-800"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
-            </td>              
+            <button 
+                onClick={() => onDelete(index)}
+                className="text-red-600 hover:text-red-800"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </td>
           </tr>
         ))}
       </tbody>
@@ -1481,437 +1993,217 @@ const ResourceTable = ({ items, states, type, onStateChange, onDelete }) => (
       )}
     </table>
   </div>
+</div>
 );
 
-const ResourceCard = ({ resources, onTotalsChange = () => {},listForNewItemsCars,listForNewItemsCrews, onChange = () => {} }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
-  const [cars, setCars] = useState(resources.cars);
-  const [crews, setCrews] = useState(resources.crews);
-  const [carStates, setCarStates] = useState(
-    resources.cars.map(item => ({
-      id: item.id,
-      quantity: item.qty,
-      price: parseFloat(item.price),
-      isPaid: item.status_paid === 'paid',
-      isDebt: item.is_debt === '1'
-    }))
+const ResourceCard = ({ resources, onTotalsChange = () => {}, listForNewItemsCars, listForNewItemsCrews, onChange = () => {} }) => {
+const [isExpanded, setIsExpanded] = useState(true);
+const [cars, setCars] = useState(resources.cars);
+const [crews, setCrews] = useState(resources.crews);
+const [carStates, setCarStates] = useState(
+  resources.cars.map(item => ({
+    id: item.id,
+    quantity: item.qty,
+    price: parseFloat(item.price),
+    isPaid: item.status_paid === 'paid',
+    isDebt: item.is_debt === '1'
+  }))
+);
+const [isTransportationModalOpen, setIsTransportationModalOpen] = useState(false); 
+const [isCrewModalOpen, setIsCrewModalOpen] = useState(false); 
+
+const [crewStates, setCrewStates] = useState(
+  resources.crews.map(item => ({
+    id: item.id,
+    quantity: item.qty,
+    price: parseFloat(item.price),
+    isPaid: item.status_paid === 'paid',
+    isDebt: item.is_debt === '1'
+  }))
+);
+
+useEffect(() => {
+  onChange({
+    cars,
+    crews,
+    carStates,
+    crewStates
+  });
+}, [cars, crews, carStates, crewStates, onChange]);
+
+const handleCarChange = (index, field, value) => {
+  setCarStates(prev => {
+    const newStates = [...prev];
+    newStates[index][field] = value;
+    if (field === 'isPaid' && value) {
+      newStates[index].isDebt = false;
+    }
+    return newStates;
+  });
+};
+
+const handleCrewChange = (index, field, value) => {
+  setCrewStates(prev => {
+    const newStates = [...prev];
+    newStates[index][field] = value;
+    if (field === 'isPaid' && value) {
+      newStates[index].isDebt = false;
+    }
+    return newStates;
+  });
+};
+
+const handleCarDelete = (index) => {
+  setCars(prev => prev.filter((_, i) => i !== index));
+  setCarStates(prev => prev.filter((_, i) => i !== index));
+};
+
+const handleCrewDelete = (index) => {
+  setCrews(prev => prev.filter((_, i) => i !== index));
+  setCrewStates(prev => prev.filter((_, i) => i !== index));
+};
+
+const totals = useMemo(() => {
+  const calculateTotal = (states) => states.reduce((sum, state) => 
+    sum + (state.quantity * state.price), 0
   );
-  const [isTransportationModalOpen, setIsTransportationModalOpen] = useState(false); 
-  const [isCrewModalOpen, setIsCrewModalOpen] = useState(false); 
 
-  const [crewStates, setCrewStates] = useState(
-    resources.crews.map(item => ({
-      id: item.id,
-      quantity: item.qty,
-      price: parseFloat(item.price),
-      isPaid: item.status_paid === 'paid',
-      isDebt: item.is_debt === '1'
-    }))
+  const calculatePaid = (states) => states.reduce((sum, state) => 
+    sum + (state.isPaid ? state.quantity * state.price : 0), 0
   );
-  useEffect(() => {
-    // Send full resource data to parent
-    onChange({
-      cars,
-      crews,
-      carStates,
-      crewStates
-    });
-  }, [cars, crews, carStates, crewStates, onChange]);
 
+  const calculateDebt = (states) => states.reduce((sum, state) => 
+    sum + (state.isDebt ? state.quantity * state.price : 0), 0
+  );
 
-  const handleCarChange = (index, field, value) => {
-    setCarStates(prev => {
-      const newStates = [...prev];
-      newStates[index][field] = value;
-      if (field === 'isPaid' && value) {
-        newStates[index].isDebt = false;
-      }
-      return newStates;
-    });
+  const carTotal = calculateTotal(carStates);
+  const carPaid = calculatePaid(carStates);
+  const carDebt = calculateDebt(carStates);
+
+  const crewTotal = calculateTotal(crewStates);
+  const crewPaid = calculatePaid(crewStates);
+  const crewDebt = calculateDebt(crewStates);
+
+  const result = {
+    totalAmount: carTotal + crewTotal,
+    paidAmount: carPaid + crewPaid,
+    debtAmount: carDebt + crewDebt,
+    balanceAmount: (carTotal + crewTotal) - (carPaid + crewPaid) - (carDebt + crewDebt)
+  };
+  onTotalsChange(result);
+  return result;
+}, [carStates, crewStates]);
+
+const handleAddTransportation = (newItem) => {
+  const newItemState = {
+    id: `new_${Date.now()}`,
+    quantity: newItem.qty,
+    price: parseFloat(newItem.price),
+    isPaid: false,
+    isDebt: false
   };
 
-  const handleCrewChange = (index, field, value) => {
-    setCrewStates(prev => {
-      const newStates = [...prev];
-      newStates[index][field] = value;
-      if (field === 'isPaid' && value) {
-        newStates[index].isDebt = false;
-      }
-      return newStates;
-    });
+  setCars(prev => [...prev, newItem]);
+  setCarStates(prev => [...prev, newItemState]);
+};
+
+const handleAddCrew = (newItem) => {
+  const newItemState = {
+    id: `new_${Date.now()}`,
+    quantity: newItem.qty,
+    price: parseFloat(newItem.price),
+    isPaid: false,
+    isDebt: false
   };
 
-  const handleCarDelete = (index) => {
-    setCars(prev => prev.filter((_, i) => i !== index));
-    setCarStates(prev => prev.filter((_, i) => i !== index));
-  };
+  setCrews(prev => [...prev, newItem]);
+  setCrewStates(prev => [...prev, newItemState]);
+};
 
-  const handleCrewDelete = (index) => {
-    setCrews(prev => prev.filter((_, i) => i !== index));
-    setCrewStates(prev => prev.filter((_, i) => i !== index));
-  };
+return (
+  <div className="bg-white rounded shadow mb-4">
+    <div className="p-4 border-b cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
+      <div className="flex md:items-center gap-2 md:gap-0 flex-col md:flex-row justify-between">
+        <div className="flex items-center gap-2">
+          <svg
+            className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+          <span className="font-medium dark:text-black">Resource Requirements</span>
+        </div>
+        <div className="flex gap-3">
+          <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
+          <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Hutang: {formatCurrency(totals.debtAmount)}</span>
+        </div>
+      </div>
+    </div>
 
-  const totals = useMemo(() => {
-    const calculateTotal = (states) => states.reduce((sum, state) => 
-      sum + (state.quantity * state.price), 0
-    );
-
-    const calculatePaid = (states) => states.reduce((sum, state) => 
-      sum + (state.isPaid ? state.quantity * state.price : 0), 0
-    );
-
-    const calculateDebt = (states) => states.reduce((sum, state) => 
-      sum + (state.isDebt ? state.quantity * state.price : 0), 0
-    );
-
-    const carTotal = calculateTotal(carStates);
-    const carPaid = calculatePaid(carStates);
-    const carDebt = calculateDebt(carStates);
-
-    const crewTotal = calculateTotal(crewStates);
-    const crewPaid = calculatePaid(crewStates);
-    const crewDebt = calculateDebt(crewStates);
-
-    const result = {
-      totalAmount: carTotal + crewTotal,
-      paidAmount: carPaid + crewPaid,
-      debtAmount: carDebt + crewDebt,
-      balanceAmount: (carTotal + crewTotal) - (carPaid + crewPaid) - (carDebt + crewDebt)
-    };
-    onTotalsChange(result);
-    return result
-  }, [carStates, crewStates]);
-
-  const handleAddTransportation = (newItem) => {
-    const newItemState = {
-      id: `new_${Date.now()}`,
-      quantity: newItem.qty,
-      price: parseFloat(newItem.price),
-      isPaid: false,
-      isDebt: false
-    };
-
-    setCars(prev => [...prev, newItem]);
-    setCarStates(prev => [...prev, newItemState]);
-  };
-  const handleAddCrew = (newItem) => {
-    const newItemState = {
-      id: `new_${Date.now()}`,
-      quantity: newItem.qty,
-      price: parseFloat(newItem.price),
-      isPaid: false,
-      isDebt: false
-    };
-  
-    setCrews(prev => [...prev, newItem]);
-    setCrewStates(prev => [...prev, newItemState]);
-  };
-  return (
-    <div className="bg-white rounded shadow mb-4">
-      <div 
-        className="p-4 border-b cursor-pointer" 
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex md:items-center gap-2 md:gap-0 flex-col md:flex-row justify-between">
-          <div className="flex items-center gap-2">
-            <svg
-              className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+    {isExpanded && (
+      <div className="p-4">
+        <div className="border rounded-md p-3 mb-3">
+          <ResourceTable 
+            items={cars} 
+            states={carStates}
+            type="Transportations"
+            onStateChange={handleCarChange}
+            onDelete={handleCarDelete}
+          />
+          <div className="flex justify-end mt-2">
+            <button 
+              onClick={() => setIsTransportationModalOpen(true)}
+              className="lg:w-auto px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center justify-center gap-2"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-            <span className="font-medium dark:text-black">Resource Requirements</span>
-          </div>
-          <div className="flex gap-3">
-            <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Total: {formatCurrency(totals.totalAmount)}</span>
-            {/* <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">Paid: {formatCurrency(totals.paidAmount)}</span> */}
-            <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">Hutang: {formatCurrency(totals.debtAmount)}</span>
-            {/* <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">Balance: {formatCurrency(totals.balanceAmount)}</span> */}
-          </div>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Add Transportation
+            </button>
+          </div>          
+        </div>
+        <div className="border rounded-md p-3">
+          <ResourceTable 
+            items={crews} 
+            states={crewStates}
+            type="Crews"
+            onStateChange={handleCrewChange}
+            onDelete={handleCrewDelete}
+          />
+          <div className="flex justify-end mt-2">
+            <button 
+              onClick={() => setIsCrewModalOpen(true)}
+              className="lg:w-auto px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center justify-center gap-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              Add Crew
+            </button>
+          </div>            
         </div>
       </div>
+    )}
+    <AddTransportationModal
+      isOpen={isTransportationModalOpen}
+      onClose={() => setIsTransportationModalOpen(false)}
+      onAddItem={handleAddTransportation}
+      listForNewItems={listForNewItemsCars}
+      existingItems={cars}
+    />      
+    <AddCrewModal
+      isOpen={isCrewModalOpen}
+      onClose={() => setIsCrewModalOpen(false)}
+      onAddItem={handleAddCrew}
+      listForNewItems={listForNewItemsCrews}
+      existingItems={crews}
+    />      
+  </div>
+);
+};                
 
-      {isExpanded && (
-        <div className="p-4">
-          <div className="border rounded-md p-3 mb-3">
-            <ResourceTable 
-              items={cars} 
-              states={carStates}
-              type="Transportations"
-              onStateChange={handleCarChange}
-              onDelete={handleCarDelete}
-            />
-            <div className="flex justify-end mt-2">
-              <button 
-                onClick={() => setIsTransportationModalOpen(true)}
-                className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-                Add Transportation
-              </button>
-            </div>          
-          </div>
-          <div className="border rounded-md p-3">
-            <ResourceTable 
-              items={crews} 
-              states={crewStates}
-              type="Crews"
-              onStateChange={handleCrewChange}
-              onDelete={handleCrewDelete}
-            />
-            <div className="flex justify-end mt-2">
-              <button 
-                onClick={() => setIsCrewModalOpen(true)}
-                className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-                </svg>
-                Add Crew
-              </button>
-            </div>            
-          </div>
-        </div>
-      )}
-      <AddTransportationModal
-        isOpen={isTransportationModalOpen}
-        onClose={() => setIsTransportationModalOpen(false)}
-        onAddItem={handleAddTransportation}
-        listForNewItems={listForNewItemsCars}
-        existingItems={cars}
-      />      
-      <AddCrewModal
-        isOpen={isCrewModalOpen}
-        onClose={() => setIsCrewModalOpen(false)}
-        onAddItem={handleAddCrew}
-        listForNewItems={listForNewItemsCrews}
-        existingItems={crews}
-      />      
-    </div>
-  );
-};
-const AddCrewModal = ({ 
-  isOpen, 
-  onClose, 
-  onAddItem, 
-  listForNewItems,
-  existingItems 
-}) => {
-  const [selectedCrew, setSelectedCrew] = useState('');
-  const [quantity, setQuantity] = useState(1);
-  const [price, setPrice] = useState(0);
-  
-  const availableCrews = useMemo(() => 
-    (listForNewItems || [])
-      .filter(crew => 
-        !existingItems.some(item => 
-          item.crew_role.id === crew.id)
-      )
-      .map(crew => crew.role), 
-    [listForNewItems, existingItems]
-  );
-
-  const getCrewPrice = (crewRole) => {
-    const crew = listForNewItems.find(c => c.role === crewRole);
-    return crew ? parseFloat(crew.rate) : 0;
-  };
-
-  const handleSubmit = () => {
-    if (selectedCrew) {
-      const crew = listForNewItems.find(c => c.role === selectedCrew);
-      onAddItem({
-        crew_role: crew,
-        qty: quantity,
-        price: price || getCrewPrice(selectedCrew),
-        status_paid: 'unpaid',
-        is_debt: '0'
-      });
-      setSelectedCrew('');
-      setQuantity(1);
-      setPrice(0);
-      onClose();
-    }
-  };
-
-  const isSubmitDisabled = 
-    !selectedCrew || 
-    quantity <= 0 || 
-    price <= 0;
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl w-96">
-        <h2 className="text-xl font-bold mb-4">Add New Crew</h2>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Select Crew</label>
-          <select
-            value={selectedCrew}
-            onChange={(e) => {
-              const crew = e.target.value;
-              setSelectedCrew(crew);
-              setPrice(getCrewPrice(crew));
-            }}
-            className="w-full p-2 border rounded"
-          >
-            <option value="">Select a crew</option>
-            {availableCrews.map((crew) => (
-              <option key={crew} value={crew}>{crew}</option>
-            ))}
-          </select>
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Quantity</label>
-          <input
-            type="number"
-            value={quantity}
-            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-            min="1"
-            className="w-full p-2 border rounded"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Price</label>
-          <input
-            type="text"
-            value={formatCurrency(price)}
-            onChange={(e) => setPrice(parseInt(e.target.value.replace(/\D/g, '')) || 0)}
-            className="w-full p-2 border rounded"
-          />
-        </div>
-        <div className="flex justify-end gap-2">
-          <button 
-            onClick={onClose} 
-            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={handleSubmit} 
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            disabled={isSubmitDisabled}
-          >
-            Add Crew
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-const AddTransportationModal = ({ 
-  isOpen, 
-  onClose, 
-    onAddItem, 
-    listForNewItems,
-    existingItems 
-  }) => {
-  const [selectedTransportation, setSelectedTransportation] = useState('');
-  const [quantity, setQuantity] = useState(1);
-  const [price, setPrice] = useState(0);
-    
-  const availableTransportations = useMemo(() => 
-    (listForNewItems || [])
-      .filter(car => 
-        !existingItems.some(item => 
-          item.car.id === car.id)
-      )
-      .map(car => car.name), 
-    [listForNewItems, existingItems]
-  );
-
-  const getTransportationPrice = (transportationName) => {
-    const transportation = listForNewItems.find(c => c.name === transportationName);
-    return transportation ? parseFloat(transportation.price) : 0;
-  };
-
-  const handleSubmit = () => {
-    if (selectedTransportation) {
-      const transportation = listForNewItems.find(c => c.name === selectedTransportation);
-      onAddItem({
-        car: transportation,
-        qty: quantity,
-        price: price || getTransportationPrice(selectedTransportation),
-        status_paid: 'unpaid',
-        is_debt: '0'
-      });
-      setSelectedTransportation('');
-      setQuantity(1);
-      setPrice(0);
-      onClose();
-    }
-  };
-
-  const isSubmitDisabled = 
-    !selectedTransportation || 
-    quantity <= 0 || 
-    price <= 0;
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-xl w-96">
-        <h2 className="text-xl font-bold mb-4">Add New Transportation</h2>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Select Transportation</label>
-          <select
-            value={selectedTransportation}
-            onChange={(e) => {
-              const transportation = e.target.value;
-              setSelectedTransportation(transportation);
-              setPrice(getTransportationPrice(transportation));
-            }}
-            className="w-full p-2 border rounded"
-          >
-            <option value="">Select a transportation</option>
-            {availableTransportations.map((transportation) => (
-              <option key={transportation} value={transportation}>{transportation}</option>
-            ))}
-          </select>
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Quantity</label>
-          <input
-            type="number"
-            value={quantity}
-            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
-            min="1"
-            className="w-full p-2 border rounded"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block text-gray-700 mb-2">Price</label>
-          <input
-            type="text"
-            value={formatCurrency(price)}
-            onChange={(e) => setPrice(parseInt(e.target.value.replace(/\D/g, '')) || 0)}
-            className="w-full p-2 border rounded"
-          />
-        </div>
-        <div className="flex justify-end gap-2">
-          <button 
-            onClick={onClose} 
-            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-          >
-            Cancel
-          </button>
-          <button 
-            onClick={handleSubmit} 
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-            disabled={isSubmitDisabled}
-          >
-            Add Transportation
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 const useExpenseData = (initialData) => {
   const [accommodationTotals, setAccommodationTotals] = useState({
     totalAmount: 0,
@@ -2048,7 +2340,7 @@ export default function EditExpenseManager({ booking,accommodations,destinations
           id: item.id,
           destination_id : item.destination_id,
           destination_activity_id : item.destination_activity_id,
-          name: item.destination_activity.id ? null : item.destination_activity.name,          
+          name: item.destination_activity.name ? item.destination_activity.name : null ,          
           quantity: item.quantity,
           price: item.price,
           status_paid: item.isPaid ? 'paid' : 'unpaid',

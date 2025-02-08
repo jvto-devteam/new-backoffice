@@ -351,7 +351,7 @@ class BookingController extends Controller
 
         $booking->grand_total = $summary['totalPackage'] - $summary['discount'];
 
-        $booking->balance = $booking->grand_total;
+        $booking->balance = $booking->grand_total+$booking->add_on_total;
         $booking->status = 'booked';
         $booking->type = 'offline';
         $booking->payment_method = 'pay later';

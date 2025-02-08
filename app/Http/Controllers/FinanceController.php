@@ -691,6 +691,7 @@ class FinanceController extends Controller
         ->get()->map(function($query){
             return [
                 'hotel' => $query->hotel->name,
+                'is_debt' => $query->is_debt,
                 'rooms' => $query->bookRoom->map(function($room){
                     return [
                         'room' => $room->roomHotel->room_name,
@@ -701,8 +702,8 @@ class FinanceController extends Controller
                 }),
                 'meals' => $query->bookHotelMeal->map(function($meals){
                     return [
-                        'meals' => $meals->dinner,
-                        'quantity' => $meals->quantity,
+                        'meals' => $meals->meals,
+                        'quantity' => $meals->qty,
                         'price' => $meals->price,
                         'subtotal' => $meals->subtotal,
                     ];
@@ -714,24 +715,55 @@ class FinanceController extends Controller
             $query->select('id','name');
         },'destinationActivity' => function($query){
             $query->select('id','name','unit');
-        }])->where('booking_id',$id)->get();   
+        }])->where('booking_id',$id)->get()
+        ->groupBy(fn($item) => $item->destination->name) // Grouping sebelum mapping
+        ->map(function ($items) {
+            return $items->map(function ($query) {
+                return [
+                    'item' => $query->destinationActivity->name,
+                    'quantity' => $query->qty,
+                    'price' => $query->price,
+                    'subtotal' => $query->subtotal,
+                    'is_debt' => $query->is_debt,
+                ];
+            });
+        });        
         $resources['cars'] = BookCarActivity::with(['car' => function($query) {
             $query->select('id', 'name');
         }])
         ->where('booking_id', $id)
-        ->get();        
-        return $destinations;
+        ->get()->map(function($query){
+            return [
+                'item' => $query->car->name,
+                'quantity' => $query->qty,
+                'price' => $query->price,
+                'subtotal' => $query->subtotal,
+                'is_debt' => $query->is_debt,
+            ];
+        });
         $resources['crews'] = BookCrewActivity::with(['crewRole' => function($query) {
             $query->select('id', 'role');
         }])
         ->where('booking_id', $id)
-        ->get();
+        ->get()->map(function($query){
+            return [
+                'item' => $query->crewRole->role,
+                'quantity' => $query->qty,
+                'price' => $query->price,
+                'subtotal' => $query->subtotal,
+                'is_debt' => $query->is_debt,
+            ];
+        });
         $others = BookOthersActivity::with('othersActivity')
         ->where('booking_id', $id)
-        ->get()
-        ->map(function($other) use (&$totalOthers) { // Gunakan reference
-            $totalOthers += $other->subtotal;
-            return $other;
+        ->get()->map(function($query){
+            return [
+                'item' => $query->othersActivity->name,
+                'quantity' => $query->qty,
+                'price' => $query->price,
+                'subtotal' => $query->subtotal,
+                'is_debt' => $query->is_debt,
+            ];
         });
 
         $data = [
@@ -741,10 +773,10 @@ class FinanceController extends Controller
             'resources' => $resources,
             'others' => $others,
         ];
-        return $data;
-        return view('exports/crew-expense',$data);
+        // return $data;
+        // return view('exports/crew-expense',$data);
         $pdf = PDF::loadView('exports/crew-expense', $data);
-        $name = Str::slug($booking->user->name);
+        $name = Str::slug($booking['customer_name']);
         // Opsional: Set paper size dan orientation
         $pdf->setPaper('A4', 'portrait');
         return $pdf->download('crew-expense-'.$name.'.pdf');        

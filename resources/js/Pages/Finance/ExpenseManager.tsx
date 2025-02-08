@@ -260,6 +260,8 @@ export default function ExpenseManager({booking,summary,packages,filters}){
     
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const filterRef = useRef(null);
+    const [openDropdownId, setOpenDropdownId] = useState(null);
+    const dropdownRefs = useRef({});
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -305,6 +307,20 @@ export default function ExpenseManager({booking,summary,packages,filters}){
             day: 'numeric'
         });
     };
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (openDropdownId && dropdownRefs.current[openDropdownId] && 
+                !dropdownRefs.current[openDropdownId].contains(event.target)) {
+                setOpenDropdownId(null);
+            }
+        };
+    
+        if (openDropdownId) {
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }
+    }, [openDropdownId]);
 
     return (
         <Authenticated>
@@ -440,16 +456,54 @@ export default function ExpenseManager({booking,summary,packages,filters}){
                                         </div>
                                     </div>
                                 </TableCell>
-                                <TableHead>
-                                    <Link href={`/finance/expense-manager/${data.id}/edit`}>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
+                                <TableCell>
+                                    <div className="relative" ref={el => dropdownRefs.current[data.id] = el}>
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setOpenDropdownId(openDropdownId === data.id ? null : data.id);
+                                            }}
+                                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full transition-colors duration-150"
                                         >
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                    </Link>
-                                </TableHead>
+                                            <svg 
+                                                xmlns="http://www.w3.org/2000/svg" 
+                                                className="h-5 w-5 text-gray-500" 
+                                                viewBox="0 0 20 20" 
+                                                fill="currentColor"
+                                            >
+                                                <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                                            </svg>
+                                        </button>
+
+                                        {openDropdownId === data.id && (
+                                            <div 
+                                                className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 py-1"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        router.get(`/finance/expense-manager/${data.id}/edit`);
+                                                    }}
+                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button 
+                                                    onClick={(e) => {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        window.location = `/finance/expense-manager/${data.id}/crew`;
+                                                    }}
+                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                                >
+                                                    Download Crew Expense
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </TableCell>
                             </TableRow>
                         ))}
                     </TableBody>

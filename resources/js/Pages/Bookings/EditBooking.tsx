@@ -1680,21 +1680,23 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
   };
 
   const handleSubmit = () => {
-      Swal.fire({
+    Swal.fire({
           title: 'Are you sure?',
           html: `
               <p>Do you want to update this booking?</p>
-              <div class="mt-4 flex items-center justify-center">
-                  <input 
-                      type="checkbox" 
-                      id="whatsapp-itinerary" 
-                      class="mr-2"
-                      ${formData.isSendWa == '1' ? 'checked' : 'true'}
-                  />
-                  ${channel != 'TWT' ? `<label for="whatsapp-itinerary">
-                      Send itinerary via WhatsApp
-                  </label>` : ''}                  
-              </div>
+              ${channel != 'TWT' ? `
+                <div class="mt-4 flex items-center justify-center">
+                    <input 
+                        type="checkbox" 
+                        id="whatsapp-itinerary" 
+                        class="mr-2"
+                        ${formData.isSendWa == '1' ? 'checked' : 'true'}
+                    />
+                    <label for="whatsapp-itinerary">
+                        Send itinerary via WhatsApp
+                    </label>                  
+                </div>
+                ` : '' }
           `,
           icon: 'question',
           showCancelButton: true,

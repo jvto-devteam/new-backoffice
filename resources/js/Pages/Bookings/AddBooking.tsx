@@ -1647,16 +1647,18 @@ const AddBooking = ({channel,countries,packages,startActivityOptions,endActivity
           title: 'Are you sure?',
           html: `
               <p>Do you want to submit this booking?</p>
-              <div class="mt-4 flex items-center justify-center">
-                  <input 
-                      type="checkbox" 
-                      id="whatsapp-itinerary" 
-                      class="mr-2"
-                  />
-                  ${channel != 'TWT' ? `<label for="whatsapp-itinerary">
-                      Send itinerary via WhatsApp
-                  </label>` : ''}                  
-              </div>
+              ${channel != 'TWT' ? `
+                  <div class="mt-4 flex items-center justify-center">
+                      <input 
+                          type="checkbox" 
+                          id="whatsapp-itinerary" 
+                          class="mr-2"
+                      />
+                      <label for="whatsapp-itinerary">
+                          Send itinerary via WhatsApp
+                      </label>                  
+                  </div>              
+                ` : '' }
           `,
           icon: 'question',
           showCancelButton: true,

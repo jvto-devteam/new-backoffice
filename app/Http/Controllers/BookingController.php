@@ -276,8 +276,12 @@ class BookingController extends Controller
         $booking->custom_code = $invoice_number;
         $booking->agent_id = $agent_id;
         $booking->booking_category_id = $booking_category_id;
-        $booking->booking_date = $request->bookingDate ? $request->bookingDate : date('Y-m-d');
-        $booking->due_date = $request->dueDate;
+        if($request->bookingDate && $request->bookingDate != null && $request->bookingDate != 'null' && $request->bookingDate != ''){
+            $booking->booking_date = $request->bookingDate;
+        }
+        if($request->dueDate && $request->dueDate != null && $request->dueDate != 'null' && $request->dueDate != ''){
+            $booking->due_date = $request->dueDate;
+        }
         $booking->invoice_code_origin = $request->bookingCodeOrigin;
         $booking->booking_numb = $code;
         $booking->user_id = $user->id;
@@ -327,8 +331,8 @@ class BookingController extends Controller
             $booking->drop = $dropLocation['location']." ".$booking->drop_point_arrival." ".$booking->meeting_point_value;
         }
 
-        $booking->pickup_time = $request->pickupTime && $request->pickupTime != '' ? $request->pickupTime : null;
-        $booking->drop_time = $request->dropTime && $request->dropTime != '' ? $request->dropTime : null;
+        $booking->pickup_time = $request->pickupTime && $request->pickupTime != '' && $request->pickupTime != null && $request->pickupTime != 'null' ? $request->pickupTime : null;
+        $booking->drop_time = $request->dropTime && $request->dropTime != '' && $request->dropTime != null && $request->dropTime != 'null' ? $request->dropTime : null;
 
         $booking->dp = 0;
         $booking->dp_no_idr = 0;
@@ -381,7 +385,7 @@ class BookingController extends Controller
         if ($request->packageName) {
             $package = Package::find($request->packageName);
             $invoiceDescription = $package ? $package->name : $booking->package_duration . " Days " . $nights . " Night Package";
-            $packageId = $package->id;
+            $packageId = $package ? $package->id : null;
         } else {
             $invoiceDescription = $booking->package_duration . " Days " . $nights . " Night Package";
             $packageId = null;
@@ -423,7 +427,7 @@ class BookingController extends Controller
 
         $bookingDetail = new BookingDetail();
         $bookingDetail->booking_id = $booking->id;
-        if($request->packageName && $request->packageName != ''){
+        if($request->packageName && $request->packageName != '' && $request->packageName != null && $request->packageName != 'null'){
             $bookingDetail->package_id = $request->packageName;
         }
         $bookingDetail->travel_date_start = $booking->travel_date_start;
@@ -627,8 +631,12 @@ class BookingController extends Controller
         $booking->booking_code = $invoice_number;
         $booking->custom_code = $invoice_number;
         $booking->booking_category_id = $booking_category_id;
-        $booking->booking_date = $request->bookingDate ? $request->bookingDate : date('Y-m-d');
-        $booking->due_date = $request->dueDate;
+        if($request->bookingDate && $request->bookingDate != null && $request->bookingDate != 'null' && $request->bookingDate != ''){
+            $booking->booking_date = $request->bookingDate;
+        }
+        if($request->dueDate && $request->dueDate != null && $request->dueDate != 'null' && $request->dueDate != ''){
+            $booking->due_date = $request->dueDate;
+        }
         $booking->invoice_code_origin = $request->bookingCodeOrigin;
         $booking->booking_numb = $code;
         $booking->user_id = $user->id;
@@ -678,8 +686,8 @@ class BookingController extends Controller
             $booking->drop = $dropLocation['location']." ".$booking->drop_point_arrival." ".$booking->meeting_point_value;
         }
 
-        $booking->pickup_time = $request->pickupTime && $request->pickupTime != '' ? $request->pickupTime : null;
-        $booking->drop_time = $request->dropTime && $request->dropTime != '' ? $request->dropTime : null;
+        $booking->pickup_time = $request->pickupTime && $request->pickupTime != '' && $request->pickupTime != null && $request->pickupTime != 'null' ? $request->pickupTime : null;
+        $booking->drop_time = $request->dropTime && $request->dropTime != '' && $request->dropTime != null && $request->dropTime != 'null' ? $request->dropTime : null;
 
         if ($summary['discount'] != 0) {
             if($discount['discountId']){
@@ -748,7 +756,7 @@ class BookingController extends Controller
         if ($request->packageName) {
             $package = Package::find($request->packageName);
             $invoiceDescription = $package ? $package->name : $booking->package_duration . " Days " . $nights . " Night Package";
-            $packageId = $package->id;
+            $packageId = $package ? $package->id : null;
         } else {
             $invoiceDescription = $booking->package_duration . " Days " . $nights . " Night Package";
             $packageId = null;
@@ -791,7 +799,7 @@ class BookingController extends Controller
         }    
         
         $bookingDetail = BookingDetail::where('booking_id',$booking->id)->first();
-        if($request->packageName && $request->packageName != ''){
+        if($request->packageName && $request->packageName != '' && $request->packageName != null && $request->packageName != 'null'){
             $bookingDetail->package_id = $request->packageName;
         }
         $bookingDetail->travel_date_start = $booking->travel_date_start;

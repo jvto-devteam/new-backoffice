@@ -451,7 +451,7 @@ const Hotel = ({ hotel, onStatusChange, onDataChange, pax }) => {
   return (
     <div className="bg-white rounded shadow">
       <div className="p-4 border-b cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
-        <div className="flex items-center justify-between">
+        <div className="flex md:items-center gap-2 md:gap-0 flex-col md:flex-row justify-between">
           <div className="flex items-center gap-2">
             <svg
               className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
@@ -512,7 +512,7 @@ const BookingInfo = ({ booking }) => {
               {booking.booking_detail[0]?.package?.name || `${booking.package_duration}D ${booking.package_duration-1}N Packages`}
             </p>
           </div>
-          <div className="text-right">
+          <div className="text-right w-56">
             <div className="text-gray-500 text-sm">Total Pax:</div>
             <div className="font-semibold dark:text-black">{booking.total_pax} Pax</div>
           </div>
@@ -909,7 +909,7 @@ const DestinationsCard = ({ destinations, onTotalsChange = () => {},listForNewIt
         className="p-4 border-b cursor-pointer" 
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex md:items-center gap-2 md:gap-0 flex-col md:flex-row justify-between">
           <div className="flex items-center gap-2">
             <svg
               className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
@@ -1247,7 +1247,7 @@ const OthersCard = ({ others, onTotalsChange = () => {},listForNewItems, onChang
         className="p-4 border-b cursor-pointer" 
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex md:items-center gap-2 md:gap-0 flex-col md:flex-row justify-between">
           <div className="flex items-center gap-2">
             <svg
               className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
@@ -1612,7 +1612,7 @@ const ResourceCard = ({ resources, onTotalsChange = () => {},listForNewItemsCars
         className="p-4 border-b cursor-pointer" 
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex items-center justify-between">
+        <div className="flex md:items-center gap-2 md:gap-0 flex-col md:flex-row justify-between">
           <div className="flex items-center gap-2">
             <svg
               className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
@@ -1980,7 +1980,7 @@ const SummaryCard = ({ booking,totals }) => {
     <div className="bg-white rounded shadow p-4">
       <div className="flex flex-col gap-4">
         <h2 className="font-bold text-xl dark:text-black">Summary</h2>
-        <div className="grid grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="p-4 rounded-lg bg-blue-100">
             <div className="text-blue-800 font-medium">Total Invoice</div>
             <div className="text-2xl font-bold text-blue-900">{formatCurrency(booking.grand_total+booking.book_add_on_total)}</div>

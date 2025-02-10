@@ -1049,7 +1049,7 @@ class BookingController extends Controller
     }
     
     function generateExpense($id){
-        $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id')->with(['user' => function($query){
+        $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id','package_duration')->with(['user' => function($query){
             $query->select('id','name');
         },'bookingDetail' => function($query){
             $query->select('id','package_id','booking_id')->with(['package' => function($q){
@@ -1057,7 +1057,7 @@ class BookingController extends Controller
             }]);
         }])->where('id',$id)->first();
         $pax = $booking->total_pax;
-        $day = $booking->bookingDetail[0]->package->duration->day;
+        $day = $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->duration->day : $booking->package_duration;
 
         $totalAccommodations = 0;
         $totalDestinations = 0;

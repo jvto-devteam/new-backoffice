@@ -334,7 +334,6 @@ class BookingController extends Controller
         $booking->pickup_time = $request->pickupTime && $request->pickupTime != '' && $request->pickupTime != null && $request->pickupTime != 'null' ? $request->pickupTime : null;
         $booking->drop_time = $request->dropTime && $request->dropTime != '' && $request->dropTime != null && $request->dropTime != 'null' ? $request->dropTime : null;
 
-        $booking->dp = 0;
         $booking->dp_no_idr = 0;
         $booking->payment = 0;
 
@@ -350,6 +349,7 @@ class BookingController extends Controller
         $booking->add_on_total = $summary['totalAddOn'];
 
         $booking->grand_total = $summary['totalPackage'] - $summary['discount'];
+        $booking->dp = 10/100 * $booking->grand_total;
 
         $booking->balance = $booking->grand_total+$booking->add_on_total;
         $booking->status = 'booked';

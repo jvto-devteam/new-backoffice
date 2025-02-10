@@ -381,8 +381,9 @@ class BookingController extends Controller
             $bookingDocument->file = $fileName;
             $bookingDocument->save();
         }
+        $isPackage = $request->packageName && $request->packageName != '' && $request->packageName != 'Custom' && $request->packageName != null && $request->packageName != 'null' ? true : false;
 
-        if ($request->packageName) {
+        if ($isPackage) {
             $package = Package::find($request->packageName);
             $invoiceDescription = $package ? $package->name : $booking->package_duration . " Days " . $nights . " Night Package";
             $packageId = $package ? $package->id : null;
@@ -427,7 +428,7 @@ class BookingController extends Controller
 
         $bookingDetail = new BookingDetail();
         $bookingDetail->booking_id = $booking->id;
-        if($request->packageName && $request->packageName != '' && $request->packageName != null && $request->packageName != 'null'){
+        if($isPackage){
             $bookingDetail->package_id = $request->packageName;
         }
         $bookingDetail->travel_date_start = $booking->travel_date_start;
@@ -752,8 +753,11 @@ class BookingController extends Controller
             $bookingDocument->file = $fileName;
             $bookingDocument->save();
         }
+
+        $isPackage = $request->packageName && $request->packageName != '' && $request->packageName != 'Custom' && $request->packageName != null && $request->packageName != 'null' ? true : false;
         
-        if ($request->packageName) {
+        
+        if ($isPackage) {
             $package = Package::find($request->packageName);
             $invoiceDescription = $package ? $package->name : $booking->package_duration . " Days " . $nights . " Night Package";
             $packageId = $package ? $package->id : null;
@@ -799,7 +803,7 @@ class BookingController extends Controller
         }    
         
         $bookingDetail = BookingDetail::where('booking_id',$booking->id)->first();
-        if($request->packageName && $request->packageName != '' && $request->packageName != null && $request->packageName != 'null'){
+        if($isPackage){
             $bookingDetail->package_id = $request->packageName;
         }
         $bookingDetail->travel_date_start = $booking->travel_date_start;

@@ -84,6 +84,7 @@ Route::prefix('finance')->group(function () {
 Route::prefix('package-inventory')->group(function () {
     Route::get('/flipbook/{url}', [PackageController::class, 'flipbook']);
     Route::get('/{order_channel}', [PackageController::class, 'index']);
+    Route::get('/details/{code}', [PackageController::class, 'details']);
 });
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [PackageController::class, 'edit'])->name('profile.edit');

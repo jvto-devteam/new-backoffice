@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\CarConfiguration;
+use App\Models\OthersActivity;
 use App\Models\Package;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -199,6 +200,87 @@ class PackageController extends Controller
             // return $data['pax_configuration'];
             return Inertia::render('Packages/Index', ['data' => $data]);
         }
+    }
+
+    function details($code){
+        $package = Package::select('id','name','duration_id')->with(['duration' => function($duration){
+            $duration->select('id','name','day');
+        },'itinerary' => function($query){
+            $query->select('id','package_id','day')->with(['itineraryDestination' => function($itiDest){
+                $itiDest->select('id','itinerary_id','destination_id','second_destination_id')->with(['destination' => function($destination){
+                    $destination->select('id','name')->with(['activity' => function($activity){
+                        $activity->select('id','destination_id','name as item','formula','price')->where('is_default_jvto','1');
+                    }]);
+                },'secondDestination' => function($destination){
+                    $destination->select('id','name');
+                }]);
+            }]);
+        },'packageHotel' => function($packageHotel){
+            $packageHotel->select('id','package_id','day','hotel_id')->with(['hotel' => function($hotel){
+                $hotel->select('id','name','lunch_rate','dinner_rate')->with(['roomHotelConfiguration' => function($roomHotelConfiguration){
+                    $roomHotelConfiguration->select('id','room_id','hotel_id','pax','qty')->with(['room' => function($room){
+                        $room->select('id','room_name','rate');
+                    }]);
+                }]);
+            }])->where('price_plan_id',2);
+        }])->where('package_code',$code)->first();
+
+        $data['package'] = [
+            'id' => $package->id,
+            'duration_day' => $package->duration->day,
+        ];
+        $activities = [];
+        foreach ($package->itinerary as $key => $value) {
+            if($value->itineraryDestination->destination && count($value->itineraryDestination->destination->activity) != 0){
+                $activities[$value->itineraryDestination->destination->name] = [];
+                foreach ($value->itineraryDestination->destination->activity as $index => $val) {
+                    $activities[$value->itineraryDestination->destination->name][] = [
+                        'id' => $val->id,
+                        'item' => $val->item,
+                        'formula' => $val->formula,
+                        'price' => $val->price,
+                    ];
+                }
+            }
+        }
+        foreach ($package->itinerary as $key => $value) {
+            if($value->itineraryDestination->secondDestination && count($value->itineraryDestination->secondDestination->activity) != 0){
+                $activities[$value->itineraryDestination->secondDestination->name] = [];
+                foreach ($value->itineraryDestination->secondDestination->activity as $index => $val) {
+                    $activities[$value->itineraryDestination->secondDestination->name][] = [
+                        'id' => $val->id,
+                        'item' => $val->item,
+                        'formula' => $val->formula,
+                        'price' => $val->price,
+                    ];
+                }
+            }
+        }
+
+        $othersActivities = OthersActivity::select('id','name','formula','price')->where('is_default','1')->get();
+        $resources = CarConfiguration::with(['car','crewJvtoRole'])->whereNotNull('crew_jvto_role_id')->get()->map(function($query){
+            return [
+                'cars' => [
+                    'pax' => $query->pax,
+                    'car_id' => $query->car_id,
+                    'car_name' => $query->car->name,
+                    'price' => $query->price,
+                ],
+                'crews' => [
+                    'pax' => $query->pax,
+                    'crew_role_id' => $query->crewJvtoRole->id,
+                    'crew_name' => $query->crewJvtoRole->role,
+                    'price' => $query->crewJvtoRole->rate,
+                ],
+            ];
+        });
+        $data['expense'] = [
+            'accommodation' => $package->packageHotel,
+            'activities' => $activities,
+            'others' => $othersActivities,
+            'resources' => $resources,
+        ];
+        return $data['expense'];
     }
 
     function packageDetail()

@@ -60,7 +60,7 @@ class ScheduleController extends Controller
                 $data['selectedCategory'] = $bookingCategory->name;
             }
             $data['bookingCategory'] = BookingCategory::get();
-            $data['booking'] = Booking::with(['bookingPayment.paymentMethod','bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination'])->where('travel_date_start', 'like', "$data[year]%");;
+            $data['booking'] = Booking::with(['bookingPayment.paymentMethod','bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination'])->where('travel_date_start', 'like', "$data[year]-%");
             if ($request->vendor) {
                 $data['agent'] = Agent::find($request->vendor);
                 $data['booking'] = $data['booking']->where('agent_id', $request->vendor);
@@ -252,6 +252,7 @@ class ScheduleController extends Controller
                     'duration' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->duration->day."D ".$booking->bookingDetail[0]->package->duration->night."N" : $booking->package_duration."D ".($booking->package_duration-1)."N",
                     'package' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->name : $booking->package_duration."D ".($booking->package_duration-1)."N Package",
                     'date' => [
+                        'start_ymd' => $booking->travel_date_start,
                         'start' => date('d M y',strtotime($booking->travel_date_start)),
                         'end' => date('d M y',strtotime($booking->travel_date_end)),
                         'days' => date('D',strtotime($booking->travel_date_start))." - ".date('D',strtotime($booking->travel_date_end)),

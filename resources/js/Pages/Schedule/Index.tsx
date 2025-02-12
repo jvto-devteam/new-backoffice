@@ -128,16 +128,18 @@ function formatCurrency(amount) {
       setStartDate(start);
       setEndDate(end);
     };
+    
   
     // Filter logic
     const filteredBookings = bookings.filter((b) => {
-      // Date filter
-      const bookingStart = new Date(b.date.start);
-      const bookingEnd = new Date(b.date.end);
-      const filterStart = new Date(startDate);
-      const filterEnd = new Date(endDate);
-      const isWithinRange = bookingStart >= filterStart && bookingStart <= filterEnd;
-  
+        
+        // Date filter
+        const bookingStart = b.date.start_ymd;
+        const bookingEnd = new Date(b.date.end);
+        const filterStart = startDate;
+        const filterEnd = endDate;
+        const isWithinRange = bookingStart >= filterStart && bookingStart <= filterEnd;
+        
       // Search term (ID or Guest)
       const matchesSearch =
         b.id.toLowerCase().includes(searchTerm.toLowerCase()) ||

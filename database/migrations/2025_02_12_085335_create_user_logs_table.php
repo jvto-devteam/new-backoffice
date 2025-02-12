@@ -7,6 +7,7 @@ return new class extends Migration {
     public function up() {
         Schema::create('user_logs', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('booking_id')->constrained('bookings')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->text('log');
             $table->timestamps();

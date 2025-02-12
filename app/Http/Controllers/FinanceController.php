@@ -212,7 +212,7 @@ class FinanceController extends Controller
             }]);
         }])->where('id',$id)->first();
         $pax = $booking->total_pax;
-        $day = $booking->package_duration;
+        $day = $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->duration->day : $booking->package_duration;
 
         $totalAccommodations = 0;
         $totalDestinations = 0;

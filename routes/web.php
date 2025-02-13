@@ -64,6 +64,7 @@ Route::prefix('generator')->group(function () {
 });
 
 Route::prefix('bookings')->group(function () {
+    Route::get('/details/{id}', [ScheduleController::class, 'details']);
     Route::get('/add-booking/{order_channel}', [BookingController::class, 'create']);
     Route::get('/edit-booking/{id}', [BookingController::class, 'edit']);
     Route::get('/create/{order_channel}', [BookingController::class, 'create']);

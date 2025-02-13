@@ -8,6 +8,7 @@ use App\Models\BookGuideDriver;
 use App\Models\BookHotel;
 use App\Models\Booking;
 use App\Models\BookingCategory;
+use App\Models\BookingItinerary;
 use App\Models\Destination;
 use App\Models\Hotel;
 use App\Models\Package;
@@ -331,6 +332,65 @@ class ScheduleController extends Controller
         else{
             return Inertia::render('Schedule/Index',['data' => $data]);
         }
+    }
+
+    function details($id){
+        $booking = Booking::with(['user.country','bookingDetail.package'])->where('id',$id)->first();
+        $itinerary = BookingItinerary::where('booking_id',$id)->get()->map(function($query) use($booking){
+            $night = $query->day - 1;
+            return [
+                'day' => $query->day,
+                'date' => date('Y-m-d',strtotime($booking->travel_date_start." +$night days")),
+                'itinerary' => $query->itinerary,
+            ];
+        });
+        return $itinerary;
+        if($booking->agent_id == 1){
+           $channel = 'TWT'; 
+        }
+        else if($booking->agent_id == 2 && $booking->booking_category_id != 3){
+           $channel = 'JVTO'; 
+        }
+        else if($booking->agent_id == 2 && $booking->booking_category_id == 3){
+           $channel = 'KLOOK'; 
+        }
+
+        $details = [
+            'client_information' => [
+                'client_id' => $booking->user->id,
+                'client_name' => $booking->user->name,
+                'contact_number' => $booking->user->phone,
+                'email_address' => $booking->user->email,
+                'nationality' => $booking->user->country->long_name,
+            ],
+            'booking_information' => [
+                'booking_id' => $channel."-".$booking->id,
+                'booking_reference_id' => $channel == 'JVTO' ? $booking->booking_code : $booking->invoice_code_origin,
+                'order_channel' => $channel,
+                'tour_package' => $channel != 'TWT' ? $booking->bookingDetail[0]->package->package_code." | ".$booking->bookingDetail[0]->package->name : '-',
+                'number_of_participants' => $booking->total_pax,
+                'travel_date' => $booking->travel_date_start,
+                'pickup' => [
+                    'location' => $booking->meeting_point ? $booking->meeting_point : '-',
+                    'arrival' => $booking->meeting_point_arrival ? $booking->meeting_point_arrival : '-',
+                    'location_value' => $booking->meeting_point_value ? $booking->meeting_point_value : '-',
+                    'time' => $booking->pickup_time ? $booking->pickup_time : '-',
+                ],
+                'drop' => [
+                    'location' => $booking->drop_point ? $booking->drop_point : '-',
+                    'arrival' => $booking->drop_point_arrival ? $booking->drop_point_arrival : '-',
+                    'location_value' => $booking->drop_point_value ? $booking->drop_point_value : '-',
+                    'time' => $booking->drop_time ? $booking->drop_time : '-',
+                ],
+                'special_requirements' => $booking->special_requirements
+            ],
+            'itinerary_information' => $itinerary,
+            'accommodation_information' => '',
+            'activity_information' => '',
+            'resource_allocation_information' => '',
+            'financial_data' => '',
+        ];
+        return $details;
     }
 
     function bookingList(Request $request){
@@ -825,5 +885,5 @@ public function plotting(Request $request)
             'message' => 'Failed to save plotting: ' . $e->getMessage()
         ], 500);
     }
-}
+    }
 }

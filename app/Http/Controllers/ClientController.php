@@ -14,6 +14,7 @@ class ClientController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
+        $user_id = $request->input('user_id');
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $country = $request->input('country');
@@ -28,6 +29,9 @@ class ClientController extends Controller
             });
         },'bookAddOn.addOn'])->where('status', 'booked')->where('agent_id', 2)->where('travel_date_start','like','%2025%')->orderBy('travel_date_start','asc');
         // Apply search
+        if ($user_id) {
+            $query->where('user_id',$user_id);
+        }
         if ($search) {
             $query->whereHas('user',function($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -138,5 +142,7 @@ class ClientController extends Controller
             'filters' => $request->only(['search', 'start_date', 'end_date', 'country', 'package','channel']),
             'countries' => $countries,
         ]);
+    }
+    function details($id){
     }
 }

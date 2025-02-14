@@ -22,6 +22,7 @@ const Detail = ({ initialData }) => {
     { id: 'transaction', label: 'Client Information' },
     { id: 'booking', label: 'Booking Information' },
     { id: 'itinerary', label: 'Package Details' },
+    { id: 'activities', label: 'Activities' },
     { id: 'accommodation', label: 'Accommodation' },
     { id: 'resource', label: 'Resource Allocation' },
     { id: 'financial', label: 'Financial Data' }
@@ -153,10 +154,19 @@ const Detail = ({ initialData }) => {
                 value={initialData.client_information.client_id.toString()}
                 copyable
               />
-              <DetailRow
-                label="CLIENT NAME"
-                value={initialData.client_information.client_name}
-              />
+              <div className="flex gap-3 items-start py-3 border-b border-gray-200">
+                <div className="w-1/3 text-sm text-gray-600">CLIENT NAME</div>
+                <div className="w-2/3 text-sm flex items-center">
+                  <a
+                    href={`/client-management/details/${initialData.client_information.client_id}`}                    
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline hover:text-blue-700 hover:underline transition-colors duration-200"
+                  >
+                    {initialData.client_information.client_name}
+                  </a>
+                </div>
+              </div>
               {initialData.booking_information.order_channel !== 'TWT' && (
                 <>
                   <DetailRow
@@ -261,8 +271,7 @@ const Detail = ({ initialData }) => {
           {/* Package Details */}
           <div
             ref={el => sectionsRef.current['itinerary'] = el}
-            className="bg-white rounded-lg shadow-sm mb-6 transition-all duration-200 hover:shadow-md"
-          >
+            className="bg-white rounded-lg shadow-sm mb-6 transition-all duration-200 hover:shadow-md">
             <div className="p-6">
               <h2 className="text-xl font-bold mb-6 text-gray-800">Package Details</h2>
               {initialData.booking_information.order_channel != 'TWT' ? (
@@ -394,6 +403,25 @@ const Detail = ({ initialData }) => {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+
+          <div
+            ref={el => sectionsRef.current['activities'] = el}
+            className="bg-white rounded-lg shadow-sm mb-6 transition-all duration-200 hover:shadow-md">
+            <div className="p-6">
+              <h2 className="text-xl font-bold mb-6 text-gray-800">Activities</h2>
+                <div className="space-y-4">
+                  {initialData.itinerary_information.filter((i) => i.activity).map((day, index) => (
+                    <div
+                      key={index}
+                      className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                    >
+                      <h3 className="font-medium mb-1">Day {day.day} - {day.date}</h3>
+                      <div className="text-sm text-gray-600">{day.activity}</div>
+                    </div>
+                  ))}
+                </div>
             </div>
           </div>
 

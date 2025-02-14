@@ -935,9 +935,9 @@ function formatCurrency(amount) {
                             </div>
                             {booking.orderChannel != 'TWT' ? (
                               <div className="font-medium underline">
-                                <Link href={`/client-management?channel=&country=&end_date=&package=&search=${booking.guest}&start_date=`}>
+                                <a target="_blank" href={`/client-management/details/${booking.guest_id}`}>
                                   {booking.guest}
-                                </Link>
+                                </a>
                               </div>
                             ) : (
                               <div className="font-medium">

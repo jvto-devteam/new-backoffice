@@ -248,6 +248,7 @@ class ScheduleController extends Controller
                     'booking_id' => $booking->id,
                     'id' => $orderChannel."-".$booking->id,
                     'orderChannel' => $orderChannel,
+                    'guest_id' => $booking->user_id,
                     'guest' => $booking->user->name,
                     'total_pax' => $booking->total_pax,
                     'duration' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->duration->day."D ".$booking->bookingDetail[0]->package->duration->night."N" : $booking->package_duration."D ".($booking->package_duration-1)."N",
@@ -340,12 +341,13 @@ class ScheduleController extends Controller
                 $q->orderBy('no','asc')->with('activity.activityCategory');
             }]);
         },'bookingPayment'])->where('id',$id)->first();
-        $itinerary = BookingItinerary::where('booking_id',$id)->get()->map(function($query) use($booking){
+        $itinerary = BookingItinerary::with('activityStart.destination')->where('booking_id',$id)->get()->map(function($query) use($booking){
             $night = $query->day - 1;
             return [
                 'day' => $query->day,
                 'date' => date('d F Y',strtotime($booking->travel_date_start." +$night days")),
                 'itinerary' => $query->itinerary,
+                'activity' => $query->activityStart && $query->activityStart->destination ? $query->activityStart->destination->name : null
             ];
         });
         $bookHotel = BookHotel::with(['bookingItinerary','hotel','bookRoom.roomHotel'])->where('booking_id',$id)->get()->map(function($query) use($booking){

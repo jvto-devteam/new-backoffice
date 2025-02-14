@@ -19,7 +19,7 @@ const Detail = ({ initialData }) => {
   };
 
   const tabs = [
-    { id: 'transaction', label: 'Transaction Details' },
+    { id: 'transaction', label: 'Client Information' },
     { id: 'booking', label: 'Booking Information' },
     { id: 'itinerary', label: 'Package Details' },
     { id: 'accommodation', label: 'Accommodation' },

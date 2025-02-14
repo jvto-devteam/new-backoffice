@@ -87,7 +87,7 @@ const Detail = ({ initialData }) => {
   };
 
   const DetailRow = ({ label, value, copyable }) => (
-    <div className="flex items-start py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200">
+    <div className="flex gap-3 items-start py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200">
       <div className="w-1/3 text-sm text-gray-600">{label}</div>
       <div className="w-2/3 text-sm flex items-center">
         <span className="text-gray-900">{value || '-'}</span>
@@ -480,14 +480,14 @@ const Detail = ({ initialData }) => {
                   />
                 </>
               )}
-              <div className="flex items-start py-3 border-b border-gray-200">
+              <div className="flex gap-3 items-start py-3 border-b border-gray-200">
                 <div className="w-1/3 text-sm text-gray-600">EXPENSE</div>
                 <div className="w-2/3 text-sm flex items-center">
                   <a
                     href={initialData.financial_data.expense.expenseLink}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 hover:text-blue-700 hover:underline transition-colors duration-200"
+                    className="text-blue-600 underline hover:text-blue-700 hover:underline transition-colors duration-200"
                   >
                     {formatCurrency(initialData.financial_data.expense.total)}
                   </a>

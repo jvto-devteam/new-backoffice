@@ -230,6 +230,7 @@ function formatCurrency(amount) {
       const removeOption = (optionToRemove) => {
           onChange(value.filter(option => option.value !== optionToRemove.value));
       };
+      
   
       return (
           <>
@@ -877,6 +878,24 @@ function formatCurrency(amount) {
                     {filteredBookings.map((booking, index) => {
                     const isExpanded = expandedBookingId === booking.id;
 
+                    const [openDropdownId, setOpenDropdownId] = useState(null);
+                    const dropdownRefs = useRef({});
+                    
+                    // Keep the existing useEffect for handling outside clicks
+                    useEffect(() => {
+                        const handleClickOutside = (event) => {
+                            if (openDropdownId && dropdownRefs.current[openDropdownId] && 
+                                !dropdownRefs.current[openDropdownId].contains(event.target)) {
+                                setOpenDropdownId(null);
+                            }
+                        };
+                    
+                        if (openDropdownId) {
+                            document.addEventListener('mousedown', handleClickOutside);
+                            return () => document.removeEventListener('mousedown', handleClickOutside);
+                        }
+                    }, [openDropdownId]);                    
+
                     return (
                         <React.Fragment key={booking.id}>
                         <tr className="border-b">
@@ -1183,16 +1202,44 @@ function formatCurrency(amount) {
                               <div className="text-xs text-gray-600">{booking.notes || '-'}</div>
                             </td>
                             <td className="py-3 px-4 align-top">
-                              <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleMoreVerticalClick(booking)}
-                                  disabled={isLoading}                              
-                              >
-                                  <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </td>
+  <div className="relative" ref={el => dropdownRefs.current[booking.id] = el}>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpenDropdownId(openDropdownId === booking.id ? null : booking.id);
+      }}
+    >
+      <MoreVertical className="h-4 w-4" />
+    </Button>
 
+    {openDropdownId === booking.id && (
+      <div 
+        className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 py-1"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button 
+          onClick={() => window.open(`/bookings/details/${booking.booking_id}`, '_blank')}
+          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+        >
+          Details
+        </button>
+        <button 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleMoreVerticalClick(booking);
+            setOpenDropdownId(null);
+          }}
+          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+        >
+          Plotting
+        </button>
+      </div>
+    )}
+  </div>
+</td>
                         </tr>
                         {/* Expanded row for details */}
                         {isExpanded && (

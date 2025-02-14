@@ -335,16 +335,53 @@ class ScheduleController extends Controller
     }
 
     function details($id){
-        $booking = Booking::with(['user.country','bookingDetail.package'])->where('id',$id)->first();
+        $booking = Booking::with(['user.country','bookingDetail.package','bookingPayment'])->where('id',$id)->first();
         $itinerary = BookingItinerary::where('booking_id',$id)->get()->map(function($query) use($booking){
             $night = $query->day - 1;
             return [
                 'day' => $query->day,
-                'date' => date('Y-m-d',strtotime($booking->travel_date_start." +$night days")),
+                'date' => date('d F Y',strtotime($booking->travel_date_start." +$night days")),
                 'itinerary' => $query->itinerary,
             ];
         });
-        return $itinerary;
+        $bookHotel = BookHotel::with(['bookingItinerary','hotel','bookRoom.roomHotel'])->where('booking_id',$id)->get()->map(function($query) use($booking){
+            $night = $query->day - 1;
+            return [
+                'day' => $query->bookingItinerary->day,
+                'hotel' => $query->hotel->name,
+                'check_in' => date('d F Y',strtotime($booking->travel_date_start." +$night days")),
+                'rooms' => $query->bookRoom->map(function($q){
+                    return [
+                        'room_name' => $q->roomHotel->room_name,
+                        'quantity' => $q->quantity,
+                    ];
+                }),
+            ];
+        });
+        $cars = [];
+        $drivers = [];
+        $escorts = [];
+        $ijens = [];
+        $car = BookCar::with('car')->where('booking_id',$id)->get()->map(function($query) use(&$cars){
+            array_push($cars,$query->car->name);
+            return $query;
+        });
+
+        $driver = BookGuideDriver::with('person')->where('booking_id',$id)->where('type','driver')->get()->map(function($query) use(&$drivers){
+            array_push($drivers,$query->person->name);
+            return $query;
+        });
+
+        $escort = BookGuideDriver::with('person')->where('booking_id',$id)->where('type','guide')->where('guide_ijen','0')->get()->map(function($query) use(&$escorts){
+            array_push($escorts,$query->person->name);
+            return $query;
+        });
+
+        $ijen = BookGuideDriver::with('person')->where('booking_id',$id)->where('type','guide')->where('guide_ijen','1')->get()->map(function($query) use(&$ijens){
+            array_push($ijens,$query->person->name);
+            return $query;
+        });
+        
         if($booking->agent_id == 1){
            $channel = 'TWT'; 
         }
@@ -354,6 +391,15 @@ class ScheduleController extends Controller
         else if($booking->agent_id == 2 && $booking->booking_category_id == 3){
            $channel = 'KLOOK'; 
         }
+
+        $invoiceLinks = [];
+        if($channel == 'JVTO'){
+            array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/".$booking->id);
+            if($booking->book_add_on_total != 0){
+                array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/".$booking->id."?addon=true");
+            }
+        }
+
 
         $details = [
             'client_information' => [
@@ -369,7 +415,7 @@ class ScheduleController extends Controller
                 'order_channel' => $channel,
                 'tour_package' => $channel != 'TWT' ? $booking->bookingDetail[0]->package->package_code." | ".$booking->bookingDetail[0]->package->name : '-',
                 'number_of_participants' => $booking->total_pax,
-                'travel_date' => $booking->travel_date_start,
+                'travel_date' => date('d F Y',strtotime($booking->travel_date_start)),
                 'pickup' => [
                     'location' => $booking->meeting_point ? $booking->meeting_point : '-',
                     'arrival' => $booking->meeting_point_arrival ? $booking->meeting_point_arrival : '-',
@@ -382,15 +428,46 @@ class ScheduleController extends Controller
                     'location_value' => $booking->drop_point_value ? $booking->drop_point_value : '-',
                     'time' => $booking->drop_time ? $booking->drop_time : '-',
                 ],
-                'special_requirements' => $booking->special_requirements
+                'special_requirements' => $booking->special_requirements,
+                'notes' => $booking->note
             ],
             'itinerary_information' => $itinerary,
-            'accommodation_information' => '',
-            'activity_information' => '',
-            'resource_allocation_information' => '',
-            'financial_data' => '',
+            'accommodation_information' => $bookHotel,
+            'resource_allocation_information' => [
+                'cars' => $cars,
+                'crews' => [
+                    'driver' => $drivers,
+                    'escort' => $escorts,
+                    'ijen' => $ijens,
+                ],
+            ],
+            'financial_data' => [
+                'payment' =>  $booking->payment,
+                'balance' =>  $booking->balance,
+                'paymentMethod' =>  $booking->outstanding_payment_method ? strtoupper($booking->outstanding_payment_method) : $booking->outstanding_payment_method,
+                'invoice' => [
+                    'total' => $booking->grand_total+$booking->book_add_on_total,
+                    'invoiceLink' => $invoiceLinks,
+                ],
+                'expense' => [
+                    'total' => $booking->expense_internal_total,
+                    'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : '/finance/expense-manager/'.$booking->id.'/edit',
+                    'target' => '_blank'
+                ],
+                'profit' =>  $booking->grand_total+$booking->book_add_on_total-$booking->expense_internal_total,
+                'payment_history' => $booking->bookingPayment->map(function($payment){
+                    return [
+                        'nominal' => $payment->nominal,
+                        'paymentMethod' => $payment->paymentMethod->name,
+                        'description' => $payment->description,
+                        'reference' => $payment->reference,
+                        'date' => date('d M y H:i',strtotime($payment->created_at)),
+                    ];
+                }),
+
+            ],
         ];
-        return $details;
+        return Inertia::render('Schedule/Details', ['initialData' => $details]);
     }
 
     function bookingList(Request $request){

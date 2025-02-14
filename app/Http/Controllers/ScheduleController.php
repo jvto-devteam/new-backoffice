@@ -407,7 +407,7 @@ class ScheduleController extends Controller
                 'client_name' => $booking->user->name,
                 'contact_number' => $booking->user->phone,
                 'email_address' => $booking->user->email,
-                'nationality' => $booking->user->country->long_name,
+                'nationality' => $booking->user->country ? $booking->user->country->long_name : '-',
             ],
             'booking_information' => [
                 'booking_id' => $channel."-".$booking->id,

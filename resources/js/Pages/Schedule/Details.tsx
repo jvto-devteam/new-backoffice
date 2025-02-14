@@ -1,119 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy } from 'lucide-react';
+import { Copy, ChevronDown, Menu, X } from 'lucide-react';
 import Main from '@/Layouts/Main';
 
-
-const Detail = ({initialData}) => {
+const Detail = ({ initialData }) => {
   const [activeTab, setActiveTab] = useState('transaction');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const sectionsRef = useRef({});
-  
-//   const initialData = {
-//     client_information: {
-//       client_id: 978,
-//       client_name: "Christine Hoffmann",
-//       contact_number: "+491759228396",
-//       email_address: "hoffmannchristine94@gmail.com",
-//       nationality: "Germany (Deutschland)"
-//     },
-//     booking_information: {
-//       booking_id: "JVTO-921",
-//       booking_reference_id: "JVR/008/01/25",
-//       order_channel: "JVTO",
-//       tour_package: "SUB-3D2N-002 | Java Volcano Tour: 3D2N Bromo & Ijen Crater Expedition",
-//       number_of_participants: 2,
-//       travel_date: "2025-01-14",
-//       pickup: {
-//         location: "Surabaya Airport",
-//         arrival: "-",
-//         location_value: "JT645",
-//         time: "10:00:00"
-//       },
-//       drop: {
-//         location: "Surabaya Train Station",
-//         arrival: "-",
-//         location_value: "Wijaya Kusuma(157)",
-//         time: "17:20:00"
-//       },
-//       special_requirements: null,
-//       notes: null
-//     },
-//     itinerary_information: [
-//       {
-//         day: 1,
-//         date: "2025-01-14",
-//         itinerary: "Surabaya Airport - Bondowoso"
-//       },
-//       {
-//         day: 2,
-//         date: "2025-01-15",
-//         itinerary: "Ijen Crater - Bromo Area"
-//       },
-//       {
-//         day: 3,
-//         date: "2025-01-16",
-//         itinerary: "Bromo Sunrise - Madakaripura Waterfall - Malang City"
-//       }
-//     ],
-//     accommodation_information: [
-//       {
-//         day: 1,
-//         hotel: "Riverside Homestay",
-//         check_in: "2025-01-15",
-//         rooms: [{
-//           room_name: "Deluxe Double",
-//           quantity: 1
-//         }]
-//       },
-//       {
-//         day: 2,
-//         hotel: "Joglo Kecombrang Bromo",
-//         check_in: "2025-01-15",
-//         rooms: [{
-//           room_name: "Double",
-//           quantity: 1
-//         }]
-//       }
-//     ],
-//     resource_allocation_information: {
-//       cars: ["Avanza Pratama"],
-//       crews: {
-//         driver: ["Fredi"],
-//         escort: [],
-//         ijen: ["Taufik"]
-//       }
-//     },
-//     financial_data: {
-//       payment: 7040000,
-//       balance: 0,
-//       paymentMethod: "edc",
-//       invoice: {
-//         total: 7040000,
-//         invoiceLink: ["https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/921"]
-//       },
-//       expense: {
-//         total: 5537500,
-//         expenseLink: "https://1drv.ms/x/s!AghHmKdq9e7UhvMmnxic3dr_XArscg",
-//         target: "_blank"
-//       },
-//       profit: 1502500,
-//       payment_history: [
-//         {
-//           nominal: 704000,
-//           paymentMethod: "Debit/Credit Card",
-//           description: "Down Payment",
-//           reference: "https://checkout.xendit.co/web/67838e9b89b1ec591eafd750",
-//           date: "12 Jan 25 16:45"
-//         },
-//         {
-//           nominal: 6336000,
-//           paymentMethod: "Cash",
-//           description: "Full Payment",
-//           reference: null,
-//           date: "14 Jan 25 16:46"
-//         }
-//       ]
-//     }
-//   };
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
@@ -127,7 +21,7 @@ const Detail = ({initialData}) => {
   const tabs = [
     { id: 'transaction', label: 'Transaction Details' },
     { id: 'booking', label: 'Booking Information' },
-    { id: 'itinerary', label: 'Itinerary' },
+    { id: 'itinerary', label: 'Package Details' },
     { id: 'accommodation', label: 'Accommodation' },
     { id: 'resource', label: 'Resource Allocation' },
     { id: 'financial', label: 'Financial Data' }
@@ -136,216 +30,539 @@ const Detail = ({initialData}) => {
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 100;
-      for (const [id, ref] of Object.entries(sectionsRef.current)) {
+      let currentSection = activeTab;
+
+      Object.entries(sectionsRef.current).forEach(([id, ref]) => {
         if (ref) {
-          const element = ref;
-          const { offsetTop, offsetHeight } = element;
+          const { offsetTop, offsetHeight } = ref;
           if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
-            setActiveTab(id);
-            break;
+            currentSection = id;
           }
         }
+      });
+
+      if (currentSection !== activeTab) {
+        setActiveTab(currentSection);
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [activeTab]);
 
   const scrollToSection = (sectionId) => {
     const section = sectionsRef.current[sectionId];
     if (section) {
-      section.scrollIntoView({ behavior: 'smooth' });
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
-  const CopyButton = ({ text }) => (
-    <button 
-      onClick={() => navigator.clipboard.writeText(text)}
-      className="ml-2 p-1 hover:bg-gray-100 rounded"
-    >
-      <Copy size={16} className="text-gray-500" />
-    </button>
-  );
+  const CopyButton = ({ text, id }) => {
+    const handleCopy = async () => {
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 2000);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+      }
+    };
+
+    return (
+      <div className="relative inline-flex items-center">
+        <button
+          onClick={handleCopy}
+          className="ml-2 p-1 rounded-full transition-all duration-200 hover:bg-gray-100"
+          aria-label={copiedId === id ? "Copied!" : "Copy to clipboard"}
+        >
+          <Copy size={16} className="text-gray-500" />
+        </button>
+        {copiedId === id && (
+          <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg animate-fade-in">
+            Copied!
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const DetailRow = ({ label, value, copyable }) => (
-    <div className="flex items-start py-3 border-b border-gray-200">
+    <div className="flex items-start py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200">
       <div className="w-1/3 text-sm text-gray-600">{label}</div>
       <div className="w-2/3 text-sm flex items-center">
         <span className="text-gray-900">{value || '-'}</span>
-        {copyable && value !== '-' && <CopyButton text={value} />}
+        {copyable && value !== '-' && <CopyButton text={value} id={`${label}-${value}`} />}
       </div>
     </div>
   );
 
   return (
     <Main>
-        <div className="flex gap-5">
-        {/* Left sidebar with fixed tabs */}
-        <div className="w-64">
-            <div className="sticky top-30 bg-white shadow-sm">
-            <nav className="p-4">
-                {tabs.map((tab) => (
+      <div className="flex flex-col lg:flex-row gap-5 p-4">
+        {/* Sidebar */}
+        <div className="lg:w-64 w-full">
+          <div className="sticky top-30 bg-white rounded-lg shadow-sm">
+            <nav className="p-4" role="navigation" aria-label="Main navigation">
+              <div className="lg:hidden flex justify-between items-center">
+                <h2 className="font-bold">Navigation</h2>
                 <button
-                    key={tab.id}
-                    onClick={() => scrollToSection(tab.id)}
-                    className={`w-full text-left px-4 py-2 mb-2 rounded text-sm font-medium transition-colors
-                    ${activeTab === tab.id
-                        ? 'bg-blue-50 text-blue-600'
-                        : 'text-gray-600 hover:bg-gray-50'
-                    }`}
+                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors duration-200"
+                  aria-expanded={isMobileMenuOpen}
+                  aria-label="Toggle navigation menu"
                 >
-                    {tab.label}
+                  {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
                 </button>
+              </div>
+
+              <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} lg:block space-y-1`}>
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      scrollToSection(tab.id);
+                      setActiveTab(tab.id);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200
+                      ${activeTab === tab.id
+                        ? 'bg-blue-50 text-blue-600 shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-50'
+                      }`}
+                    aria-current={activeTab === tab.id ? 'page' : undefined}
+                  >
+                    {tab.label}
+                  </button>
                 ))}
+              </div>
             </nav>
-            </div>
+          </div>
         </div>
 
-        {/* Main content area */}
+        {/* Main content */}
         <div className="flex-1">
-            {/* Transaction Details Card */}
-            <div 
+          {/* Client Information */}
+          <div
             ref={el => sectionsRef.current['transaction'] = el}
-            className="bg-white rounded-lg shadow mb-6"
-            >
+            className="bg-white rounded-lg shadow-sm mb-6 transition-all duration-200 hover:shadow-md"
+          >
             <div className="p-6">
-                <h2 className="text-lg font-medium mb-4">Transaction Details</h2>
-                <div className="mb-6">
-                <div className="text-sm text-gray-600 mb-1">Transaction Amount</div>
-                <div className="text-2xl font-semibold">
-                    {formatCurrency(initialData.financial_data.invoice.total)}
-                </div>
-                </div>
-                <DetailRow label="CLIENT ID" value={initialData.client_information.client_id.toString()} copyable />
-                <DetailRow label="CLIENT NAME" value={initialData.client_information.client_name} />
-                <DetailRow label="CONTACT" value={initialData.client_information.contact_number} copyable />
-                <DetailRow label="EMAIL" value={initialData.client_information.email_address} copyable />
-                <DetailRow label="NATIONALITY" value={initialData.client_information.nationality} />
+              <h2 className="text-xl font-bold mb-6 text-gray-800">Client Information</h2>
+              <DetailRow
+                label="CLIENT ID"
+                value={initialData.client_information.client_id.toString()}
+                copyable
+              />
+              {initialData.booking_information.order_channel !== 'TWT' && (
+                <>
+                  <DetailRow
+                    label="CLIENT NAME"
+                    value={initialData.client_information.client_name}
+                  />
+                  <DetailRow
+                    label="CONTACT"
+                    value={initialData.client_information.contact_number}
+                    copyable
+                  />
+                  <DetailRow
+                    label="EMAIL"
+                    value={initialData.client_information.email_address}
+                    copyable
+                  />
+                  <DetailRow
+                    label="NATIONALITY"
+                    value={initialData.client_information.nationality}
+                  />
+                </>
+              )}
             </div>
-            </div>
+          </div>
 
-            {/* Booking Information Card */}
-            <div 
+          {/* Booking Information */}
+          <div
             ref={el => sectionsRef.current['booking'] = el}
-            className="bg-white rounded-lg shadow mb-6"
-            >
+            className="bg-white rounded-lg shadow-sm mb-6 transition-all duration-200 hover:shadow-md"
+          >
             <div className="p-6">
-                <h2 className="text-lg font-medium mb-4">Booking Information</h2>
-                <DetailRow label="BOOKING ID" value={initialData.booking_information.booking_id} copyable />
-                <DetailRow label="REFERENCE ID" value={initialData.booking_information.booking_reference_id} copyable />
-                <DetailRow label="ORDER CHANNEL" value={initialData.booking_information.order_channel} />
-                <DetailRow label="TOUR PACKAGE" value={initialData.booking_information.tour_package} />
-                <DetailRow label="PARTICIPANTS" value={initialData.booking_information.number_of_participants.toString()} />
-                <DetailRow label="TRAVEL DATE" value={initialData.booking_information.travel_date} />
-                <DetailRow label="PICKUP LOCATION" value={`${initialData.booking_information.pickup.location} (${initialData.booking_information.pickup.location_value})`} />
-                <DetailRow label="PICKUP TIME" value={initialData.booking_information.pickup.time} />
-                <DetailRow label="DROP LOCATION" value={`${initialData.booking_information.drop.location} (${initialData.booking_information.drop.location_value})`} />
-                <DetailRow label="DROP TIME" value={initialData.booking_information.drop.time} />
+              <h2 className="text-xl font-bold mb-6 text-gray-800">Booking Information</h2>
+              <DetailRow
+                label="BOOKING ID"
+                value={initialData.booking_information.booking_id}
+                copyable
+              />
+              <DetailRow
+                label="REFERENCE ID"
+                value={initialData.booking_information.booking_reference_id}
+                copyable
+              />
+              <DetailRow
+                label="BOOKING DATE"
+                value={initialData.booking_information.booking_date}
+              />
+              <DetailRow
+                label="ORDER CHANNEL"
+                value={initialData.booking_information.order_channel}
+              />
+              <DetailRow
+                label="TOUR PACKAGE"
+                value={initialData.booking_information.tour_package}
+              />
+              <DetailRow
+                label="PARTICIPANTS"
+                value={`${initialData.booking_information.number_of_participants} PAX`}
+              />
+              <DetailRow
+                label="TRAVEL DATE"
+                value={initialData.booking_information.travel_date}
+              />
+              <DetailRow
+                label="TRAVEL T-SHIRT"
+                value={initialData.booking_information.tshirt}
+              />
+              {initialData.booking_information.pickup.location === 'Others' ? (
+                <DetailRow
+                  label="PICKUP LOCATION"
+                  value={initialData.booking_information.pickup.location_value}
+                />
+              ) : (
+                <DetailRow
+                  label="PICKUP LOCATION"
+                  value={`${initialData.booking_information.pickup.location}${
+                    initialData.booking_information.pickup.arrival ? 
+                    `, ${initialData.booking_information.pickup.arrival}` : 
+                    ''} (${initialData.booking_information.pickup.location_value})`}
+                />
+              )}
+              <DetailRow
+                label="PICKUP TIME"
+                value={initialData.booking_information.pickup.time}
+              />
+              {initialData.booking_information.drop.location === 'Others' ? (
+                <DetailRow
+                  label="DROP LOCATION"
+                  value={initialData.booking_information.drop.location_value}
+                />
+              ) : (
+                <DetailRow
+                  label="DROP LOCATION"
+                  value={`${initialData.booking_information.drop.location}${
+                    initialData.booking_information.drop.arrival ? 
+                    `, ${initialData.booking_information.drop.arrival}` : 
+                    ''} (${initialData.booking_information.drop.location_value})`}
+                />
+              )}
+              <DetailRow
+                label="DROP TIME"
+                value={initialData.booking_information.drop.time}
+              />
             </div>
-            </div>
+          </div>
 
-            {/* Itinerary Card */}
-            <div 
+          {/* Package Details */}
+          <div
             ref={el => sectionsRef.current['itinerary'] = el}
-            className="bg-white rounded-lg shadow mb-6"
-            >
-                <div className="p-6">
-                    <h2 className="text-lg font-medium mb-4">Itinerary</h2>
-                    <div>
-                        {initialData.itinerary_information.map((day, index) => (
-                            <div key={index} className="mb-4 p-3 bg-gray-50 rounded">
-                            <div className="font-medium mb-1">Day {day.day} - {day.date}</div>
-                            <div className="text-sm text-gray-600">{day.itinerary}</div>
+            className="bg-white rounded-lg shadow-sm mb-6 transition-all duration-200 hover:shadow-md"
+          >
+            <div className="p-6">
+              <h2 className="text-xl font-bold mb-6 text-gray-800">Package Details</h2>
+              {initialData.booking_information.order_channel !== 'TWT' ? (
+                <div className="space-y-6">
+                  {/* Day 1 */}
+                  <div>
+                    <h3 className="font-medium mb-3">
+                      Day {initialData.package_information[0].day}
+                    </h3>
+                    <div className="space-y-4">
+                      {initialData.package_information[0].details.map((detail, index) => (
+                        <div
+                          key={index}
+                          className="flex gap-3 items-start p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                        >
+                          {detail.icon && (
+                            <img
+                              src={detail.icon}
+                              alt=""
+                              className="w-6 h-6 mt-1"
+                              aria-hidden="true"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-baseline gap-2">
+                              <span className="font-medium">{detail.activity}</span>
+                              {detail.time && (
+                                <span className="text-sm text-gray-500">({detail.time})</span>
+                              )}
                             </div>
-                        ))}
+                            {detail.location && (
+                              <div className="text-sm text-gray-700">
+                                Location: {detail.location}
+                              </div>
+                            )}
+                            {detail.notes && (
+                              <div className="text-sm text-gray-600 mt-1">
+                                {detail.notes}
+                              </div>
+                            )}
+                            {detail.activity_notes && (
+                              <div className="text-sm text-gray-500 mt-1">
+                                {detail.activity_notes}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                </div>
-            </div>
+                  </div>
 
-            {/* Accommodation Card */}
-            <div 
-            ref={el => sectionsRef.current['accommodation'] = el}
-            className="bg-white rounded-lg shadow mb-6"
-            >
-                <div className='p-6'>
-                    <h2 className="text-lg font-medium mb-4">Accommodation</h2>
-                    {initialData.accommodation_information.map((acc, index) => (
-                        <div key={index} className="mb-4 p-3 bg-gray-50 rounded">
-                        <div className="font-medium mb-1">Day {acc.day} - {acc.hotel}</div>
-                        <div className="text-sm text-gray-600">
-                            Check-in: {acc.check_in}
-                            {acc.rooms.map((room, roomIndex) => (
-                            <div key={roomIndex}>
-                                {room.quantity}x {room.room_name}
-                            </div>
+                  {/* Show More Details */}
+                  {showMoreDetails && (
+                    <div className="mt-6">
+                      {initialData.package_information.slice(1).map((day, index) => (
+                        <div key={index} className="mb-6">
+                          <h3 className="font-medium mb-3">Day {day.day}</h3>
+                          <div className="space-y-4">
+                            {day.details.map((detail, detailIndex) => (
+                              <div
+                                key={detailIndex}
+                                className="flex gap-3 items-start p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                              >
+                                {detail.icon && (
+                                  <img
+                                    src={detail.icon}
+                                    alt=""
+                                    className="w-6 h-6 mt-1"
+                                    aria-hidden="true"
+                                  />
+                                )}
+                                <div className="flex-1">
+                                  <div className="flex items-baseline gap-2">
+                                    <span className="font-medium">{detail.activity}</span>
+                                    {detail.time && (
+                                      <span className="text-sm text-gray-500">
+                                        ({detail.time})
+                                      </span>
+                                    )}
+                                  </div>
+                                  {detail.location && (
+                                    <div className="text-sm text-gray-700">
+                                      Location: {detail.location}
+                                    </div>
+                                  )}
+                                  {detail.notes && (
+                                    <div className="text-sm text-gray-600 mt-1">
+                                      {detail.notes}
+                                    </div>
+                                  )}
+                                  {detail.activity_notes && (
+                                    <div className="text-sm text-gray-500 mt-1">
+                                      {detail.activity_notes}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
                             ))}
+                          </div>
                         </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Resource Allocation Card */}
-            <div 
-            ref={el => sectionsRef.current['resource'] = el}
-            className="bg-white rounded-lg shadow mb-6"
-            >
-            <div className="p-6">
-                <h2 className="text-lg font-medium mb-4">Resource Allocation</h2>
-                <DetailRow label="VEHICLE" value={initialData.resource_allocation_information.cars.join(', ')} />
-                <DetailRow label="DRIVER" value={initialData.resource_allocation_information.crews.driver.join(', ')} />
-                <DetailRow label="IJEN GUIDE" value={initialData.resource_allocation_information.crews.ijen.join(', ')} />
-                <DetailRow label="ESCORT" value={initialData.resource_allocation_information.crews.escort.length ? initialData.resource_allocation_information.crews.escort.join(', ') : '-'} />
-            </div>
-            </div>
-
-            {/* Financial Data Card */}
-            <div 
-            ref={el => sectionsRef.current['financial'] = el}
-            className="bg-white rounded-lg shadow mb-6"
-            >
-            <div className="p-6">
-                <h2 className="text-lg font-medium mb-4">Financial Data</h2>
-                <DetailRow label="TOTAL INVOICE" value={formatCurrency(initialData.financial_data.invoice.total)} />
-                <DetailRow label="TOTAL PAYMENT" value={formatCurrency(initialData.financial_data.payment)} />
-                <DetailRow label="BALANCE" value={formatCurrency(initialData.financial_data.balance)} />
-                <DetailRow label="PAYMENT METHOD" value={initialData.financial_data.paymentMethod} />
-                <div className="flex items-start py-3 border-b border-gray-200">
-                    <div className="w-1/3 text-sm text-gray-600">EXPENSE</div>
-                    <div className="w-2/3 text-sm flex items-center">
-                        <a href={initialData.financial_data.expense.expenseLink} target="_blank" className="text-blue-600 underline">{formatCurrency(initialData.financial_data.expense.total)}</a>
+                      ))}
                     </div>
+                  )}
+
+                  {/* Toggle Button */}
+                  <button
+                    onClick={() => setShowMoreDetails(!showMoreDetails)}
+                    className="w-full py-2 px-4 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm font-medium text-gray-600 flex items-center justify-center gap-2 transition-colors duration-200"
+                    aria-expanded={showMoreDetails}
+                  >
+                    {showMoreDetails ? 'Show Less' : 'Show More Details'}
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform duration-200 ${
+                        showMoreDetails ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
                 </div>
-                <DetailRow label="PROFIT" value={formatCurrency(initialData.financial_data.profit)} />
-                
-                <div className="mt-6 mb-3">
-                <h3 className="text-md font-medium">Payment History</h3>
-                </div>
-                {initialData.financial_data.payment_history.map((payment, index) => (
-                <div key={index} className="mb-4 p-3 bg-gray-50 rounded">
-                    <div className="flex justify-between mb-2">
-                    <span className="font-medium">{payment.description}</span>
-                    <span>{formatCurrency(payment.nominal)}</span>
+              ) : (
+                <div className="space-y-4">
+                  {initialData.itinerary_information.map((day, index) => (
+                    <div
+                      key={index}
+                      className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                    >
+                      <h3 className="font-medium mb-1">Day {day.day} - {day.date}</h3>
+                      <div className="text-sm text-gray-600">{day.itinerary}</div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Accommodation */}
+          <div
+            ref={el => sectionsRef.current['accommodation'] = el}
+            className="bg-white rounded-lg shadow-sm mb-6 transition-all duration-200 hover:shadow-md"
+          >
+            <div className="p-6">
+              <h2 className="text-xl font-bold mb-6 text-gray-800">Accommodation</h2>
+              <div className="space-y-4">
+                {initialData.accommodation_information.map((acc, index) => (
+                  <div
+                    key={index}
+                    className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                  >
+                    <h3 className="font-medium mb-2">Day {acc.day} - {acc.hotel}</h3>
                     <div className="text-sm text-gray-600">
-                    <div>Method: {payment.paymentMethod}</div>
-                    <div>Date: {payment.date}</div>
-                    {payment.reference && (
-                        <div>
-                        Reference: 
-                        <a href={payment.reference} className="text-blue-600 ml-1 hover:underline" target="_blank" rel="noopener noreferrer">
-                            View Receipt
-                        </a>
-                        </div>
-                    )}
+                      <div className="mb-2">Check-in: {acc.check_in}</div>
+                      <div className="space-y-1">
+                        {acc.rooms.map((room, roomIndex) => (
+                          <div key={roomIndex} className="flex items-center gap-2">
+                            <span className="font-medium">{room.quantity}x</span>
+                            <span>{room.room_name}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                </div>
+                  </div>
                 ))}
+              </div>
             </div>
+          </div>
+
+          {/* Resource Allocation */}
+          <div
+            ref={el => sectionsRef.current['resource'] = el}
+            className="bg-white rounded-lg shadow-sm mb-6 transition-all duration-200 hover:shadow-md"
+          >
+            <div className="p-6">
+              <h2 className="text-xl font-bold mb-6 text-gray-800">Resource Allocation</h2>
+              <DetailRow
+                label="VEHICLE"
+                value={initialData.resource_allocation_information.cars.join(', ')}
+              />
+              <DetailRow
+                label="DRIVER"
+                value={initialData.resource_allocation_information.crews.driver.join(', ')}
+              />
+              <DetailRow
+                label="IJEN GUIDE"
+                value={initialData.resource_allocation_information.crews.ijen.join(', ')}
+              />
+              <DetailRow
+                label="ESCORT"
+                value={initialData.resource_allocation_information.crews.escort.length ?
+                  initialData.resource_allocation_information.crews.escort.join(', ') : '-'}
+              />
             </div>
+          </div>
+
+          {/* Financial Data */}
+          <div
+            ref={el => sectionsRef.current['financial'] = el}
+            className="bg-white rounded-lg shadow-sm mb-6 transition-all duration-200 hover:shadow-md"
+          >
+            <div className="p-6">
+              <h2 className="text-xl font-bold mb-6 text-gray-800">Financial Data</h2>
+              <DetailRow
+                label="TOTAL INVOICE"
+                value={formatCurrency(initialData.financial_data.invoice.total)}
+              />
+              {initialData.booking_information.order_channel !== 'TWT' && (
+                <>
+                  <DetailRow
+                    label="TOTAL PAYMENT"
+                    value={formatCurrency(initialData.financial_data.payment)}
+                  />
+                  <DetailRow
+                    label="BALANCE"
+                    value={`${formatCurrency(initialData.financial_data.balance)} (PAYMENT METHOD: ${
+                      initialData.financial_data.paymentMethod
+                    })`}
+                  />
+                </>
+              )}
+              <div className="flex items-start py-3 border-b border-gray-200">
+                <div className="w-1/3 text-sm text-gray-600">EXPENSE</div>
+                <div className="w-2/3 text-sm flex items-center">
+                  <a
+                    href={initialData.financial_data.expense.expenseLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-700 hover:underline transition-colors duration-200"
+                  >
+                    {formatCurrency(initialData.financial_data.expense.total)}
+                  </a>
+                </div>
+              </div>
+              <DetailRow
+                label="PROFIT"
+                value={formatCurrency(initialData.financial_data.profit)}
+              />
+
+              {/* Payment History */}
+              {initialData.financial_data.payment_history.length > 0 && (
+                <>
+                  <div className="mt-6 mb-3">
+                    <h3 className="text-lg font-bold">Payment History</h3>
+                  </div>
+                  <div className="space-y-4">
+                    {initialData.financial_data.payment_history.map((payment, index) => (
+                      <div
+                        key={index}
+                        className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                      >
+                        <div className="flex justify-between mb-2">
+                          <span className="font-medium">{payment.description}</span>
+                          <span>{formatCurrency(payment.nominal)}</span>
+                        </div>
+                        <div className="text-sm text-gray-600 space-y-1">
+                          <div>Method: {payment.paymentMethod}</div>
+                          <div>Date: {payment.date}</div>
+                          {payment.reference && (
+                            <div>
+                              Reference:
+                              <a
+                                href={payment.reference}
+                                className="text-blue-600 ml-1 hover:text-blue-700 hover:underline transition-colors duration-200"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                View Receipt
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      {/* <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white shadow-top z-50">
+        <div className="flex justify-around p-2 border-t border-gray-200">
+          {tabs.slice(0, 4).map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                scrollToSection(tab.id);
+                setActiveTab(tab.id);
+              }}
+              className={`p-2 rounded-full transition-colors duration-200 ${
+                activeTab === tab.id
+                  ? 'bg-blue-50 text-blue-600'
+                  : 'text-gray-600'
+              }`}
+              aria-label={tab.label}
+            >
+              <span className="text-xs">{tab.label.split(' ')[0]}</span>
+            </button>
+          ))}
         </div>
+      </div> */}
     </Main>
   );
 };

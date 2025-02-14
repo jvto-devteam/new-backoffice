@@ -335,7 +335,11 @@ class ScheduleController extends Controller
     }
 
     function details($id){
-        $booking = Booking::with(['user.country','bookingDetail.package','bookingPayment'])->where('id',$id)->first();
+        $booking = Booking::with(['user.country','bookingDetail.package.itinerary' => function($query){
+            $query->with(['itineraryDetail' => function($q){
+                $q->orderBy('no','asc')->with('activity.activityCategory');
+            }]);
+        },'bookingPayment'])->where('id',$id)->first();
         $itinerary = BookingItinerary::where('booking_id',$id)->get()->map(function($query) use($booking){
             $night = $query->day - 1;
             return [
@@ -400,6 +404,84 @@ class ScheduleController extends Controller
             }
         }
 
+        $tshirt = [];
+        if($booking->bookingDetail[0]->xss){
+            array_push($tshirt,"XSS: ".$booking->bookingDetail[0]->xss);
+        }
+        if($booking->bookingDetail[0]->xxs){
+            array_push($tshirt,"XXS: ".$booking->bookingDetail[0]->xxs);
+        }
+        if($booking->bookingDetail[0]->xs){
+            array_push($tshirt,"XS: ".$booking->bookingDetail[0]->xs);
+        }
+        if($booking->bookingDetail[0]->s){
+            array_push($tshirt,"S: ".$booking->bookingDetail[0]->s);
+        }
+        if($booking->bookingDetail[0]->m){
+            array_push($tshirt,"M: ".$booking->bookingDetail[0]->m);
+        }
+        if($booking->bookingDetail[0]->l){
+            array_push($tshirt,"L: ".$booking->bookingDetail[0]->l);
+        }
+        if($booking->bookingDetail[0]->xl){
+            array_push($tshirt,"XL: ".$booking->bookingDetail[0]->xl);
+        }
+        if($booking->bookingDetail[0]->xxl){
+            array_push($tshirt,"XXL: ".$booking->bookingDetail[0]->xxl);
+        }
+        if($booking->bookingDetail[0]->xxxl){
+            array_push($tshirt,"XXXL: ".$booking->bookingDetail[0]->xxxl);
+        }
+        $tshirts = implode(", ",$tshirt);
+
+        $package_information = [];
+        if($channel != 'TWT'){
+            $package_information = $booking->bookingDetail[0]->package->itinerary->map(function($query, $index) use ($booking) {
+                // Get total days to identify first and last day
+                $totalDays = $booking->bookingDetail[0]->package->itinerary->count();
+                
+                // Get the details for the current day
+                $details = $query->itineraryDetail->map(function($q) {
+                    return [
+                        'time' => $q->time ? date('H:i', strtotime($q->time)) : null,
+                        'activity' => $q->activity ? $q->activity->name : null,
+                        'icon' => $q->activity->activityCategory->icon ?? null,
+                        'notes' => $q->notes,
+                        'location' => $q->location ? $q->location->name : null,
+                        'activity_notes' => $q->activity ? $q->activity->notes : null,
+                    ];
+                })->toArray();
+            
+                // Add pickup record for first day
+                if ($query->day === 1) {
+                    array_unshift($details, [
+                        'time' => null,
+                        'icon' => "https://res.klook.com/image/upload/v1667274969/UED%20Team%EF%BC%88for%20DE%20only%EF%BC%89/Exp%20vertical/Itinerary/icon_category_location_3x.png",
+                        'activity' => 'Departure',
+                        'notes' => null,
+                        'location' => null,
+                        'activity_notes' => null
+                    ]);
+                }
+            
+                // Add drop record for last day
+                if ($query->day === $totalDays) {
+                    $details[] = [
+                        'time' => null,
+                        'icon' => "https://res.klook.com/image/upload/v1667274969/UED%20Team%EF%BC%88for%20DE%20only%EF%BC%89/Exp%20vertical/Itinerary/icon_category_location_3x.png",
+                        'activity' => 'Return',
+                        'notes' => null,
+                        'location' => null,
+                        'activity_notes' => null
+                    ];
+                }
+            
+                return [
+                    'day' => $query->day,
+                    'details' => $details
+                ];
+            });            
+        }
 
         $details = [
             'client_information' => [
@@ -416,21 +498,24 @@ class ScheduleController extends Controller
                 'tour_package' => $channel != 'TWT' ? $booking->bookingDetail[0]->package->package_code." | ".$booking->bookingDetail[0]->package->name : '-',
                 'number_of_participants' => $booking->total_pax,
                 'travel_date' => date('d F Y',strtotime($booking->travel_date_start)),
+                'booking_date' => date('d F Y',strtotime($booking->booking_date)),
+                'tshirt' => $tshirts,
                 'pickup' => [
                     'location' => $booking->meeting_point ? $booking->meeting_point : '-',
                     'arrival' => $booking->meeting_point_arrival ? $booking->meeting_point_arrival : '-',
                     'location_value' => $booking->meeting_point_value ? $booking->meeting_point_value : '-',
-                    'time' => $booking->pickup_time ? $booking->pickup_time : '-',
+                    'time' => $booking->pickup_time ? date('H:i',strtotime($booking->pickup_time)) : '-',
                 ],
                 'drop' => [
                     'location' => $booking->drop_point ? $booking->drop_point : '-',
                     'arrival' => $booking->drop_point_arrival ? $booking->drop_point_arrival : '-',
                     'location_value' => $booking->drop_point_value ? $booking->drop_point_value : '-',
-                    'time' => $booking->drop_time ? $booking->drop_time : '-',
+                    'time' => $booking->drop_time ? date('H:i',strtotime($booking->drop_time)) : '-',
                 ],
                 'special_requirements' => $booking->special_requirements,
                 'notes' => $booking->note
             ],
+            'package_information' => $package_information,
             'itinerary_information' => $itinerary,
             'accommodation_information' => $bookHotel,
             'resource_allocation_information' => [
@@ -467,6 +552,7 @@ class ScheduleController extends Controller
 
             ],
         ];
+        // return $details;
         return Inertia::render('Schedule/Details', ['initialData' => $details]);
     }
 

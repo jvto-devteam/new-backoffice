@@ -24,4 +24,9 @@ class BookingItinerary extends Model
         return $this->belongsTo(ActivityStart::class, 'activity_start_id');
     }
 
+    public function booking()
+    {
+        return $this->belongsTo(Booking::class, 'booking_id');
+    }
+
 }

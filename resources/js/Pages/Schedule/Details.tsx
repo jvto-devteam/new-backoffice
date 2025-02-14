@@ -153,12 +153,12 @@ const Detail = ({ initialData }) => {
                 value={initialData.client_information.client_id.toString()}
                 copyable
               />
+              <DetailRow
+                label="CLIENT NAME"
+                value={initialData.client_information.client_name}
+              />
               {initialData.booking_information.order_channel !== 'TWT' && (
                 <>
-                  <DetailRow
-                    label="CLIENT NAME"
-                    value={initialData.client_information.client_name}
-                  />
                   <DetailRow
                     label="CONTACT"
                     value={initialData.client_information.contact_number}

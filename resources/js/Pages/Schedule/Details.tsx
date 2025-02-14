@@ -265,7 +265,7 @@ const Detail = ({ initialData }) => {
           >
             <div className="p-6">
               <h2 className="text-xl font-bold mb-6 text-gray-800">Package Details</h2>
-              {initialData.booking_information.order_channel == 'JVTO' ? (
+              {initialData.booking_information.order_channel != 'TWT' ? (
                 <div className="space-y-6">
                   {/* Day 1 */}
                   <div>

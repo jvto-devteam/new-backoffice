@@ -456,7 +456,7 @@ const Detail = ({ initialData }) => {
                           }
                         >
                           <span className="ml-2 inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
-                            {day.other_booking.length} shared {day.other_booking.length === 1 ? 'activity' : 'activities'}
+                            {day.other_booking.length} same {day.other_booking.length === 1 ? 'activity' : 'activities'}
                           </span>
                         </Tooltip>
                       )}

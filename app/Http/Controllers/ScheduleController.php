@@ -341,23 +341,26 @@ class ScheduleController extends Controller
                 $q->orderBy('no','asc')->with('activity.activityCategory');
             }]);
         },'bookingPayment'])->where('id',$id)->first();
-        $itinerary = BookingItinerary::with('activityStart.destination')
+        $itinerary = BookingItinerary::with('activityStart.destination.activityDestination')
         ->where('booking_id', $id)
         ->get()
         ->map(function($query) use($booking) {
             $night = $query->day - 1;
             $todayYMD = date('Y-m-d', strtotime($booking->travel_date_start." +$night days"));
             $today = date('d F Y', strtotime($booking->travel_date_start." +$night days"));
-            $activity = $query->activityStart && $query->activityStart->destination ? $query->activityStart->destination->name : null;
+            $activity = $query->activityStart && $query->activityStart->destination ? ($query->activityStart->destination->activityDestination ? $query->activityStart->destination->activityDestination->name : $query->activityStart->destination->name) : null;
     
             if (!$activity) {
-                return [
+                $activities = [
                     'day' => $query->day,
                     'date' => $today,
                     'itinerary' => $query->itinerary,
                     'activity' => $activity,
+                    'activity_start_id' => $query->activity_start_id,
+                    'activity_end_id' => $query->activity_end_id,
                     'other_booking' => []
                 ];
+                return $activities;
             }
     
             // Query pertama: mendapatkan booking_itinerary
@@ -401,6 +404,8 @@ class ScheduleController extends Controller
                 'date' => $today,
                 'itinerary' => $query->itinerary,
                 'activity' => $activity,
+                'activity_start_id' => $query->activity_start_id,
+                'activity_end_id' => $query->activity_end_id,
                 'other_booking' => $otherBookings
             ];
         });

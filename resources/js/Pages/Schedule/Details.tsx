@@ -434,11 +434,12 @@ const Detail = ({ initialData }) => {
             <div className="p-6">
               <h2 className="text-xl font-bold mb-6 text-gray-800">Activities</h2>
                 <div className="space-y-4">
-                {initialData.itinerary_information.map((day, index) => (
+                {initialData.itinerary_information.filter((i) => i.activity && i.activity != 'Surabaya').map((day, index) => (
+                  <>
                   <div key={index} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
                     <h3 className="font-medium mb-1">Day {day.day} - {day.date}</h3>
                     <div className="text-sm text-gray-600">
-                      {day.itinerary}
+                      {day.activity}
                       {day.activity && day.other_booking && day.other_booking.length > 0 && (
                         <Tooltip
                           content={
@@ -462,6 +463,23 @@ const Detail = ({ initialData }) => {
                       )}
                     </div>
                   </div>
+                  {day.activity_start_id == 7 && (
+                    <div key={`mada-`+index} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                    <h3 className="font-medium mb-1">Day {day.day} - {day.date}</h3>
+                    <div className="text-sm text-gray-600">
+                      Madakaripura Waterfall Tour
+                    </div>
+                  </div>
+                  )}
+                  {day.activity_end_id == 5 && (
+                    <div key={`papuma-`+index} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                    <h3 className="font-medium mb-1">Day {day.day} - {day.date}</h3>
+                    <div className="text-sm text-gray-600">
+                      Papuma Beach Sunset Tour
+                    </div>
+                  </div>
+                  )}
+                  </>
                 ))}                
               </div>
             </div>

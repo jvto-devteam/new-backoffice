@@ -341,42 +341,75 @@ class ScheduleController extends Controller
                 $q->orderBy('no','asc')->with('activity.activityCategory');
             }]);
         },'bookingPayment'])->where('id',$id)->first();
-        $itinerary = BookingItinerary::with('activityStart.destination')->where('booking_id',$id)->get()->map(function($query) use($booking){
+        $itinerary = BookingItinerary::with('activityStart.destination')
+        ->where('booking_id', $id)
+        ->get()
+        ->map(function($query) use($booking) {
             $night = $query->day - 1;
-            $todayYMD = date('Y-m-d',strtotime($booking->travel_date_start." +$night days"));
-            $today = date('d F Y',strtotime($booking->travel_date_start." +$night days"));
+            $todayYMD = date('Y-m-d', strtotime($booking->travel_date_start." +$night days"));
+            $today = date('d F Y', strtotime($booking->travel_date_start." +$night days"));
             $activity = $query->activityStart && $query->activityStart->destination ? $query->activityStart->destination->name : null;
+    
+            if (!$activity) {
+                return [
+                    'day' => $query->day,
+                    'date' => $today,
+                    'itinerary' => $query->itinerary,
+                    'activity' => $activity,
+                    'other_booking' => []
+                ];
+            }
+    
+            // Query pertama: mendapatkan booking_itinerary
+            $otherBookings = BookingItinerary::select('id', 'booking_id', 'day')
+                ->with([
+                    'booking' => function ($q) {
+                        $q->select('id', 'user_id', 'total_pax')
+                          ->with(['user' => function ($qq) {
+                              $qq->select('id', 'name');
+                          }]);
+                    }
+                ])
+                ->where('activity_start_id', $query->activity_start_id)
+                ->where('booking_id', '!=', $query->booking_id)
+                ->whereHas('booking', function ($q) use ($todayYMD) {
+                    $q->whereRaw("DATE_ADD(travel_date_start, INTERVAL (booking_itineraries.day - 1) DAY) = ?", [$todayYMD]);
+                })
+                ->get();
+    
+            // Query kedua: mendapatkan book_hotel untuk setiap booking_itinerary
+            foreach($otherBookings as $booking) {
+                if ($booking->booking) {
+                    $hotels = BookHotel::select('id', 'booking_id', 'hotel_id')
+                        ->where('booking_id', $booking->booking_id)
+                        ->with([
+                            'hotel' => function ($q) {
+                                $q->select('id', 'name');
+                            }
+                        ])
+                        ->whereHas('bookingItinerary', function($q) use ($booking) {
+                            $q->where('day', $booking->day - 1);
+                        })
+                        ->get();
+                    
+                    $booking->booking->book_hotel = $hotels;
+                }
+            }
+    
             return [
                 'day' => $query->day,
                 'date' => $today,
                 'itinerary' => $query->itinerary,
                 'activity' => $activity,
-                'other_booking' => $activity ?  BookingItinerary::select('id', 'booking_id', 'day')
-                ->with(['booking' => function($q) {
-                    $q->select('id', 'user_id', 'total_pax')
-                      ->with(['user' => function($qq) {
-                          $qq->select('id', 'name');
-                      }]);
-                }, 'bookHotel' => function($qq) {
-                    $qq->select('id', 'booking_id', 'hotel_id', 'booking_itinerary_id')
-                       ->with(['hotel' => function($qqq) {
-                           $qqq->select('id', 'name');
-                       }]);
-                }])
-                ->where('activity_start_id', $query->activity_start_id)
-                ->whereHas('booking', function ($q) use ($todayYMD) {
-                    $q->whereRaw("DATE_ADD(travel_date_start, INTERVAL (booking_itineraries.day - 1) DAY) = ?", [$todayYMD]);
-                })
-                ->where('booking_id', '!=', $query->booking_id)
-                ->whereHas('bookHotel') // Memastikan hanya BookingItinerary yang memiliki BookHotel yang relevan
-                ->get() : []
+                'other_booking' => $otherBookings
             ];
         });
-        return $itinerary;
+        // return $itinerary;
         $bookHotel = BookHotel::with(['bookingItinerary','hotel','bookRoom.roomHotel'])->where('booking_id',$id)->get()->map(function($query) use($booking){
             $night = $query->day - 1;
             return [
                 'day' => $query->bookingItinerary->day,
+                'hotel_id' => $query->hotel->id,
                 'hotel' => $query->hotel->name,
                 'check_in' => date('d F Y',strtotime($booking->travel_date_start." +$night days")),
                 'rooms' => $query->bookRoom->map(function($q){

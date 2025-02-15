@@ -108,456 +108,6 @@ function formatCurrency(amount) {
     minimumFractionDigits: 0,
   }).format(amount);
 }
-const BookingRow = ({ 
-    booking, 
-    index, 
-    expandedBookingId, 
-    setExpandedBookingId, 
-    handleMoreVerticalClick 
-  }) => {
-    const [openDropdownId, setOpenDropdownId] = useState(null);
-    const dropdownRef = useRef(null);
-  
-    useEffect(() => {
-      const handleClickOutside = (event) => {
-        if (openDropdownId && dropdownRef.current && 
-            !dropdownRef.current.contains(event.target)) {
-          setOpenDropdownId(null);
-        }
-      };
-  
-      if (openDropdownId) {
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-      }
-    }, [openDropdownId]);
-  
-    const isExpanded = expandedBookingId === booking.id;
-  
-    return (
-      <React.Fragment>
-        <tr className="border-b">
-          {/* Expand/Collapse Button + Row Index */}
-          <td className="py-3 px-2 align-top">
-            <button
-              onClick={() => setExpandedBookingId(isExpanded ? null : booking.id)}
-              className="text-gray-600 hover:text-gray-800 mr-2"
-            >
-              {isExpanded ? (
-                <ChevronDown className="inline w-5 h-5" />
-              ) : (
-                <ChevronRight className="inline w-5 h-5" />
-              )}
-            </button>
-            {index + 1}
-          </td>
-  
-          {/* Date Column */}
-          <td className="py-3 px-4 align-top">
-            <div className="text-blue-600 font-bold">
-              {format(booking.date.start, 'dd MMM')} - {format(booking.date.end, 'dd MMM')}
-            </div>
-            <div className="text-xs text-gray-400">{booking.date.days}</div>
-          </td>
-  
-          {/* Guest & Package */}
-          <td className="py-3 px-4 align-top space-y-1">
-            <div>
-              <Link href={`bookings/edit-booking/${booking.booking_id}`}>
-                <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full 
-                  ${booking.orderChannel === 'JVTO' ? 'bg-blue-100 text-blue-800' :
-                    booking.orderChannel === 'TWT' ? 'bg-yellow-100 text-yellow-800' :
-                    booking.orderChannel === 'KLOOK' ? 'bg-green-100 text-green-800' :
-                    'bg-gray-100 text-gray-800'}`}
-                >
-                  {booking.id}
-                </span>
-              </Link>
-            </div>
-            {booking.orderChannel != 'TWT' ? (
-              <div className="font-medium underline">
-                <a target="_blank" href={`/client-management/details/${booking.guest_id}`}>
-                  {booking.guest}
-                </a>
-              </div>
-            ) : (
-              <div className="font-medium">
-                {booking.guest}
-              </div>
-            )}
-            <div className="text-xs text-gray-500">
-              {booking.duration} / {booking.total_pax} PAX
-            </div>
-          </td>
-  
-          {/* Pickup Details */}
-          <td className="py-3 px-4 align-top space-y-2">
-            <div className="flex">
-              {booking.pickup.meeting_point === "Surabaya Airport" ? (
-                booking.pickup.meeting_point_arrival ? (
-                  <>
-                    <div>
-                      <Plane className="inline-block w-4 h-4 mr-1" />
-                    </div>
-                    <div>{booking.pickup.meeting_point_arrival}</div>
-                  </>
-                ) : (
-                  <span className="flex items-center text-red-500">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    No pickup location
-                  </span>
-                )
-              ) : booking.pickup.meeting_point === "Surabaya Train Station" ? (
-                booking.pickup.meeting_point ? (
-                  <>
-                    <div>
-                      <Train className="inline-block w-4 h-4 mr-1" />
-                    </div>
-                    <div>{booking.pickup.meeting_point_arrival}</div>
-                  </>
-                ) : (
-                  <span className="flex items-center text-red-500">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    No pickup location
-                  </span>
-                )
-              ) : ""}
-            </div>
-            <div className="flex">
-              {booking.pickup.meeting_point === "Surabaya Airport" ? (
-                <div>
-                  <Ticket className="inline-block w-4 h-4 mr-1" />
-                </div>
-              ) : booking.pickup.meeting_point === "Surabaya Hotel" ? (
-                <div>
-                  <Hotel className="inline-block w-4 h-4 mr-1" />
-                </div>
-              ) : booking.pickup.meeting_point === "Surabaya Train Station" ? (
-                <div>
-                  <Ticket className="inline-block w-4 h-4 mr-1" />
-                </div>
-              ) : (
-                booking.pickup.meeting_point_value && (
-                  <div>
-                    <MapPin className="inline-block w-4 h-4 mr-1" />
-                  </div>
-                )
-              )}
-              {booking.pickup.meeting_point_value || (
-                <span className="flex items-center text-red-500">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  No pickup location
-                </span>
-              )}
-            </div>
-            <div className="text-xs">
-              {booking.pickup.pickup_time ? (
-                <div className="flex">
-                  <Clock className="w-4 h-4 mr-1" />
-                  <span className="text-gray-500">{booking.pickup.pickup_time}</span>
-                </div>
-              ) : (
-                <span className="flex items-center text-red-500">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  No pickup time
-                </span>
-              )}
-            </div>
-          </td>
-  
-          {/* Drop-off Details */}
-          <td className="py-3 px-4 align-top space-y-2">
-            <div className="flex">
-              {booking.dropoff.drop_point === "Surabaya Airport" ? (
-                booking.dropoff.drop_point_arrival ? (
-                  <>
-                    <div>
-                      <Plane className="inline-block w-4 h-4 mr-1" />
-                    </div>
-                    <div>{booking.dropoff.drop_point_arrival}</div>
-                  </>
-                ) : (
-                  <span className="flex items-center text-red-500">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    No dropoff location
-                  </span>
-                )
-              ) : booking.dropoff.drop_point === "Surabaya Train Station" ? (
-                booking.dropoff.drop_point ? (
-                  <>
-                    <div>
-                      <Train className="inline-block w-4 h-4 mr-1" />
-                    </div>
-                    <div>{booking.dropoff.drop_point_arrival}</div>
-                  </>
-                ) : (
-                  <span className="flex items-center text-red-500">
-                    <AlertCircle className="w-4 h-4 mr-1" />
-                    No dropoff location
-                  </span>
-                )
-              ) : ""}
-            </div>
-            <div className="flex">
-              {booking.dropoff.drop_point === "Surabaya Airport" ? (
-                <div>
-                  <Ticket className="inline-block w-4 h-4 mr-1" />
-                </div>
-              ) : booking.dropoff.drop_point === "Surabaya Hotel" ? (
-                <div>
-                  <Hotel className="inline-block w-4 h-4 mr-1" />
-                </div>
-              ) : booking.dropoff.drop_point === "Surabaya Train Station" ? (
-                <div>
-                  <Ticket className="inline-block w-4 h-4 mr-1" />
-                </div>
-              ) : (
-                booking.dropoff.drop_point_value && (
-                  <div>
-                    <MapPin className="inline-block w-4 h-4 mr-1" />
-                  </div>
-                )
-              )}
-              {booking.dropoff.drop_point_value || (
-                <span className="flex items-center text-red-500">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  No dropoff location
-                </span>
-              )}
-            </div>
-            <div className="text-xs">
-              {booking.dropoff.drop_time ? (
-                <div className="flex">
-                  <Clock className="w-4 h-4 mr-1" />
-                  <span className="text-gray-500">{booking.dropoff.drop_time}</span>
-                </div>
-              ) : (
-                <span className="flex items-center text-red-500">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  No dropoff time
-                </span>
-              )}
-            </div>
-          </td>
-  
-          {/* Vehicle & Crew */}
-          <td className="py-3 px-4 align-top space-y-1">
-            <div className="space-y-1">
-              {booking.vehicles && booking.vehicles.length > 0 ? (
-                booking.vehicles.map((vehicle, idx) => (
-                  <div key={idx} className="flex">
-                    <div className="flex px-3 py-1 rounded-md text-sm mr-2 bg-green-100 text-green-800">
-                      🚗 {vehicle}
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex text-xs items-center text-red-500">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  No vehicle assigned
-                </div>
-              )}
-            </div>
-            <div className="text-xs text-gray-600 mt-1">
-              {booking.drivers && booking.drivers.length > 0 ? (
-                booking.drivers.map((driver, idx) => (
-                  <div key={idx}>Driver: {driver}</div>
-                ))
-              ) : (
-                <div className="flex items-center text-red-500">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  No driver assigned
-                </div>
-              )}
-            </div>
-            <div className="text-xs text-gray-600">
-              {booking.guides && booking.guides.length > 0 ? (
-                booking.guides.map((guide, idx) => (
-                  <div key={idx}>{guide.type}: {guide.name}</div>
-                ))
-              ) : (
-                <div className="flex items-center text-red-500">
-                  <AlertCircle className="w-4 h-4 mr-1" />
-                  No guide assigned
-                </div>
-              )}
-            </div>
-          </td>
-  
-          {/* Financial */}
-          <td className="py-3 px-4 align-top space-y-1">
-            <div className="text-sm">
-              {booking.financial.invoice.invoiceLink.length ? (
-                <div 
-                  onClick={() => {
-                    booking.financial.invoice.invoiceLink.forEach(link => 
-                      window.open(link, '_blank')
-                    );
-                  }}
-                  className="text-blue-500 underline cursor-pointer hover:text-blue-700"
-                >
-                  Invoice: {formatCurrency(booking.financial.invoice.total)}
-                </div>
-              ) : (
-                <div className="text-blue-500">
-                  Invoice: {formatCurrency(booking.financial.invoice.total)}
-                </div>
-              )}
-            </div>
-            {booking.orderChannel == 'JVTO' && (
-              <>
-                <div className="text-xs text-gray-600">
-                  <span>Deposit: {formatCurrency(booking.financial.payment)}</span>
-                </div>
-                <div className="text-xs text-gray-600">
-                  <span>Balance: {formatCurrency(booking.financial.balance)}</span>
-                </div>
-                <div className="text-xs text-gray-600">
-                  <span>Payment Method: {booking.financial.paymentMethod ? booking.financial.paymentMethod.toUpperCase() : '-'}</span>
-                </div>
-              </>
-            )}
-            <div className="text-xs text-gray-600">
-              {booking.financial.expense.expenseLink ? (
-                booking.financial.expense.target == '_blank' ? (
-                  <div 
-                    onClick={() => window.open(booking.financial.expense.expenseLink, '_blank')}
-                    className="cursor-pointer underline hover:text-blue-600"
-                  >
-                    Expenses: {formatCurrency(booking.financial.expense.total)}
-                  </div>
-                ) : (
-                  <Link href={booking.financial.expense.expenseLink}>
-                    <div className="cursor-pointer underline hover:text-blue-600">
-                      Expenses: {formatCurrency(booking.financial.expense.total)}
-                    </div>
-                  </Link>
-                )
-              ) : (
-                <span>Expenses: {formatCurrency(booking.financial.expense.total)}</span>
-              )}
-            </div>
-            <div className="text-xs text-green-600 font-medium">
-              Profit: {formatCurrency(booking.financial.profit)}
-            </div>
-          </td>
-  
-          {/* Notes */}
-          <td className="py-3 px-4 align-top">
-            <div className="text-xs text-gray-600">{booking.notes || '-'}</div>
-          </td>
-  
-          {/* Actions */}
-          <td className="py-3 px-4 align-top">
-            <div className="relative" ref={dropdownRef}>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenDropdownId(openDropdownId === booking.id ? null : booking.id);
-                }}
-              >
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-  
-              {openDropdownId === booking.id && (
-                <div 
-                  className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 py-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button 
-                    onClick={() => window.open(`/bookings/details/${booking.booking_id}`, '_blank')}
-                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
-                >
-                  Details
-                </button>
-                <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleMoreVerticalClick(booking);
-                    setOpenDropdownId(null);
-                  }}
-                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
-                >
-                  Plotting
-                </button>
-              </div>
-            )}
-          </div>
-        </td>
-      </tr>
-
-      {/* Expanded row for details */}
-      {isExpanded && (
-        <tr className="border-b bg-gray-50">
-          <td colSpan={9} className="p-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Itinerary Overview */}
-              <div>
-                <h3 className="font-medium mb-2">Itinerary Overview</h3>
-                <ul className="space-y-1 list-disc list-inside text-gray-700">
-                  {booking.itinerary.map((item, idx) => (
-                    <li key={idx}>
-                      <span className="font-semibold">Day {item.day}</span>: {item.itinerary}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Accommodation Details */}
-              <div>
-                <h3 className="font-medium mb-2">Accommodation Details</h3>
-                <div className="space-y-2 text-gray-700">
-                  {booking.hotels.map((acc, index) => (
-                    <div key={index}>
-                      <div className="text-sm font-semibold mr-2">Day {acc.day}:</div>
-                      <span className="text-sm font-medium">
-                        Check In {format(addDays(booking.date.start, acc.day - 1), 'dd-MMM')}:{' '}
-                      </span>
-                      <span className="mr-2">{acc.hotel}</span>
-                      <span className="text-xs text-gray-500">
-                        {acc.rooms.roomName} x {acc.rooms.quantity}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* T-Shirt Size */}
-              <div>
-                <h3 className="font-medium mb-2">T-Shirt Size</h3>
-                <div className="text-gray-700">{booking.tshirtSize || '-'}</div>
-              </div>
-
-              {/* Payment History */}
-              {booking.paymentHistory && booking.paymentHistory.length > 0 && (
-                <div>
-                  <h3 className="font-medium mb-2">Payment History</h3>
-                  <div className="bg-white border rounded-md p-2 space-y-2">
-                    {booking.paymentHistory.map((payment, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between text-sm p-2 rounded border-b last:border-none"
-                      >
-                        <span className="w-24">{payment.date}</span>
-                        <span className="flex-1 ml-4">{formatCurrency(payment.nominal)}</span>
-                        <span className="flex-1 ml-4">{payment.paymentMethod}</span>
-                        <span className="text-gray-600">{payment.description}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </td>
-        </tr>
-      )}
-    </React.Fragment>
-  );
-};
-
 
   export default function Index({data}) {
     // Local state
@@ -1325,18 +875,440 @@ const BookingRow = ({
                     </tr>
                 </thead>
                 <tbody>
-                {filteredBookings.map((booking, index) => (
-                    <BookingRow
-                    key={booking.id}
-                    booking={booking}
-                    index={index}
-                    expandedBookingId={expandedBookingId}
-                    setExpandedBookingId={setExpandedBookingId}
-                    handleMoreVerticalClick={handleMoreVerticalClick}
-                    />
-                ))}
-                </tbody>   
-             </table>
+                    {filteredBookings.map((booking, index) => {
+                    const isExpanded = expandedBookingId === booking.id;
+
+                    const [openDropdownId, setOpenDropdownId] = useState(null);
+                    const dropdownRefs = useRef({});
+                    
+                    // Keep the existing useEffect for handling outside clicks
+                    useEffect(() => {
+                        const handleClickOutside = (event) => {
+                            if (openDropdownId && dropdownRefs.current[openDropdownId] && 
+                                !dropdownRefs.current[openDropdownId].contains(event.target)) {
+                                setOpenDropdownId(null);
+                            }
+                        };
+                    
+                        if (openDropdownId) {
+                            document.addEventListener('mousedown', handleClickOutside);
+                            return () => document.removeEventListener('mousedown', handleClickOutside);
+                        }
+                    }, [openDropdownId]);                    
+
+                    return (
+                        <React.Fragment key={booking.id}>
+                        <tr className="border-b">
+                            {/* Expand/Collapse Button + Row Index */}
+                            <td className="py-3 px-2 align-top">
+                            <button
+                                onClick={() => setExpandedBookingId(isExpanded ? null : booking.id)}
+                                className="text-gray-600 hover:text-gray-800 mr-2"
+                            >
+                                {isExpanded ? (
+                                <ChevronDown className="inline w-5 h-5" />
+                                ) : (
+                                <ChevronRight className="inline w-5 h-5" />
+                                )}
+                            </button>
+                            {index + 1}
+                            </td>
+
+                            {/* Date Column */}
+                            <td className="py-3 px-4 align-top">
+                            <div className="text-blue-600 font-bold">{format(booking.date.start, 'dd MMM')} - {format(booking.date.end, 'dd MMM')}</div>
+                            <div className="text-xs text-gray-400">{booking.date.days}</div>
+                            </td>
+
+                            {/* Guest & Package */}
+                            <td className="py-3 px-4 align-top space-y-1">
+                            <div>
+                                <Link href={`bookings/edit-booking/${booking.booking_id}`}>
+                                    <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full 
+                                    ${booking.orderChannel === 'JVTO' ? 'bg-blue-100 text-blue-800' :
+                                        booking.orderChannel === 'TWT' ? 'bg-yellow-100 text-yellow-800' :
+                                        booking.orderChannel === 'KLOOK' ? 'bg-green-100 text-green-800' :
+                                        'bg-gray-100 text-gray-800'}`}>
+                                    {booking.id}
+                                    </span>
+                                </Link>
+                            </div>
+                            {booking.orderChannel != 'TWT' ? (
+                              <div className="font-medium underline">
+                                <a target="_blank" href={`/client-management/details/${booking.guest_id}`}>
+                                  {booking.guest}
+                                </a>
+                              </div>
+                            ) : (
+                              <div className="font-medium">
+                                  {booking.guest}
+                              </div>
+                            )}
+                            <div className="text-xs text-gray-500">{booking.duration} / {booking.total_pax} PAX</div>
+                            </td>
+
+                            {/* Pickup Details */}
+                            <td className="py-3 px-4 align-top space-y-2">
+                                <div className="flex">
+                                    {booking.pickup.meeting_point === "Surabaya Airport" ? (
+                                      booking.pickup.meeting_point_arrival ? (
+                                        <>
+                                          <div>
+                                              <Plane className="inline-block w-4 h-4 mr-1" />
+                                          </div>
+                                          <div>{booking.pickup.meeting_point_arrival}</div>
+                                        </>
+                                      ) : (
+                                      <span className="flex items-center text-red-500">
+                                          <AlertCircle className="w-4 h-4 mr-1" />
+                                          No pickup location
+                                      </span>
+                                      )
+                                      ) : booking.pickup.meeting_point === "Surabaya Train Station" ? (
+                                        booking.pickup.meeting_point ? (
+                                          <>
+                                            <div>
+                                                <Train className="inline-block w-4 h-4 mr-1" />
+                                            </div>
+                                            <div>{booking.pickup.meeting_point_arrival}</div>
+                                          </>
+                                        ) : (
+                                          <span className="flex items-center text-red-500">
+                                              <AlertCircle className="w-4 h-4 mr-1" />
+                                              No pickup location
+                                          </span>
+                                        )
+                                    ) : ""}
+                                </div>
+                                <div className="flex">
+                                    {booking.pickup.meeting_point === "Surabaya Airport" ? (
+                                        <div>
+                                            <Ticket className="inline-block w-4 h-4 mr-1" />
+                                        </div>
+                                    ) : booking.pickup.meeting_point === "Surabaya Hotel" ? (
+                                        <div>
+                                            <Hotel className="inline-block w-4 h-4 mr-1" />
+                                        </div>
+                                    ) : booking.pickup.meeting_point === "Surabaya Train Station" ? (
+                                        <div>
+                                            <Ticket className="inline-block w-4 h-4 mr-1" />
+                                        </div>
+                                    ) : (
+                                            booking.pickup.meeting_point_value && (
+                                                <div>
+                                                    <MapPin className="inline-block w-4 h-4 mr-1" />
+                                                </div>
+                                            )
+                                    )}
+                                    {booking.pickup.meeting_point_value || (
+                                    <span className="flex items-center text-red-500">
+                                        <AlertCircle className="w-4 h-4 mr-1" />
+                                        No pickup location
+                                    </span>
+                                    )}
+                                </div>
+                                <div className="text-xs">
+                                    {booking.pickup.pickup_time ? (
+                                    <div className="flex"><Clock className="w-4 h-4 mr-1" /> <span className="text-gray-500"> {booking.pickup.pickup_time}</span></div>
+                                    ) : (
+                                    <span className="flex items-center text-red-500">
+                                        <AlertCircle className="w-4 h-4 mr-1" />
+                                        No pickup time
+                                    </span>
+                                    )}
+                                </div>
+                                </td>
+
+                            {/* Drop-off Details */}
+                            <td className="py-3 px-4 align-top space-y-2">
+                            <div className="flex">
+                                    {booking.dropoff.drop_point === "Surabaya Airport" ? (
+                                      booking.dropoff.drop_point_arrival ? (
+                                        <>
+                                          <div>
+                                              <Plane className="inline-block w-4 h-4 mr-1" />
+                                          </div>
+                                          <div>{booking.dropoff.drop_point_arrival}</div>
+                                        </>
+                                      ) : (
+                                      <span className="flex items-center text-red-500">
+                                          <AlertCircle className="w-4 h-4 mr-1" />
+                                          No dropoff location
+                                      </span>
+                                      )
+                                      ) : booking.dropoff.drop_point === "Surabaya Train Station" ? (
+                                        booking.dropoff.drop_point ? (
+                                          <>
+                                            <div>
+                                                <Train className="inline-block w-4 h-4 mr-1" />
+                                            </div>
+                                            <div>{booking.dropoff.drop_point_arrival}</div>
+                                          </>
+                                        ) : (
+                                          <span className="flex items-center text-red-500">
+                                              <AlertCircle className="w-4 h-4 mr-1" />
+                                              No dropoff location
+                                          </span>
+                                        )
+                                    ) : ""}
+                                </div>
+                                <div className="flex">
+                                    {booking.dropoff.drop_point === "Surabaya Airport" ? (
+                                        <div>
+                                            <Ticket className="inline-block w-4 h-4 mr-1" />
+                                        </div>
+                                    ) : booking.dropoff.drop_point === "Surabaya Hotel" ? (
+                                        <div>
+                                            <Hotel className="inline-block w-4 h-4 mr-1" />
+                                        </div>
+                                    ) : booking.dropoff.drop_point === "Surabaya Train Station" ? (
+                                        <div>
+                                            <Ticket className="inline-block w-4 h-4 mr-1" />
+                                        </div>
+                                    ) : (
+                                        booking.dropoff.drop_point_value && (
+                                            <div>
+                                                <MapPin className="inline-block w-4 h-4 mr-1" />
+                                            </div>
+                                        )
+                                    )}
+                                    {booking.dropoff.drop_point_value || (
+                                    <span className="flex items-center text-red-500">
+                                        <AlertCircle className="w-4 h-4 mr-1" />
+                                        No dropoff location
+                                    </span>
+                                    )}
+                                </div>
+                                <div className="text-xs">
+                                    {booking.dropoff.drop_time ? (
+                                    <div className="flex"><Clock className="w-4 h-4 mr-1" /> <span className="text-gray-500"> {booking.pickup.pickup_time}</span></div>
+                                    ) : (
+                                    <span className="flex items-center text-red-500">
+                                        <AlertCircle className="w-4 h-4 mr-1" />
+                                        No dropoff time
+                                    </span>
+                                    )}
+                                </div>
+                                </td>
+
+                            {/* Vehicle & Crew */}
+                            <td className="py-3 px-4 align-top space-y-1">
+                                <div className="space-y-1">
+                                    {booking.vehicles && booking.vehicles.length > 0 ? (
+                                    booking.vehicles.map((vehicle, idx) => (
+                                        <div key={idx} className="flex">
+                                        <div className="flex px-3 py-1 rounded-md text-sm mr-2 bg-green-100 text-green-800">
+                                        🚗 {vehicle}
+                                        </div>
+
+                                        </div>
+                                    ))
+                                    ) : (
+                                    <div className="flex text-xs items-center text-red-500">
+                                        <AlertCircle className="w-4 h-4 mr-1" />
+                                        No vehicle assigned
+                                    </div>
+                                    )}
+                                </div>
+                                <div className="text-xs text-gray-600 mt-1">
+                                    {booking.drivers && booking.drivers.length > 0 ? (
+                                    booking.drivers.map((driver, idx) => (
+                                        <div key={idx}>Driver: {driver}</div>
+                                    ))
+                                    ) : (
+                                    <div className="flex items-center text-red-500">
+                                        <AlertCircle className="w-4 h-4 mr-1" />
+                                        No driver assigned
+                                    </div>
+                                    )}
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                    {booking.guides && booking.guides.length > 0 ? (
+                                    booking.guides.map((guide, idx) => (
+                                        <div key={idx}>{guide.type}: {guide.name}</div>
+                                    ))
+                                    ) : (
+                                    <div className="flex items-center text-red-500">
+                                        <AlertCircle className="w-4 h-4 mr-1" />
+                                        No guide assigned
+                                    </div>
+                                    )}
+                                </div>
+                                </td>
+
+
+                            {/* Financial */}
+{/* Financial */}
+                            <td className="py-3 px-4 align-top space-y-1">
+                              <div className="text-sm">
+                                {booking.financial.invoice.invoiceLink.length ? (
+                                  <div 
+                                    onClick={() => {
+                                      booking.financial.invoice.invoiceLink.forEach(link => 
+                                        window.open(link, '_blank')
+                                      );
+                                    }}
+                                    className="text-blue-500 underline cursor-pointer hover:text-blue-700"
+                                  >
+                                    Invoice: {formatCurrency(booking.financial.invoice.total)}
+                                  </div>
+                                ) : (
+                                  <div className="text-blue-500">
+                                    Invoice: {formatCurrency(booking.financial.invoice.total)}
+                                  </div>
+                                )}
+                              </div>
+                              {
+                                booking.orderChannel == 'JVTO' && (
+                                  <>
+                                    <div className="text-xs text-gray-600">
+                                        <span>Deposit: {formatCurrency(booking.financial.payment)}</span>
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                        <span>Balance: {formatCurrency(booking.financial.balance)}</span>
+                                    </div>
+                                    <div className="text-xs text-gray-600">
+                                        <span>Payment Method: {booking.financial.paymentMethod ? booking.financial.paymentMethod.toUpperCase() : '-'}</span>
+                                    </div>
+                                  </>
+                                )
+                              }
+                              <div className="text-xs text-gray-600">
+                                {booking.financial.expense.expenseLink ? (
+                                    booking.financial.expense.target == '_blank' ? (
+                                        <div 
+                                            onClick={() => window.open(booking.financial.expense.expenseLink, '_blank')}
+                                            className="cursor-pointer underline hover:text-blue-600"
+                                        >
+                                            Expenses: {formatCurrency(booking.financial.expense.total)}
+                                        </div>
+                                    ) : (
+                                        <Link href={booking.financial.expense.expenseLink}>
+                                            <div className="cursor-pointer underline hover:text-blue-600">
+                                                Expenses: {formatCurrency(booking.financial.expense.total)}
+                                            </div>
+                                        </Link>
+                                    )
+                                ) : (
+                                  <span>Expenses: {formatCurrency(booking.financial.expense.total)}</span>
+                                )}
+                              </div>
+                              <div className="text-xs text-green-600 font-medium">
+                                Profit: {formatCurrency(booking.financial.profit)}
+                              </div>
+                            </td>
+                            {/* Notes */}
+                            <td className="py-3 px-4 align-top">
+                              <div className="text-xs text-gray-600">{booking.notes || '-'}</div>
+                            </td>
+                            <td className="py-3 px-4 align-top">
+  <div className="relative" ref={el => dropdownRefs.current[booking.id] = el}>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpenDropdownId(openDropdownId === booking.id ? null : booking.id);
+      }}
+    >
+      <MoreVertical className="h-4 w-4" />
+    </Button>
+
+    {openDropdownId === booking.id && (
+      <div 
+        className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 py-1"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button 
+          onClick={() => window.open(`/bookings/details/${booking.booking_id}`, '_blank')}
+          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+        >
+          Details
+        </button>
+        <button 
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleMoreVerticalClick(booking);
+            setOpenDropdownId(null);
+          }}
+          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+        >
+          Plotting
+        </button>
+      </div>
+    )}
+  </div>
+</td>
+                        </tr>
+                        {/* Expanded row for details */}
+                        {isExpanded && (
+                            <tr className="border-b bg-gray-50">
+                            <td colSpan={9} className="p-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Itinerary Overview */}
+                                <div>
+                                    <h3 className="font-medium mb-2">Itinerary Overview</h3>
+                                    <ul className="space-y-1 list-disc list-inside text-gray-700">
+                                    {booking.itinerary.map((item, idx) => (
+                                        <li key={idx}><span className="font-semibold"> Day {item.day}</span>: {item.itinerary}</li>
+                                    ))}
+                                    </ul>
+                                </div>
+
+                                {/* Accommodation Details */}
+                                <div>
+                                    <h3 className="font-medium mb-2">Accommodation Details</h3>
+                                    <div className="space-y-2 text-gray-700">
+                                    {booking.hotels.map((acc, index) => (
+                                        <div key={index}>
+                                        <div className="text-sm font-semibold mr-2">Day {acc.day}:</div>
+                                        <span className="text-sm font-medium">Check In {format(addDays(booking.date.start, acc.day - 1), 'dd-MMM')}: </span>                                        
+                                        <span className="mr-2">{acc.hotel}</span>
+                                        <span className="text-xs text-gray-500">
+                                            {acc.rooms.roomName} x {acc.rooms.quantity}
+                                        </span>
+                                        </div>
+                                    ))}
+                                    </div>
+                                </div>
+
+                                {/* T-Shirt Size */}
+                                <div>
+                                    <h3 className="font-medium mb-2">T-Shirt Size</h3>
+                                    <div className="text-gray-700">{booking.tshirtSize || '-'}</div>
+                                </div>
+
+                                {/* Payment History */}
+                                {booking.paymentHistory && booking.paymentHistory.length > 0 && (
+                                    <div>
+                                    <h3 className="font-medium mb-2">Payment History</h3>
+                                    <div className="bg-white border rounded-md p-2 space-y-2">
+                                        {booking.paymentHistory.map((payment, idx) => (
+                                        <div
+                                            key={idx}
+                                            className="flex items-center justify-between text-sm p-2 rounded border-b last:border-none"
+                                        >
+                                            <span className="w-24">{payment.date}</span>
+                                            <span className="flex-1 ml-4">{formatCurrency(payment.nominal)}</span>
+                                            <span className="flex-1 ml-4">{payment.paymentMethod}</span>
+                                            <span className="text-gray-600">
+                                            {payment.description}
+                                            </span>
+                                        </div>
+                                        ))}
+                                    </div>
+                                    </div>
+                                )}
+                                </div>
+                            </td>
+                            </tr>
+                        )}
+                        </React.Fragment>
+                    );
+                    })}
+                </tbody>
+                </table>
             </div>
             {selectedBooking && (
               <DetailsModal 

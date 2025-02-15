@@ -16,6 +16,7 @@ use App\Http\Controllers\ShortLinkController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\FinanceController;
+use App\Http\Controllers\VendorController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -71,6 +72,9 @@ Route::prefix('bookings')->group(function () {
     Route::post('/', [BookingController::class, 'store']);
     Route::post('/update-bookings', [BookingController::class, 'update']);
     Route::post('/store', [BookingController::class, 'store']);
+});
+Route::prefix('vendor')->group(function () {
+    Route::get('/accommodation/{id}', [VendorController::class, 'accommodation']);
 });
 
 Route::prefix('finance')->group(function () {

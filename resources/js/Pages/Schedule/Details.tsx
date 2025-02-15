@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Copy, ChevronDown, Menu, X } from 'lucide-react';
+import {Link} from '@inertiajs/react';
+
 import Main from '@/Layouts/Main';
 
 const Detail = ({ initialData }) => {
@@ -96,6 +98,26 @@ const Detail = ({ initialData }) => {
       </div>
     </div>
   );
+
+  const Tooltip = ({ children, content }) => {
+    const [isVisible, setIsVisible] = useState(false);
+  
+    return (
+      <div 
+        className="relative inline-block"
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+      >
+        {children}
+        {isVisible && (
+          <div className="absolute z-50 w-64 p-3 text-sm bg-gray-900 text-white rounded-lg shadow-lg -top-2 left-full ml-2">
+            <div className="absolute -left-2 top-3 w-0 h-0 border-t-[6px] border-t-transparent border-r-[6px] border-r-gray-900 border-b-[6px] border-b-transparent"></div>
+            {content}
+          </div>
+        )}
+      </div>
+    );
+  };  
 
   return (
     <Main>
@@ -412,16 +434,36 @@ const Detail = ({ initialData }) => {
             <div className="p-6">
               <h2 className="text-xl font-bold mb-6 text-gray-800">Activities</h2>
                 <div className="space-y-4">
-                  {initialData.itinerary_information.filter((i) => i.activity).map((day, index) => (
-                    <div
-                      key={index}
-                      className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-                    >
-                      <h3 className="font-medium mb-1">Day {day.day} - {day.date}</h3>
-                      <div className="text-sm text-gray-600">{day.activity}</div>
+                {initialData.itinerary_information.map((day, index) => (
+                  <div key={index} className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200">
+                    <h3 className="font-medium mb-1">Day {day.day} - {day.date}</h3>
+                    <div className="text-sm text-gray-600">
+                      {day.itinerary}
+                      {day.activity && day.other_booking && day.other_booking.length > 0 && (
+                        <Tooltip
+                          content={
+                            <div className="space-y-2">
+                              {day.other_booking.map((booking, idx) => (
+                                <div key={idx} className="border-b border-gray-700 last:border-0 pb-2 last:pb-0">
+                                  <div className="font-medium">{booking.booking.user.name}</div>
+                                  <div>Total Pax: {booking.booking.total_pax}</div>
+                                  {booking.booking.book_hotel.length > 0 && (
+                                    <div>Hotel: {booking.booking.book_hotel[0].hotel.name}</div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          }
+                        >
+                          <span className="ml-2 inline-flex items-center px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded-full">
+                            {day.other_booking.length} shared {day.other_booking.length === 1 ? 'activity' : 'activities'}
+                          </span>
+                        </Tooltip>
+                      )}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}                
+              </div>
             </div>
           </div>
 
@@ -438,7 +480,11 @@ const Detail = ({ initialData }) => {
                     key={index}
                     className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                   >
-                    <h3 className="font-medium mb-2">Day {acc.day} - {acc.hotel}</h3>
+                    <h3 className="font-medium mb-2 underline text-blue-600">
+                      <Link href={`/vendor/accommodation/${acc.hotel_id}`}>
+                      Day {acc.day} - {acc.hotel}
+                      </Link>
+                      </h3>
                     <div className="text-sm text-gray-600">
                       <div className="mb-2">Check-in: {acc.check_in}</div>
                       <div className="space-y-1">

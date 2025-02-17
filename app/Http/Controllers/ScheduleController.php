@@ -555,6 +555,7 @@ class ScheduleController extends Controller
                 'nationality' => $booking->user->country ? $booking->user->country->long_name : '-',
             ],
             'booking_information' => [
+                'id' => $booking->id,
                 'booking_id' => $channel."-".$booking->id,
                 'booking_reference_id' => $channel == 'JVTO' ? $booking->booking_code : $booking->invoice_code_origin,
                 'order_channel' => $channel,

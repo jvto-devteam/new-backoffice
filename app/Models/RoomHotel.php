@@ -13,4 +13,9 @@ class RoomHotel extends Model
     {
         return $this->belongsTo(Hotel::class,'hotel_id')->withTrashed();
     }
+    public function roomPhoto()
+    {
+        return $this->hasMany(RoomPhoto::class, 'room_hotel_id');
+    }
+
 }

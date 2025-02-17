@@ -499,7 +499,7 @@ const Detail = ({ initialData }) => {
                     className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                   >
                     <h3 className="font-medium mb-2 underline text-blue-600">
-                      <Link href={`/vendor/accommodation/${acc.hotel_id}`}>
+                      <Link href={`/vendor/accommodation/${acc.hotel_id}?bookingId=${initialData.booking_information.id}&tab=schedule`}>
                       Day {acc.day} - {acc.hotel}
                       </Link>
                       </h3>

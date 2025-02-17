@@ -1238,7 +1238,7 @@ const BookingRow = ({
             
                 {/* Filter Bar */}
                 <div className="bg-white p-4 shadow rounded-md mb-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {/* Date Range */}
                     <div className="flex flex-col border p-3 rounded">
                         <label className="font-medium text-gray-800 mb-2">Date Range</label>
@@ -1293,7 +1293,7 @@ const BookingRow = ({
                     </div>
             
                     {/* Payment Status */}
-                    <div className="flex flex-col border p-3 rounded">
+                    {/* <div className="flex flex-col border p-3 rounded">
                         <label className="font-medium text-gray-800 mb-2">Payment</label>
                         <select
                         className="border p-1 rounded"
@@ -1305,7 +1305,7 @@ const BookingRow = ({
                         <option value="Pending">Pending</option>
                         <option value="Overdue">Overdue</option>
                         </select>
-                    </div>
+                    </div> */}
                     </div>
                 </div>
                 {/* Bookings Table */}

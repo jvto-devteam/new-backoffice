@@ -95,6 +95,7 @@ Route::middleware('guest')->group(function () {
         Route::get('/profit-loss-summary', [FinanceController::class, 'profitLoss']);
     });
     Route::prefix('package-inventory')->group(function () {
+        Route::get('/create', [PackageController::class, 'create']);
         Route::get('/flipbook/{url}', [PackageController::class, 'flipbook']);
         Route::get('/{order_channel}', [PackageController::class, 'index']);
         Route::get('/details/{code}', [PackageController::class, 'details']);

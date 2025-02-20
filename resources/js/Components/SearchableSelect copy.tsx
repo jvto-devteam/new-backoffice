@@ -1,56 +1,31 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Check, ChevronsUpDown, Search } from 'lucide-react';
 
-type SearchableSelectProps = {
-    options: { 
-        id: number | string; 
-        name: string; 
-        type?: string;  // Optional type for filtering
-    }[];
-    value: string | number;
-    onChange: (value: number | string) => void;
-    placeholder: string;
-    open?: boolean;
-    setOpen?: (open: boolean) => void;
-    displayKey?: string;
-    filterType?: string;  // New prop for filtering options
-};
-
-const SearchableSelect: React.FC<SearchableSelectProps> = ({
+const SearchableSelect = ({
     options,
     value,
     onChange,
     placeholder,
     open,
     setOpen,
-    displayKey = 'name',
-    filterType
+    displayKey
 }) => {
     const selectRef = useRef(null);
     const searchInputRef = useRef(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [highlightedIndex, setHighlightedIndex] = useState(-1);
 
-    // Filter options based on search query and optional filterType
-    const filteredOptions = options
-        .filter(item => {
-            // First, filter by type if filterType is provided
-            const typeMatch = !filterType || item.type === filterType;
-            
-            // Then filter by search query
-            const searchMatch = item[displayKey]
-                .toLowerCase()
-                .includes(searchQuery.toLowerCase());
-            
-            return typeMatch && searchMatch;
-        });
+    // Filter options berdasarkan search query
+    const filteredOptions = options.filter(item => 
+        item[displayKey].toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (selectRef.current && 
                 !selectRef.current.contains(event.target)) {
                 if (open) {
-                    setOpen?.(false);
+                    setOpen(false);
                     setSearchQuery('');
                     setHighlightedIndex(-1); // Reset highlighted index
                 }
@@ -68,7 +43,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
         if (!open) {
             if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
                 e.preventDefault();
-                setOpen?.(true);
+                setOpen(true);
                 setHighlightedIndex(0);
             }
             return;
@@ -93,7 +68,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 e.preventDefault();
                 if (highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
                     onChange(filteredOptions[highlightedIndex].id);
-                    setOpen?.(false);
+                    setOpen(false);
                     setSearchQuery('');
                     setHighlightedIndex(-1);
                 }
@@ -101,7 +76,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
             case 'Escape':
                 e.preventDefault();
-                setOpen?.(false);
+                setOpen(false);
                 setSearchQuery('');
                 setHighlightedIndex(-1);
                 break;
@@ -111,6 +86,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
         }
     };
 
+    // Scroll highlighted item into view
     // Autofocus search input when dropdown opens
     useEffect(() => {
         if (open && searchInputRef.current) {
@@ -118,7 +94,6 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
         }
     }, [open]);
 
-    // Scroll highlighted item into view
     useEffect(() => {
         if (highlightedIndex >= 0) {
             const highlightedElement = document.getElementById(`option-${highlightedIndex}`);
@@ -131,11 +106,6 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
         }
     }, [highlightedIndex]);
 
-    // Find selected item for display
-    const selectedItem = options.find(item => 
-        item.id.toString() === value?.toString()
-    );
-
     return (
         <div 
             className="relative w-full" 
@@ -144,11 +114,11 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
         >
             <button
                 type="button"
-                onClick={() => setOpen?.(!open)}
+                onClick={() => setOpen(!open)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-left focus:outline-none focus:ring-blue-500 focus:ring-2 transition-colors flex justify-between items-center"
             >
                 <span className="truncate text-gray-700">
-                    {selectedItem ? selectedItem[displayKey] : placeholder}
+                    {value ? options.find(item => item.id.toString() === value.toString())?.[displayKey] : placeholder}
                 </span>
                 <ChevronsUpDown className="h-4 w-4 text-gray-400" />
             </button>
@@ -164,7 +134,7 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                                 value={searchQuery}
                                 onChange={(e) => {
                                     setSearchQuery(e.target.value);
-                                    setHighlightedIndex(0); // Reset highlight to first item when searching
+                                    setHighlightedIndex(0); // Reset highlight ke item pertama saat search
                                 }}
                                 className="w-full bg-transparent border-none focus:outline-none"
                                 placeholder="Search..."
@@ -173,33 +143,27 @@ const SearchableSelect: React.FC<SearchableSelectProps> = ({
                         </div>
                     </div>
                     <div className="max-h-60 overflow-auto">
-                        {filteredOptions.length > 0 ? (
-                            filteredOptions.map((item, index) => (
-                                <div
-                                    id={`option-${index}`}
-                                    key={item.id}
-                                    onClick={() => {
-                                        onChange(item.id);
-                                        setOpen?.(false);
-                                        setSearchQuery('');
-                                        setHighlightedIndex(-1);
-                                    }}
-                                    className={`px-3 py-2 cursor-pointer flex items-center
-                                        ${value === item.id ? 'bg-blue-50' : ''}
-                                        ${highlightedIndex === index ? 'bg-gray-100' : 'hover:bg-gray-50'}
-                                    `}
-                                >
-                                    <Check 
-                                        className={`h-4 w-4 mr-2 text-blue-500 ${value === item.id ? 'opacity-100' : 'opacity-0'}`} 
-                                    />
-                                    <span>{item[displayKey]}</span>
-                                </div>
-                            ))
-                        ) : (
-                            <div className="px-3 py-2 text-gray-500 text-center">
-                                No options found
+                        {filteredOptions.map((item, index) => (
+                            <div
+                                id={`option-${index}`}
+                                key={item.id}
+                                onClick={() => {
+                                    onChange(item.id);
+                                    setOpen(false);
+                                    setSearchQuery('');
+                                    setHighlightedIndex(-1);
+                                }}
+                                className={`px-3 py-2 cursor-pointer flex items-center
+                                    ${value === item.id ? 'bg-blue-50' : ''}
+                                    ${highlightedIndex === index ? 'bg-gray-100' : 'hover:bg-gray-50'}
+                                `}
+                            >
+                                <Check 
+                                    className={`h-4 w-4 mr-2 text-blue-500 ${value === item.id ? 'opacity-100' : 'opacity-0'}`} 
+                                />
+                                <span>{item[displayKey]}</span>
                             </div>
-                        )}
+                        ))}
                     </div>
                 </div>
             )}

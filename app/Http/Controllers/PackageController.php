@@ -283,6 +283,11 @@ class PackageController extends Controller
         return $data['expense'];
     }
 
+    function create()
+    {
+        return Inertia::render('Packages/Create');
+    }
+
     function packageDetail()
     {
         return Inertia::render('Packages/TourLandingPage');

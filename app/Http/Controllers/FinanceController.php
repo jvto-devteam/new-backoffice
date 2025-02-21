@@ -204,7 +204,7 @@ class FinanceController extends Controller
         ]);
     }
     function editExpense($id){
-        $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id','booking_date','package_duration')->with(['user' => function($query){
+        $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id','booking_date','package_duration','invoice_code_origin')->with(['user' => function($query){
             $query->select('id','name');
         },'bookingDetail' => function($query){
             $query->select('id','package_id','booking_id')->with(['package' => function($q){
@@ -290,15 +290,19 @@ class FinanceController extends Controller
 
         if($booking->agent_id == 1){
             $channel = 'twt';
+            $booking->reference = $booking->invoice_code_origin;
         }
         else if($booking->agent_id == 2){
             if($booking->booking_category_id == 3){
                 $channel = 'klook';
+                $booking->reference = $booking->invoice_code_origin;
             }
             else{
+                $booking->reference = "JVTO-".$booking->id;
                 $channel = 'jvto';
             }
         }
+        $booking->channel = strtoupper($channel);
 
         $cekDestinations = BookDestinationActivity::where('booking_id',$id)->count();
         $cekOthers = BookOthersActivity::where('booking_id',$id)->count();
@@ -513,7 +517,7 @@ class FinanceController extends Controller
         $listForNewItems['others'] = OthersActivity::get();
         $listForNewItems['cars'] = Car::whereIn('id',[1,2,5,21])->get();
         $listForNewItems['crews'] = CrewRole::where('order_channel_id',$orderChannelID)->get();
-        
+        // return $listForNewItems;
         return Inertia::render('Finance/EditExpenseManager', [
             'booking' => $booking,
             'accommodations' => $bookRoom,

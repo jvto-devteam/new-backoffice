@@ -17,7 +17,8 @@ const BookingInfo = ({ booking }) => {
     <div className="mb-6">
       <h1 className="text-2xl font-bold mb-4">Tour Expense Details</h1>
       <div className="text-gray-600 space-y-1">
-        <p>Reference: {booking.id}</p>
+        <p>Order Channel: {booking.channel}</p>
+        <p>Reference: {booking.reference}</p>
         <p>Client: {booking.user.name}</p>
         <p>Package: {booking.booking_detail[0]?.package?.name || `${booking.package_duration}D ${booking.package_duration-1}N Packages`}</p>
         <p>Number of Pax: {booking.total_pax}</p>
@@ -82,37 +83,65 @@ const SummaryCards = ({ totals }) => {
   );
 };
 
-const ExpenseTable = ({ items, onPayLaterChange }) => {
+const ExpenseTable = ({ items, onPayLaterChange, onEdit }) => {
+  const [editingCell, setEditingCell] = useState(null); // Format: "itemId-field" (e.g. "1-qty")
+  const [editValue, setEditValue] = useState("");
+
+  const handleKeyPress = (e, itemId, field, index) => {
+    if (e.key === 'Enter') {
+      handleSave(itemId, field, index);
+    }
+  };  
   // Group items berdasarkan hotel untuk accommodation
-  const hotelGroups = items.reduce((acc, item, index) => {
+  const hotelGroups = items.reduce((acc, item) => {
     if (item.category === 'Accommodation') {
       const hotelId = item.originalData.hotelId;
       if (!acc[hotelId]) {
-        acc[hotelId] = {
-          index,
-          isDebt: item.isDebt
-        };
+        acc[hotelId] = { index: items.indexOf(item), isDebt: item.isDebt };
       }
     }
     return acc;
   }, {});
+
+  const handleEdit = (itemId, field, value) => {
+    setEditingCell(`${itemId}-${field}`);
+    setEditValue(value.toString());
+  };
+
+  const handleSave = (itemId, field, index) => {
+    let newValue = editValue;
+    
+    // Convert to appropriate type and validate
+    if (field === 'qty') {
+      newValue = parseInt(editValue) || 1; // Minimum 1
+    } else if (field === 'rate') {
+      newValue = parseInt(editValue.replace(/[^\d]/g, '')) || 0;
+    }
+
+    // Update parent state
+    onEdit(index, field, newValue);
+    
+    // Reset edit state
+    setEditingCell(null);
+    setEditValue("");
+  };
 
   return (
     <div className="bg-white rounded-lg shadow">
       <h2 className="text-xl font-bold p-4 border-b">Expense Items</h2>
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50">
+        <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">NO</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">CATEGORY</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">SUB CATEGORY</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">DESCRIPTION</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">UNIT</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">QTY</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">RATE</th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500">AMOUNT</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500">PAY LATER</th>
+              <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">NO</th>
+              <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">CATEGORY</th>
+              <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">SUB CATEGORY</th>
+              <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">DESCRIPTION</th>
+              <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">UNIT</th>
+              <th className="px-4 py-3 text-right text-sm font-bold text-gray-500">QTY</th>
+              <th className="px-4 py-3 text-right text-sm font-bold text-gray-500">RATE</th>
+              <th className="px-4 py-3 text-right text-sm font-bold text-gray-500">AMOUNT</th>
+              <th className="px-4 py-3 text-center text-sm font-bold text-gray-500">PAY LATER</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -122,17 +151,85 @@ const ExpenseTable = ({ items, onPayLaterChange }) => {
                                (hotelGroups[hotelId] && hotelGroups[hotelId].index === index);
 
               return (
-                <tr 
-                  key={item.id} 
-                  className={item.isDebt ? 'bg-yellow-50' : 'bg-white'}
-                >
+                <tr key={item.id} className={item.isDebt ? 'bg-yellow-50' : 'bg-white'}>
                   <td className="px-4 py-3 text-sm">{index + 1}</td>
                   <td className="px-4 py-3 text-sm">{item.category}</td>
                   <td className="px-4 py-3 text-sm">{item.subCategory}</td>
                   <td className="px-4 py-3 text-sm">{item.description}</td>
                   <td className="px-4 py-3 text-sm">{item.unit}</td>
-                  <td className="px-4 py-3 text-sm text-right">{item.qty}</td>
-                  <td className="px-4 py-3 text-sm text-right">{formatCurrency(item.rate)}</td>
+                  
+                  {/* QTY Cell */}
+                  <td className="px-4 py-3 text-sm text-right">
+                    {editingCell === `${item.id}-qty` ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <input
+                          type="number"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onKeyPress={(e) => handleKeyPress(e, item.id, 'qty', index)}                          
+                          className="w-16 p-1 border rounded text-right"
+                          min="1"
+                          autoFocus
+                        />
+                        <button 
+                          onClick={() => handleSave(item.id, 'qty', index)}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-end gap-1">
+                        <span>{item.qty}</span>
+                        <button 
+                          onClick={() => handleEdit(item.id, 'qty', item.qty)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </td>
+
+                  {/* RATE Cell */}
+                  <td className="px-4 py-3 text-sm text-right">
+                    {editingCell === `${item.id}-rate` ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <input
+                          type="text"
+                          value={formatCurrency(editValue)}
+                          onChange={(e) => setEditValue(e.target.value.replace(/[^\d]/g, ''))}
+                          onKeyPress={(e) => handleKeyPress(e, item.id, 'rate', index)}                          
+                          className="w-32 p-1 border rounded text-right"
+                          autoFocus
+                        />
+                        <button 
+                          onClick={() => handleSave(item.id, 'rate', index)}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-end gap-1">
+                        <span>{formatCurrency(item.rate)}</span>
+                        <button 
+                          onClick={() => handleEdit(item.id, 'rate', item.rate)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-sm text-right">{formatCurrency(item.amount)}</td>
                   <td className="px-4 py-3">
                     {showToggle && (
@@ -159,8 +256,671 @@ const ExpenseTable = ({ items, onPayLaterChange }) => {
   );
 };
 
-const EditExpenseManager = ({ booking, accommodations, destinations, others, resources }) => {
-  // Initialize items state with all expense items
+// Modal-modal tambahan
+const AddDestinationModal = ({ 
+  isOpen, 
+  onClose, 
+  onAddActivity, 
+  listForNewItems,
+  existingItems 
+}) => {
+  const [selectedDestination, setSelectedDestination] = useState('');
+  const [selectedActivity, setSelectedActivity] = useState('');
+  const [newActivity, setNewActivity] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(0);
+  const [isNewActivity, setIsNewActivity] = useState(false);
+  
+  const availableDestinations = useMemo(() => {
+    return Object.keys(listForNewItems || {});
+  }, [listForNewItems]);
+
+  const availableActivities = useMemo(() => {
+    if (!selectedDestination) return [];
+    return (listForNewItems[selectedDestination] || [])
+      .filter(activity => 
+        !existingItems.some(item => 
+          item.destination_activity.name === activity.name)
+      )
+      .map(activity => activity.name);
+  }, [selectedDestination, listForNewItems, existingItems]);
+
+  const getActivityPrice = (destName, activityName) => {
+    const activity = (listForNewItems[destName] || [])
+      .find(a => a.name === activityName);
+    return activity ? parseFloat(activity.price) : 0;
+  };
+
+  const handleSubmit = () => {
+    const activityName = isNewActivity ? newActivity : selectedActivity;
+    if (selectedDestination && activityName) {
+      const selectedDestinationData = listForNewItems[selectedDestination]?.[0];
+      const selectedActivityData = listForNewItems[selectedDestination]?.find(a => a.name === selectedActivity);
+      
+      onAddActivity({
+        destination_id: selectedDestinationData?.destination_id,
+        destination_activity: { 
+          name: activityName,
+          id: isNewActivity ? null : selectedActivityData?.id 
+        },
+        destination_activity_id: isNewActivity ? null : selectedActivityData?.id,
+        qty: quantity,
+        price: price || (isNewActivity ? 0 : getActivityPrice(selectedDestination, selectedActivity)),
+        status_paid: 'unpaid',
+        is_debt: '0'
+      });
+
+      // Reset modal
+      setSelectedDestination('');
+      setSelectedActivity('');
+      setNewActivity('');
+      setQuantity(1);
+      setPrice(0);
+      setIsNewActivity(false);
+      onClose();
+    }
+  };
+
+  const handleSwitchChange = (checked) => {
+    setIsNewActivity(checked);
+    setSelectedActivity('');
+    setNewActivity('');
+    setPrice(0);
+  };
+
+  const isSubmitDisabled = 
+    !selectedDestination || 
+    (isNewActivity ? !newActivity : !selectedActivity) || 
+    quantity <= 0;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+        <h2 className="text-xl font-bold mb-4">Add New Destination Activity</h2>
+        
+        {/* Destination Selection */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Select Destination</label>
+          <select
+            value={selectedDestination}
+            onChange={(e) => {
+              setSelectedDestination(e.target.value);
+              setSelectedActivity('');
+              setNewActivity('');
+            }}
+            className="w-full p-2 border rounded"
+          >
+            <option value="">Select a destination</option>
+            {availableDestinations.map((dest) => (
+              <option key={dest} value={dest}>{dest}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Switch Toggle for New/Existing Activity */}
+        <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded">
+          <span className="text-sm text-gray-700">New Activity</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={isNewActivity}
+              onChange={(e) => handleSwitchChange(e.target.checked)}
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
+        {/* Activity Selection */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">
+            {isNewActivity ? "Enter New Activity" : "Select Activity"}
+          </label>
+          {isNewActivity ? (
+            <input
+              type="text"
+              value={newActivity}
+              onChange={(e) => setNewActivity(e.target.value)}
+              className="w-full p-2 border rounded"
+              placeholder="Enter activity name"
+              disabled={!selectedDestination}
+            />
+          ) : (
+            <select
+              value={selectedActivity}
+              onChange={(e) => {
+                const activity = e.target.value;
+                setSelectedActivity(activity);
+                setPrice(getActivityPrice(selectedDestination, activity));
+              }}
+              className="w-full p-2 border rounded"
+              disabled={!selectedDestination}
+            >
+              <option value="">Select an activity</option>
+              {availableActivities.map((activity) => (
+                <option key={activity} value={activity}>{activity}</option>
+              ))}
+            </select>
+          )}
+        </div>
+        
+        {/* Quantity */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Quantity</label>
+          <input
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+            min="1"
+            className="w-full p-2 border rounded"
+          />
+        </div>
+        
+        {/* Price */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Price</label>
+          <input
+            type="text"
+            value={formatCurrency(price)}
+            onChange={(e) => setPrice(parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+            className="w-full p-2 border rounded"
+          />
+        </div>
+        
+        {/* Buttons */}
+        <div className="flex justify-end gap-2">
+          <button 
+            onClick={onClose} 
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSubmit} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            disabled={isSubmitDisabled}
+          >
+            Add Activity
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+const AddOthersModal = ({ 
+  isOpen, 
+  onClose, 
+  onAddItem, 
+  listForNewItems,
+  existingItems 
+}) => {
+  const [selectedActivity, setSelectedActivity] = useState('');
+  const [newActivity, setNewActivity] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(0);
+  const [isNewActivity, setIsNewActivity] = useState(false);
+
+const availableActivities = useMemo(() => {
+  const others = listForNewItems.others || [];
+  return others
+    .filter(activity => 
+      activity && 
+      activity.name && 
+      !existingItems.some(item => 
+        item.others_activity?.name === activity.name)
+    )
+    .map(activity => activity.name);
+}, [listForNewItems, existingItems]);
+
+const getActivityPrice = (activityName) => {
+  const others = listForNewItems.others || [];
+  const activity = others.find(a => a.name === activityName);
+  return activity ? parseFloat(activity.price) : 0;
+};
+
+  const handleSubmit = () => {
+    const activityName = isNewActivity ? newActivity : selectedActivity;
+    if (activityName) {
+      const selectedActivityData = listForNewItems.find(a => a.name === selectedActivity);
+      
+      onAddItem({
+        category: 'Others',
+        subCategory: 'Additional',
+        description: activityName,
+        unit: 'Item',
+        qty: quantity,
+        rate: price || (isNewActivity ? 0 : getActivityPrice(selectedActivity)),
+        amount: quantity * (price || (isNewActivity ? 0 : getActivityPrice(selectedActivity))),
+        isDebt: false,
+        originalData: { 
+          type: 'other', 
+          others_activity_id: isNewActivity ? null : selectedActivityData.id
+        }
+      });
+
+      // Reset modal
+      setSelectedActivity('');
+      setNewActivity('');
+      setQuantity(1);
+      setPrice(0);
+      setIsNewActivity(false);
+      onClose();
+    }
+  };
+
+  const isSubmitDisabled = 
+    (isNewActivity ? !newActivity : !selectedActivity) || 
+    quantity <= 0;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+        <h2 className="text-xl font-bold mb-4">Add New Others Item</h2>
+
+        {/* Switch Toggle for New/Existing Activity */}
+        <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded">
+          <span className="text-sm text-gray-700">New Item</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={isNewActivity}
+              onChange={(e) => {
+                setIsNewActivity(e.target.checked);
+                setSelectedActivity('');
+                setNewActivity('');
+              }}
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
+        {/* Activity Selection */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">
+            {isNewActivity ? "Enter New Item" : "Select Others"}
+          </label>
+          {isNewActivity ? (
+            <input
+              type="text"
+              value={newActivity}
+              onChange={(e) => setNewActivity(e.target.value)}
+              className="w-full p-2 border rounded"
+              placeholder="Enter item name"
+            />
+          ) : (
+            <select
+              value={selectedActivity}
+              onChange={(e) => {
+                const activity = e.target.value;
+                setSelectedActivity(activity);
+                setPrice(getActivityPrice(activity));
+              }}
+              className="w-full p-2 border rounded"
+            >
+              <option value="">Select an item</option>
+              {availableActivities.map((activity) => (
+                <option key={activity} value={activity}>{activity}</option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {/* Quantity */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Quantity</label>
+          <input
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+            min="1"
+            className="w-full p-2 border rounded"
+          />
+        </div>
+
+        {/* Price */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Price</label>
+          <input
+            type="text"
+            value={formatCurrency(price)}
+            onChange={(e) => setPrice(parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+            className="w-full p-2 border rounded"
+          />
+        </div>
+
+        {/* Buttons */}
+        <div className="flex justify-end gap-2">
+          <button 
+            onClick={onClose} 
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSubmit} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            disabled={isSubmitDisabled}
+          >
+            Add Item
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AddTransportationModal = ({ 
+  isOpen, 
+  onClose, 
+  onAddItem, 
+  listForNewItems,
+  existingItems 
+}) => {
+  const [selectedTransportation, setSelectedTransportation] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(0);
+
+  const availableTransportations = useMemo(() => {
+    const cars = listForNewItems.cars || [];
+    return cars
+      .filter(car => 
+        car && 
+        car.name && 
+        car.is_publish === "1" && // Hanya kendaraan yang dipublikasikan
+        !existingItems.some(item => 
+          item.car?.name === car.name)
+      )
+      .map(car => car.name);
+  }, [listForNewItems, existingItems]);
+  
+  const getTransportationPrice = (transportationName) => {
+    const cars = listForNewItems.cars || [];
+    const car = cars.find(c => c.name === transportationName);
+    return car ? car.price : 0;
+  };
+
+  const handleSubmit = () => {
+    if (selectedTransportation) {
+      const transportation = listForNewItems.find(c => c.name === selectedTransportation);
+      
+      onAddItem({
+        category: 'Transport',
+        subCategory: 'Airport Transfer',
+        description: selectedTransportation,
+        unit: 'Unit',
+        qty: quantity,
+        rate: price || getTransportationPrice(selectedTransportation),
+        amount: quantity * (price || getTransportationPrice(selectedTransportation)),
+        isDebt: false,
+        originalData: { 
+          type: 'transport', 
+          car_id: transportation.id
+        }
+      });
+
+      // Reset modal
+      setSelectedTransportation('');
+      setQuantity(1);
+      setPrice(0);
+      onClose();
+    }
+  };
+
+  const isSubmitDisabled = 
+    !selectedTransportation || 
+    quantity <= 0;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+        <h2 className="text-xl font-bold mb-4">Add New Transportation</h2>
+        
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Select Transportation</label>
+          <select
+            value={selectedTransportation}
+            onChange={(e) => {
+              const transportation = e.target.value;
+              setSelectedTransportation(transportation);
+              setPrice(getTransportationPrice(transportation));
+            }}
+            className="w-full p-2 border rounded"
+          >
+            <option value="">Select a transportation</option>
+            {availableTransportations.map((transportation) => (
+              <option key={transportation} value={transportation}>{transportation}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Quantity</label>
+          <input
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+            min="1"
+            className="w-full p-2 border rounded"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Price</label>
+          <input
+            type="text"
+            value={formatCurrency(price)}
+            onChange={(e) => setPrice(parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+            className="w-full p-2 border rounded"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <button 
+            onClick={onClose} 
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSubmit} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            disabled={isSubmitDisabled}
+          >
+            Add Transportation
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AddCrewModal = ({ 
+  isOpen, 
+  onClose, 
+  onAddItem, 
+  listForNewItems,
+  existingItems 
+}) => {
+  const [selectedCrew, setSelectedCrew] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(0);
+
+  const availableCrews = useMemo(() => {
+    const crews = listForNewItems.crews || [];
+    return crews
+      .filter(crew => 
+        crew && 
+        crew.role && 
+        !existingItems.some(item => 
+          item.crew_role?.role === crew.role)
+      )
+      .map(crew => crew.role);
+  }, [listForNewItems, existingItems]);
+  
+  const getCrewPrice = (crewRole) => {
+    const crews = listForNewItems.crews || [];
+    const crew = crews.find(c => c.role === crewRole);
+    return crew ? crew.rate : 0;
+  };
+
+  const handleSubmit = () => {
+    if (selectedCrew) {
+      const crew = listForNewItems.find(c => c.role === selectedCrew);
+      
+      onAddItem({
+        category: 'Resource',
+        subCategory: 'Crew',
+        description: selectedCrew,
+        unit: 'Person',
+        qty: quantity,
+        rate: price || getCrewPrice(selectedCrew),
+        amount: quantity * (price || getCrewPrice(selectedCrew)),
+        isDebt: false,
+        originalData: { 
+          type: 'crew', 
+          crew_role_id: crew.id
+        }
+      });
+
+      // Reset modal
+      setSelectedCrew('');
+      setQuantity(1);
+      setPrice(0);
+      onClose();
+    }
+  };
+
+  const isSubmitDisabled = 
+    !selectedCrew || 
+    quantity <= 0;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+        <h2 className="text-xl font-bold mb-4">Add New Crew</h2>
+        
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Select Crew</label>
+          <select
+            value={selectedCrew}
+            onChange={(e) => {
+              const crew = e.target.value;
+              setSelectedCrew(crew);
+              setPrice(getCrewPrice(crew));
+            }}
+            className="w-full p-2 border rounded"
+          >
+            <option value="">Select a crew</option>
+            {availableCrews.map((crew) => (
+              <option key={crew} value={crew}>{crew}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Quantity</label>
+          <input
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+            min="1"
+            className="w-full p-2 border rounded"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Price</label>
+          <input
+            type="text"
+            value={formatCurrency(price)}
+            onChange={(e) => setPrice(parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+            className="w-full p-2 border rounded"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <button 
+            onClick={onClose} 
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSubmit} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            disabled={isSubmitDisabled}
+          >
+            Add Crew
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EditExpenseManager = ({ booking, accommodations, destinations, others, resources, listForNewItems }) => {
+  const [isDestinationModalOpen, setIsDestinationModalOpen] = useState(false);
+  const [isOthersModalOpen, setIsOthersModalOpen] = useState(false);
+  const [isTransportationModalOpen, setIsTransportationModalOpen] = useState(false);
+  const [isCrewModalOpen, setIsCrewModalOpen] = useState(false);
+
+  const sortItems = (items) => {
+    // Definisikan urutan kategori
+    const categoryOrder = {
+      'Accommodation': 1,
+      'Destination': 2,
+      'Others': 3,
+      'Transport': 4,
+      'Resource': 5
+    };
+  
+    return items.sort((a, b) => {
+      // Pertama, urutkan berdasarkan kategori
+      if (categoryOrder[a.category] !== categoryOrder[b.category]) {
+        return categoryOrder[a.category] - categoryOrder[b.category];
+      }
+  
+      // Jika kategori sama, urutkan berdasarkan subkategori
+      const subCategoryCompare = a.subCategory.localeCompare(b.subCategory);
+      if (subCategoryCompare !== 0) {
+        return subCategoryCompare;
+      }
+  
+      // Jika subkategori sama, item baru selalu di akhir
+      const aIsNew = a.id.toString().startsWith('new_');
+      const bIsNew = b.id.toString().startsWith('new_');
+      
+      if (aIsNew && !bIsNew) return 1;  // item baru (a) ke belakang
+      if (!aIsNew && bIsNew) return -1; // item baru (b) ke belakang
+  
+      // Jika keduanya bukan item baru, urutkan berdasarkan ID
+      // Ini memastikan item asli tetap dalam urutan semula
+      return parseInt(a.id) - parseInt(b.id);
+    });
+  };
+  
+  const handleAddNewItem = (newItem) => {
+    setItems(prevItems => {
+      // Tambahkan item baru dengan ID unik
+      const updatedItems = [...prevItems, {
+        ...newItem,
+        id: `new_${Date.now()}` // Pastikan memiliki penanda item baru
+      }];
+      
+      // Sorting ulang
+      return sortItems(updatedItems);
+    });
+  }; 
+    // Initialize items state with all expense items
   const [items, setItems] = useState(() => {
     // Pertama, kumpulkan semua item accommodation dan kelompokkan berdasarkan hotel
     const accommodationItems = accommodations.reduce((acc, hotel) => {
@@ -326,7 +1086,21 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
       return newItems;
     });
   };
-
+  const handleEdit = (index, field, value) => {
+    setItems(prevItems => {
+      const newItems = [...prevItems];
+      const item = { ...newItems[index] };
+      
+      // Update field
+      item[field] = value;
+      
+      // Recalculate amount
+      item.amount = item.qty * item.rate;
+      
+      newItems[index] = item;
+      return newItems;
+    });
+  };
   // Calculate summary totals
   const summaryTotals = useMemo(() => {
     const payLaterItems = items.filter(item => item.isDebt);
@@ -490,24 +1264,130 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
     });
    
     console.log('Data to submit:', submitData);
-   };
+  };
   return (
     <Authenticated>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
         <BookingInfo booking={booking} />
         <SummaryCards totals={summaryTotals} />
         <ExpenseTable 
           items={items} 
           onPayLaterChange={handlePayLaterChange}
-        />
-        <div className="mt-6 flex justify-end">
-          <button
+          onEdit={handleEdit}
+        />        
+      <div className="mt-6 flex justify-between items-center">
+      <div className="relative inline-block text-left">
+  <div 
+    id="add-item-dropdown"
+    className="hidden absolute bottom-full left-0 mb-2 w-56 origin-bottom-left rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+    role="menu"
+    aria-orientation="vertical"
+    aria-labelledby="menu-button"
+    tabIndex="-1"
+  >
+    <div className="py-1 rounded-md" role="none">
+      <button
+        onClick={() => {
+          setIsDestinationModalOpen(true);
+          document.getElementById('add-item-dropdown').classList.add('hidden');
+        }}
+        className="text-gray-700 block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 hover:rounded-t-md"
+        role="menuitem"
+        tabIndex="-1"
+      >
+        Destination Activity
+      </button>
+      <button
+        onClick={() => {
+          setIsOthersModalOpen(true);
+          document.getElementById('add-item-dropdown').classList.add('hidden');
+        }}
+        className="text-gray-700 block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+        role="menuitem"
+        tabIndex="-1"
+      >
+        Others Item
+      </button>
+      <button
+        onClick={() => {
+          setIsTransportationModalOpen(true);
+          document.getElementById('add-item-dropdown').classList.add('hidden');
+        }}
+        className="text-gray-700 block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+        role="menuitem"
+        tabIndex="-1"
+      >
+        Transportation
+      </button>
+      <button
+        onClick={() => {
+          setIsCrewModalOpen(true);
+          document.getElementById('add-item-dropdown').classList.add('hidden');
+        }}
+        className="text-gray-700 block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 hover:rounded-b-md"
+        role="menuitem"
+        tabIndex="-1"
+      >
+        Crew
+      </button>
+    </div>
+  </div>
+
+  <button
+    type="button"
+    className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+    id="menu-button"
+    aria-expanded="true"
+    aria-haspopup="true"
+    onClick={() => {
+      const dropdown = document.getElementById('add-item-dropdown');
+      dropdown.classList.toggle('hidden');
+    }}
+  >
+    Add New Item
+    <svg className="-mr-1 h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+    </svg>
+  </button>
+</div>
+<button
             onClick={handleSubmit}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
           >
             Submit Changes
           </button>
-        </div>
+
+      </div>
+        {/* Modal-modal */}
+        <AddDestinationModal 
+          isOpen={isDestinationModalOpen}
+          onClose={() => setIsDestinationModalOpen(false)}
+          onAddItem={handleAddNewItem}
+          listForNewItems={listForNewItems.destinations}
+          existingItems={items.filter(item => item.category === 'Destination')}
+        />
+        <AddOthersModal 
+          isOpen={isOthersModalOpen}
+          onClose={() => setIsOthersModalOpen(false)}
+          onAddItem={handleAddNewItem}
+          listForNewItems={listForNewItems.others}
+          existingItems={items.filter(item => item.category === 'Others')}
+        />
+        <AddTransportationModal 
+          isOpen={isTransportationModalOpen}
+          onClose={() => setIsTransportationModalOpen(false)}
+          onAddItem={handleAddNewItem}
+          listForNewItems={listForNewItems.cars}
+          existingItems={items.filter(item => item.category === 'Transport')}
+        />
+        <AddCrewModal 
+          isOpen={isCrewModalOpen}
+          onClose={() => setIsCrewModalOpen(false)}
+          onAddItem={handleAddNewItem}
+          listForNewItems={listForNewItems.crews}
+          existingItems={items.filter(item => item.category === 'Resource')}
+        />
+
       </div>
     </Authenticated>
   );

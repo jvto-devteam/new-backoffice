@@ -83,7 +83,7 @@ const SummaryCards = ({ totals }) => {
   );
 };
 
-const ExpenseTable = ({ items, onPayLaterChange, onEdit }) => {
+const ExpenseTable = ({ items, onPayLaterChange, onEdit,onDelete  }) => {
   const [editingCell, setEditingCell] = useState(null); // Format: "itemId-field" (e.g. "1-qty")
   const [editValue, setEditValue] = useState("");
 
@@ -126,6 +126,8 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit }) => {
     setEditValue("");
   };
 
+  let counter = 1;
+
   return (
     <div className="bg-white rounded-lg shadow">
       <h2 className="text-xl font-bold p-4 border-b">Expense Items</h2>
@@ -142,17 +144,19 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit }) => {
               <th className="px-4 py-3 text-right text-sm font-bold text-gray-500">RATE</th>
               <th className="px-4 py-3 text-right text-sm font-bold text-gray-500">AMOUNT</th>
               <th className="px-4 py-3 text-center text-sm font-bold text-gray-500">PAY LATER</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
             {items.map((item, index) => {
+              const currentNumber = counter++;
               const hotelId = item.originalData?.hotelId;
               const showToggle = item.category !== 'Accommodation' || 
                                (hotelGroups[hotelId] && hotelGroups[hotelId].index === index);
 
               return (
                 <tr key={item.id} className={item.isDebt ? 'bg-yellow-50' : 'bg-white'}>
-                  <td className="px-4 py-3 text-sm">{index + 1}</td>
+                  <td className="px-4 py-3 text-sm">{currentNumber}</td>
                   <td className="px-4 py-3 text-sm">{item.category}</td>
                   <td className="px-4 py-3 text-sm">{item.subCategory}</td>
                   <td className="px-4 py-3 text-sm">{item.description}</td>
@@ -246,6 +250,19 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit }) => {
                       </div>
                     )}
                   </td>
+                  <td className="px-4 py-3">
+                    <div className="flex justify-center">
+                      <button
+                        onClick={() => onDelete(index)}
+                        className="text-red-500 hover:text-red-700"
+                        title="Delete item"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               );
             })}
@@ -276,14 +293,30 @@ const AddDestinationModal = ({
   }, [listForNewItems]);
 
   const availableActivities = useMemo(() => {
-    if (!selectedDestination) return [];
-    return (listForNewItems[selectedDestination] || [])
+    if (!selectedDestination || !listForNewItems || !listForNewItems[selectedDestination]) {
+      return [];
+    }
+
+    // Get existing activities for this destination
+    const existingActivitiesForDestination = existingItems
+      .filter(item => item.subCategory === selectedDestination)
+      .map(item => item.description);
+
+    // Filter available activities that are not in existingItems
+    return listForNewItems[selectedDestination]
       .filter(activity => 
-        !existingItems.some(item => 
-          item.destination_activity.name === activity.name)
+        activity && 
+        activity.name && 
+        !existingActivitiesForDestination.includes(activity.name)
       )
-      .map(activity => activity.name);
+      .map(activity => ({
+        id: activity.id,
+        name: activity.name,
+        price: activity.price
+      }));
+
   }, [selectedDestination, listForNewItems, existingItems]);
+
 
   const getActivityPrice = (destName, activityName) => {
     const activity = (listForNewItems[destName] || [])
@@ -393,19 +426,22 @@ const AddDestinationModal = ({
               onChange={(e) => {
                 const activity = e.target.value;
                 setSelectedActivity(activity);
-                setPrice(getActivityPrice(selectedDestination, activity));
+                const selectedActivityData = availableActivities.find(a => a.name === activity);
+                setPrice(selectedActivityData ? selectedActivityData.price : 0);
               }}
               className="w-full p-2 border rounded"
               disabled={!selectedDestination}
             >
               <option value="">Select an activity</option>
               {availableActivities.map((activity) => (
-                <option key={activity} value={activity}>{activity}</option>
+                <option key={activity.id} value={activity.name}>
+                  {activity.name}
+                </option>
               ))}
             </select>
           )}
         </div>
-        
+
         {/* Quantity */}
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">Quantity</label>
@@ -462,23 +498,28 @@ const AddOthersModal = ({
   const [price, setPrice] = useState(0);
   const [isNewActivity, setIsNewActivity] = useState(false);
 
-const availableActivities = useMemo(() => {
-  const others = listForNewItems.others || [];
-  return others
-    .filter(activity => 
-      activity && 
-      activity.name && 
-      !existingItems.some(item => 
-        item.others_activity?.name === activity.name)
-    )
-    .map(activity => activity.name);
-}, [listForNewItems, existingItems]);
+  const availableActivities = useMemo(() => {
+    console.log('listForNewItems:', listForNewItems); // Untuk debug
 
-const getActivityPrice = (activityName) => {
-  const others = listForNewItems.others || [];
-  const activity = others.find(a => a.name === activityName);
-  return activity ? parseFloat(activity.price) : 0;
-};
+    // Pastikan listForNewItems adalah array
+    const othersList = Array.isArray(listForNewItems) ? listForNewItems : [];
+
+    // Get existing others activities
+    const existingActivities = existingItems.map(item => item.description);
+
+    // Filter out activities that already exist in the table
+    return othersList
+      .filter(activity => 
+        activity && 
+        activity.name && 
+        !existingActivities.includes(activity.name)
+      );
+  }, [listForNewItems, existingItems]);
+
+  const getActivityPrice = (activityName) => {
+    const activity = listForNewItems.find(a => a.name === activityName);
+    return activity ? parseFloat(activity.price) : 0;
+  };
 
   const handleSubmit = () => {
     const activityName = isNewActivity ? newActivity : selectedActivity;
@@ -556,19 +597,22 @@ const getActivityPrice = (activityName) => {
             <select
               value={selectedActivity}
               onChange={(e) => {
-                const activity = e.target.value;
-                setSelectedActivity(activity);
-                setPrice(getActivityPrice(activity));
+                const activityName = e.target.value;
+                setSelectedActivity(activityName);
+                setPrice(getActivityPrice(activityName));
               }}
               className="w-full p-2 border rounded"
             >
               <option value="">Select an item</option>
               {availableActivities.map((activity) => (
-                <option key={activity} value={activity}>{activity}</option>
+                <option key={activity.id} value={activity.name}>
+                  {activity.name}
+                </option>
               ))}
             </select>
           )}
         </div>
+
 
         {/* Quantity */}
         <div className="mb-4">
@@ -626,16 +670,16 @@ const AddTransportationModal = ({
   const [price, setPrice] = useState(0);
 
   const availableTransportations = useMemo(() => {
-    const cars = listForNewItems.cars || [];
-    return cars
+    // Pastikan listForNewItems.cars adalah array dan sudah ada
+    const transportList = listForNewItems && Array.isArray(listForNewItems) ? listForNewItems : [];
+    const existingVehicles = existingItems.map(item => item.description);
+
+    return transportList
       .filter(car => 
         car && 
         car.name && 
-        car.is_publish === "1" && // Hanya kendaraan yang dipublikasikan
-        !existingItems.some(item => 
-          item.car?.name === car.name)
-      )
-      .map(car => car.name);
+        !existingVehicles.includes(car.name)
+      );
   }, [listForNewItems, existingItems]);
   
   const getTransportationPrice = (transportationName) => {
@@ -687,15 +731,18 @@ const AddTransportationModal = ({
           <select
             value={selectedTransportation}
             onChange={(e) => {
-              const transportation = e.target.value;
-              setSelectedTransportation(transportation);
-              setPrice(getTransportationPrice(transportation));
+              const transportName = e.target.value;
+              setSelectedTransportation(transportName);
+              const selectedTransport = availableTransportations.find(t => t.name === transportName);
+              setPrice(selectedTransport ? parseFloat(selectedTransport.price) : 0);
             }}
             className="w-full p-2 border rounded"
           >
             <option value="">Select a transportation</option>
-            {availableTransportations.map((transportation) => (
-              <option key={transportation} value={transportation}>{transportation}</option>
+            {availableTransportations.map((transport) => (
+              <option key={transport.id} value={transport.name}>
+                {transport.name}
+              </option>
             ))}
           </select>
         </div>
@@ -753,16 +800,18 @@ const AddCrewModal = ({
   const [price, setPrice] = useState(0);
 
   const availableCrews = useMemo(() => {
-    const crews = listForNewItems.crews || [];
-    return crews
+    // Pastikan listForNewItems adalah array
+    const crewList = listForNewItems && Array.isArray(listForNewItems) ? listForNewItems : [];
+    const existingCrews = existingItems.map(item => item.description);
+
+    return crewList
       .filter(crew => 
         crew && 
-        crew.role && 
-        !existingItems.some(item => 
-          item.crew_role?.role === crew.role)
-      )
-      .map(crew => crew.role);
+        crew.role &&
+        !existingCrews.includes(crew.role)
+      );
   }, [listForNewItems, existingItems]);
+
   
   const getCrewPrice = (crewRole) => {
     const crews = listForNewItems.crews || [];
@@ -813,18 +862,22 @@ const AddCrewModal = ({
           <select
             value={selectedCrew}
             onChange={(e) => {
-              const crew = e.target.value;
-              setSelectedCrew(crew);
-              setPrice(getCrewPrice(crew));
+              const crewRole = e.target.value;
+              setSelectedCrew(crewRole);
+              const selectedCrew = availableCrews.find(c => c.role === crewRole);
+              setPrice(selectedCrew ? parseFloat(selectedCrew.rate) : 0);
             }}
             className="w-full p-2 border rounded"
           >
             <option value="">Select a crew</option>
             {availableCrews.map((crew) => (
-              <option key={crew} value={crew}>{crew}</option>
+              <option key={crew.id} value={crew.role}>
+                {crew.role}
+              </option>
             ))}
           </select>
         </div>
+
 
         <div className="mb-4">
           <label className="block text-gray-700 mb-2">Quantity</label>
@@ -883,40 +936,49 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
       'Resource': 5
     };
   
-    return items.sort((a, b) => {
-      // Pertama, urutkan berdasarkan kategori
-      if (categoryOrder[a.category] !== categoryOrder[b.category]) {
-        return categoryOrder[a.category] - categoryOrder[b.category];
+    return [...items].sort((a, b) => {
+      // Pertama sort berdasarkan kategori
+      const categoryDiff = categoryOrder[a.category] - categoryOrder[b.category];
+      if (categoryDiff !== 0) return categoryDiff;
+  
+      // Jika kategori sama, sort berdasarkan subCategory
+      const subCategoryDiff = a.subCategory.localeCompare(b.subCategory);
+      if (subCategoryDiff !== 0) return subCategoryDiff;
+  
+      // Jika subCategory sama, new items selalu di bawah
+      const aIsNew = String(a.id).startsWith('new_');
+      const bIsNew = String(b.id).startsWith('new_');
+      if (aIsNew !== bIsNew) {
+        return aIsNew ? 1 : -1; // New items go to bottom
       }
   
-      // Jika kategori sama, urutkan berdasarkan subkategori
-      const subCategoryCompare = a.subCategory.localeCompare(b.subCategory);
-      if (subCategoryCompare !== 0) {
-        return subCategoryCompare;
+      // Jika keduanya item baru atau item lama, sort berdasarkan ID
+      if (aIsNew && bIsNew) {
+        // Untuk item baru, bandingkan timestamp
+        return parseInt(a.id.split('_')[1]) - parseInt(b.id.split('_')[1]);
       }
   
-      // Jika subkategori sama, item baru selalu di akhir
-      const aIsNew = a.id.toString().startsWith('new_');
-      const bIsNew = b.id.toString().startsWith('new_');
-      
-      if (aIsNew && !bIsNew) return 1;  // item baru (a) ke belakang
-      if (!aIsNew && bIsNew) return -1; // item baru (b) ke belakang
-  
-      // Jika keduanya bukan item baru, urutkan berdasarkan ID
-      // Ini memastikan item asli tetap dalam urutan semula
+      // Untuk item lama, bandingkan ID asli
       return parseInt(a.id) - parseInt(b.id);
     });
   };
+
   
   const handleAddNewItem = (newItem) => {
     setItems(prevItems => {
-      // Tambahkan item baru dengan ID unik
-      const updatedItems = [...prevItems, {
-        ...newItem,
-        id: `new_${Date.now()}` // Pastikan memiliki penanda item baru
-      }];
+      // Buat ID baru dengan timestamp
+      const newId = `new_${Date.now()}`;
       
-      // Sorting ulang
+      // Tambahkan newItem dengan ID baru
+      const updatedItems = [
+        ...prevItems,
+        {
+          ...newItem,
+          id: newId
+        }
+      ];
+  
+      // Sort items dengan fungsi yang sudah diperbaiki
       return sortItems(updatedItems);
     });
   }; 
@@ -1265,6 +1327,14 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
    
     console.log('Data to submit:', submitData);
   };
+  const handleDelete = (index) => {
+    setItems(prevItems => {
+      const newItems = [...prevItems];
+      newItems.splice(index, 1);
+      // Sort items setelah menghapus
+      return sortItems(newItems);
+    });
+  };  
   return (
     <Authenticated>
       <div className="px-4 sm:px-6 lg:px-8 py-8">
@@ -1274,6 +1344,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
           items={items} 
           onPayLaterChange={handlePayLaterChange}
           onEdit={handleEdit}
+          onDelete={handleDelete}          
         />        
       <div className="mt-6 flex justify-between items-center">
       <div className="relative inline-block text-left">
@@ -1362,7 +1433,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
         <AddDestinationModal 
           isOpen={isDestinationModalOpen}
           onClose={() => setIsDestinationModalOpen(false)}
-          onAddItem={handleAddNewItem}
+          onAddActivity={handleAddNewItem}          
           listForNewItems={listForNewItems.destinations}
           existingItems={items.filter(item => item.category === 'Destination')}
         />

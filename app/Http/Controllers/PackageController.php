@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Activity;
 use App\Models\CarConfiguration;
+use App\Models\Destination;
+use App\Models\Location;
 use App\Models\OthersActivity;
 use App\Models\Package;
 use Illuminate\Http\Request;
@@ -285,7 +288,10 @@ class PackageController extends Controller
 
     function create()
     {
-        return Inertia::render('Packages/Create');
+        $data['locations'] = Location::orderBy('name','asc')->get();
+        $data['activities'] = Activity::select('id','activity_category_id','name')->where('id','!=',1)->orderBy('name','asc')->get();
+        $data['startEnd']  = Destination::select('id','name')->whereIn('id',[3,4,17])->orderBy('name','asc')->get();
+        return Inertia::render('Packages/Create', $data);
     }
 
     function packageDetail()

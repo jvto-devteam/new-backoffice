@@ -1,0 +1,222 @@
+/* Tambahkan CSS ini ke file style Anda atau sebagai styled component */
+
+/* Style untuk wrapper dropdown */
+.activity-type-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 4px;
+    width: 280px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    z-index: 50;
+    overflow: hidden;
+  }
+  
+  /* Header dropdown */
+  .activity-type-dropdown-header {
+    padding: 10px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    background-color: #f9fafb;
+  }
+  
+  .activity-type-dropdown-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 8px;
+  }
+  
+  /* Kotak pencarian */
+  .activity-type-dropdown-search {
+    position: relative;
+  }
+  
+  .activity-type-dropdown-search input {
+    width: 100%;
+    padding: 8px 12px 8px 36px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+  }
+  
+  .activity-type-dropdown-search input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+  }
+  
+  .activity-type-dropdown-search svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #9ca3af;
+    width: 16px;
+    height: 16px;
+  }
+  
+  /* List item options */
+  .activity-type-dropdown-options {
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  
+  .activity-type-dropdown-option {
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #4b5563;
+    transition: all 0.1s;
+  }
+  
+  .activity-type-dropdown-option:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .activity-type-dropdown-option-icon {
+    display: inline-flex;
+    margin-right: 8px;
+    width: 18px;
+    height: 18px;
+    color: #6b7280;
+  }
+  
+  /* Empty state */
+  .activity-type-dropdown-empty {
+    padding: 12px;
+    text-align: center;
+    color: #6b7280;
+    font-size: 14px;
+  }
+  
+  /* Scrollbar styling */
+  .activity-type-dropdown-options::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .activity-type-dropdown-options::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  
+  .activity-type-dropdown-options::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+  }
+  
+  .activity-type-dropdown-options::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+  }
+  
+  /* Animation untuk dropdown */
+  @keyframes dropdown-enter {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .activity-type-dropdown {
+    animation: dropdown-enter 0.2s ease-out;
+  }
+  /* Tambahkan ini ke file CSS global Anda */
+
+@keyframes dropdown-enter {
+    from {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .dropdown-animation {
+    animation: dropdown-enter 0.2s ease-out;
+  }
+
+  /* Tambahkan ke file CSS Anda */
+
+/* Animation tombol plus */
+@keyframes pulse-blue {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+/* Animasi untuk tombol yang baru muncul */
+@keyframes zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Styling tambahan untuk tombol add between */
+.add-between-button button {
+  animation: zoom-in 0.2s ease-out;
+  transition: all 0.2s ease;
+}
+
+.add-between-button button:hover {
+  transform: scale(1.1);
+  animation: pulse-blue 1.5s infinite;
+}
+/* Tambahkan ke file CSS Anda */
+
+/* Styling untuk tombol add yang muncul pada hover */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.group:hover .timeline-add-button {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.timeline-add-button {
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.timeline-add-button button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.timeline-add-button button:hover {
+  transform: scale(1.2);
+}
+
+/* Efek hover yang menarik pada timeline dot */
+.timeline-dot {
+  transition: all 0.2s ease;
+}
+
+.group:hover .timeline-dot {
+  border-color: #3b82f6;
+  background-color: #eff6ff;
+}

@@ -1,10 +1,9 @@
-// card.tsx
 import * as React from "react"
 
 const Card = React.forwardRef<
     HTMLDivElement,
     React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+>(({ className = "", ...props }, ref) => (
     <div
         ref={ref}
         className={`rounded-lg border bg-card text-card-foreground shadow-sm ${className}`}
@@ -16,7 +15,7 @@ Card.displayName = "Card"
 const CardHeader = React.forwardRef<
     HTMLDivElement,
     React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+>(({ className = "", ...props }, ref) => (
     <div
         ref={ref}
         className={`flex flex-col space-y-1.5 p-6 ${className}`}
@@ -28,7 +27,7 @@ CardHeader.displayName = "CardHeader"
 const CardTitle = React.forwardRef<
     HTMLParagraphElement,
     React.HTMLAttributes<HTMLHeadingElement>
->(({ className, ...props }, ref) => (
+>(({ className = "", ...props }, ref) => (
     <h3
         ref={ref}
         className={`text-2xl font-semibold leading-none tracking-tight ${className}`}
@@ -37,12 +36,37 @@ const CardTitle = React.forwardRef<
 ))
 CardTitle.displayName = "CardTitle"
 
+// Menambahkan komponen CardDescription
+const CardDescription = React.forwardRef<
+    HTMLParagraphElement,
+    React.HTMLAttributes<HTMLParagraphElement>
+>(({ className = "", ...props }, ref) => (
+    <p
+        ref={ref}
+        className={`text-sm text-gray-500 ${className}`}
+        {...props}
+    />
+))
+CardDescription.displayName = "CardDescription"
+
 const CardContent = React.forwardRef<
     HTMLDivElement,
     React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
+>(({ className = "", ...props }, ref) => (
     <div ref={ref} className={`p-6 pt-0 ${className}`} {...props} />
 ))
 CardContent.displayName = "CardContent"
 
-export { Card, CardHeader, CardTitle, CardContent }
+const CardFooter = React.forwardRef<
+    HTMLDivElement,
+    React.HTMLAttributes<HTMLDivElement>
+>(({ className = "", ...props }, ref) => (
+    <div
+        ref={ref}
+        className={`flex items-center p-6 pt-0 ${className}`}
+        {...props}
+    />
+))
+CardFooter.displayName = "CardFooter"
+
+export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }

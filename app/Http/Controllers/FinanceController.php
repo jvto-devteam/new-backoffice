@@ -568,7 +568,11 @@ class FinanceController extends Controller
             BookDestinationActivity::where('booking_id',$request->booking_id)->delete();
             foreach ($request->destinations as $key => $value) {
                 foreach ($value['activities'] as $index => $val) {
-                    if(!$val['destination_activity_id']){
+                    // Verificar si necesitamos crear una nueva actividad de destino
+                    $destinationActivityId = $val['destination_activity_id'] ?? null;
+                    
+                    if(empty($destinationActivityId)){
+                        // Crear nueva actividad de destino
                         $destinationActivity = new DestinationActivity;
                         $destinationActivity->destination_id = $val['destination_id'];
                         $destinationActivity->name = $val['name'];
@@ -580,13 +584,16 @@ class FinanceController extends Controller
                         $destinationActivity->is_default_klook = '0';
                         $destinationActivity->is_default_twt = '0';
                         $destinationActivity->save();
-
-                        $val['destination_activity_id'] = $destinationActivity->id;
+        
+                        // Asignar el ID a una variable local
+                        $destinationActivityId = $destinationActivity->id;
                     }
+        
+                    // Crear la asociación con la reserva
                     $bookDestinationActivity = new BookDestinationActivity;
                     $bookDestinationActivity->booking_id = $request->booking_id;
                     $bookDestinationActivity->destination_id = $val['destination_id'];
-                    $bookDestinationActivity->destination_activity_id = $val['destination_activity_id'];
+                    $bookDestinationActivity->destination_activity_id = $destinationActivityId;
                     $bookDestinationActivity->qty = $val['quantity'];
                     $bookDestinationActivity->price = $val['price'];
                     $bookDestinationActivity->subtotal = $val['quantity']*$val['price'];
@@ -599,26 +606,31 @@ class FinanceController extends Controller
                 }
             }
         }
-
+        
         if($request->others){
             BookOthersActivity::where('booking_id',$request->booking_id)->delete();
             foreach ($request->others as $key => $value) {
-                if(empty($value['id'])){
+                // Primero, asegúrate de tener un others_activity_id válido
+                $othersActivityId = $value['others_activity_id'] ?? null;
+                
+                // Si no hay ID o el item es nuevo, crea una nueva actividad
+                if(empty($othersActivityId) || empty($value['id'])){
                     $othersActivity = new OthersActivity;
-                    $othersActivity->name = $value['name'];
+                    $othersActivity->name = $value['name'] ?? 'Unnamed Activity';
                     $othersActivity->other_activity_code = '';
                     $othersActivity->unit = 'no';
                     $othersActivity->formula = '1';
                     $othersActivity->price = $value['price'];
                     $othersActivity->is_default = '0';
                     $othersActivity->save();
-
-                    $value['others_activity_id'] = $othersActivity->id;
+        
+                    // Usa directamente el ID recién creado
+                    $othersActivityId = $othersActivity->id;
                 }
-
+        
                 $bookOthersActivity = new BookOthersActivity;
                 $bookOthersActivity->booking_id = $request->booking_id;
-                $bookOthersActivity->others_activity_id = $value['others_activity_id'];
+                $bookOthersActivity->others_activity_id = $othersActivityId; // Usa la variable local
                 $bookOthersActivity->qty = $value['quantity'];
                 $bookOthersActivity->price = $value['price'];
                 $bookOthersActivity->subtotal = $value['quantity']*$value['price'];
@@ -630,7 +642,6 @@ class FinanceController extends Controller
                 $bookOthersActivity->save();
             }
         }
-
         if($request->resources['cars']){
             BookCarActivity::where('booking_id',$request->booking_id)->delete();
             foreach ($request->resources['cars'] as $key => $value) {

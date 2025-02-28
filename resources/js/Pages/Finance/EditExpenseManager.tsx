@@ -333,20 +333,28 @@ const AddDestinationModal = ({
       const selectedDestinationData = listForNewItems[selectedDestination]?.[0];
       const selectedActivityData = listForNewItems[selectedDestination]?.find(a => a.name === selectedActivity);
       
-      onAddActivity({
+      const newActivityData = {
         destination_id: selectedDestinationData?.destination_id,
+        // Incluir el nombre del destino
+        destinationName: selectedDestination,
+        
         destination_activity: { 
           name: activityName,
           id: isNewActivity ? null : selectedActivityData?.id 
         },
-        destination_activity_id: isNewActivity ? null : selectedActivityData?.id,
+        
+        ...(isNewActivity ? {} : { destination_activity_id: selectedActivityData?.id }),
+        
         qty: quantity,
         price: price || (isNewActivity ? 0 : getActivityPrice(selectedDestination, selectedActivity)),
+        name: activityName,
         status_paid: 'unpaid',
         is_debt: '0'
-      });
+      };
+      
+      onAddActivity(newActivityData);
 
-      // Reset modal
+      // Reset modal (sin cambios)
       setSelectedDestination('');
       setSelectedActivity('');
       setNewActivity('');
@@ -529,6 +537,11 @@ const AddOthersModal = ({
     if (activityName) {
       const selectedActivityData = listForNewItems.find(a => a.name === selectedActivity);
       
+      // Para items nuevos, no envíes others_activity_id directamente
+      const originalData = isNewActivity 
+        ? { type: 'other', name: activityName } // Solo envía el nombre y tipo
+        : { type: 'other', others_activity_id: selectedActivityData.id };
+      
       onAddItem({
         category: 'Others',
         subCategory: 'Additional',
@@ -538,12 +551,8 @@ const AddOthersModal = ({
         rate: price || (isNewActivity ? 0 : getActivityPrice(selectedActivity)),
         amount: quantity * (price || (isNewActivity ? 0 : getActivityPrice(selectedActivity))),
         isDebt: false,
-        originalData: { 
-          type: 'other', 
-          others_activity_id: isNewActivity ? null : selectedActivityData.id
-        }
+        originalData: originalData
       });
-
       // Reset modal
       setSelectedActivity('');
       setNewActivity('');
@@ -969,23 +978,48 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
   
   const handleAddNewItem = (newItem) => {
     setItems(prevItems => {
-      // Buat ID baru dengan timestamp
+      // Crear ID para el nuevo item
       const newId = `new_${Date.now()}`;
       
-      // Tambahkan newItem dengan ID baru
-      const updatedItems = [
-        ...prevItems,
-        {
+      let processedItem;
+      
+      if (newItem.destination_id) {
+        // Es una actividad de destino
+        // Necesitamos extraer el nombre del destino del newItem
+        // En AddDestinationModal, debemos incluir esta información
+        processedItem = {
+          id: newId,
+          category: 'Destination',
+          // Obtener subCategory desde el destino en newItem en lugar de selectedDestination
+          subCategory: newItem.destinationName, // Añadir esta propiedad en AddDestinationModal
+          description: newItem.name || newItem.destination_activity.name,
+          unit: 'Pax',
+          qty: newItem.qty,
+          rate: newItem.price,
+          amount: newItem.qty * newItem.price,
+          isDebt: newItem.is_debt === '1',
+          originalData: { 
+            type: 'destination', 
+            destName: newItem.destinationName, // Usar la misma información
+            destination_id: newItem.destination_id,
+            ...(newItem.destination_activity_id ? { destination_activity_id: newItem.destination_activity_id } : {}),
+            activityName: newItem.name || newItem.destination_activity.name
+          }
+        };
+      } else {
+        // Procesar otros tipos de items como antes
+        processedItem = {
           ...newItem,
           id: newId
-        }
-      ];
-  
-      // Sort items dengan fungsi yang sudah diperbaiki
+        };
+      }
+      
+      // Agregar el nuevo item y ordenar
+      const updatedItems = [...prevItems, processedItem];
       return sortItems(updatedItems);
     });
-  }; 
-    // Initialize items state with all expense items
+  };
+      // Initialize items state with all expense items
   const [items, setItems] = useState(() => {
     // Pertama, kumpulkan semua item accommodation dan kelompokkan berdasarkan hotel
     const accommodationItems = accommodations.reduce((acc, hotel) => {
@@ -1181,7 +1215,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
   }, [items]);
   const handleSubmit = () => {
     const formatDecimal = (num) => Number(num).toFixed(2);
-   
+ 
     // Pertama, kelompokkan items akomodasi berdasarkan hotel
     const groupedAccommodations = items
       .filter(item => item.category === 'Accommodation')
@@ -1217,7 +1251,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
     const submitData = {
       booking_id: booking.id,
       
-      // Transform accommodations
+      // Transform accommodations - Tidak berubah
       accommodations: Object.entries(groupedAccommodations).map(([hotelId, data]) => ({
         hotel_id: parseInt(hotelId),
         is_paid: !data.isDebt ? '1' : '0',
@@ -1235,64 +1269,85 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
         }))
       })),
    
-      // Transform destinations
+      // Perbaikan struktur destinations
       destinations: Object.entries(groupedDestinations).map(([destName, activities]) => ({
-        destination: destName,
-        activities: activities.map(item => ({
-          id: item.id,
-          destination_id: item.originalData.destination_id,
-          destination_activity_id: item.originalData.destination_activity_id,
-          name: item.description,
-          quantity: item.qty,
-          price: parseInt(item.rate),
-          status_paid: item.isDebt ? 'unpaid' : 'paid',
-          is_debt: item.isDebt ? '1' : '0'
-        }))
+        activities: activities.map(item => {
+          const isNewItem = String(item.id).startsWith('new_');
+          return {
+            // Para item existente, usar id normal, para nuevo usar null
+            id: isNewItem ? null : item.id,
+            
+            destination_id: item.originalData.destination_id,
+            
+            // Para actividades nuevas:
+            // 1. No incluir destination_activity_id (omitirlo en lugar de enviar null)
+            // 2. Asegurarse de que name esté presente para crear la nueva actividad
+            ...(isNewItem 
+              ? { name: item.description } 
+              : { destination_activity_id: item.originalData.destination_activity_id }),
+            
+            quantity: item.qty,
+            price: parseInt(item.rate),
+            is_debt: item.isDebt ? '1' : '0'
+          };
+        })
       })),
-   
-      // Transform others
-      others: items
-        .filter(item => item.category === 'Others')
-        .map(item => ({
-          id: item.id,
-          others_activity_id: item.originalData.others_activity_id,
+
+      // Perbaikan struktur others
+    others: items
+      .filter(item => item.category === 'Others')
+      .map(item => {
+        const isNewItem = String(item.id).startsWith('new_');
+        return {
+          // Para items nuevos, envía id: null
+          id: isNewItem ? null : item.id,
+          // Para items nuevos, omite others_activity_id en lugar de enviar null
+          // Si el item ya existe, envía el ID
+          ...(isNewItem ? {} : { others_activity_id: item.originalData.others_activity_id }),
           quantity: item.qty,
-          name: null,
+          name: item.description, // Asegura que name tenga valor
           price: parseInt(item.rate),
-          status_paid: item.isDebt ? 'unpaid' : 'paid',
           is_debt: item.isDebt ? '1' : '0'
-        })),
+        };
+      }),
    
-      // Transform resources
+      // Perbaikan struktur resources
       resources: {
         cars: items
           .filter(item => item.category === 'Transport')
-          .map(item => ({
-            id: item.id,
-            car_id: item.originalData.car_id,
-            quantity: item.qty,
-            price: parseInt(item.rate),
-            status_paid: item.isDebt ? 'unpaid' : 'paid',
-            is_debt: item.isDebt ? '1' : '0'
-          })),
+          .map(item => {
+            const isNewItem = String(item.id).startsWith('new_');
+            return {
+              id: isNewItem ? null : item.id,
+              car_id: item.originalData.car_id,
+              quantity: item.qty,
+              price: parseInt(item.rate),
+              // Hapus status_paid karena tidak digunakan
+              is_debt: item.isDebt ? '1' : '0'
+            };
+          }),
         crews: items
           .filter(item => item.category === 'Resource')
-          .map(item => ({
-            id: item.id,
-            crew_role_id: item.originalData.crew_role_id,
-            quantity: item.qty,
-            price: parseInt(item.rate),
-            status_paid: item.isDebt ? 'unpaid' : 'paid',
-            is_debt: item.isDebt ? '1' : '0'
-          }))
+          .map(item => {
+            const isNewItem = String(item.id).startsWith('new_');
+            return {
+              id: isNewItem ? null : item.id,
+              crew_role_id: item.originalData.crew_role_id,
+              quantity: item.qty,
+              price: parseInt(item.rate),
+              // Hapus status_paid karena tidak digunakan
+              is_debt: item.isDebt ? '1' : '0'
+            };
+          })
       },
    
       summary: {
         totalAmount: summaryTotals.totalAmount,
         paidAmount: summaryTotals.paidAmount,
         debtAmount: summaryTotals.debtAmount,
-        balanceAmount: summaryTotals.balanceAmount,
-        profit: summaryTotals.profit
+        // Hapus fields yang tidak digunakan
+        // balanceAmount: summaryTotals.balanceAmount,
+        // profit: summaryTotals.profit
       }
     };
    

@@ -5,13 +5,24 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\CarConfiguration;
 use App\Models\Destination;
+use App\Models\Duration;
 use App\Models\Hotel;
+use App\Models\Itinerary;
+use App\Models\ItineraryDestination;
+use App\Models\ItineraryDetail;
+use App\Models\ItineraryMeal;
 use App\Models\Location;
 use App\Models\OthersActivity;
 use App\Models\Package;
+use App\Models\PackageDestination;
+use App\Models\PackageHotel;
+use App\Models\PackageMeal;
+use App\Models\PackagePrice;
+use App\Models\PriceCategory;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class PackageController extends Controller
 {
@@ -293,7 +304,195 @@ class PackageController extends Controller
         $data['hotels'] = Hotel::select('id','name')->orderBy('name','asc')->get();
         $data['activities'] = Activity::select('id','activity_category_id','name')->where('id','!=',1)->orderBy('name','asc')->get();
         $data['startEnd']  = Destination::select('id','name')->whereIn('id',[3,4,17])->orderBy('name','asc')->get();
+        $data['destinations'] = Destination::with(['galleries'])->select('id','name')->where('is_publish','1')->orderBy('name','asc')->get()->map(function($query){
+            return [
+                'id' => $query->id,
+                'name' => $query->name,
+                'galleries' => $query->galleries->map(function($q) {
+                    return [
+                        'id' => $q->id,
+                        'url' => "https://javavolcano-touroperator.com/assets/img/destinations/".$q->image,
+                        'caption' => $q->caption,
+                        'alt_text' => $q->alt_text,
+                    ];
+                }),
+            ];
+        });
+
+        // return $data['destinations'];
         return Inertia::render('Packages/Create', $data);
+    }
+
+    function store(Request $request){
+        return $request->all();
+        $getDuration = Duration::where('day',$request->duration)->first();
+        if(!$getDuration){
+            $night = $request->duration - 1;
+            $getDuration = new Duration();
+            $getDuration->name = $request->duration." Days ".$night." Nights";
+            $getDuration->day = $request->duration;
+            $getDuration->night = $night;
+            $getDuration->save();
+        }
+        $package = new Package();
+        $package->name = $request->title;
+        $package->category_id = $request->category;
+        $package->duration_id = $getDuration->id;
+        $package->start_destination_id = $request->departure_id;
+        $package->end_destination_id = $request->return_id;
+        $package->overview = $request->selling_points;
+        $package->is_publish = '1';
+        $package->url = Str::slug($request->title);
+        $cekUrl = Package::where('url',$package->url)->first();
+        if($cekUrl){
+            $package->url = $package->url."-".time();
+        }
+        $package->save();
+
+        $allDestinations = [];
+        $totalMeals = [
+            'breakfast' => 0,
+            'lunch' => 0,
+            'dinner' => 0,
+        ];
+        $arrHotels = [];
+        foreach ($request->itinerary as $key => $value) {
+            $itinerary = new Itinerary();
+            $itinerary->package_id = $package->id;
+            $itinerary->day = $value['day'];
+            $itinerary->title = $value['title'];
+            $itinerary->activity = $value['description'];
+            $itinerary->save();
+            $arrHotels[$key] = [
+                'day' => $value['day'],
+                'hotel_id' => null,
+            ];
+
+            $arrDestination[$key] = [];
+            $arrMeals[$key] = [
+                'breakfast' => 0,
+                'lunch' => 0,
+                'dinner' => 0,
+            ];
+            foreach($value['activities'] as $index => $item){
+                if($item['type_id'] === 2){
+                    $getDestination = Activity::find($item['activity_id']);
+                    array_push($arrDestination[$key], $getDestination->destination_id);
+                    if(!in_array($getDestination->destination_id, $allDestinations)){
+                        array_push($allDestinations, $getDestination->destination_id);
+                    }
+                }
+                if($item['type_id'] === 4){
+                    if($item['activity_id'] === 9 && $item['include']){
+                        $arrMeals[$key]['breakfast'] = 1;
+                    }
+                    if($item['activity_id'] === 2 && $item['include']){
+                        $arrMeals[$key]['lunch'] = 1;
+                    }
+                    if($item['activity_id'] === 4 && $item['include']){
+                        $arrMeals[$key]['dinner'] = 1;
+                    }
+                }
+                $no = $index + 1;
+                $itineraryDetail = new ItineraryDetail();
+                $itineraryDetail->itinerary_id = $itinerary->id;
+                $itineraryDetail->no = $no;
+                $itineraryDetail->time = $item['time'];
+                if($item['type_id'] === 3){
+                    $itineraryDetail->activity_id = 3;
+                    $arrHotels[$key]['hotel_id'] = $item['activity_id'];
+                }
+                else{
+                    $itineraryDetail->activity_id = $item['activity_id'];
+                }
+                $itineraryDetail->notes = $item['notes'];
+                $itineraryDetail->save();
+            }
+
+            // Sum up the meals
+            $totalMeals['breakfast'] += $arrMeals[$key]['breakfast'];
+            $totalMeals['lunch'] += $arrMeals[$key]['lunch'];
+            $totalMeals['dinner'] += $arrMeals[$key]['dinner'];
+
+            $firstDestination = reset($arrDestination[$key]);
+
+            $itineraryDestination = new ItineraryDestination();
+            $itineraryDestination->package_id = $package->id;
+            $itineraryDestination->itinerary_id = $itinerary->id;
+            $itineraryDestination->destination_id = $firstDestination;
+            if(count($arrDestination[$key]) > 1){
+                $lastDestination = end($arrDestination[$key]);
+                $itineraryDestination->second_destination_id = $lastDestination;
+            }
+            $itineraryDestination->save();
+
+
+            $itineraryMeals = new ItineraryMeal();
+            $itineraryMeals->itinerary_id = $itinerary->id;
+            $itineraryMeals->price_plan_id = 2;
+            $itineraryMeals->breakfast = (string) $arrMeals[$key]['breakfast'];
+            $itineraryMeals->lunch = (string) $arrMeals[$key]['lunch'];
+            $itineraryMeals->dinner = (string) $arrMeals[$key]['dinner'];
+            $itineraryMeals->save();
+        }
+
+        foreach ($allDestinations as $key => $value) {
+            $packageDestination = new PackageDestination();
+            $packageDestination->package_id = $package->id;
+            $packageDestination->destination_id = $value;
+            $packageDestination->save();
+        }
+        
+        $packageMeal = new PackageMeal();
+        $packageMeal->package_id = $package->id;
+        $packageMeal->price_plan_id = 2;
+        $packageMeal->breakfast = $totalMeals['breakfast'];
+        $packageMeal->lunch = $totalMeals['lunch'];
+        $packageMeal->dinner = $totalMeals['dinner'];
+        $packageMeal->save();
+        
+        foreach ($arrHotels as $key => $value) {
+            if($value['hotel_id']){
+                $packageHotel = new PackageHotel();
+                $packageHotel->package_id = $package->id;
+                $packageHotel->price_plan_id = 2;
+                $packageHotel->hotel_id = $value['hotel_id'];
+                $packageHotel->day = $value['day'];
+                $packageHotel->save();
+            }
+        }
+
+        foreach ($request->pricing as $key => $value) {
+            $cekPrice = PriceCategory::where('start',$value['start_pax']);
+            if($value['is_unlimited']){
+                $end = 0;
+                $textEnd = "+ Pax";
+            }
+            else{
+                $end = $value['end_pax'];
+                if($value['start_pax'] == $value['end_pax']){
+                    $textEnd = " Pax";
+                }
+                else{
+                    $textEnd = " - ".$value['end_pax']." Pax";
+                }
+            }
+            $cekPrice = $cekPrice->where('end',$end)->first();
+            if(!$cekPrice){
+                $cekPrice = new PriceCategory();
+                $cekPrice->temp_text = $value['start_pax'].$textEnd;
+                $cekPrice->start = $value['start_pax'];
+                $cekPrice->end = $end;
+                $cekPrice->save();
+            }
+
+            $packagePrice = new PackagePrice();
+            $packagePrice->package_id = $package->id;
+            $packagePrice->price_plan_id = 2;
+            $packagePrice->price_category_id = $cekPrice->id;
+            $packagePrice->price = $value['price'];
+            $packagePrice->save();
+        }
     }
 
     function packageDetail()

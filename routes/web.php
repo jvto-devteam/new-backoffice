@@ -96,6 +96,7 @@ Route::middleware('guest')->group(function () {
     });
     Route::prefix('package-inventory')->group(function () {
         Route::get('/create', [PackageController::class, 'create']);
+        Route::post('/store', [PackageController::class, 'store']);
         Route::get('/flipbook/{url}', [PackageController::class, 'flipbook']);
         Route::get('/{order_channel}', [PackageController::class, 'index']);
         Route::get('/details/{code}', [PackageController::class, 'details']);

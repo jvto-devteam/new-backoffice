@@ -111,7 +111,7 @@ const AnimatedCard = ({ children, className = "" }) => (
 
 
 // Component utama Create
-const Create = ({locations,activities,startEnd}) => {
+const Create = ({locations,activities,startEnd,hotels}) => {
   
   // State Management
   const [activeTab, setActiveTab] = useState('package-info');
@@ -133,6 +133,7 @@ const Create = ({locations,activities,startEnd}) => {
     { id: 4, name: 'Meal / Restaurant', icon: <Coffee className="h-5 w-5 text-orange-500" /> },
     { id: 5, name: 'Transportation', icon: <Bus className="h-5 w-5 text-blue-500" /> },
   ];
+  const hotelOptions = hotels;  
   // Update day helper function
   const updateDay = (dayIndex, updatedDay) => {
     const updatedDays = [...days];
@@ -391,27 +392,34 @@ const handleSubmit = () => {
   
   // Prepare activities data with additional processing
   const processedDays = days.map(day => {
-    // Make a deep copy of the day to avoid references
     const processedDay = { ...day };
     
-    // Process activities for each day
     processedDay.activities = day.activities.map(activity => {
-      // Get activity name and location name for display purposes
-      const activityData = activities.find(a => a.id === parseInt(activity.activity));
+      const activitiesData = activity.type === 3 ? hotels : activities
+      console.log(activitiesData);
+      
+      const activityData = activitiesData.find(a => a.id === parseInt(activity.activity));
       const locationData = locations.find(l => l.id === parseInt(activity.location));
       
+      // Tambahkan data include untuk meals dan data hotel untuk accommodation
       return {
         ...activity,
         activityName: activityData ? activityData.name : '',
         locationName: locationData ? locationData.name : '',
-        activityTypeId: activity.type, // Explicitly store the activity type ID
-        activityTypeName: activityTypes.find(t => t.id === activity.type)?.name || ''
+        activityTypeId: activity.type,
+        activityTypeName: activityTypes.find(t => t.id === activity.type)?.name || '',
+        // Tambahan data
+        include: activity.type === 4 ? (activity.include || false) : undefined,
+        hotelData: activity.type === 3 ? {
+          id: activity.activity,
+          name: (activity.activity && hotelOptions.find(h => h.id === parseInt(activity.activity))?.name) || ''
+        } : undefined
       };
     });
     
     return processedDay;
   });
-  
+
   // Construct complete data object
   const formData = {
     packageInfo: {
@@ -475,7 +483,8 @@ const handleSubmit = () => {
     })),
     metadata: formData.metadata
   };
-
+  console.log(allFormData);
+  
   // Simulate API call with setTimeout
   setTimeout(() => {
     // Log the comprehensive object in a way that's easy to copy
@@ -964,6 +973,7 @@ const handleSubmit = () => {
                                 formStatus={formStatus}
                                 setFormStatus={setFormStatus}
                                 numbOfDay={packageInfo.duration}
+                                hotelOptions={hotelOptions}
                               />
                             </div>
                           </motion.div>

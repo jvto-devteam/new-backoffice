@@ -26,6 +26,7 @@ const SearchableSelect = ({
   filterValue,
   className = '',
   disabled = false,
+  positioningMode = 'absolute', // Default positioning is now 'fixed', can be set to 'absolute'
 }) => {
   const selectRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -62,14 +63,22 @@ const SearchableSelect = ({
       const triggerRect = selectRef.current.getBoundingClientRect();
       const { top, left, height, width } = triggerRect;
       
-      // Set posisi dropdown
-      setDropdownPosition({
-        top: top + height + window.scrollY + 5, // 5px gap
-        left: left + window.scrollX,
-        width: width
-      });
+      // Set posisi dropdown berdasarkan positioning mode
+      if (positioningMode === 'fixed') {
+        setDropdownPosition({
+          top: top + height + window.scrollY + 5, // 5px gap
+          left: left + window.scrollX,
+          width: width
+        });
+      } else {
+        // Untuk absolute positioning, kita tidak perlu mengubah posisi
+        // karena akan otomatis diposisikan dibawah button select
+        setDropdownPosition({
+          width: width
+        });
+      }
     }
-  }, [isOpen]);
+  }, [isOpen, positioningMode]);
 
   // Auto-focus input pencarian saat dropdown terbuka
   useEffect(() => {
@@ -87,22 +96,31 @@ const SearchableSelect = ({
         const triggerRect = selectRef.current.getBoundingClientRect();
         const { top, left, height, width } = triggerRect;
         
-        setDropdownPosition({
-          top: top + height + window.scrollY + 5,
-          left: left + window.scrollX,
-          width: width
-        });
+        // Update position berdasarkan positioning mode
+        if (positioningMode === 'fixed') {
+          setDropdownPosition({
+            top: top + height + window.scrollY + 5,
+            left: left + window.scrollX,
+            width: width
+          });
+        } else {
+          // Don't update for absolute positioning on scroll if you want it to stay relative to parent
+          // If you do want to update for absolute, you can add the appropriate calculation here
+        }
       }
     };
     
-    window.addEventListener('scroll', handleScrollResize);
-    window.addEventListener('resize', handleScrollResize);
-    
-    return () => {
-      window.removeEventListener('scroll', handleScrollResize);
-      window.removeEventListener('resize', handleScrollResize);
-    };
-  }, [isOpen]);
+    // Only add scroll/resize listeners for fixed positioning
+    if (positioningMode === 'fixed') {
+      window.addEventListener('scroll', handleScrollResize);
+      window.addEventListener('resize', handleScrollResize);
+      
+      return () => {
+        window.removeEventListener('scroll', handleScrollResize);
+        window.removeEventListener('resize', handleScrollResize);
+      };
+    }
+  }, [isOpen, positioningMode]);
 
   // Event listener untuk click outside
   useEffect(() => {
@@ -221,15 +239,78 @@ const SearchableSelect = ({
       </button>
 
       {isOpen && !disabled && (
-        <Portal>
-          <div 
+        positioningMode === 'fixed' ? (
+          <Portal>
+            <div 
+              ref={dropdownRef}
+              className="fixed z-[9999] bg-white rounded-md shadow-lg border border-gray-200 overflow-hidden"
+              style={{
+                top: `${dropdownPosition.top}px`,
+                left: `${dropdownPosition.left}px`,
+                width: `${dropdownPosition.width}px`,
+                animation: 'dropdown-enter 0.2s ease-out'
+              }}
+            >
+              <div className="sticky top-0 bg-white border-b px-3 py-2">
+                <div className="flex items-center">
+                  <Search className="h-4 w-4 text-gray-400 mr-2" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setHighlightedIndex(0); // Reset highlight to first item when searching
+                    }}
+                    className="w-full bg-transparent border-none focus:outline-none text-sm p-1"
+                    placeholder="Search..."
+                    onClick={(e) => e.stopPropagation()}
+                    data-testid="search-input"
+                    autoFocus={true}
+                  />
+                </div>
+              </div>
+              <div className="max-h-60 overflow-auto" role="listbox">
+                {filteredOptions.length > 0 ? (
+                  filteredOptions.map((item, index) => (
+                    <div
+                      id={`option-${index}`}
+                      key={item.id}
+                      role="option"
+                      aria-selected={value === item.id}
+                      onClick={() => {
+                        onChange(item.id);
+                        toggleOpen(false);
+                        setSearchQuery('');
+                        setHighlightedIndex(-1);
+                      }}
+                      className={`px-3 py-2 cursor-pointer flex items-center
+                        ${value === item.id ? 'bg-blue-50' : ''}
+                        ${highlightedIndex === index ? 'bg-gray-100' : 'hover:bg-gray-50'}
+                      `}
+                      data-testid={`option-${item.id}`}
+                    >
+                      <Check 
+                        className={`h-4 w-4 mr-2 text-blue-500 ${value === item.id ? 'opacity-100' : 'opacity-0'}`} 
+                      />
+                      <span>{item[displayKey] !== undefined ? item[displayKey] : '—'}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-3 py-2 text-gray-500 text-center">
+                    No options found
+                  </div>
+                )}
+              </div>
+            </div>
+          </Portal>
+        ) : (
+          <div
             ref={dropdownRef}
-            className="fixed z-[9999] bg-white rounded-md shadow-lg border border-gray-200 overflow-hidden"
+            className="absolute z-[9999] left-0 right-0 mt-1 bg-white rounded-md shadow-lg border border-gray-200 overflow-hidden"
             style={{
-              top: `${dropdownPosition.top}px`,
-              left: `${dropdownPosition.left}px`,
-              width: `${dropdownPosition.width}px`,
-              animation: 'dropdown-enter 0.2s ease-out',
+              width: '100%',
+              animation: 'dropdown-enter 0.2s ease-out'
             }}
           >
             <div className="sticky top-0 bg-white border-b px-3 py-2">
@@ -283,7 +364,7 @@ const SearchableSelect = ({
               )}
             </div>
           </div>
-        </Portal>
+        )
       )}
     </div>
   );

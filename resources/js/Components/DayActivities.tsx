@@ -59,19 +59,18 @@ const getActivityIcon = (type) => {
     }
   };
 
-// TimelineItem untuk aktivitas
-const TimelineItem = ({ 
+  const TimelineItem = ({ 
     activity, 
     dayIndex, 
     actIndex, 
     removeActivity, 
     updateActivity, 
-    addActivityAfter,  // Fungsi baru untuk menambahkan aktivitas
+    addActivityAfter,
     locations, 
     activityOptions,
-    activityTypes
+    activityTypes,
+    hotelOptions
   }) => {    
-    
     
     const [isOpen, setIsOpen] = useState(false);
     const [activityOpen, setActivityOpen] = useState(false);
@@ -79,7 +78,7 @@ const TimelineItem = ({
     const addButtonRef = useRef(null);
 
     const activityName = activityTypes.find((type) => type.id === activity.type)?.name || 'Unknown';
-  
+
     return (
       <div className="relative pl-8 pb-4 pt-2 group">
         {/* Timeline vertical line */}
@@ -168,38 +167,48 @@ const TimelineItem = ({
                       />
                     </div>
                     
-                    <div className="col-span-12 sm:col-span-4">
+                    <div className="col-span-12 sm:col-span-9">
                       <Label htmlFor={`activity-${dayIndex}-${actIndex}`} className="flex items-center gap-2 mb-2">
-                        <FileEdit className="h-4 w-4 text-gray-500" /> Activity
+                        <FileEdit className="h-4 w-4 text-gray-500" /> {activityName}
                       </Label>
-                      <SearchableSelect
-                        options={activityOptions}
-                        value={activity.activity}
-                        onChange={(value) => {
-                          updateActivity(dayIndex, actIndex, 'activity', value);
-                        }}
-                        placeholder="Select Activity"
-                        displayKey="name"
-                        open={activityOpen}
-                        setOpen={setActivityOpen}
-                      />
-                    </div>
-                    
-                    <div className="col-span-12 sm:col-span-5">
-                      <Label htmlFor={`location-${dayIndex}-${actIndex}`} className="flex items-center gap-2 mb-2">
-                        <MapPin className="h-4 w-4 text-gray-500" /> Location
-                      </Label>
-                      <SearchableSelect
-                        options={locations}
-                        value={activity.location}
-                        onChange={(value) => {
-                          updateActivity(dayIndex, actIndex, 'location', value);
-                        }}
-                        placeholder="Select Location"
-                        displayKey="name"
-                        open={locationOpen}
-                        setOpen={setLocationOpen}
-                      />
+                      <div className="flex items-center gap-2">
+                        <SearchableSelect
+                          options={activity.type === 3 ? hotelOptions : activityOptions}
+                          value={activity.activity}
+                          onChange={(value) => {
+                            updateActivity(dayIndex, actIndex, 'activity', value);
+                          }}
+                          placeholder={`Select ${activityName}`}
+                          displayKey="name"
+                          open={activityOpen}
+                          setOpen={setActivityOpen}
+                          positioningMode="fixed"
+                        />
+
+                        {/* Toggle untuk include jika activity adalah meals (type = 4) */}
+                        {activity.type === 4 && (
+                            <div className="flex items-center gap-2 ml-4">
+                            <Label htmlFor={`include-${dayIndex}-${actIndex}`} className="text-sm text-gray-600">
+                              Include
+                            </Label>
+                            <div className="relative inline-block w-10 h-5 align-middle select-none transition duration-200 ease-in">
+                              <input 
+                                type="checkbox" 
+                                id={`include-${dayIndex}-${actIndex}`}
+                                checked={activity.include || false}
+                                onChange={(e) => {
+                                  updateActivity(dayIndex, actIndex, 'include', e.target.checked);
+                                }}
+                                className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                              />
+                              <label 
+                                htmlFor={`include-${dayIndex}-${actIndex}`}
+                                className={`toggle-label block overflow-hidden h-5 rounded-full cursor-pointer ${activity.include ? 'bg-blue-500' : 'bg-gray-300'}`}
+                              ></label>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
                     <div className="col-span-12 mt-2">
@@ -225,9 +234,9 @@ const TimelineItem = ({
       </div>
     );
   };
+
 // Komponen utama DayActivities
-const DayActivities = ({ day,locations,activities, dayIndex, updateDay, formStatus, setFormStatus,activityTypes,departure,returnDay,numbOfDay }) => {
-    
+const DayActivities = ({ day,locations,activities, dayIndex, updateDay, formStatus, setFormStatus,activityTypes,departure,returnDay,numbOfDay,hotelOptions }) => {
     // State untuk dropdown
     const [addActivityDropdown, setAddActivityDropdown] = useState(false);
     const [addFirstActivityDropdown, setAddFirstActivityDropdown] = useState(false);
@@ -400,6 +409,7 @@ const DayActivities = ({ day,locations,activities, dayIndex, updateDay, formStat
                         locations={locations}
                         activityOptions={activities.filter((item) => item.activity_category_id === activity.type)}
                         activityTypes={activityTypes}
+                        hotelOptions={hotelOptions}                        
                     />
                     </>
                 ))}

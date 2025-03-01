@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { router } from '@inertiajs/react'
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -19,6 +20,8 @@ import {
 } from 'lucide-react';
 import { TabsContainer, TabContent } from '@/Components/CustomTabs';
 import DayActivities from '@/components/DayActivities';
+import PhotoSelectionSection from '@/components/PhotoSelectionSection';
+import { processDestinationPhotos, preparePhotosForSubmission } from '@/utils/photoHelpers';
 import Main from '@/Layouts/Main';
 import './Create.css'
 
@@ -50,6 +53,7 @@ type Price = {
   startPax: string;
   endPax: string;
   price: string;
+  isUnlimitedMax?: boolean; // Properti baru untuk menandai format X+
 };
 
 type PackageInfo = {
@@ -111,7 +115,7 @@ const AnimatedCard = ({ children, className = "" }) => (
 
 
 // Component utama Create
-const Create = ({locations,activities,startEnd,hotels}) => {
+const Create = ({locations,activities,startEnd,hotels,destinations}) => {
   
   // State Management
   const [activeTab, setActiveTab] = useState('package-info');
@@ -121,6 +125,12 @@ const Create = ({locations,activities,startEnd,hotels}) => {
   const [activityTypeOpen, setActivityTypeOpen] = useState({});
   const [collapsedDays, setCollapsedDays] = useState({});
   const [formStatus, setFormStatus] = useState({ isDirty: false, isSaving: false });
+  const [destinationsData, setDestinationsData] = useState([]);
+  const [processedPhotoData, setProcessedPhotoData] = useState({
+    destinations: [],
+    photosByDestination: {}
+  });  
+
   const [days, setDays] = useState([{
     day: 1,
     title: 'Day 1: Welcome to Adventure',
@@ -134,6 +144,33 @@ const Create = ({locations,activities,startEnd,hotels}) => {
     { id: 5, name: 'Transportation', icon: <Bus className="h-5 w-5 text-blue-500" /> },
   ];
   const hotelOptions = hotels;  
+
+  const DUMMY_DESTINATION_PHOTOS = {
+    "1": [ // Bali
+      { id: "101", url: "https://via.placeholder.com/800x600?text=Bali+Beach", caption: "Kuta Beach", alt_text: "Sunset at Kuta Beach" },
+      { id: "102", url: "https://via.placeholder.com/800x600?text=Bali+Temple", caption: "Tanah Lot Temple", alt_text: "Tanah Lot Temple during sunset" },
+      { id: "103", url: "https://via.placeholder.com/800x600?text=Bali+Rice+Field", caption: "Ubud Rice Terraces", alt_text: "Green rice terraces in Ubud" },
+      { id: "104", url: "https://via.placeholder.com/800x600?text=Bali+Traditional+Dance", caption: "Kecak Dance", alt_text: "Traditional Kecak fire dance performance" }
+    ],
+    "2": [ // Yogyakarta
+      { id: "201", url: "https://via.placeholder.com/800x600?text=Yogyakarta+Borobudur", caption: "Borobudur Temple", alt_text: "Sunrise at Borobudur Temple" },
+      { id: "202", url: "https://via.placeholder.com/800x600?text=Yogyakarta+Malioboro", caption: "Malioboro Street", alt_text: "Shopping at Malioboro Street" },
+      { id: "203", url: "https://via.placeholder.com/800x600?text=Yogyakarta+Kraton", caption: "Yogyakarta Palace", alt_text: "The Sultanate Palace of Yogyakarta" }
+    ],
+    "3": [ // Lombok
+      { id: "301", url: "https://via.placeholder.com/800x600?text=Lombok+Beach", caption: "Senggigi Beach", alt_text: "Crystal clear water at Senggigi" },
+      { id: "302", url: "https://via.placeholder.com/800x600?text=Lombok+Rinjani", caption: "Mount Rinjani", alt_text: "Hiking at Mount Rinjani" }
+    ],
+    "4": [ // Bandung
+      { id: "401", url: "https://via.placeholder.com/800x600?text=Bandung+Tangkuban+Perahu", caption: "Tangkuban Perahu", alt_text: "Volcanic crater at Tangkuban Perahu" },
+      { id: "402", url: "https://via.placeholder.com/800x600?text=Bandung+Floating+Market", caption: "Floating Market", alt_text: "Lembang Floating Market" }
+    ],
+    "5": [ // Jakarta
+      { id: "501", url: "https://via.placeholder.com/800x600?text=Jakarta+Monas", caption: "National Monument", alt_text: "The National Monument (Monas)" },
+      { id: "502", url: "https://via.placeholder.com/800x600?text=Jakarta+Ancol", caption: "Ancol Beach", alt_text: "Recreation at Ancol Dreamland" }
+    ]
+  };
+  
   // Update day helper function
   const updateDay = (dayIndex, updatedDay) => {
     const updatedDays = [...days];
@@ -302,10 +339,14 @@ const Create = ({locations,activities,startEnd,hotels}) => {
 
   // Add price tier
   const addPrice = () => {
-    setPrices([...prices, { startPax: '', endPax: '', price: '' }]);
+    setPrices([...prices, { 
+      startPax: '', 
+      endPax: '', 
+      price: '',
+      isUnlimitedMax: false
+    }]);
     setFormStatus({ ...formStatus, isDirty: true });
   };
-
   // Remove price tier
   const removePrice = (index) => {
     const newPrices = [...prices];
@@ -375,14 +416,37 @@ const handleSubmit = () => {
   
   // Check if any pricing tier is missing values
   const hasPricingErrors = prices.some(price => 
-    !price.startPax || !price.endPax || !price.price
+    !price.startPax || (!price.endPax && !price.isUnlimitedMax) || !price.price
   );
   
   if (hasPricingErrors) {
     validationErrors.push("All pricing tiers must have complete information");
   }
   
-  // If validation fails, show errors and stop submission
+  // Validasi tier pricing agar tidak overlap
+  const priceTiers = [...prices].sort((a, b) => 
+    parseInt(a.startPax) - parseInt(b.startPax)
+  );
+  
+  for (let i = 0; i < priceTiers.length - 1; i++) {
+    const currentTier = priceTiers[i];
+    const nextTier = priceTiers[i + 1];
+    
+    // Jika tier saat ini menggunakan format X+, maka harus menjadi tier terakhir
+    if (currentTier.isUnlimitedMax && i < priceTiers.length - 1) {
+      validationErrors.push("A tier with unlimited max (X+) must be the last tier");
+      break;
+    }
+    
+    // Jika tidak menggunakan format X+, pastikan tidak ada gap atau overlap
+    if (!currentTier.isUnlimitedMax) {
+      if (parseInt(currentTier.endPax) + 1 !== parseInt(nextTier.startPax)) {
+        validationErrors.push(`There's a gap or overlap between tier ${i+1} and tier ${i+2}`);
+      }
+    }
+  }
+  
+  // Jika validasi gagal, tampilkan error dan hentikan submit
   if (validationErrors.length > 0) {
     console.error("Validation errors:", validationErrors);
     alert(`Please fix the following errors:\n${validationErrors.join("\n")}`);
@@ -395,11 +459,13 @@ const handleSubmit = () => {
     const processedDay = { ...day };
     
     processedDay.activities = day.activities.map(activity => {
-      const activitiesData = activity.type === 3 ? hotels : activities
-      console.log(activitiesData);
+      // Handle activities berdasarkan tipe nya
+      const activitiesData = activity.type === 3 ? hotels : activities.filter(a => a.activity_category_id === activity.type);
       
-      const activityData = activitiesData.find(a => a.id === parseInt(activity.activity));
-      const locationData = locations.find(l => l.id === parseInt(activity.location));
+      const activityData = activitiesData.find(a => a.id == activity.activity);
+      const locationData = locations.find(l => l.id == activity.location);
+      
+      const activityTypeName = activityTypes.find(t => t.id === activity.type)?.name || '';
       
       // Tambahkan data include untuk meals dan data hotel untuk accommodation
       return {
@@ -407,12 +473,12 @@ const handleSubmit = () => {
         activityName: activityData ? activityData.name : '',
         locationName: locationData ? locationData.name : '',
         activityTypeId: activity.type,
-        activityTypeName: activityTypes.find(t => t.id === activity.type)?.name || '',
-        // Tambahan data
+        activityTypeName: activityTypeName,
+        // Tambahan data berdasarkan tipe
         include: activity.type === 4 ? (activity.include || false) : undefined,
         hotelData: activity.type === 3 ? {
           id: activity.activity,
-          name: (activity.activity && hotelOptions.find(h => h.id === parseInt(activity.activity))?.name) || ''
+          name: (activity.activity && hotelOptions.find(h => h.id == activity.activity)?.name) || ''
         } : undefined
       };
     });
@@ -420,123 +486,467 @@ const handleSubmit = () => {
     return processedDay;
   });
 
-  // Construct complete data object
+  // Construct data untuk dikirim ke server
   const formData = {
     packageInfo: {
       ...packageInfo,
-      // Format any specific data if needed
       formattedDuration: `${packageInfo.duration} days`,
-      departureName: startEnd.find(loc => loc.id === packageInfo.departure)?.name || '',
-      returnName: startEnd.find(loc => loc.id === packageInfo.return)?.name || ''
+      departureName: startEnd.find(loc => loc.id == packageInfo.departure)?.name || '',
+      returnName: startEnd.find(loc => loc.id == packageInfo.return)?.name || ''
     },
     itinerary: processedDays,
     pricing: prices.map(price => ({
       ...price,
+      // Format untuk display
+      rangeText: price.isUnlimitedMax 
+        ? `${price.startPax}+ people` 
+        : `${price.startPax} to ${price.endPax} people`,
       // Remove commas from price string and convert to number
-      numericPrice: parseInt(price.price.replace(/,/g, ''), 10),
-      rangeText: `${price.startPax} to ${price.endPax} people`
-    })),
-    metadata: {
-      createdAt: new Date().toISOString(),
-      totalActivities: days.reduce((sum, day) => sum + day.activities.length, 0),
-      lastModified: new Date().toISOString()
-    }
+      numericPrice: parseInt(price.price.replace(/,/g, ''), 10)
+    }))
   };
+
+  // Konversi data foto untuk dikirim
+  const preparePhotos = () => {
+    // Untuk cover photo
+    let coverPhotoData = null;
+    if (packageInfo.coverPhoto) {
+      coverPhotoData = {
+        id: packageInfo.coverPhoto.id, // ID dari library jika ada
+        data: packageInfo.coverPhoto.isFromLibrary ? null : packageInfo.coverPhoto.preview, // Data base64 hanya jika upload sendiri
+        preview_url: packageInfo.coverPhoto.preview,
+        caption: packageInfo.coverPhoto.caption,
+        alt_text: packageInfo.coverPhoto.alt_text,
+        destination_id: packageInfo.coverPhoto.destinationId,
+        is_from_library: packageInfo.coverPhoto.isFromLibrary
+      };
+    }
   
-  // Prepare a single comprehensive data object with all form data
-  const allFormData = {
-    packageInfo: {
-      title: packageInfo.title,
-      category: packageInfo.category,
-      duration: packageInfo.duration,
-      departure: packageInfo.departure,
-      departureName: formData.packageInfo.departureName,
-      return: packageInfo.return,
-      returnName: formData.packageInfo.returnName,
-      coverPhoto: packageInfo.coverPhoto,
-      otherPhotos: packageInfo.otherPhotos,
-      sellingPoint: packageInfo.sellingPoint,
-      hasCoverPhoto: packageInfo.coverPhoto !== null,
-      totalGalleryPhotos: packageInfo.otherPhotos.length
-    },
+    // Untuk gallery photos
+    const galleryPhotos = packageInfo.otherPhotos.map(photo => ({
+      id: photo.id, // ID dari library jika ada
+      data: photo.isFromLibrary ? null : photo.preview, // Data base64 hanya jika upload sendiri
+      preview_url: photo.preview,
+      caption: photo.caption,
+      alt_text: photo.alt_text,
+      destination_id: photo.destinationId,
+      is_from_library: photo.isFromLibrary
+    }));
+  
+    return {
+      coverPhoto: coverPhotoData,
+      galleryPhotos
+    };
+  };
+
+  const photosData = preparePhotosForSubmission(packageInfo);
+  // Data lengkap untuk request
+  const requestData = {
+    title: formData.packageInfo.title,
+    category: formData.packageInfo.category,
+    duration: formData.packageInfo.duration,
+    departure_id: formData.packageInfo.departure,
+    return_id: formData.packageInfo.return,
+    selling_points: formData.packageInfo.sellingPoint,
+    photos: photosData,
     itinerary: formData.itinerary.map(day => ({
       day: day.day,
       title: day.title,
       description: day.description,
       activities: day.activities.map(activity => ({
-        type: activity.type,
-        typeId: activity.activityTypeId,
-        typeName: activity.activityTypeName,
-        activity: activity.activity,
-        activityName: activity.activityName,
+        type_id: activity.type,
+        activity_id: activity.activity,
         time: activity.time,
-        location: activity.location,
-        locationName: activity.locationName,
-        notes: activity.notes
+        location_id: activity.location,
+        notes: activity.notes,
+        include: activity.include || false
       }))
     })),
     pricing: formData.pricing.map(price => ({
-      startPax: price.startPax,
-      endPax: price.endPax,
-      price: price.price,
-      numericPrice: price.numericPrice
-    })),
-    metadata: formData.metadata
+      start_pax: parseInt(price.startPax),
+      end_pax: price.isUnlimitedMax ? null : parseInt(price.endPax),
+      is_unlimited: price.isUnlimitedMax,
+      price: parseInt(price.price.replace(/,/g, ''), 10)
+    }))
   };
-  console.log(allFormData);
-  
-  // Simulate API call with setTimeout
-  setTimeout(() => {
-    // Log the comprehensive object in a way that's easy to copy
-    console.log("const travelPackageData =", allFormData);
-    
-    // For easy copying as JSON
-    console.log("\n// JSON string version for copying:");
-    console.log("const travelPackageJSON = '" + JSON.stringify(allFormData).replace(/'/g, "\\'") + "';");
-    
-    // Still provide the detailed breakdown for readability
-    console.log("\n=== PACKAGE INFO ===");
-    console.log("Title:", allFormData.packageInfo.title);
-    console.log("Category:", allFormData.packageInfo.category);
-    console.log("Duration:", allFormData.packageInfo.duration, "days");
-    console.log("Departure:", allFormData.packageInfo.departureName);
-    console.log("Return:", allFormData.packageInfo.returnName);
-    console.log("Cover Photo:", packageInfo.coverPhoto ? "✓ Uploaded" : "✗ Not uploaded");
-    console.log("Gallery Photos:", packageInfo.otherPhotos.length);
-    console.log("Selling Points:", packageInfo.sellingPoint);
-    
-    console.log("\n=== ITINERARY ===");
-    allFormData.itinerary.forEach((day, index) => {
-      console.log(`\nDay ${day.day}: ${day.title}`);
-      console.log("Description:", day.description);
+
+  // Debugging
+  console.log('Sending data to server:', requestData);
+
+  // Submit form menggunakan Inertia.js
+  router.post('/package-inventory/store', requestData, {
+    // Options
+    onBefore: () => {
+      // Tampilkan pesan loading jika diperlukan
+      return true; // true berarti lanjutkan request
+    },
+    onSuccess: () => {
+      // Reset form status
+      setFormStatus({ isDirty: false, isSaving: false });
+      // Redirect dan atau tampilkan pesan sukses
+      alert("Package saved successfully!");
+    },
+    onError: (errors) => {
+      // Tangani error validasi dari server
+      console.error("Server validation errors:", errors);
+      setFormStatus({ ...formStatus, isSaving: false });
       
-      if (day.activities.length === 0) {
-        console.log("No activities scheduled");
+      // Tampilkan error spesifik
+      const errorMessages = Object.values(errors).flat();
+      if (errorMessages.length > 0) {
+        alert(`Error saving package:\n${errorMessages.join("\n")}`);
       } else {
-        console.log("Activities:");
-        day.activities.forEach((activity, actIndex) => {
-          console.log(`  ${actIndex + 1}. [Type ID: ${activity.typeId}] [${activity.typeName}] ${activity.time ? activity.time + ' - ' : ''}${activity.activityName || 'Untitled'} at ${activity.locationName || 'Unspecified location'}`);
-          if (activity.notes) console.log(`     Notes: ${activity.notes}`);
-          console.log(`     Activity Type ID: ${activity.typeId}, Activity ID: ${activity.activity}, Location ID: ${activity.location}`);
-        });
+        alert("Error saving package. Please try again.");
       }
-    });
-    
-    console.log("\n=== PRICING ===");
-    allFormData.pricing.forEach((price, index) => {
-      console.log(`Tier ${index + 1}: ${price.startPax} to ${price.endPax} people - Rp ${price.price} per person`);
-    });
-    
-    console.log("\n=== SUBMISSION COMPLETE ===");
-    
-    // Reset form status
-    setFormStatus({ isDirty: false, isSaving: false });
-    
-    // Show success message
-    alert("Package saved successfully!");
-  }, 1500);
+    },
+    onFinish: () => {
+      // Selalu dijalankan setelah request selesai (sukses atau gagal)
+      setFormStatus({ ...formStatus, isSaving: false });
+    },
+    preserveScroll: true,
+    preserveState: true,
+  });
 };
 
+// Fungsi untuk mengisi form dengan dummy data (versi yang ditingkatkan untuk komponen DayActivities baru)
+const fillWithDummyData = () => {
+  console.log('a');
+  
+  // --- PACKAGE INFO ---
+  setPackageInfo({
+    title: "Bali Cultural Heritage: 5D4N Adventure",
+    category: "regular",
+    duration: 5,
+    departure: startEnd[0]?.id || "1", // Menggunakan ID dari data yang ada
+    return: startEnd[0]?.id || "1",
+    coverPhoto: {
+      id: "101", // ID dari foto library
+      preview: "https://via.placeholder.com/800x600?text=Bali+Beach",
+      caption: "Breathtaking sunset at Kuta Beach, Bali",
+      alt_text: "Sunset view at Kuta Beach with traditional boats",
+      destinationId: "1", // Bali
+      isFromLibrary: true
+    },
+    otherPhotos: [
+      {
+        id: "102", // ID dari foto library
+        preview: "https://via.placeholder.com/800x600?text=Bali+Temple",
+        caption: "The iconic Tanah Lot sea temple",
+        alt_text: "Tanah Lot temple during sunset, surrounded by ocean",
+        destinationId: "1", // Bali
+        isFromLibrary: true
+      },
+      {
+        id: "103", // ID dari foto library
+        preview: "https://via.placeholder.com/800x600?text=Bali+Rice+Field",
+        caption: "Scenic rice terraces in Ubud",
+        alt_text: "Lush green rice terraces in Ubud, Bali",
+        destinationId: "1", // Bali
+        isFromLibrary: true
+      },
+      {
+        // Contoh foto upload sendiri (tanpa id dari library)
+        preview: "https://via.placeholder.com/800x600?text=Balinese+Dance",
+        caption: "Traditional Balinese performance",
+        alt_text: "Balinese dancers performing traditional ceremony",
+        destinationId: "1", // Bali
+        isFromLibrary: false
+      }
+    ],
+    sellingPoint: `
+    <ul>
+      <li>Experience the vibrant Balinese culture with visits to ancient temples and traditional villages</li>
+      <li>Enjoy stunning landscapes from picturesque rice terraces to pristine beaches</li>
+      <li>Savor authentic Balinese cuisine with special dining experiences</li>
+      <li>Comfortable accommodations in 4-star hotels throughout your stay</li>
+      <li>Private transportation and experienced local guide included</li>
+    </ul>
+    `
+  });
+
+  // --- DAYS & ITINERARY ---
+  // Konfigurasi untuk komponen DayActivities yang baru
+  const dummyDays = [
+    {
+      day: 1,
+      title: "Day 1: Welcome to the Island of Gods",
+      description: `<p>Arrive at Ngurah Rai International Airport where our representative will greet you. Transfer to your hotel in Kuta and enjoy a welcome dinner featuring traditional Balinese cuisine accompanied by a cultural dance performance.</p>`,
+      departure: startEnd[0]?.id || "1",
+      selectedActivity: "",
+      activities: [
+        {
+          time: "14:00",
+          type: 5, // Transportation
+          activity: activities.find(a => a.activity_category_id === 5)?.id || "1",
+          location: locations[0]?.id || "1",
+          notes: "Airport pickup and transfer to hotel"
+        },
+        {
+          time: "16:00",
+          type: 3, // Accommodation
+          activity: hotels[0]?.id || "1",
+          location: locations[1]?.id || "2",
+          notes: "Check-in and rest"
+        },
+        {
+          time: "19:00",
+          type: 4, // Meal/Restaurant
+          activity: activities.find(a => a.activity_category_id === 4)?.id || "2",
+          location: locations[2]?.id || "3",
+          notes: "Welcome dinner with traditional dance performance",
+          include: true // Menggunakan toggle include untuk meal
+        }
+      ]
+    },
+    {
+      day: 2,
+      title: "Day 2: Cultural Heritage of Ubud",
+      description: `<p>Explore the cultural heart of Bali in Ubud. Visit the Sacred Monkey Forest, Ubud Palace, and experience traditional crafts in the surrounding villages. Enjoy lunch at a restaurant overlooking the famous rice terraces.</p>`,
+      departure: "",
+      selectedActivity: "",
+      activities: [
+        {
+          time: "08:00",
+          type: 4, // Meal/Restaurant
+          activity: activities.find(a => a.activity_category_id === 4)?.id || "1",
+          location: locations[1]?.id || "2",
+          notes: "Breakfast at hotel",
+          include: true
+        },
+        {
+          time: "09:30",
+          type: 2, // Attraction/Tour
+          activity: activities.find(a => a.activity_category_id === 2)?.id || "1",
+          location: locations[3]?.id || "4",
+          notes: "Guided tour of Sacred Monkey Forest"
+        },
+        {
+          time: "12:30",
+          type: 4, // Meal/Restaurant
+          activity: activities.find(a => a.activity_category_id === 4)?.id || "2",
+          location: locations[4]?.id || "5",
+          notes: "Lunch with rice terrace view",
+          include: true
+        },
+        {
+          time: "14:00",
+          type: 2, // Attraction/Tour
+          activity: activities.find(a => a.activity_category_id === 2)?.id || "3",
+          location: locations[5]?.id || "6",
+          notes: "Visit traditional art villages - silver crafting and batik making"
+        }
+      ]
+    },
+    {
+      day: 3,
+      title: "Day 3: Temple Exploration",
+      description: `<p>Discover Bali's most iconic temples including Tanah Lot and Uluwatu. Learn about Balinese Hinduism and witness the spiritual practices that make this island unique. End the day with a seafood dinner at Jimbaran Bay.</p>`,
+      departure: "",
+      selectedActivity: "",
+      activities: [
+        {
+          time: "07:30",
+          type: 4, // Meal/Restaurant
+          activity: activities.find(a => a.activity_category_id === 4)?.id || "1",
+          location: locations[1]?.id || "2",
+          notes: "Breakfast at hotel",
+          include: true
+        },
+        {
+          time: "09:00",
+          type: 2, // Attraction/Tour
+          activity: activities.find(a => a.activity_category_id === 2)?.id || "2",
+          location: locations[6]?.id || "7",
+          notes: "Visit Tanah Lot temple"
+        },
+        {
+          time: "13:00",
+          type: 4, // Meal/Restaurant
+          activity: activities.find(a => a.activity_category_id === 4)?.id || "2",
+          location: locations[7]?.id || "8",
+          notes: "Lunch at local warung",
+          include: false // Tidak termasuk dalam paket
+        },
+        {
+          time: "16:00",
+          type: 2, // Attraction/Tour
+          activity: activities.find(a => a.activity_category_id === 2)?.id || "3",
+          location: locations[0]?.id || "1",
+          notes: "Uluwatu temple and Kecak dance performance"
+        },
+        {
+          time: "19:00",
+          type: 4, // Meal/Restaurant
+          activity: activities.find(a => a.activity_category_id === 4)?.id || "3",
+          location: locations[1]?.id || "2",
+          notes: "Seafood dinner at Jimbaran Bay",
+          include: true
+        }
+      ]
+    },
+    {
+      day: 4,
+      title: "Day 4: Adventure in Paradise",
+      description: `<p>Experience the adventurous side of Bali with a white water rafting trip on the Ayung River followed by a visit to the spectacular Tegenungan Waterfall. Afternoon spa treatment to rejuvenate.</p>`,
+      departure: "",
+      selectedActivity: "",
+      activities: [
+        {
+          time: "07:00",
+          type: 4, // Meal/Restaurant
+          activity: activities.find(a => a.activity_category_id === 4)?.id || "1",
+          location: locations[1]?.id || "2",
+          notes: "Early breakfast at hotel",
+          include: true
+        },
+        {
+          time: "08:30",
+          type: 2, // Attraction/Tour
+          activity: activities.find(a => a.activity_category_id === 2)?.id || "1",
+          location: locations[2]?.id || "3",
+          notes: "White water rafting adventure"
+        },
+        {
+          time: "13:00",
+          type: 4, // Meal/Restaurant
+          activity: activities.find(a => a.activity_category_id === 4)?.id || "2",
+          location: locations[3]?.id || "4",
+          notes: "Lunch at riverside restaurant",
+          include: true
+        },
+        {
+          time: "15:00",
+          type: 2, // Attraction/Tour
+          activity: activities.find(a => a.activity_category_id === 2)?.id || "2",
+          location: locations[4]?.id || "5",
+          notes: "Visit Tegenungan Waterfall"
+        },
+        {
+          time: "17:30",
+          type: 2, // Attraction/Tour
+          activity: activities.find(a => a.activity_category_id === 2)?.id || "3",
+          location: locations[1]?.id || "2",
+          notes: "Traditional Balinese spa treatment"
+        }
+      ]
+    },
+    {
+      day: 5,
+      title: "Day 5: Farewell Bali",
+      description: `<p>Enjoy a leisurely morning with breakfast at the hotel. Last-minute shopping at local markets for souvenirs. Transfer to the airport for your departure flight. Say goodbye to the Island of Gods with unforgettable memories.</p>`,
+      departure: "",
+      return: startEnd[0]?.id || "1",
+      selectedActivity: "",
+      activities: [
+        {
+          time: "08:00",
+          type: 4, // Meal/Restaurant
+          activity: activities.find(a => a.activity_category_id === 4)?.id || "1",
+          location: locations[1]?.id || "2",
+          notes: "Breakfast at hotel",
+          include: true
+        },
+        {
+          time: "10:00",
+          type: 2, // Attraction/Tour
+          activity: activities.find(a => a.activity_category_id === 2)?.id || "1",
+          location: locations[3]?.id || "4",
+          notes: "Shopping at traditional market"
+        },
+        {
+          time: "13:00",
+          type: 5, // Transportation
+          activity: activities.find(a => a.activity_category_id === 5)?.id || "1",
+          location: locations[0]?.id || "1",
+          notes: "Transfer to airport for departure"
+        }
+      ]
+    }
+  ];
+
+  setDays(dummyDays);
+
+  // --- PRICING TIERS ---
+  setPrices([
+    {
+      startPax: "2",
+      endPax: "5",
+      price: "3,500,000",
+      isUnlimitedMax: false
+    },
+    {
+      startPax: "6",
+      endPax: "10",
+      price: "3,250,000",
+      isUnlimitedMax: false
+    },
+    {
+      startPax: "11",
+      endPax: "",
+      price: "2,900,000",
+      isUnlimitedMax: true
+    }
+  ]);
+
+  // Mark form as dirty to enable saving
+  setFormStatus({ ...formStatus, isDirty: true });
+};
+
+// Fungsi untuk memuat data destinasi foto
+const loadDestinationPhotos = () => {
+  try {
+    // Pastikan destinations ada dan valid
+    if (!destinations || !Array.isArray(destinations)) {
+      console.warn('Destinations data invalid or not an array. Using dummy data.');
+      prepareDummyPhotoData();
+      return;
+    }
+    
+    // Log untuk debug
+    console.log('Processing destinations:', destinations.length);
+    
+    // Proses data menggunakan fungsi helper
+    const { destinations: processedDestinations, photosByDestination } = processDestinationPhotos(destinations);
+    
+    // Log untuk debug
+    console.log('Processed destinations:', processedDestinations?.length);
+    console.log('PhotosByDestination keys:', Object.keys(photosByDestination || {}));
+    
+    // Update state
+    setProcessedPhotoData({
+      destinations: processedDestinations || [],
+      photosByDestination: photosByDestination || {}
+    });
+  } catch (error) {
+    console.error('Error in loadDestinationPhotos:', error);
+    // Fallback ke data dummy jika terjadi error
+    prepareDummyPhotoData();
+  }
+};
+useEffect(() => {
+  // Load data destinasi saat komponen dimount
+  loadDestinationPhotos();
+  
+  // Log state setelah load
+  console.log('Initial processedPhotoData state:', processedPhotoData);
+}, []);
+
+const prepareDummyPhotoData = () => {
+  console.log('Using dummy destination photo data');
+  
+  const dummyDestinations = [
+    { id: "1", name: "Bali" },
+    { id: "2", name: "Yogyakarta" },
+    { id: "3", name: "Lombok" },
+    { id: "4", name: "Bandung" },
+    { id: "5", name: "Jakarta" }
+  ];
+  
+  setProcessedPhotoData({
+    destinations: dummyDestinations,
+    photosByDestination: DUMMY_DESTINATION_PHOTOS
+  });
+};
 // Replace your existing handleSave function with this one
 // or keep both and call handleSubmit from handleSave
 
@@ -550,6 +960,14 @@ const handleSubmit = () => {
           </div>
           
           <div className="mt-4 md:mt-0 flex items-center gap-2">
+            <Button 
+              onClick={fillWithDummyData} 
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Fill with Sample Data
+            </Button>
+            
             {formStatus.isDirty && (
               <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex gap-1 items-center">
                 <AlertCircle className="h-3.5 w-3.5" /> Unsaved changes
@@ -574,8 +992,7 @@ const handleSubmit = () => {
               )}
             </Button>
           </div>
-        </div>
-      
+        </div>      
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
       
           {/* Package Info Tab */}
@@ -703,165 +1120,40 @@ const handleSubmit = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="bg-white pt-6 space-y-6">
-                  {/* Cover Photo */}
-                  <div>
-                    <Label className="text-lg font-medium">Cover Photo</Label>
-                    <p className="text-gray-600 text-sm mb-3">This will be the main image displayed for your package</p>
+                {processedPhotoData && processedPhotoData.destinations && (
+                  <>
+                    {/* Cover Photo */}
+                    <PhotoSelectionSection 
+                      packageInfo={packageInfo}
+                      setPackageInfo={setPackageInfo}
+                      setFormStatus={setFormStatus}
+                      destinations={processedPhotoData.destinations}
+                      photosByDestination={processedPhotoData.photosByDestination}
+                      type="cover"
+                    />
                     
-                    <div className="border-2 border-dashed rounded-lg p-6 bg-gray-50">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        id="cover-photo"
-                        onChange={(e) => handlePhotoUpload('cover', e)}
-                      />
-                      
-                      {!packageInfo.coverPhoto ? (
-                        <div className="text-center">
-                          <motion.div 
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="inline-block"
-                          >
-                            <Button 
-                              variant="outline" 
-                              onClick={() => document.getElementById('cover-photo')?.click()}
-                              className="mx-auto flex items-center gap-2 py-6 px-6"
-                            >
-                              <ImagePlus className="w-6 h-6 text-blue-500" />
-                              <span className="text-base">Upload Cover Photo</span>
-                            </Button>
-                          </motion.div>
-                          <p className="mt-2 text-sm text-gray-500">Recommended size: 1200 x 800 pixels</p>
-                        </div>
-                      ) : (
-                        <motion.div 
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="relative"
-                        >
-                          <img 
-                            src={packageInfo.coverPhoto.preview} 
-                            alt="Cover"
-                            className="w-[800px] h-[400px] object-cover rounded-lg shadow-md"
-                          />
-                          <div className="mt-4 space-y-3">
-                            <Input
-                              placeholder="Add caption (optional)"
-                              value={packageInfo.coverPhoto.caption}
-                              onChange={(e) => updatePhotoCaption('cover', 0, e.target.value)}
-                              className="border-blue-200 focus:border-blue-500 text-md"
-                            />
-                            <Input
-                              placeholder="Add alt text"
-                              value={packageInfo.coverPhoto.alt_text}
-                              onChange={(e) => updatePhotoAltText('cover', 0, e.target.value)}
-                              className="border-blue-200 focus:border-blue-500 text-md"
-                            />
-                            <div className="flex justify-end">
-                              <Button 
-                                variant="destructive"
-                                size="sm"
-                                onClick={() => removePhoto('cover', 0)}
-                                className="gap-1.5"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Remove
-                              </Button>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
+                    {/* Separator */}
+                    <div className="h-px w-full bg-gray-200 my-6"></div>
+                    
+                    {/* Gallery Photos */}
+                    <PhotoSelectionSection 
+                      packageInfo={packageInfo}
+                      setPackageInfo={setPackageInfo}
+                      setFormStatus={setFormStatus}
+                      destinations={processedPhotoData.destinations}
+                      photosByDestination={processedPhotoData.photosByDestination}
+                      type="gallery"
+                    />
+                  </>
+                )}
+                {(!processedPhotoData || !processedPhotoData.destinations) && (
+                  <div className="text-center py-8">
+                    <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]" role="status">
+                      <span className="!absolute !-m-px !h-px !w-px !overflow-hidden !whitespace-nowrap !border-0 !p-0 ![clip:rect(0,0,0,0)]">Loading...</span>
                     </div>
+                    <p className="mt-2 text-gray-600">Loading photo options...</p>
                   </div>
-                
-                  {/* Gallery Photos */}
-                  <div>
-                    <Label className="text-lg font-medium">Gallery Photos</Label>
-                    <p className="text-gray-600 text-sm mb-3">Add additional photos to showcase different aspects of your package</p>
-                    
-                    <div className="border-2 border-dashed rounded-lg p-6 bg-gray-50">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        className="hidden"
-                        id="other-photos"
-                        onChange={(e) => handlePhotoUpload('other', e)}
-                      />
-                      
-                      <div className="text-center mb-6">
-                        <motion.div 
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="inline-block"
-                        >
-                          <Button 
-                            variant="outline" 
-                            onClick={() => document.getElementById('other-photos')?.click()}
-                            className="mx-auto flex items-center gap-2"
-                          >
-                            <ImagePlus className="w-4 h-4 text-blue-500" />
-                            <span>Add Gallery Photos</span>
-                          </Button>
-                        </motion.div>
-                      </div>
-                    
-                      <AnimatePresence>
-                        {packageInfo.otherPhotos.length > 0 && (
-                          <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-                          >
-                            {packageInfo.otherPhotos.map((photo, index) => (
-                              <motion.div 
-                                key={index}
-                                initial={{ opacity: 0, scale: 0.9 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                exit={{ opacity: 0, scale: 0.9 }}
-                                whileHover={{ y: -5, boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
-                                transition={{ duration: 0.2 }}
-                                className="border rounded-lg overflow-hidden bg-white"
-                              >
-                                <div className="aspect-[4/3] overflow-hidden">
-                                  <img 
-                                    src={photo.preview} 
-                                    alt={`Photo ${index + 1}`}
-                                    className="w-full h-full object-cover transition-transform hover:scale-105"
-                                  />
-                                </div>
-                                <div className="p-3 space-y-3">
-                                  <Input
-                                    placeholder="Add caption (optional)"
-                                    value={photo.caption}
-                                    onChange={(e) => updatePhotoCaption('other', index, e.target.value)}
-                                    className="text-sm"
-                                  />
-                                  <Input
-                                    placeholder="Add alt text"
-                                    value={photo.alt_text}
-                                    onChange={(e) => updatePhotoAltText('other', index, e.target.value)}
-                                    className="text-sm"
-                                  />
-                                  <Button 
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => removePhoto('other', index)}
-                                    className="w-full text-red-500 hover:text-red-700 hover:bg-red-50 gap-1.5"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                    Remove
-                                  </Button>
-                                </div>
-                              </motion.div>
-                            ))}
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  </div>
+                )}                
                 </CardContent>
               </AnimatedCard>
             
@@ -985,7 +1277,6 @@ const handleSubmit = () => {
               </AnimatedCard>
             </TabsContent>
         
-            {/* Prices Tab */}
             <TabsContent value="prices">
               <AnimatedCard>
                 <CardHeader className="bg-blue-50 rounded-t-lg">
@@ -1030,19 +1321,56 @@ const handleSubmit = () => {
                           />
                         </div>
                         <div className="col-span-12 md:col-span-3">
-                          <Label className="mb-1.5 block text-sm text-gray-600">Max. Participants</Label>
-                          <Input 
-                            type="number"
-                            placeholder="Max pax"
-                            value={price.endPax}
-                            onChange={(e) => {
-                              const updatedPrices = [...prices];
-                              updatedPrices[index].endPax = e.target.value;
-                              setPrices(updatedPrices);
-                              setFormStatus({ ...formStatus, isDirty: true });
-                            }}
-                            className="text-center"
-                          />
+                          <div className="flex flex-col">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <Label className="text-sm text-gray-600">Max. Participants</Label>
+                              
+                              {/* Toggle untuk format unlimited (X+) */}
+                              <div className="flex items-center gap-1.5">
+                                <label 
+                                  htmlFor={`unlimited-${index}`} 
+                                  className="text-xs font-medium cursor-pointer text-blue-600"
+                                >
+                                  Unlimited (X+)
+                                </label>
+                                <input
+                                  type="checkbox"
+                                  id={`unlimited-${index}`}
+                                  checked={price.isUnlimitedMax}
+                                  onChange={(e) => {
+                                    const updatedPrices = [...prices];
+                                    updatedPrices[index].isUnlimitedMax = e.target.checked;
+                                    if (e.target.checked) {
+                                      // Jika dicentang, kosongkan endPax karena akan menggunakan format X+
+                                      updatedPrices[index].endPax = '';
+                                    }
+                                    setPrices(updatedPrices);
+                                    setFormStatus({ ...formStatus, isDirty: true });
+                                  }}
+                                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                              </div>
+                            </div>
+                            
+                            {price.isUnlimitedMax ? (
+                              <div className="flex h-10 rounded-md border border-input bg-gray-100 px-3 py-2 text-center items-center justify-center text-muted-foreground">
+                                <span className="text-sm font-medium">{price.startPax}+</span>
+                              </div>
+                            ) : (
+                              <Input 
+                                type="number"
+                                placeholder="Max pax"
+                                value={price.endPax}
+                                onChange={(e) => {
+                                  const updatedPrices = [...prices];
+                                  updatedPrices[index].endPax = e.target.value;
+                                  setPrices(updatedPrices);
+                                  setFormStatus({ ...formStatus, isDirty: true });
+                                }}
+                                className="text-center"
+                              />
+                            )}
+                          </div>
                         </div>
                         <div className="col-span-12 md:col-span-4">
                           <Label className="mb-1.5 block text-sm text-gray-600">Price per Person (IDR)</Label>
@@ -1076,7 +1404,7 @@ const handleSubmit = () => {
                       </motion.div>
                     ))}
                   </AnimatePresence>
-                
+                  
                   <motion.div 
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
@@ -1090,7 +1418,8 @@ const handleSubmit = () => {
                       Add Price Tier
                     </Button>
                   </motion.div>
-                
+                  
+                  {/* Tombol Save tetap sama */}
                   <div className="mt-8 flex justify-end">
                     <Button 
                       onClick={handleSubmit} 

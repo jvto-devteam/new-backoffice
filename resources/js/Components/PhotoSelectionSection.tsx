@@ -331,9 +331,9 @@ const PhotoSelectionSection = ({
                 <h3 className="text-lg font-medium">Upload a photo</h3>
                 <p className="text-gray-500 mb-4">PNG, JPG or JPEG (max. 5MB)</p>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-md mx-auto mb-6">
-                  <div>
-                    <Label htmlFor="upload-destination">Select Destination</Label>
+                <div className="flex flex-col items-center justify-center max-w-xs mx-auto mb-6">
+                  <div className="w-full">
+                    <Label htmlFor="upload-destination" className="text-sm">Select Destination</Label>
                     <select 
                       id="upload-destination"
                       className="w-full h-10 px-3 rounded-md border border-input mt-1"
@@ -396,7 +396,7 @@ const PhotoSelectionSection = ({
                 <img 
                   src={packageInfo.coverPhoto.preview} 
                   alt={packageInfo.coverPhoto.alt_text || packageInfo.coverPhoto.caption}
-                  className="w-full h-[300px] object-cover rounded-lg shadow-md"
+                  className="h-[300px] object-cover rounded-lg shadow-md"
                 />
                 <Badge 
                   className={`absolute top-2 right-2 text-white ${packageInfo.coverPhoto.isFromLibrary ? 'bg-blue-500' : 'bg-green-500'}`}

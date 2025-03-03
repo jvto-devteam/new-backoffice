@@ -23,14 +23,6 @@ const PhotoSelectionSection = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [uploadDestination, setUploadDestination] = useState('');
   
-  // Debugging
-  useEffect(() => {
-    console.log('PhotoSelectionSection props:', { 
-      type,
-      destinationsLength: destinations?.length || 0,
-      photosByDestinationKeys: Object.keys(photosByDestination || {})
-    });
-  }, [destinations, photosByDestination, type]);
   
   // Photos filtered by destination and search query
   const filteredPhotos = selectedDestination && photosByDestination && photosByDestination[selectedDestination] 
@@ -60,6 +52,7 @@ const PhotoSelectionSection = ({
         ...packageInfo,
         coverPhoto: {
           id: photo.id,
+          photo_id: photo.id, // Add photo_id property that matches the library photo id
           preview: photo.url,
           caption: photo.caption,
           alt_text: photo.alt_text || '',
@@ -76,6 +69,7 @@ const PhotoSelectionSection = ({
             ...packageInfo.otherPhotos,
             {
               id: photo.id,
+              photo_id: photo.id, // Add photo_id property that matches the library photo id
               preview: photo.url,
               caption: photo.caption,
               alt_text: photo.alt_text || '',
@@ -89,14 +83,14 @@ const PhotoSelectionSection = ({
     setFormStatus({ ...formStatus, isDirty: true });
   };
   
-  // Handle upload photo
+  // Update the handlePhotoUpload function in PhotoSelectionSection.jsx
   const handlePhotoUpload = (e) => {
     const files = e.target.files;
     if (!files) return;
-
+  
     const file = files[0];
     const reader = new FileReader();
-
+  
     reader.onload = (e) => {
       const result = e.target?.result;
       
@@ -105,6 +99,7 @@ const PhotoSelectionSection = ({
           ...packageInfo,
           coverPhoto: {
             preview: result,
+            photo_id: null, // Explicitly set photo_id to null for manually uploaded photos
             caption: '',
             alt_text: '',
             destinationId: uploadDestination,
@@ -118,6 +113,7 @@ const PhotoSelectionSection = ({
             ...packageInfo.otherPhotos,
             {
               preview: result,
+              photo_id: null, // Explicitly set photo_id to null for manually uploaded photos
               caption: '',
               alt_text: '',
               destinationId: uploadDestination,
@@ -128,7 +124,7 @@ const PhotoSelectionSection = ({
       }
       setFormStatus({ ...formStatus, isDirty: true });
     };
-
+  
     reader.readAsDataURL(file);
   };
   

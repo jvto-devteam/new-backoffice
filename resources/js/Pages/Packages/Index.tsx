@@ -2,6 +2,8 @@ import Main from '@/Layouts/Main';
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, ChevronUp,XIcon } from 'lucide-react';
 import { Dialog } from '@headlessui/react';
+import {Link} from '@inertiajs/react';
+
 import {
   Users,
   CarFront,
@@ -208,11 +210,11 @@ const Index = (data) => {
                                               >
                                                   Flipbook
                                               </a>
-                                              <button
+                                              <Link href={`/package-inventory/edit/${item.id}`}
                                                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                                               >
                                                   Edit
-                                              </button>
+                                              </Link>
                                           </div>
                                       )}
                                   </div>

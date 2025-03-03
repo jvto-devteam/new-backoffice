@@ -318,13 +318,112 @@ class PackageController extends Controller
                 }),
             ];
         });
+        $data['packages'] = [
+            'package_info' => [
+                'title' => '',
+                'category' => 1,
+                'duration' => 1,
+                'departure_id' => '',
+                'return_id' => '',
+                'cover_photo' => null,
+                'other_photos' => [],
+                'selling_points' => '',
+            ],
+            'itinerary' => [],
+            'prices' => [],
+        ];
+        return Inertia::render('Packages/Form', $data);
+    }
 
-        // return $data['destinations'];
-        return Inertia::render('Packages/Create', $data);
+    function edit($id)
+    {
+        $package = Package::with(['duration','packageBanner.gallery','packagePrice.priceCategory','packageHotel','itinerary.itineraryDetail.activity'])->where('id',$id)->firstOrFail();
+        $data['locations'] = Location::orderBy('name','asc')->get();
+        $data['hotels'] = Hotel::select('id','name')->orderBy('name','asc')->get();
+        $data['activities'] = Activity::select('id','activity_category_id','name')->where('id','!=',1)->orderBy('name','asc')->get();
+        $data['startEnd']  = Destination::select('id','name')->whereIn('id',[3,4,17])->orderBy('name','asc')->get();
+        $data['destinations'] = Destination::with(['galleries'])->select('id','name')->where('is_publish','1')->orderBy('name','asc')->get()->map(function($query){
+            return [
+                'id' => $query->id,
+                'name' => $query->name,
+                'galleries' => $query->galleries->map(function($q) {
+                    return [
+                        'id' => $q->id,
+                        'url' => "https://javavolcano-touroperator.com/assets/img/destinations/".$q->image,
+                        'caption' => $q->caption,
+                        'alt_text' => $q->alt_text,
+                    ];
+                }),
+            ];
+        });
+        $data['packages'] = [
+            'package_info' => [
+                'title' => $package->name,
+                'category' => $package->category_id,
+                'duration' => $package->duration->day,
+                'departure_id' => $package->start_destination_id,
+                'return_id' => $package->end_destination_id,
+                'cover_photo' => [
+                    'preview' => "https://javavolcano-touroperator.com/assets/img/destinations/".$package->packageBanner[0]->gallery->image,
+                    'id' => $package->packageBanner[0]->gallery->id,
+                    'alt_text' => $package->packageBanner[0]->gallery->alt_text,
+                    'caption' => $package->packageBanner[0]->gallery->caption,
+                ],
+                'other_photos' => $package->packageBanner->skip(1)->map(function($q) {
+                    return [
+                        'preview' => "https://javavolcano-touroperator.com/assets/img/destinations/".$q->gallery->image,
+                        'id' => $q->gallery->id,
+                        'alt_text' => $q->gallery->alt_text,
+                        'caption' => $q->gallery->caption,
+                    ];
+                })->values(),
+                'selling_points' => $package->short_description,
+            ],
+            'itinerary' =>
+            $package->itinerary->map(function($q) use($package){
+                $packageHotel = $package->packageHotel->where('price_plan_id',2)->where('day',$q->day)->first();
+                $hotel_id = $packageHotel ? $packageHotel->hotel_id : '';
+                return [
+                    'day' => $q->day,
+                    'title' => $q->title,
+                    'description' => $q->activity,
+                    'activities' => $q->itineraryDetail->map(function($qq) use($hotel_id){
+                        $itineraryMeals = false;
+                        if($qq->activity->activity_category_id == 4){
+                            if($qq->activity_id == 9){ 
+                                $meals = "breakfast";
+                            }
+                            else if($qq->activity_id == 2){
+                                $meals = "lunch";
+                            }
+                            else if($qq->activity_id == 4){
+                                $meals = "dinner";
+                            }
+                            $itineraryMeals = ItineraryMeal::where('itinerary_id',$qq->itinerary_id)->where('price_plan_id',2)->where($meals,'1')->first();
+                        }
+                        return [
+                            'type' => $qq->activity->activity_category_id,
+                            'time' => $qq->time,
+                            'activity' => $qq->activity_id == 3 ? $hotel_id : $qq->activity_id,
+                            'notes' => $qq->notes,
+                            'include' => $itineraryMeals ? true : false,
+                        ];
+                    })->values(),
+                ];
+            })->values(),
+            'prices' => $package->packagePrice->sortBy('priceCategory.start')->map(function($q){
+                return [
+                    'startPax' => $q->priceCategory->start,
+                    'endPax' => $q->priceCategory->end,
+                    'price' =>  number_format($q->price,0,',','.'),
+                    'isUnlimitedMax' => $q->priceCategory->end == 0 ? true : false,
+                ];
+            })->values(),
+        ];
+        return Inertia::render('Packages/Form', $data);
     }
 
     function store(Request $request){
-        return $request->all();
         $getDuration = Duration::where('day',$request->duration)->first();
         if(!$getDuration){
             $night = $request->duration - 1;
@@ -334,13 +433,56 @@ class PackageController extends Controller
             $getDuration->night = $night;
             $getDuration->save();
         }
+        if ($request->category == 2) {
+            $prefix = "STD";
+        } else {
+            // Prefix based on start destination
+            if ($request->departure_id == 4) {
+                $prefix = "SUB";
+            } elseif ($request->departure_id == 3) {
+                $prefix = "BALI";
+            } else {
+                // Default prefix for other destinations (can be customized as needed)
+                $prefix = "TOUR";
+            }
+        }
+        
+        // Format the duration part
+        $durationFormat = $request->duration . "D" . ($request->duration - 1) . "N";
+        
+        // Find the last package with the same prefix and duration format to determine the sequence number
+        $lastPackage = Package::where('package_code', 'LIKE', $prefix . '-' . $durationFormat . '-%')
+                            ->orderBy('package_code', 'desc')
+                            ->first();
+        
+        // Determine the next sequence number
+        if ($lastPackage) {
+            // Extract the sequence number from the last package code
+            $parts = explode('-', $lastPackage->package_code);
+            $lastSequence = intval(end($parts));
+            $nextSequence = $lastSequence + 1;
+        } else {
+            // If no previous package exists with this format, start with 1
+            $nextSequence = 1;
+        }
+        
+        // Format the package code with 3-digit padding for the sequence number
+        $package_code = $prefix . '-' . $durationFormat . '-' . str_pad($nextSequence, 3, '0', STR_PAD_LEFT);        
         $package = new Package();
+        $package->package_code = $package_code;
         $package->name = $request->title;
         $package->category_id = $request->category;
         $package->duration_id = $getDuration->id;
         $package->start_destination_id = $request->departure_id;
         $package->end_destination_id = $request->return_id;
         $package->overview = $request->selling_points;
+        $package->short_description = $request->selling_points;
+        $package->other_information = '-';
+        $package->review_rating = 5;
+        $package->review_total = 50;
+        $package->b = 0;
+        $package->l = 0;
+        $package->d = 0;
         $package->is_publish = '1';
         $package->url = Str::slug($request->title);
         $cekUrl = Package::where('url',$package->url)->first();
@@ -348,6 +490,84 @@ class PackageController extends Controller
             $package->url = $package->url."-".time();
         }
         $package->save();
+
+        // Handle cover photo
+        if($request->photos['coverPhoto']) {
+            $coverPhoto = $request->photos['coverPhoto'];
+            
+            if($coverPhoto['is_from_library'] && $coverPhoto['photo_id']) {
+                // Photo from library - just create reference
+                $packageBanner = new PackageBanner();
+                $packageBanner->package_id = $package->id;
+                $packageBanner->gallery_id = $coverPhoto['photo_id'];
+                $packageBanner->is_cover = true;
+                $packageBanner->save();
+            } 
+            elseif(!$coverPhoto['is_from_library'] && $coverPhoto['data']) {
+                // Handle uploaded cover photo
+                $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $coverPhoto['data']));
+                
+                // Generate a unique filename
+                $filename = 'package_' . $package->id . '_cover_' . time() . '.jpg';
+                
+                // Store the image in assets/destinations directory
+                Storage::disk('public')->put('assets/destinations/' . $filename, $imageData);
+                
+                // Create a new gallery entry
+                $gallery = new Gallery();
+                $gallery->destination_id = $coverPhoto['destination_id'];
+                $gallery->url = 'storage/assets/destinations/' . $filename;
+                $gallery->caption = $coverPhoto['caption'];
+                $gallery->alt_text = $coverPhoto['alt_text'];
+                $gallery->save();
+                
+                // Link the new gallery item to the package
+                $packageBanner = new PackageBanner();
+                $packageBanner->package_id = $package->id;
+                $packageBanner->gallery_id = $gallery->id;
+                $packageBanner->is_cover = true;
+                $packageBanner->save();
+            }
+        }
+
+        // Handle gallery photos
+        if($request->photos['galleryPhotos']) {
+            foreach ($request->photos['galleryPhotos'] as $key => $galleryPhoto) {
+                if($galleryPhoto['is_from_library'] && $galleryPhoto['photo_id']) {
+                    // Photo from library - just create reference
+                    $packageBanner = new PackageBanner();
+                    $packageBanner->package_id = $package->id;
+                    $packageBanner->gallery_id = $galleryPhoto['photo_id'];
+                    $packageBanner->is_cover = false;
+                    $packageBanner->save();
+                }
+                elseif(!$galleryPhoto['is_from_library'] && $galleryPhoto['data']) {
+                    // Handle uploaded gallery photo
+                    $imageData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $galleryPhoto['data']));
+                    
+                    // Generate a unique filename
+                    $filename = 'package_' . $package->id . '_gallery_' . $key . '_' . time() . '.jpg';
+                    
+                    // Store the image in assets/destinations directory
+                    Storage::disk('public')->put('assets/destinations/' . $filename, $imageData);
+                    
+                    // Create a new gallery entry
+                    $gallery = new Gallery();
+                    $gallery->destination_id = $galleryPhoto['destination_id'];
+                    $gallery->url = 'storage/assets/destinations/' . $filename;
+                    $gallery->caption = $galleryPhoto['caption'];
+                    $gallery->alt_text = $galleryPhoto['alt_text'];
+                    $gallery->save();
+                    
+                    // Link the new gallery item to the package
+                    $packageBanner = new PackageBanner();
+                    $packageBanner->package_id = $package->id;
+                    $packageBanner->gallery_id = $gallery->id;
+                    $packageBanner->is_cover = false;
+                    $packageBanner->save();
+                }
+            }
+        }
 
         $allDestinations = [];
         $totalMeals = [
@@ -450,6 +670,11 @@ class PackageController extends Controller
         $packageMeal->lunch = $totalMeals['lunch'];
         $packageMeal->dinner = $totalMeals['dinner'];
         $packageMeal->save();
+
+        $package->b = $packageMeal->breakfast;
+        $package->l = $packageMeal->lunch;
+        $package->d = $packageMeal->dinner;
+        $package->save();
         
         foreach ($arrHotels as $key => $value) {
             if($value['hotel_id']){

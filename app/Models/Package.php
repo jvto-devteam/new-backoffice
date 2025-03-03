@@ -80,6 +80,11 @@ class Package extends Model
         return $this->belongsTo(PackageActivity::class, 'package_activity_id');
     }
 
+    public function packageActivitySingle()
+    {
+        return $this->hasOne(PackageActivity::class, 'package_id')->where('is_single','1');
+    }
+
     public function experience()
     {
         return $this->belongsTo(Experience::class, 'experience_id');

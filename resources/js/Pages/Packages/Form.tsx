@@ -27,6 +27,7 @@ import './Create.css'
 
 // Definisi tipe data
 type Photo = {
+  photo_id: number;
   preview: string;
   caption: string;
   alt_text: string;
@@ -58,7 +59,7 @@ type Price = {
 
 type PackageInfo = {
   title: string;
-  category: 'regular' | 'student';
+  category: 1 | 2;
   duration: number;
   departure: string;
   return: string;
@@ -115,7 +116,7 @@ const AnimatedCard = ({ children, className = "" }) => (
 
 
 // Component utama Create
-const Create = ({locations,activities,startEnd,hotels,destinations}) => {
+const Form = ({locations,activities,startEnd,hotels,destinations,packages}) => {
   
   // State Management
   const [activeTab, setActiveTab] = useState('package-info');
@@ -131,12 +132,7 @@ const Create = ({locations,activities,startEnd,hotels,destinations}) => {
     photosByDestination: {}
   });  
 
-  const [days, setDays] = useState([{
-    day: 1,
-    title: 'Day 1: Welcome to Adventure',
-    description: '',
-    activities: []
-  }]);
+  const [days, setDays] = useState(packages.itinerary);
   const activityTypes = [
     { id: 2, name: 'Attraction / Tour', icon: <Sun className="h-5 w-5 text-amber-500" /> },
     { id: 3, name: 'Accommodation', icon: <Hotel className="h-5 w-5 text-indigo-500" /> },
@@ -189,28 +185,19 @@ const Create = ({locations,activities,startEnd,hotels,destinations}) => {
 
   // State untuk package information
   const [packageInfo, setPackageInfo] = useState({
-    title: '',
-    category: 'regular',
-    duration: 3,
-    departure: '',
-    return: '',
-    coverPhoto: null,
-    otherPhotos: [],
-    sellingPoint: `
-  <ul>
-  <li>Point 1</li>
-  <li>Point 2</li>
-  <li>Point 3</li>
-  </ul>    
-    `
+    title: packages.package_info.title,
+    category: packages.package_info.category,
+    duration: packages.package_info.duration,
+    departure: packages.package_info.departure_id,
+    return: packages.package_info.return_id,
+    coverPhoto: packages.package_info.cover_photo,
+    otherPhotos: packages.package_info.other_photos,
+    sellingPoint: packages.package_info.selling_points
   });
+  
 
   // State untuk pricing
-  const [prices, setPrices] = useState([{
-    startPax: '2',
-    endPax: '5',
-    price: '1,500,000'
-  }]);
+  const [prices, setPrices] = useState(packages.prices);
 
 
   // Handler untuk upload foto
@@ -230,7 +217,8 @@ const Create = ({locations,activities,startEnd,hotels,destinations}) => {
           coverPhoto: {
             preview: result,
             caption: '',
-            alt_text: ''
+            alt_text: '',
+            photo_id: null
           }
         });
       } else {
@@ -242,6 +230,7 @@ const Create = ({locations,activities,startEnd,hotels,destinations}) => {
               preview: result,
               caption: '',
               alt_text: '',
+              photo_id: null
             }
           ]
         });
@@ -513,6 +502,7 @@ const handleSubmit = () => {
     if (packageInfo.coverPhoto) {
       coverPhotoData = {
         id: packageInfo.coverPhoto.id, // ID dari library jika ada
+        photo_id: packageInfo.coverPhoto.photo_id,
         data: packageInfo.coverPhoto.isFromLibrary ? null : packageInfo.coverPhoto.preview, // Data base64 hanya jika upload sendiri
         preview_url: packageInfo.coverPhoto.preview,
         caption: packageInfo.coverPhoto.caption,
@@ -525,6 +515,7 @@ const handleSubmit = () => {
     // Untuk gallery photos
     const galleryPhotos = packageInfo.otherPhotos.map(photo => ({
       id: photo.id, // ID dari library jika ada
+      photo_id: photo.photo_id,
       data: photo.isFromLibrary ? null : photo.preview, // Data base64 hanya jika upload sendiri
       preview_url: photo.preview,
       caption: photo.caption,
@@ -615,7 +606,7 @@ const fillWithDummyData = () => {
   // --- PACKAGE INFO ---
   setPackageInfo({
     title: "Bali Cultural Heritage: 5D4N Adventure",
-    category: "regular",
+    category: 1,
     duration: 5,
     departure: startEnd[0]?.id || "1", // Menggunakan ID dari data yang ada
     return: startEnd[0]?.id || "1",
@@ -903,15 +894,10 @@ const loadDestinationPhotos = () => {
     }
     
     // Log untuk debug
-    console.log('Processing destinations:', destinations.length);
     
     // Proses data menggunakan fungsi helper
     const { destinations: processedDestinations, photosByDestination } = processDestinationPhotos(destinations);
-    
-    // Log untuk debug
-    console.log('Processed destinations:', processedDestinations?.length);
-    console.log('PhotosByDestination keys:', Object.keys(photosByDestination || {}));
-    
+        
     // Update state
     setProcessedPhotoData({
       destinations: processedDestinations || [],
@@ -924,11 +910,7 @@ const loadDestinationPhotos = () => {
   }
 };
 useEffect(() => {
-  // Load data destinasi saat komponen dimount
   loadDestinationPhotos();
-  
-  // Log state setelah load
-  console.log('Initial processedPhotoData state:', processedPhotoData);
 }, []);
 
 const prepareDummyPhotoData = () => {
@@ -1033,8 +1015,8 @@ const prepareDummyPhotoData = () => {
                       </Label>
                       <SearchableSelect
                         options={[
-                          { id: 'regular', name: 'Regular Tour' },
-                          { id: 'student', name: 'Student Package' }
+                          { id: 1, name: 'Regular Tour' },
+                          { id: 2, name: 'Student Package' }
                         ]}
                         value={packageInfo.category}
                         onChange={(value) => {
@@ -1449,4 +1431,4 @@ const prepareDummyPhotoData = () => {
   );
 };
 
-export default Create;
+export default Form;

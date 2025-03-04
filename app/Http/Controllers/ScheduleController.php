@@ -23,57 +23,25 @@ class ScheduleController extends Controller
     function index(Request $request) {
         $pageInfo = 'Booking Overview';
         $pageTitle = 'Booking Overview';
+        $startEnd = explode("_", $request->date_range);
         $data['filters'] = [
             'search' => $request->search ? $request->search : '',
-            'startDate' => $request->startDate ? $request->startDate : date('Y-m-01'),
-            'endDate' => $request->endDate ? $request->endDate : date('Y-m-t'),
+            'startDate' => $request->date_range ? $startEnd[0] : date('Y-m-01'),
+            'endDate' => $request->date_range ? $startEnd[1] : date('Y-m-t'),
+            'month' => $request->month ? $request->month : date('Y-m'),
             'channel' => $request->channel ? $request->channel : '',
-            'paymentStatus' => $request->paymentStatus ? $request->paymentStatus : ''
+            'filterType' => $request->filter_type ? $request->filter_type : 'month',
         ];
 
-        $startEnd = explode(" to ", $request->start_end);
-        $data['startDate'] = $request->start_end ? $startEnd[0] : date('Y-m-01');
-        $data['endDate'] = $request->start_end ? $startEnd[1] : date('Y-m-t', strtotime(date('Y-m-d')));
-        $data['month'] = $request->month ? $request->month : date('m');
-        $data['year'] = $request->year ? $request->year : date('Y');
-        $data['source'] = $request->source ? $request->source : '';
-
-        if ($request->get('month')) {
-            $data['startDate'] = date('Y-' . $request->get('month') . '-01');
-            $data['endDate'] = date('Y-' . $request->get('month') . '-t');
-        }
-
-        $order = $request->order ? $request->order : "travel_date_start-asc";
-        $data['order_by'] = explode('-', $order)[0];
-        $data['order_type'] = explode('-', $order)[1];
-        if ($request->select) {
-            $data['selected_field'] = explode(';', $request->select);
-            $data['selected_field_string'] = $request->select;
-        } else {
-            $data['selected_field'] = ['Customer', 'Traveling Date', 'Durations', 'Agent', 'No. of Pax', 'Pickup', 'Drop', 'Vehicle', 'Crew', 'Input Date'];
-            $data['selected_field_string'] = implode(';', $data['selected_field']);
-        }
-
         try {
-            $data['selectedCategory'] = "";
-            if ($request->category) {
-                $bookingCategory = BookingCategory::find($request->category);
-                $data['selectedCategory'] = $bookingCategory->name;
+            $data['booking'] = Booking::with(['bookingPayment.paymentMethod','bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination']);
+            if(!$request->filter_type || $request->filter_type == 'month'){
+                $data['booking'] = $data['booking']->where('travel_date_start', 'like', $data['filters']['month']."%");
             }
-            $data['bookingCategory'] = BookingCategory::get();
-            $data['booking'] = Booking::with(['bookingPayment.paymentMethod','bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination'])->where('travel_date_start', 'like', "$data[year]-%");
-            if ($request->vendor) {
-                $data['agent'] = Agent::find($request->vendor);
-                $data['booking'] = $data['booking']->where('agent_id', $request->vendor);
-                if ($request->vendor == 2) {
-                    if ($request->category) {
-                        $data['category'] = BookingCategory::find($request->category);
-                        $data['booking'] = $data['booking']->where('booking_category_id', $request->category);
-                    } else {
-                        $data['booking'] = $data['booking']->where('booking_category_id', '!=', 3);
-                    }
-                }
+            else{
+                $data['booking'] = $data['booking']->whereBetween('travel_date_start', [$data['filters']['startDate'], $data['filters']['endDate']]);
             }
+
             if ($request->channel) {
                 if ($request->channel == 'KLOOK') {
                     $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id',3);
@@ -85,79 +53,14 @@ class ScheduleController extends Controller
                     $data['booking'] = $data['booking']->where('agent_id', '1');
                 }
             }
-            if ($request->source) {
-                if ($request->source == 'KLOOK') {
-                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id',3);
-                }
-                else if ($request->source == 'JVTO') {
-                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id','!=',3);
-                }
-                else if ($request->source == 'TWT') {
-                    $data['booking'] = $data['booking']->where('agent_id', '1');
-                }
-            }
-            if($request->package_id){
-                $package_id = $request->package_id;
-                $data['booking'] = $data['booking']->whereHas('bookingDetail',function($query) use($package_id){
-                    $query->where('package_id',$package_id);
-                });
-            }
-            if ($request->booking_id) {
-                $booking_id = explode('-', $request->booking_id);
-                if (count($booking_id) > 1) {
-                    $booking_id = $booking_id[1];
-                } else {
-                    $booking_id = $request->booking_id;
-                }
-
-                $data['booking'] = $data['booking']->where('id', $booking_id);
-            }
-            if ($request->search) {
-                $customer_name = $request->search;
-                $data['booking'] = $data['booking']->whereHas('user', function ($query) use ($customer_name) {
-                    $query->where('name', "like", "%" . $customer_name . "%");
-                });
-            }
             if ($request->search) {
                 $data['booking'] = $data['booking']->whereHas('user', function ($query) use ($request) {
                     $query->where('name', "like", "%" . $request->search . "%");
                 });
             }
             $status = "booked";
-            $data['booking_status'] = "CONFIRMED";
-            $data['booking_status_color'] = "success";
-            if ($request->booking_status) {
-                $status = $request->booking_status == 'pending' ? 'pending wise' : $request->booking_status;
-                $data['booking'] = $data['booking']->where('status', $status);
-
-                if ($request->booking_status == 'pending') {
-                    $data['booking_status'] = strtoupper($request->booking_status);
-                    $data['booking_status_color'] = "warning";
-                }
-            }
-            if ($request->get('filter-column')) {
-                $filterColumn = $request->get('filter-column');
-                $filterId = $request->get('filter-column-item');
-                if ($filterColumn == 'Garage') {
-                    $data['booking'] = $data['booking']->whereHas('bookCar.car', function ($query) use ($filterId) {
-                        $query->where('garage_id', $filterId);
-                    });
-                } else if ($filterColumn == 'Vehicle') {
-                    $data['booking'] = $data['booking']->whereHas('bookCar', function ($query) use ($filterId) {
-                        $query->where('car_id', $filterId);
-                    });
-                } else if ($filterColumn == 'Hotel') {
-                    $data['booking'] = $data['booking']->whereHas('bookingItinerary.bookHotel', function ($query) use ($filterId) {
-                        $query->where('hotel_id', $filterId);
-                    });
-                } else if ($filterColumn == 'Crew') {
-                    $data['booking'] = $data['booking']->whereHas('guideDriver', function ($query) use ($filterId) {
-                        $query->where('guide_id', $filterId);
-                    });
-                }
-            }
-            $data['booking'] = $data['booking']->where('status', $status)->orderBy($data['order_by'], $data['order_type'])->get();
-
+            $data['booking'] = $data['booking']->where('status', $status)->orderBy('travel_date_start','asc')->get();
+            $data['bookingReal'] = $data['booking'];
             $data['booking'] = $data['booking']->map(function($booking){
                 $orderChannel = $booking->agent_id == 1 ? 'TWT' : ($booking->agent_id == 2 && $booking->booking_category_id == 3 ? 'KLOOK' : 'JVTO');
                 $itinerary = [];

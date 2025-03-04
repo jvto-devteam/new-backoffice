@@ -9,8 +9,11 @@
         padding : 5px;
         margin : 5px;
     }
-    *{
-        font-family: 'Arial';
+    td{
+        vertical-align: top
+    }
+    *,body{
+        font-family: 'Verdana', sans-serif;
     }
 </style>
 <center>
@@ -48,7 +51,7 @@
             }
 
         @endphp
-        @foreach ($booking as $item)
+        @foreach ($bookingReal as $item)
             @php
                 $count = $booking->where('travel_date_start', $item->travel_date_start)->count();
                 $hash = substr(md5($item->travel_date_start),0,6); // Generate a hash based on the date
@@ -109,7 +112,7 @@
                         @endphp
                         @foreach ($data->bookHotel as $dataHotel)
                             @php
-                                $bg = $dataHotel->hotel->area ?  $dataHotel->hotel->area->color : ''
+                                $bg = $dataHotel->hotel->area ?  $dataHotel->hotel->area->color : 'black'
                             @endphp
                             <div style="margin-bottom:5px">
                                 <span class="mb-1 badge fs-14 text-left {{ $bg == '' ? 'color-black' : 'color-white' }} d-block text-uppercase" style="background : {{ $bg }};color:white;margin-bottom:5px;">
@@ -146,7 +149,7 @@
                         @endphp
                         @foreach ($data->bookHotel as $dataHotel)
                         @php
-                            $bg = $dataHotel->hotel->area ?  $dataHotel->hotel->area->color : ''
+                            $bg = $dataHotel->hotel->area ?  $dataHotel->hotel->area->color : 'black'
                         @endphp
                             @foreach ($dataHotel->bookRoom as $dataRoom)
                             <div style="margin-bottom:5px">

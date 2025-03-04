@@ -563,15 +563,28 @@ const BookingRow = ({
     // Local state
     const [bookings, setBookings] = useState(data.booking);  
     // Filter states
-    const [searchTerm, setSearchTerm] = useState('');
-    const [selectedChannel, setSelectedChannel] = useState('');
+    const [searchTerm, setSearchTerm] = useState(data.filters.search);
+    const [selectedChannel, setSelectedChannel] = useState(data.filters.channel);
     const [pickupFilter, setPickupFilter] = useState('');
     const [paymentStatus, setPaymentStatus] = useState('');
-    const [startDate, setStartDate] = useState('2025-02-01');
-    const [endDate, setEndDate] = useState('2025-02-28');
-  
+    const [startDate, setStartDate] = useState(data.filters.startDate);
+    const [endDate, setEndDate] = useState(data.filters.endDate);
+    const [filterType, setFilterType] = useState(data.filters.filterType); // Default to month selection
+    const [selectedMonth, setSelectedMonth] = useState(data.filters.month); 
     // State to track which booking is expanded
     const [expandedBookingId, setExpandedBookingId] = useState(null);
+    const [isDownloadOpen, setIsDownloadOpen] = useState(false);
+
+    // useEffect(() => {
+    //   const handleClickOutside = (event) => {
+    //     if (isDownloadOpen && !event.target.closest('.download-dropdown')) {
+    //       setIsDownloadOpen(false);
+    //     }
+    //   };
+    
+    //   document.addEventListener('mousedown', handleClickOutside);
+    //   return () => document.removeEventListener('mousedown', handleClickOutside);
+    // }, [isDownloadOpen]);
   
     // Update date range
     const handleDateChange = (start, end) => {
@@ -1236,78 +1249,179 @@ const BookingRow = ({
                     </div>
                 </div>
             
-                {/* Filter Bar */}
-                <div className="bg-white p-4 shadow rounded-md mb-4">
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {/* Date Range */}
-                    <div className="flex flex-col border p-3 rounded">
-                        <label className="font-medium text-gray-800 mb-2">Date Range</label>
-                        <DateRangePicker
-                        startDate={startDate}
-                        endDate={endDate}
-                        onChange={handleDateChange}
-                        />
-                    </div>
-            
-                    {/* Search by ID/Guest */}
-                    <div className="flex flex-col border p-3 rounded  min-w-[280px]">
-                        <label className="font-medium text-gray-800 mb-2">Search</label>
+
+            {/* Filter Bar */}
+            <div className="bg-white p-6 shadow rounded-lg mb-4">
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                router.get('/booking-overview', {
+                  filter_type: filterType,
+                  month: selectedMonth,
+                  date_range: startDate + '_' + endDate,
+                  search: searchTerm,
+                  channel: selectedChannel,
+                });
+              }}>
+                <div className="grid grid-cols-12 gap-5 items-end">
+                  {/* Filter By Column */}
+                  <div className="col-span-12 md:col-span-4">
+                    <div className="mb-2 flex font-bold justify-between text-gray-800">
+                      <span>
+                        Filter By
+                      </span>
+                      <div className="flex gap-3">
+                      <label className="inline-flex items-center cursor-pointer font-medium text-sm">
                         <input
-                        type="text"
-                        placeholder="ID or Guest name"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="border p-1 rounded"
+                          type="radio"
+                          className="form-radio w-4 h-4 text-blue-600"
+                          name="filterType"
+                          value="month"
+                          checked={filterType === 'month'}
+                          onChange={() => setFilterType('month')}
                         />
-                    </div>
-            
-                    {/* Order Channel */}
-                    <div className="flex flex-col border p-3 rounded">
-                        <label className="font-medium text-gray-800 mb-2">Channel</label>
-                        <select
-                        className="border p-1 rounded"
+                        <span className="ml-2 text-gray-700">Month</span>
+                      </label>
+                      
+                      <label className="inline-flex items-center cursor-pointer font-medium text-sm">
+                        <input
+                          type="radio"
+                          className="form-radio w-4 h-4 text-blue-600"
+                          name="filterType"
+                          value="date_range"
+                          checked={filterType === 'date_range'}
+                          onChange={() => setFilterType('date_range')}
+                        />
+                        <span className="ml-2 text-gray-700">Date Range</span>
+                      </label>
+                    </div>          
+                  </div>
+
+                    
+                    {filterType === 'month' ? (
+                      <div className="relative">
+                        <input
+                          type="month"
+                          value={selectedMonth}
+                          onChange={(e) => setSelectedMonth(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                      </div>
+                    ) : (
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <div className="relative w-full">
+                            <input
+                              type="date"
+                              value={startDate}
+                              onChange={(e) => handleDateChange(e.target.value, endDate)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+                          
+                          <span className="text-gray-500">—</span>
+                          
+                          <div className="relative w-full">
+                            <input
+                              type="date"
+                              value={endDate}
+                              onChange={(e) => handleDateChange(startDate, e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                    
+                  {/* Order Channel Column */}
+                  <div className="col-span-12 md:col-span-2">
+                    <div className="mb-2 font-bold text-gray-800">Order Channel</div>
+                    <div className="relative">
+                      <select
+                        className="w-full appearance-none px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
                         value={selectedChannel}
                         onChange={(e) => setSelectedChannel(e.target.value)}
-                        >
+                      >
                         <option value="">All</option>
                         <option value="TWT">TWT</option>
                         <option value="KLOOK">KLOOK</option>
                         <option value="JVTO">JVTO</option>
-                        <option value="Others">Others</option>
-                        </select>
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                        <ChevronDown className="h-4 w-4" />
+                      </div>
                     </div>
-            
-                    {/* Pickup / Drop-off */}
-                    <div className="flex flex-col border p-3 rounded">
-                        <label className="font-medium text-gray-800 mb-2">Pickup/Drop-off</label>
-                        <select
-                        className="border p-1 rounded"
-                        value={pickupFilter}
-                        onChange={(e) => setPickupFilter(e.target.value)}
+                  </div>
+                    
+                  {/* Search Column */}
+                  <div className="col-span-12 md:col-span-3">
+                    <div className="mb-2 font-bold text-gray-800">Search</div>
+                    <input
+                      type="text"
+                      placeholder="Guest name"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                    
+                  <div className="col-span-12 md:col-span-3">
+                    <div className="h-full flex justify-end gap-2">
+                      <div className="w-full">
+                      <button 
+                        type="submit"
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md flex items-center justify-center transition-colors"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Apply Filters
+                      </button>
+                      </div>
+                      
+                      <div className="w-full relative">
+                        <button 
+                          type="button"
+                          onClick={() => setIsDownloadOpen(!isDownloadOpen)}
+                          className="w-full bg-gray-700 hover:bg-gray-800 text-white py-2 px-4 rounded-md flex items-center justify-center transition-colors"
                         >
-                        <option value="">All</option>
-                        <option value="airport">Airport</option>
-                        <option value="hotel">Hotel</option>
-                        <option value="station">Train Station</option>
-                        </select>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Download
+                          <ChevronDown className="h-4 w-4 ml-2" />
+                        </button>
+                        
+                        {isDownloadOpen && (
+              <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200">
+                <a
+                  href={`/booking-overview?filter_type=${filterType}&${filterType === 'month' ? 'month=' + selectedMonth : 'date_range=' + startDate + '_' + endDate}&search=${searchTerm}&channel=${selectedChannel}&pdf=true`}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                  onClick={() => setIsDownloadOpen(false)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
+                  </svg>
+                  PDF
+                </a>
+                <a
+                  href={`/booking-overview?filter_type=${filterType}&${filterType === 'month' ? 'month=' + selectedMonth : 'date_range=' + startDate + '_' + endDate}&search=${searchTerm}&channel=${selectedChannel}&export=true`}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                  onClick={() => setIsDownloadOpen(false)}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm2 10a1 1 0 10-2 0v3a1 1 0 102 0v-3zm2-3a1 1 0 011 1v5a1 1 0 11-2 0v-5a1 1 0 011-1zm4-1a1 1 0 10-2 0v7a1 1 0 102 0V8z" clipRule="evenodd" />
+                  </svg>
+                  Excel
+                </a>
+              </div>
+            )}
+                      </div>
                     </div>
-            
-                    {/* Payment Status */}
-                    {/* <div className="flex flex-col border p-3 rounded">
-                        <label className="font-medium text-gray-800 mb-2">Payment</label>
-                        <select
-                        className="border p-1 rounded"
-                        value={paymentStatus}
-                        onChange={(e) => setPaymentStatus(e.target.value)}
-                        >
-                        <option value="">All</option>
-                        <option value="Paid">Paid</option>
-                        <option value="Pending">Pending</option>
-                        <option value="Overdue">Overdue</option>
-                        </select>
-                    </div> */}
-                    </div>
+                  </div>
                 </div>
+              </form>
+            </div>
                 {/* Bookings Table */}
             <div className="bg-white shadow rounded-md p-4 mb-8 overflow-x-auto">
                 <table className="min-w-full text-left text-sm text-gray-700">
@@ -1325,7 +1439,7 @@ const BookingRow = ({
                     </tr>
                 </thead>
                 <tbody>
-                {filteredBookings.map((booking, index) => (
+                {bookings.map((booking, index) => (
                     <BookingRow
                     key={booking.id}
                     booking={booking}

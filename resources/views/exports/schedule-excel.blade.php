@@ -53,7 +53,7 @@
         </tr>
     </thead>
     <tbody>
-        @foreach ($booking as $item)
+        @foreach ($bookingReal as $item)
             <tr>
                 <td>{{$loop->iteration}}</td>
                 <td>

@@ -116,7 +116,7 @@ const AnimatedCard = ({ children, className = "" }) => (
 
 
 // Component utama Create
-const Form = ({locations,activities,startEnd,hotels,destinations,packages}) => {
+const Form = ({locations,activities,startEnd,hotels,destinations,page,packages}) => {
   
   // State Management
   const [activeTab, setActiveTab] = useState('package-info');
@@ -531,6 +531,7 @@ const handleSubmit = () => {
   };
 
   const photosData = preparePhotosForSubmission(packageInfo);
+
   // Data lengkap untuk request
   const requestData = {
     title: formData.packageInfo.title,
@@ -557,15 +558,19 @@ const handleSubmit = () => {
       start_pax: parseInt(price.startPax),
       end_pax: price.isUnlimitedMax ? null : parseInt(price.endPax),
       is_unlimited: price.isUnlimitedMax,
-      price: parseInt(price.price.replace(/,/g, ''), 10)
+      price: price.price
     }))
   };
 
   // Debugging
   console.log('Sending data to server:', requestData);
 
+  const submitUrl = page === 'create' 
+  ? '/package-inventory/store' 
+  : `/package-inventory/update/${packages.package_info.id}`;
+
   // Submit form menggunakan Inertia.js
-  router.post('/package-inventory/store', requestData, {
+  router[page === 'create' ? 'post' : 'put'](submitUrl, requestData, {
     // Options
     onBefore: () => {
       // Tampilkan pesan loading jika diperlukan
@@ -575,7 +580,17 @@ const handleSubmit = () => {
       // Reset form status
       setFormStatus({ isDirty: false, isSaving: false });
       // Redirect dan atau tampilkan pesan sukses
-      alert("Package saved successfully!");
+      alert(page === 'create' 
+        ? "Package saved successfully!" 
+        : "Package updated successfully!");
+        
+      // Redirect to package list after successful update if needed
+      if (page === 'create') {
+        router.visit('/package-inventory/jvto');
+      }
+      else{
+        router.visit('/package-inventory/edit/'+packages.package_info.id);
+      }
     },
     onError: (errors) => {
       // Tangani error validasi dari server

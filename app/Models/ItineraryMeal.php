@@ -8,4 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class ItineraryMeal extends Model
 {
     use HasFactory;
+    public function itinerary()
+    {
+        return $this->belongsTo(Itinerary::class, 'itinerary_id');
+    }
+
 }

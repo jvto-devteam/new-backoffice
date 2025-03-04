@@ -19,4 +19,9 @@ class ItineraryDetail extends Model
         return $this->belongsTo(Location::class, 'location_id');
     }
 
+    public function itinerary()
+    {
+        return $this->belongsTo(Itinerary::class, 'itinerary_id');
+    }
+
 }

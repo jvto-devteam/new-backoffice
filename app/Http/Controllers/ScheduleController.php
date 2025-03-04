@@ -8,6 +8,7 @@ use App\Models\BookGuideDriver;
 use App\Models\BookHotel;
 use App\Models\Booking;
 use App\Models\BookingCategory;
+use App\Models\BookingDocument;
 use App\Models\BookingItinerary;
 use App\Models\Destination;
 use App\Models\Hotel;
@@ -34,7 +35,7 @@ class ScheduleController extends Controller
         ];
 
         try {
-            $data['booking'] = Booking::with(['bookingPayment.paymentMethod','bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination']);
+            $data['booking'] = Booking::with(['bookingPayment.paymentMethod','bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination','bookingDocument']);
             if(!$request->filter_type || $request->filter_type == 'month'){
                 $data['booking'] = $data['booking']->where('travel_date_start', 'like', $data['filters']['month']."%");
             }
@@ -144,6 +145,15 @@ class ScheduleController extends Controller
                     array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/".$booking->id);
                     if($booking->book_add_on_total != 0){
                         array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/".$booking->id."?addon=true");
+                    }
+                }
+                else{
+                    $attachmentType = $orderChannel == 'TWT' ? 6 : 7;
+                    $bookingDocument = BookingDocument::where('booking_id',$booking->id)->where('attachment_type_id',$attachmentType)->first();
+                    if($bookingDocument){
+                        $invoiceLinks = [
+                            'https://new-backoffice.javavolcano-touroperator.com/assets/customer-document/'.$bookingDocument->file,
+                        ];
                     }
                 }
 
@@ -367,6 +377,15 @@ class ScheduleController extends Controller
             array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/".$booking->id);
             if($booking->book_add_on_total != 0){
                 array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/".$booking->id."?addon=true");
+            }
+        }
+        else{
+            $attachmentType = $orderChannel == 'TWT' ? 6 : 7;
+            $bookingDocument = BookingDocument::where('booking_id',$booking->id)->where('attachment_type_id',$attachmentType)->first();
+            if($bookingDocument){
+                $invoiceLinks = [
+                    'https://new-backoffice.javavolcano-touroperator.com/assets/customer-document/'.$bookingDocument->file,
+                ];
             }
         }
 

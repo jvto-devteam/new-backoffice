@@ -35,7 +35,7 @@ class Package extends Model
 
     public function itinerary()
     {
-        return $this->hasMany(Itinerary::class, 'package_id')->withTrashed();
+        return $this->hasMany(Itinerary::class, 'package_id');
     }
 
     public function packageIncludeExclude()

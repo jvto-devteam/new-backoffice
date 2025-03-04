@@ -957,7 +957,7 @@ const prepareDummyPhotoData = () => {
           </div>
           
           <div className="mt-4 md:mt-0 flex items-center gap-2">
-            <Button 
+            {/* <Button 
               onClick={fillWithDummyData} 
               className="bg-green-600 hover:bg-green-700"
             >
@@ -969,7 +969,7 @@ const prepareDummyPhotoData = () => {
               <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 flex gap-1 items-center">
                 <AlertCircle className="h-3.5 w-3.5" /> Unsaved changes
               </Badge>
-            )}
+            )} */}
             
             <Button 
               onClick={handleSubmit} 
@@ -1062,6 +1062,7 @@ const prepareDummyPhotoData = () => {
                           setPackageInfo({...packageInfo, duration: parseInt(e.target.value) || 1});
                           setFormStatus({ ...formStatus, isDirty: true });
                         }}
+                        disabled={page === 'edit'}
                         className="text-base"
                       />
                     </div>

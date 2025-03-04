@@ -765,9 +765,6 @@ class PackageController extends Controller
     }
 
     function update(Request $request,$id){
-        $itineraryIds = Itinerary::where('package_id', 33)->get();
-        return $itineraryIds;
-
         try {
             DB::beginTransaction();
             // return $request->all();
@@ -872,8 +869,11 @@ class PackageController extends Controller
             PackageMeal::where('package_id',$package->id)->delete();
             PackageHotel::where('package_id',$package->id)->delete();
             PackagePrice::where('package_id',$package->id)->delete();
+            Itinerary::where('package_id',$package->id)->delete();
             foreach ($request->itinerary as $key => $value) {
-                $itinerary = Itinerary::find($itineraryIds[$key]);
+                $itinerary = new Itinerary();
+                $itinerary->package_id = $package->id;
+                $itinerary->day = $value['day'];
                 $itinerary->title = $value['title'];
                 $itinerary->activity = $value['description'];
                 $itinerary->save();

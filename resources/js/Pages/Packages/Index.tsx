@@ -109,6 +109,10 @@ const Index = (data) => {
   return (
     <Main>
       <div className="space-y-4">
+        <div className="flex justify-end">
+          <Link href='/package-inventory/create' className="px-4 py-2 bg-blue-600 text-white rounded hover:opacity-90 flex items-center gap-3">+ Create New Package</Link>
+        </div>
+
         {Object.entries(packages).map(([section, items]) => (
           <div key={section} className="border rounded-lg shadow-sm">
             <button

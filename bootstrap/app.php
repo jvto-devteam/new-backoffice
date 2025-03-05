@@ -17,11 +17,6 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        $middleware->api(prepend: [
-            \App\Middleware\CorsMiddleware::class, // Custom CORS middleware
-            \Illuminate\Http\Middleware\HandleCors::class, // Default Laravel CORS handling
-        ]);
-
         //
     })
     ->withExceptions(function (Exceptions $exceptions) {

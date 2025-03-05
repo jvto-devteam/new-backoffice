@@ -15,7 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
-            \App\Middleware\CorsMiddleware::class, // Register custom CORS middleware
+        ]);
+
+        $middleware->api(prepend: [
+            \App\Middleware\CorsMiddleware::class, // Custom CORS middleware
             \Illuminate\Http\Middleware\HandleCors::class, // Default Laravel CORS handling
         ]);
 

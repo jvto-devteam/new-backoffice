@@ -100,7 +100,7 @@ class FileController extends Controller
         // Simpan file ke storage
         $path = $uploadedFile->storeAs(
             'files/' . $folder->path . $folder->name,
-            $uniqueName,
+            $originalName,
             'public'
         );
 
@@ -152,16 +152,16 @@ class FileController extends Controller
     {
         $file = File::findOrFail($id);
 
-        $filePath = 'public/files/' . $file->path;
+        $filePath = 'files/' . ltrim($file->path, '/'); // Remove "public/"
 
-        if (!Storage::exists($filePath)) {
+        if (!Storage::disk('public')->exists($filePath)) {
             return response()->json([
                 'success' => false,
-                'message' => 'File tidak ditemukan di storage'
+                'message' => 'File not found (Checked with Storage::disk("public"))'
             ], 404);
         }
 
-        return Storage::download($filePath, $file->original_name, [
+        return Storage::disk('public')->download($filePath, $file->original_name, [
             'Content-Type' => $file->mime_type
         ]);
     }

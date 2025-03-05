@@ -92,7 +92,7 @@ class FileController extends Controller
         $uniqueName = time() . '_' . Str::random(8) . '.' . $extension;
 
         // Buat path relatif
-        $relativePath = $folder->path . $folder->name . '/' . $uniqueName;
+        $relativePath = $folder->path . $folder->name . '/' . $originalName;
 
         // Tentukan file type berdasarkan ekstensi
         $fileType = FileType::where('extension', $extension)->first();
@@ -154,12 +154,15 @@ class FileController extends Controller
 
         $filePath = 'files/' . ltrim($file->path, '/'); // Remove "public/"
 
-        if (!Storage::disk('public')->exists($filePath)) {
+        if (!file_exists(storage_path('app/public/' . $filePath))) {
             return response()->json([
                 'success' => false,
-                'message' => 'File not found (Checked with Storage::disk("public"))'
+                'message' => 'File not found (Checked with file_exists())'
             ], 404);
         }
+//        return Storage::download($filePath, $file->original_name, [
+//             'Content-Type' => $file->mime_type
+//         ]);
         return Storage::disk('public')->download($filePath, $file->original_name, [
             'Content-Type' => $file->mime_type
         ]);

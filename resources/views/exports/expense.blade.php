@@ -303,5 +303,7 @@
             @endif
         </tbody>
     </table>
+    <br><br><br>
+    <b>Download at : {{date('d F Y, H:i')}}</b>
 </body>
 </html>

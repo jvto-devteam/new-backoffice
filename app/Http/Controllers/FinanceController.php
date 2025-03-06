@@ -687,7 +687,7 @@ class FinanceController extends Controller
         }
         return back()->with('message', 'Expense saved successfully');
     }
-    function crewExpense($id){
+    function downloadExpense($id){
         $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id','booking_date','package_duration')->with(['user' => function($query){
             $query->select('id','name');
         }])->where('id',$id)->first();
@@ -696,7 +696,10 @@ class FinanceController extends Controller
             'travel_date_start' => date('d F Y', strtotime($booking->travel_date_start)),
             'total_pax' => $booking->total_pax,
             'duration' => $booking->package_duration." Days ".($booking->package_duration == 1 ? 1 : $booking->package_duration-1)." Nights",
+            'total_invoice' => $booking->grand_total + $booking->book_add_on_total
         ];
+
+        $option = request()->segment(4);
         
         $bookRoom = BookHotel::select('id','booking_id','hotel_id','b','l','d','is_paid','is_debt')->with(['hotel' => function($query){
             $query->select('id','name','lunch_rate','dinner_rate');
@@ -704,7 +707,11 @@ class FinanceController extends Controller
             $query->select('id','book_hotel_id','room_hotel_id','quantity','subtotal')->with(['roomHotel' => function($q){
                 $q->select('id','room_name','rate');
             }]);
-        },'bookHotelMeal'])->where('booking_id',$id)
+        },'bookHotelMeal']);
+        if($option == 'pay-later'){
+            $bookRoom = $bookRoom->where('is_debt','1');
+        }
+        $bookRoom = $bookRoom->where('booking_id',$id)
         ->get()->map(function($query){
             return [
                 'hotel' => $query->hotel->name,
@@ -732,7 +739,13 @@ class FinanceController extends Controller
             $query->select('id','name');
         },'destinationActivity' => function($query){
             $query->select('id','name','unit');
-        }])->where('booking_id',$id)->get()
+        }]);
+
+        if($option == 'pay-later'){
+            $destinations = $destinations->where('is_debt','1');
+        }
+
+        $destinations = $destinations->where('booking_id',$id)->get()
         ->groupBy(fn($item) => $item->destination->name) // Grouping sebelum mapping
         ->map(function ($items) {
             return $items->map(function ($query) {
@@ -747,8 +760,12 @@ class FinanceController extends Controller
         });        
         $resources['cars'] = BookCarActivity::with(['car' => function($query) {
             $query->select('id', 'name');
-        }])
-        ->where('booking_id', $id)
+        }]);
+        if($option == 'pay-later'){
+            $resources['cars'] = $resources['cars']->where('is_debt','1');
+        }
+
+        $resources['cars'] = $resources['cars']->where('booking_id', $id)
         ->get()->map(function($query){
             return [
                 'item' => $query->car->name,
@@ -758,10 +775,15 @@ class FinanceController extends Controller
                 'is_debt' => $query->is_debt,
             ];
         });
+
         $resources['crews'] = BookCrewActivity::with(['crewRole' => function($query) {
             $query->select('id', 'role');
-        }])
-        ->where('booking_id', $id)
+        }]);
+        if($option == 'pay-later'){
+            $resources['crews'] = $resources['crews']->where('is_debt','1');
+        }
+
+        $resources['crews'] = $resources['crews']->where('booking_id', $id)
         ->get()->map(function($query){
             return [
                 'item' => $query->crewRole->role,
@@ -771,9 +793,14 @@ class FinanceController extends Controller
                 'is_debt' => $query->is_debt,
             ];
         });
+
         $others = BookOthersActivity::with('othersActivity')
-        ->where('booking_id', $id)
-        ->get()->map(function($query){
+        ->where('booking_id', $id);
+        if($option == 'pay-later'){
+            $others = $others->where('is_debt','1');
+        }
+        
+        $others = $others->get()->map(function($query){
             return [
                 'item' => $query->othersActivity->name,
                 'quantity' => $query->qty,
@@ -786,6 +813,8 @@ class FinanceController extends Controller
         $escorts = [];
         $ijens = [];
         $data = [
+            'title' => ucwords(str_replace('-',' ',$option))." Expense", 
+            'option' => $option,
             'booking' => $booking,
             'accommodations' => $bookRoom,
             'destinations' => $destinations,
@@ -811,12 +840,12 @@ class FinanceController extends Controller
                 }) ? implode(', ', $ijens) : '',        
             ]
         ];
-        // return view('exports/crew-expense',$data);
-        $pdf = PDF::loadView('exports/crew-expense', $data);
+        // return view('exports/expense',$data);
+        $pdf = PDF::loadView('exports/expense', $data);
         $name = Str::slug($booking['customer_name']);
         // Opsional: Set paper size dan orientation
         $pdf->setPaper('A4', 'portrait');
-        return $pdf->download('crew-expense-'.$name.'.pdf');                
+        return $pdf->download($option.'-expense-'.$name.'.pdf');                
     }
     function settlement(){
         $booking = Booking::where('status','')->get();

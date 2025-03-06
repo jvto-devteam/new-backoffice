@@ -2,8 +2,6 @@ import React, { useState, useMemo } from 'react';
 import Swal from '@/utils/swal';
 import { router } from '@inertiajs/react';
 import Authenticated from '@/Layouts/Main';
-import { Download } from 'lucide-react';
-
 
 const formatCurrency = (value) => {
   return new Intl.NumberFormat('id-ID', {
@@ -29,14 +27,14 @@ const BookingInfo = ({ booking }) => {
   );
 };
 
-const SummaryCards = ({ booking,totals }) => {
+const SummaryCards = ({ totals }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
       {/* Total Expenses */}
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex justify-between items-center">
           <span className="text-gray-500 text-sm">Total Expenses</span>
-          <a href={`/finance/expense-manager/${booking.id}/internal`} className="text-blue-600"><Download/></a>
+          <span className="text-blue-600">$</span>
         </div>
         <div className="text-blue-600 text-2xl font-bold mt-1">
           {formatCurrency(totals.totalAmount)}
@@ -48,7 +46,8 @@ const SummaryCards = ({ booking,totals }) => {
         <div className="flex justify-between items-center">
           <span className="text-gray-500 text-sm">Net Total</span>
           <div className="flex gap-1">
-          <a href={`/finance/expense-manager/${booking.id}/crew`} className="text-green-600"><Download/></a>
+            <span className="text-green-600">↓</span>
+            <span className="text-green-600">□</span>
           </div>
         </div>
         <div className="text-green-600 text-2xl font-bold mt-1">
@@ -61,7 +60,8 @@ const SummaryCards = ({ booking,totals }) => {
         <div className="flex justify-between items-center">
           <span className="text-gray-500 text-sm">Pay Later Total</span>
           <div className="flex gap-1">
-            <a href={`/finance/expense-manager/${booking.id}/pay-later`} className="text-orange-500"><Download/></a>
+            <span className="text-orange-500">↓</span>
+            <span className="text-orange-500">$</span>
           </div>
         </div>
         <div className="text-orange-500 text-2xl font-bold mt-1">
@@ -125,15 +125,6 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit,onDelete  }) => {
     setEditingCell(null);
     setEditValue("");
   };
-  const groupedItems = items.reduce((acc, item) => {
-    if (!acc[item.category]) {
-      acc[item.category] = [];
-    }
-    acc[item.category].push(item);
-    return acc;
-  }, {});
-
-  const categoryOrder = ['Accommodation', 'Destination', 'Others', 'Transport', 'Resource'];
 
   let counter = 1;
 
@@ -142,9 +133,10 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit,onDelete  }) => {
       <h2 className="text-xl font-bold p-4 border-b">Expense Items</h2>
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50">
+        <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">NO</th>
+              <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">CATEGORY</th>
               <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">SUB CATEGORY</th>
               <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">DESCRIPTION</th>
               <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">UNIT</th>
@@ -156,138 +148,125 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit,onDelete  }) => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
-            {categoryOrder.map(category => {
-              const categoryItems = groupedItems[category] || [];
-              if (categoryItems.length === 0) return null;
-              
+            {items.map((item, index) => {
+              const currentNumber = counter++;
+              const hotelId = item.originalData?.hotelId;
+              const showToggle = item.category !== 'Accommodation' || 
+                               (hotelGroups[hotelId] && hotelGroups[hotelId].index === index);
+
               return (
-                <React.Fragment key={category}>
-                  {/* Category Header Row */}
-                  <tr className="bg-gray-200">
-                    <td colSpan="9" className="px-4 py-2 font-bold">{category}</td>
-                  </tr>
+                <tr key={item.id} className={item.isDebt ? 'bg-yellow-50' : 'bg-white'}>
+                  <td className="px-4 py-3 text-sm">{currentNumber}</td>
+                  <td className="px-4 py-3 text-sm">{item.category}</td>
+                  <td className="px-4 py-3 text-sm">{item.subCategory}</td>
+                  <td className="px-4 py-3 text-sm">{item.description}</td>
+                  <td className="px-4 py-3 text-sm">{item.unit}</td>
                   
-                  {/* Category Items */}
-                  {categoryItems.map((item, itemIndex) => {
-                    const currentNumber = counter++;
-                    const hotelId = item.originalData?.hotelId;
-                    const showToggle = item.category !== 'Accommodation' || 
-                                     (hotelGroups[hotelId] && hotelGroups[hotelId].index === items.indexOf(item));
+                  {/* QTY Cell */}
+                  <td className="px-4 py-3 text-sm text-right">
+                    {editingCell === `${item.id}-qty` ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <input
+                          type="number"
+                          value={editValue}
+                          onChange={(e) => setEditValue(e.target.value)}
+                          onKeyPress={(e) => handleKeyPress(e, item.id, 'qty', index)}                          
+                          className="w-16 p-1 border rounded text-right"
+                          min="1"
+                          autoFocus
+                        />
+                        <button 
+                          onClick={() => handleSave(item.id, 'qty', index)}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-end gap-1">
+                        <span>{item.qty}</span>
+                        <button 
+                          onClick={() => handleEdit(item.id, 'qty', item.qty)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </td>
 
-                    return (
-                      <tr key={item.id} className={item.isDebt ? 'bg-yellow-50' : 'bg-white'}>
-                        <td className="px-4 py-3 text-sm">{currentNumber}</td>
-                        <td className="px-4 py-3 text-sm">{item.subCategory}</td>
-                        <td className="px-4 py-3 text-sm">{item.description}</td>
-                        <td className="px-4 py-3 text-sm">{item.unit}</td>
-                        
-                        {/* QTY Cell */}
-                        <td className="px-4 py-3 text-sm text-right">
-                          {editingCell === `${item.id}-qty` ? (
-                            <div className="flex items-center justify-end gap-1">
-                              <input
-                                type="number"
-                                value={editValue}
-                                onChange={(e) => setEditValue(e.target.value)}
-                                onKeyPress={(e) => handleKeyPress(e, item.id, 'qty', items.indexOf(item))}
-                                className="w-16 p-1 border rounded text-right"
-                                min="1"
-                                autoFocus
-                              />
-                              <button 
-                                onClick={() => handleSave(item.id, 'qty', items.indexOf(item))}
-                                className="text-green-600 hover:text-green-800"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-end gap-1">
-                              <span>{item.qty}</span>
-                              <button 
-                                onClick={() => handleEdit(item.id, 'qty', item.qty)}
-                                className="text-gray-400 hover:text-gray-600"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                </svg>
-                              </button>
-                            </div>
-                          )}
-                        </td>
+                  {/* RATE Cell */}
+                  <td className="px-4 py-3 text-sm text-right">
+                    {editingCell === `${item.id}-rate` ? (
+                      <div className="flex items-center justify-end gap-1">
+                        <input
+                          type="text"
+                          value={formatCurrency(editValue)}
+                          onChange={(e) => setEditValue(e.target.value.replace(/[^\d]/g, ''))}
+                          onKeyPress={(e) => handleKeyPress(e, item.id, 'rate', index)}                          
+                          className="w-32 p-1 border rounded text-right"
+                          autoFocus
+                        />
+                        <button 
+                          onClick={() => handleSave(item.id, 'rate', index)}
+                          className="text-green-600 hover:text-green-800"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-end gap-1">
+                        <span>{formatCurrency(item.rate)}</span>
+                        <button 
+                          onClick={() => handleEdit(item.id, 'rate', item.rate)}
+                          className="text-gray-400 hover:text-gray-600"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-right">{formatCurrency(item.amount)}</td>
+                  <td className="px-4 py-3">
+                    {showToggle && (
+                      <div className="flex justify-center">
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={item.isDebt}
+                            onChange={(e) => onPayLaterChange(index, e.target.checked)}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                      </div>
+                    )}
+                  </td>
+                  <td className="px-4 py-3">
+                    {item.category !== 'Accommodation' && (
+                      <div className="flex justify-center">
+                        <button
+                          onClick={() => onDelete(index)}
+                          className="text-red-500 hover:text-red-700"
+                          title="Delete item"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
 
-                        {/* RATE Cell */}
-                        <td className="px-4 py-3 text-sm text-right">
-                          {editingCell === `${item.id}-rate` ? (
-                            <div className="flex items-center justify-end gap-1">
-                              <input
-                                type="text"
-                                value={editValue.startsWith('Rp') ? editValue : formatCurrency(editValue)}
-                                onChange={(e) => setEditValue(e.target.value.replace(/[^\d]/g, ''))}
-                                onKeyPress={(e) => handleKeyPress(e, item.id, 'rate', items.indexOf(item))}
-                                className="w-32 p-1 border rounded text-right"
-                                autoFocus
-                              />
-                              <button 
-                                onClick={() => handleSave(item.id, 'rate', items.indexOf(item))}
-                                className="text-green-600 hover:text-green-800"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-end gap-1">
-                              <span>{formatCurrency(item.rate)}</span>
-                              <button 
-                                onClick={() => handleEdit(item.id, 'rate', item.rate)}
-                                className="text-gray-400 hover:text-gray-600"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                </svg>
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-right">{formatCurrency(item.amount)}</td>
-                        <td className="px-4 py-3">
-                          {showToggle && (
-                            <div className="flex justify-center">
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  checked={item.isDebt}
-                                  onChange={(e) => onPayLaterChange(items.indexOf(item), e.target.checked)}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                              </label>
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          {item.category !== 'Accommodation' && (
-                            <div className="flex justify-center">
-                              <button
-                                onClick={() => onDelete(items.indexOf(item))}
-                                className="text-red-500 hover:text-red-700"
-                                title="Delete item"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" />
-                                </svg>
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </React.Fragment>
+                    )}
+                  </td>
+                </tr>
               );
             })}
           </tbody>
@@ -1418,7 +1397,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
     <Authenticated>
       <div className="px-4 sm:px-6 lg:px-8 py-8">
         <BookingInfo booking={booking} />
-        <SummaryCards booking={booking} totals={summaryTotals} />
+        <SummaryCards totals={summaryTotals} />
         <ExpenseTable 
           items={items} 
           onPayLaterChange={handlePayLaterChange}

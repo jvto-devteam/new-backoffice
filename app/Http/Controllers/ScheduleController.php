@@ -380,7 +380,7 @@ class ScheduleController extends Controller
             }
         }
         else{
-            $attachmentType = $orderChannel == 'TWT' ? 6 : 7;
+            $attachmentType = $channel == 'TWT' ? 6 : 7;
             $bookingDocument = BookingDocument::where('booking_id',$booking->id)->where('attachment_type_id',$attachmentType)->first();
             if($bookingDocument){
                 $invoiceLinks = [

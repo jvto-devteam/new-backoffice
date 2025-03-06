@@ -160,24 +160,10 @@ class FileController extends Controller
                 'message' => 'File not found (Checked with file_exists())'
             ], 404);
         }
-//        return Storage::download($filePath, $file->original_name, [
-//             'Content-Type' => $file->mime_type
-//         ]);
         return Storage::disk('public')->download($filePath, $file->original_name, [
             'Content-Type' => $file->mime_type
         ]);
 
-        // // return $filePath;
-        // if (!Storage::exists($filePath)) {
-        //     return response()->json([
-        //         'success' => false,
-        //         'message' => 'File tidak ditemukan di storage'
-        //     ], 404);
-        // }
-
-        // return Storage::download($filePath, $file->original_name, [
-        //     'Content-Type' => $file->mime_type
-        // ]);
     }
 
     /**

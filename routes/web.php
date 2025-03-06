@@ -90,7 +90,9 @@ Route::middleware('guest')->group(function () {
         Route::get('/expense-manager', [FinanceController::class, 'expense']);
         Route::get('/expense-manager/{id}/edit', [FinanceController::class, 'editExpense']);
         Route::post('/expense-manager/{id}/update', [FinanceController::class, 'updateExpense']);
-        Route::get('/expense-manager/{id}/crew', [FinanceController::class, 'crewExpense']);
+        Route::get('/expense-manager/{id}/crew', [FinanceController::class, 'downloadExpense']);
+        Route::get('/expense-manager/{id}/internal', [FinanceController::class, 'downloadExpense']);
+        Route::get('/expense-manager/{id}/pay-later', [FinanceController::class, 'downloadExpense']);
         Route::get('/monthly-settlement', [FinanceController::class, 'settlement']);
         Route::get('/profit-loss-summary', [FinanceController::class, 'profitLoss']);
     });

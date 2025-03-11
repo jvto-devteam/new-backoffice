@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\FileTypeController;
 use App\Http\Controllers\Api\FolderController;
 use App\Http\Controllers\Api\FolderTypeController;
 use App\Http\Controllers\Api\TagController;
+use App\Http\Controllers\Api\TripRegistrationController;
 use Illuminate\Http\Request;
 
 Route::prefix('klook')->group(function () {
@@ -22,6 +23,7 @@ Route::prefix('klook')->group(function () {
 });
 
 Route::prefix('v1')->group(function () {
+    Route::get('trip-registration/{url}', [TripRegistrationController::class, 'getData']);
 
     // Folder Type Routes
     Route::apiResource('folder-types', FolderTypeController::class);

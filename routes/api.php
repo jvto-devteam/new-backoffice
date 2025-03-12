@@ -24,6 +24,8 @@ Route::prefix('klook')->group(function () {
 
 Route::prefix('v1')->group(function () {
     Route::get('trip-registration/{url}', [TripRegistrationController::class, 'getData']);
+    Route::post('trip-registration/submit', [TripRegistrationController::class, 'submitParticipant']);
+
 
     // Folder Type Routes
     Route::apiResource('folder-types', FolderTypeController::class);

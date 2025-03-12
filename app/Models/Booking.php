@@ -126,4 +126,9 @@ class Booking extends Model
         return $this->belongsTo(Discount::class, 'discount_id');
     }
 
+    public function participant()
+    {
+        return $this->hasMany(Participant::class,'booking_id');
+    }
+
 }

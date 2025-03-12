@@ -4,81 +4,102 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\Participant;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class TripRegistrationController extends Controller
 {
     function getData($url){
         try {
-            $booking = Booking::with(['user','bookingDetail'])->where('url',$url)->firstOrFail();
+            $booking = Booking::with(['user', 'bookingDetail', 'participant'])->where('url', $url)->firstOrFail();
             $day = $booking->package_duration;
             $night = $booking->package_duration - 1;
+            
+            // Hitung jumlah kamar berdasarkan total_pax
+            $totalRooms = ceil($booking->total_pax / 2);
+            
+            // Inisialisasi kamar-kamar
+            $rooms = [];
+            for ($i = 1; $i <= $totalRooms; $i++) {
+                $rooms[] = [
+                    "id" => $i,
+                    "capacity" => 2,
+                    "isReserved" => false,
+                    "occupants" => []
+                ];
+            }
+            
+            // Inisialisasi kendaraan berdasarkan car_type dan numb_of_car
+            $vehicles = [];
+            
+            // Tentukan kapasitas dan nama berdasarkan tipe kendaraan
+            $capacity = $booking->car_type === 'hiace' ? 9 : 25;
+            $typeName = $booking->car_type === 'hiace' ? 'Toyota Hiace' : 'Medium Bus';
+            
+            // Buat kendaraan sebanyak numb_of_car
+            for ($i = 1; $i <= $booking->numb_of_car; $i++) {
+                $seats = [];
+                // Buat kursi sesuai kapasitas kendaraan
+                for ($j = 1; $j <= $capacity; $j++) {
+                    $seatNumber = str_pad($j, 2, '0', STR_PAD_LEFT);
+                    $seats[] = [
+                        "number" => $seatNumber, 
+                        "status" => "available"
+                    ];
+                }
+                
+                $vehicles[] = [
+                    "id" => $i,  // ID lengkap untuk frontend (hiace1, bus1, dll)
+                    "name" => "{$typeName} {$i}",
+                    "type" => $booking->car_type,
+                    "capacity" => $capacity,
+                    "seats" => $seats
+                ];
+            }
+            
+            // Dapatkan data participant dari database
+            if ($booking->participant->isNotEmpty()) {
+                foreach ($booking->participant as $participant) {
+                    // Isi data rooms berdasarkan participant
+                    if ($participant->room_number) {
+                        $roomIndex = $participant->room_number - 1;
+                        if (isset($rooms[$roomIndex])) {
+                            $rooms[$roomIndex]['occupants'][] = $participant->full_name;
+                        }
+                    }
+            
+                    // Isi data vehicles berdasarkan participant
+                    if ($participant->car_number && $participant->seat_number) {
+                        // Cari indeks kendaraan yang cocok
+                        $carNumber = (int)$participant->car_number;
+                        $vehicleIndex = $carNumber - 1; // Konversi dari 1-based ke 0-based
+                        
+                        if (isset($vehicles[$vehicleIndex])) {
+                            // Cari indeks kursi yang cocok
+                            foreach ($vehicles[$vehicleIndex]['seats'] as $seatIndex => $seat) {
+                                if ($seat['number'] === $participant->seat_number) {
+                                    // Update status kursi menjadi booked
+                                    $vehicles[$vehicleIndex]['seats'][$seatIndex]['status'] = 'booked';
+                                    $vehicles[$vehicleIndex]['seats'][$seatIndex]['occupant'] = $participant->full_name;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
             return [
                 'id' => $booking->id,
                 'user_id' => $booking->user_id,
                 'package_duration' => $booking->package_duration,
-                'trip_date' => date('d',strtotime($booking->travel_date_start))." - ".date('d F Y',strtotime($booking->travel_date_end)),
-                'package_name' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->name : $day." Days ".$night." Nights",
+                'trip_date' => date('d', strtotime($booking->travel_date_start)) . " - " . date('d F Y', strtotime($booking->travel_date_end)),
+                'package_name' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->name : $day . " Days " . $night . " Nights",
                 'total_pax' => $booking->total_pax,
-                'car_type'  => 'Hiace',
-                'cars' => [
-                    [
-                        'no' => 1,
-                        'name' => 'Hiace 1',
-                    ],
-                    [
-                        'no' => 2,
-                        'name' => 'Hiace 2',
-                    ],
-                ],
-                'numb_of_seats' => 9,
-                'selected_car' => [
-                    [
-                        'participant_id' => 1,
-                        'participant_name' => 'John Doe',
-                        'car_no' => 1,
-                        'seat_no' => 1,
-                    ],
-                    [
-                        'participant_id' => 2,
-                        'participant_name' => 'John Cena',
-                        'car_no' => 1,
-                        'seat_no' => 5,
-                    ],
-                    [
-                        'participant_id' => 3,
-                        'participant_name' => 'The Rock',
-                        'car_no' => 2,
-                        'seat_no' => 3,
-                    ],
-                ],
-                'numb_of_rooms' => ceil($booking->total_pax),
-                'selected_rooms' => [
-                    [
-                        'room_no' => 1,
-                        'status' => 'booked',
-                        'participants' => [
-                            [
-                                'participant_id' => 1,
-                                'participant_name' => 'John Doe'
-                            ],
-                            [
-                                'participant_id' => 2,
-                                'participant_name' => 'John Cena'
-                            ]
-                        ]
-                    ],
-                    [
-                        'room_no' => 3,
-                        'status' => 'available',
-                        'participants' => [
-                            [
-                                'participant_id' => 3,
-                                'participant_name' => 'The Rock'
-                            ]
-                        ]
-                    ]
-                ]
+                'rooms' => $rooms,
+                'vehicles' => $vehicles
             ];
 
             return response()->json([
@@ -97,4 +118,90 @@ class TripRegistrationController extends Controller
             ], 500);
         }
     }
+    public function submitParticipant(Request $request)
+    {
+        try {
+            // Validasi request
+            $validator = Validator::make($request->all(), [
+                'booking_url' => 'required|string',
+                'participant' => 'required|array',
+                'participant.title' => 'required|string',
+                'participant.full_name' => 'required|string',
+                'participant.gender' => 'required|string',
+                'participant.passport_number' => 'required|string',
+                'participant.tshirt_size' => 'required|string',
+                'participant.car_number' => 'required|string',
+                'participant.seat_number' => 'required|string',
+                'participant.room_number' => 'required|numeric',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Ambil booking berdasarkan URL
+            $booking = Booking::where('url', $request->booking_url)->first();
+            
+            if (!$booking) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Booking not found'
+                ], 404);
+            }
+
+            // Pastikan kursi dan kamar tidak sudah dipesan
+            $existingSeat = Participant::where('booking_id', $booking->id)
+                ->where('car_number', $request->participant['car_number'])
+                ->where('seat_number', $request->participant['seat_number'])
+                ->exists();
+
+            if ($existingSeat) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This seat has already been reserved by another participant'
+                ], 400);
+            }
+
+            // Buat participant baru
+            DB::beginTransaction();
+            
+            $participant = new Participant();
+            $participant->booking_id = $booking->id;
+            $participant->title = $request->participant['title'];
+            $participant->full_name = $request->participant['full_name'];
+            $participant->gender = $request->participant['gender'];
+            $participant->flight_number = $request->participant['flight_number'];
+            $participant->passport_number = $request->participant['passport_number'];
+            $participant->tshirt_size = $request->participant['tshirt_size'];
+            $participant->dietary_restriction = $request->participant['dietary_restriction'];
+            $participant->car_number = $request->participant['car_number'];
+            $participant->seat_number = $request->participant['seat_number'];
+            $participant->room_number = $request->participant['room_number'];
+            $participant->save();
+
+            // Update booking status jika perlu
+            $booking->is_trip_participants = '1'; // Menandakan bahwa booking ini sudah memiliki participant
+            $booking->save();
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => 'Participant registration submitted successfully',
+                'data' => $participant
+            ]);
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to submit participant data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }    
 }

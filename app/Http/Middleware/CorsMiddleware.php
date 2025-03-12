@@ -15,12 +15,18 @@ class CorsMiddleware
             'https://archive-pathfinder.javavolcano-touroperator.com',
             'https://travelhub.javavolcano-touroperator.com',
         ];
-
+    
         $origin = $request->header('Origin');
-
-        // Jika origin ada dalam daftar yang diizinkan
+    
+        // Debugging untuk melihat apakah Origin diterima dengan benar
+        if ($origin) {
+            \Log::info("CORS Middleware: Origin - " . $origin);
+            // dd($origin); // Hapus setelah debugging
+        } else {
+            \Log::info("CORS Middleware: Tidak ada origin ditemukan");
+        }
+    
         if (in_array($origin, $allowedOrigins)) {
-            // Tangani preflight request (OPTIONS)
             if ($request->isMethod('OPTIONS')) {
                 return response()->json('CORS Preflight OK', 200, [
                     'Access-Control-Allow-Origin' => $origin,
@@ -29,17 +35,17 @@ class CorsMiddleware
                     'Access-Control-Allow-Credentials' => 'true',
                 ]);
             }
-
-            // Tangani request utama
+    
             $response = $next($request);
             $response->headers->set('Access-Control-Allow-Origin', $origin);
             $response->headers->set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
             $response->headers->set('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
             $response->headers->set('Access-Control-Allow-Credentials', 'true');
-
+    
             return $response;
         }
-
+    
         return $next($request);
     }
+    
 }

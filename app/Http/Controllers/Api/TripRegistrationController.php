@@ -42,14 +42,33 @@ class TripRegistrationController extends Controller
             for ($i = 1; $i <= $booking->numb_of_car; $i++) {
                 $seats = [];
                 // Buat kursi sesuai kapasitas kendaraan
-                for ($j = 1; $j <= $capacity; $j++) {
-                    $seatNumber = str_pad($j, 2, '0', STR_PAD_LEFT);
-                    $seats[] = [
-                        "number" => $seatNumber, 
-                        "status" => "available"
-                    ];
-                }
-                
+                if ($booking->car_type === 'hiace') {
+                    // Kode untuk Hiace tetap sama
+                    $capacity = 9;
+                    for ($j = 1; $j <= $capacity; $j++) {
+                        $seatNumber = str_pad($j, 2, '0', STR_PAD_LEFT);
+                        $seats[] = [
+                            "number" => $seatNumber, 
+                            "status" => "available"
+                        ];
+                    }
+                } else { // bus
+                    // Kursi bus (35 kursi)
+                    $capacity = 35;
+                    for ($j = 1; $j <= $capacity; $j++) {
+                        $seatNumber = str_pad($j, 2, '0', STR_PAD_LEFT);
+                        $seats[] = [
+                            "number" => $seatNumber, 
+                            "status" => "available"
+                        ];
+                    }
+                    
+                    // Tambahkan kursi driver dan guide khusus bus
+                    array_unshift($seats, 
+                        ["number" => "KN", "status" => "driver"],
+                        ["number" => "SP", "status" => "guide"]
+                    );
+                }                
                 $vehicles[] = [
                     "id" => $i,  // ID lengkap untuk frontend (hiace1, bus1, dll)
                     "name" => "{$typeName} {$i}",
@@ -99,7 +118,8 @@ class TripRegistrationController extends Controller
                 'package_name' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->name : $day . " Days " . $night . " Nights",
                 'total_pax' => $booking->total_pax,
                 'rooms' => $rooms,
-                'vehicles' => $vehicles
+                'vehicles' => $vehicles,
+                'user' => $booking->user->name
             ];
 
             return response()->json([
@@ -171,12 +191,12 @@ class TripRegistrationController extends Controller
             
             $participant = new Participant();
             $participant->booking_id = $booking->id;
-            $participant->title = $request->participant['title'];
-            $participant->full_name = $request->participant['full_name'];
-            $participant->gender = $request->participant['gender'];
+            $participant->title = ucfirst($request->participant['title']);
+            $participant->full_name = ucwords($request->participant['full_name']);
+            $participant->gender = ucwords($request->participant['gender']);
             $participant->flight_number = $request->participant['flight_number'];
             $participant->passport_number = $request->participant['passport_number'];
-            $participant->tshirt_size = $request->participant['tshirt_size'];
+            $participant->tshirt_size = strtoupper($request->participant['tshirt_size']);
             $participant->dietary_restriction = $request->participant['dietary_restriction'];
             $participant->car_number = $request->participant['car_number'];
             $participant->seat_number = $request->participant['seat_number'];
@@ -203,5 +223,65 @@ class TripRegistrationController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
-    }    
+    }   
+    public function getDashboardData($url)
+    {
+        try {
+            // Obtener datos del paquete
+            $booking = Booking::with(['bookingDetail.package','user'])
+                        ->where('url', $url)
+                        ->first();
+            
+            $packageName = "Tour Registration";
+            $packageDate = "";
+            
+            if ($booking) {
+                $day = $booking->package_duration;
+                $night = $booking->package_duration - 1;
+                
+                $packageName = $booking->bookingDetail[0]->package 
+                    ? $booking->bookingDetail[0]->package->name 
+                    : $day . " Days " . $night . " Nights";
+                
+                $packageDate = date('d', strtotime($booking->travel_date_start)) . " - " . 
+                               date('d F Y', strtotime($booking->travel_date_end));
+            }
+            
+            // Obtener todos los participantes
+            $participants = Participant::select(
+                'participants.id',
+                'participants.title',
+                'participants.full_name',
+                'participants.gender',
+                'participants.flight_number',
+                'participants.passport_number',
+                'participants.tshirt_size',
+                'participants.dietary_restriction',
+                'participants.car_number',
+                'participants.seat_number',
+                'participants.room_number',
+                'participants.created_at',
+                'bookings.status',
+            )
+            ->join('bookings', 'participants.booking_id', '=', 'bookings.id')
+            ->orderBy('participants.created_at', 'desc')
+            ->get();
+
+            return response()->json([
+                'status' => true,
+                'data' => [
+                    'user' => $booking->user->name,
+                    'package_name' => $packageName,
+                    'package_date' => $packageDate,
+                    'participants' => $participants
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to retrieve dashboard data',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }     
 }

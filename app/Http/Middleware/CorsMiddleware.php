@@ -14,8 +14,6 @@ class CorsMiddleware
 
         $allowedOrigins = [
             'https://jv-to.com',
-            'https://archive-pathfinder.javavolcano-touroperator.com', // Add your allowed origin,
-            'https://travelhub.javavolcano-touroperator.com', // Add your allowed origin,
         ];
 
         $origin = $request->header('Origin');

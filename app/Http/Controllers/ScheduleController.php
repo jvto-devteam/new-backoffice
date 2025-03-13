@@ -13,6 +13,7 @@ use App\Models\BookingItinerary;
 use App\Models\Destination;
 use App\Models\Hotel;
 use App\Models\Package;
+use App\Models\PaymentMethod;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use PDF;
@@ -469,6 +470,12 @@ class ScheduleController extends Controller
         }
 
         $details = [
+            'payment_method' => PaymentMethod::get()->map(function($data){
+                return [
+                    'value' => $data->id,
+                    'label' => $data->name,
+                ];
+            }),
             'client_information' => [
                 'client_id' => $booking->user->id,
                 'client_name' => $booking->user->name,
@@ -526,12 +533,14 @@ class ScheduleController extends Controller
                     'target' => '_blank'
                 ],
                 'profit' =>  $booking->grand_total+$booking->book_add_on_total-$booking->expense_internal_total,
-                'payment_history' => $booking->bookingPayment->map(function($payment){
+                'payment_history' => $booking->bookingPayment->map(function($payment) use($booking){
                     return [
+                        'id' => $payment->id,
                         'nominal' => $payment->nominal,
                         'paymentMethod' => $payment->paymentMethod->name,
                         'description' => $payment->description,
                         'reference' => $payment->reference,
+                        'receipt' => "https://javavolcano-touroperator.com/backoffice/invoice/view-receipt/".$booking->id."/partial/".$payment->id,
                         'date' => date('d M y H:i',strtotime($payment->created_at)),
                     ];
                 }),

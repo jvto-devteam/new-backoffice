@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, ChevronDown, Menu, X } from 'lucide-react';
-import {Link} from '@inertiajs/react';
+import { Copy, ChevronDown, Menu, X, Pencil, Eye, Download } from 'lucide-react';
+import { Link, useForm } from '@inertiajs/react';
 
 import Main from '@/Layouts/Main';
 
@@ -10,6 +10,8 @@ const Detail = ({ initialData }) => {
   const sectionsRef = useRef({});
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
+  const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
+  const [isEditPaymentMethodOpen, setIsEditPaymentMethodOpen] = useState(false);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
@@ -18,6 +20,282 @@ const Detail = ({ initialData }) => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount);
+  };
+
+  // Edit Payment Method Form Component
+  const EditPaymentMethodForm = ({ onClose }) => {
+    const { data, setData, post, processing, errors } = useForm({
+      payment_method: initialData.financial_data.paymentMethod.toLowerCase() || '',
+    });
+    
+
+    // Payment method options
+    const paymentMethods = [
+      {
+        value : 'cash', label : 'CASH',
+      },
+      {
+        value : 'cc', label : 'Credit/Debit Card',
+      },
+      {
+        value : 'wise', label : 'WISE',
+      },
+      {
+        value : 'edc', label : 'EDC',
+      }
+    ];
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      post('/bookings/payment-method/'+initialData.booking_information.id, {
+        onSuccess: () => {
+          onClose();
+        }
+      });
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+          <div className="flex justify-between items-center p-4 border-b border-gray-200">
+            <h3 className="text-lg font-bold">Edit Payment Method</h3>
+            <button 
+              onClick={onClose}
+              className="p-1 rounded-full hover:bg-gray-100"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          
+          <form onSubmit={handleSubmit}>
+            <div className="p-4 space-y-4">
+              <div>
+                <label htmlFor="edit_payment_method" className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Method
+                </label>
+                <select
+                  id="edit_payment_method"
+                  value={data.payment_method}
+                  onChange={e => setData('payment_method', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="">Select payment method</option>
+                  {paymentMethods.map(method => (
+                    <option key={method.value} value={method.value}>
+                      {method.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.payment_method && (
+                  <div className="text-red-500 text-sm mt-1">{errors.payment_method}</div>
+                )}
+              </div>
+            </div>
+            
+            <div className="p-4 border-t border-gray-200 flex justify-end space-x-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={processing}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-75"
+              >
+                {processing ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
+  // Payment Form Component
+  const PaymentForm = ({ onClose }) => {
+    const { data, setData, post, processing, errors, reset } = useForm({
+      nominal: '',
+      payment_method: '',
+      reference: '',
+      note: '',
+      send_receipt: true
+    });
+    const [nominalExceedsBalance, setNominalExceedsBalance] = useState(false);
+
+    // Extract only numbers from the input
+    const handleNominalChange = (e) => {
+      const numericValue = e.target.value.replace(/\D/g, '');
+      setData('nominal', numericValue);
+      
+      // Check if payment exceeds balance - Added these lines
+      const balance = initialData.financial_data.balance || 0;
+      setNominalExceedsBalance(parseInt(numericValue) > balance);
+    };
+
+    // Format value to show in the input field
+    const formattedNominal = () => {
+      if (!data.nominal) return '';
+      return formatCurrency(data.nominal);
+    };
+
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      if (nominalExceedsBalance) {
+        return;
+      }      
+      
+      post('/bookings/payment/'+initialData.booking_information.id, {
+        onSuccess: () => {
+          reset();
+          onClose();
+        }
+      });
+    };
+
+    // Payment method options
+    const paymentMethods = initialData.payment_method;
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+          <div className="flex justify-between items-center p-4 border-b border-gray-200">
+            <h3 className="text-lg font-bold">Add New Payment</h3>
+            <button 
+              onClick={onClose}
+              className="p-1 rounded-full hover:bg-gray-100"
+              aria-label="Close"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          
+          <form onSubmit={handleSubmit}>
+            <div className="p-4 space-y-4">
+              {/* Nominal Input */}
+              <div>
+                <label htmlFor="nominal" className="block text-sm font-medium text-gray-700 mb-1">
+                  Nominal
+                </label>
+                <input
+                  id="nominal"
+                  type="text"
+                  value={formattedNominal()}
+                  onChange={handleNominalChange}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Rp 0" 
+                  required
+                />
+                {errors.nominal && (
+                  <div className="text-red-500 text-sm mt-1">{errors.nominal}</div>
+                )}
+                {nominalExceedsBalance && (
+                  <div className="text-red-500 text-sm mt-1">
+                    Payment amount cannot exceed the balance of {formatCurrency(initialData.financial_data.balance)}
+                  </div>
+                )}
+              </div>
+              
+              {/* Payment Method Select */}
+              <div>
+                <label htmlFor="payment_method" className="block text-sm font-medium text-gray-700 mb-1">
+                  Payment Method
+                </label>
+                <select
+                  id="payment_method"
+                  value={data.payment_method}
+                  onChange={e => setData('payment_method', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  required
+                >
+                  <option value="">Select payment method</option>
+                  {paymentMethods.map(method => (
+                    <option key={method.value} value={method.value}>
+                      {method.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.payment_method && (
+                  <div className="text-red-500 text-sm mt-1">{errors.payment_method}</div>
+                )}
+              </div>
+              
+              {/* Reference Input */}
+              <div>
+                <label htmlFor="reference" className="block text-sm font-medium text-gray-700 mb-1">
+                  Reference
+                </label>
+                <input
+                  id="reference"
+                  type="text"
+                  value={data.reference}
+                  onChange={e => setData('reference', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Reference number, transaction ID, etc."
+                />
+                {errors.reference && (
+                  <div className="text-red-500 text-sm mt-1">{errors.reference}</div>
+                )}
+              </div>
+              
+              {/* Note Input */}
+              <div>
+                <label htmlFor="note" className="block text-sm font-medium text-gray-700 mb-1">
+                  Note
+                </label>
+                <textarea
+                  id="note"
+                  value={data.note}
+                  onChange={e => setData('note', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Additional notes about this payment"
+                  rows="3"
+                  required
+                ></textarea>
+                {errors.note && (
+                  <div className="text-red-500 text-sm mt-1">{errors.note}</div>
+                )}
+              </div>
+              <div className="flex items-center justify-between">
+                <label htmlFor="send_receipt" className="text-sm font-medium text-gray-700">
+                  Send Receipt
+                </label>
+                <div 
+                  className="relative inline-block w-12 h-6 cursor-pointer"
+                  onClick={() => setData('send_receipt', !data.send_receipt)}
+                >
+                  <div className={`w-full h-full rounded-full transition-colors duration-200 ease-in ${data.send_receipt ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                  <div 
+                    className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in transform ${data.send_receipt ? 'translate-x-6' : 'translate-x-0'}`}
+                  ></div>
+                </div>              
+              </div>
+            </div>
+            
+            <div className="p-4 border-t border-gray-200 flex justify-end space-x-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={processing}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-75"
+              >
+                {processing ? 'Submitting...' : 'Save Payment'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
   };
 
   const tabs = [
@@ -121,6 +399,9 @@ const Detail = ({ initialData }) => {
 
   return (
     <Main>
+      {isPaymentFormOpen && <PaymentForm onClose={() => setIsPaymentFormOpen(false)} />}
+      {isEditPaymentMethodOpen && <EditPaymentMethodForm onClose={() => setIsEditPaymentMethodOpen(false)} />}
+      
       <div className="flex flex-col lg:flex-row gap-5 p-4">
         {/* Sidebar */}
         <div className="lg:w-64 w-full">
@@ -554,22 +835,54 @@ const Detail = ({ initialData }) => {
           >
             <div className="p-6">
               <h2 className="text-xl font-bold mb-6 text-gray-800">Financial Data</h2>
-              <DetailRow
-                label="TOTAL INVOICE"
-                value={formatCurrency(initialData.financial_data.invoice.total)}
-              />
+              <div className="flex gap-3 items-start py-3 border-b border-gray-200">
+                <div className="w-1/3 text-sm text-gray-600">TOTAL INVOICE</div>
+                <div className="w-2/3 text-sm flex items-center">
+                  {initialData.financial_data.invoice.invoiceLink.length ? (
+                      <div 
+                        onClick={() => {
+                          initialData.financial_data.invoice.invoiceLink.forEach(link => 
+                            window.open(link, '_blank')
+                          );
+                        }}
+                        className="text-blue-600 cursor-pointer underline hover:text-blue-700 hover:underline transition-colors duration-200"
+                          >
+                        {formatCurrency(initialData.financial_data.invoice.total)}
+                      </div>
+                    ) : (
+                      <div className="text-blue-500">
+                        {formatCurrency(initialData.financial_data.invoice.total)}
+                      </div>
+                    )}
+
+                </div>
+              </div>
               {initialData.booking_information.order_channel !== 'TWT' && (
                 <>
                   <DetailRow
                     label="TOTAL PAYMENT"
                     value={formatCurrency(initialData.financial_data.payment)}
                   />
-                  <DetailRow
-                    label="BALANCE"
-                    value={`${formatCurrency(initialData.financial_data.balance)} (PAYMENT METHOD: ${
-                      initialData.financial_data.paymentMethod
-                    })`}
-                  />
+                  {initialData.booking_information.order_channel === 'JVTO' && (
+                    <>
+                      <DetailRow
+                        label="BALANCE"
+                        value={`${formatCurrency(initialData.financial_data.balance)}`}
+                      />
+                    <div className="flex gap-3 items-start py-3 border-b border-gray-200">
+                      <div className="w-1/3 text-sm text-gray-600">PAYMENT METHOD</div>
+                      <div className="w-2/3 text-black text-sm flex items-center gap-3">
+                          {initialData.financial_data.paymentMethod ?? '-'}
+                          <button 
+                            onClick={() => setIsEditPaymentMethodOpen(true)} 
+                            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                          >
+                            <Pencil className="h-4 w-4 text-blue-600"/>
+                          </button>
+                      </div>
+                    </div>
+                    </>
+                  )}
                 </>
               )}
               <div className="flex gap-3 items-start py-3 border-b border-gray-200">
@@ -593,8 +906,16 @@ const Detail = ({ initialData }) => {
               {/* Payment History */}
               {initialData.financial_data.payment_history.length > 0 && (
                 <>
-                  <div className="mt-6 mb-3">
+                  <div className="mt-6 mb-3 flex items-center justify-between">
                     <h3 className="text-lg font-bold">Payment History</h3>
+                    <div>
+                      <button 
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-3 rounded-md flex items-center justify-center transition-colors"
+                        onClick={() => setIsPaymentFormOpen(true)}
+                      >
+                        + Add Payment
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-4">
                     {initialData.financial_data.payment_history.map((payment, index) => (
@@ -603,25 +924,46 @@ const Detail = ({ initialData }) => {
                         className="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
                       >
                         <div className="flex justify-between mb-2">
-                          <span className="font-medium">{payment.description}</span>
-                          <span>{formatCurrency(payment.nominal)}</span>
+                          <span className="font-semibold">{payment.description}</span>
+                          <span className="font-semibold">{formatCurrency(payment.nominal)}</span>
                         </div>
                         <div className="text-sm text-gray-600 space-y-1">
-                          <div>Method: {payment.paymentMethod}</div>
+                          <div><span className="mr-2">Payment Method:</span> 
+                            {payment.reference ? (
+                                <a
+                                  href={payment.reference}
+                                  className="text-blue-600 underline hover:text-blue-700 hover:underline transition-colors duration-200"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {payment.paymentMethod}
+                                </a>
+                            ): payment.paymentMethod}
+                          </div>
                           <div>Date: {payment.date}</div>
-                          {payment.reference && (
-                            <div>
-                              Reference:
-                              <a
-                                href={payment.reference}
-                                className="text-blue-600 ml-1 hover:text-blue-700 hover:underline transition-colors duration-200"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                View Receipt
-                              </a>
+                          <div className="flex gap-2">
+                            <div className="flex items-center gap-2">
+                              Receipt: 
+                              <div className="flex gap-3">
+                                <a
+                                  href={payment.receipt}
+                                  className="text-blue-600 flex items-center gap-0.5 text-sm underline hover:text-blue-700 hover:underline transition-colors duration-200"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Eye className="h-4 w-4"/> View
+                                </a>
+                                <a
+                                  href={`${payment.receipt}?download=true`}
+                                  className="text-blue-600 flex items-center gap-0.5 text-sm underline hover:text-blue-700 hover:underline transition-colors duration-200"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  <Download className="h-4 w-4"/> Download
+                                </a>
+                              </div>
                             </div>
-                          )}
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -632,29 +974,6 @@ const Detail = ({ initialData }) => {
           </div>
         </div>
       </div>
-
-      {/* Mobile Bottom Navigation */}
-      {/* <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white shadow-top z-50">
-        <div className="flex justify-around p-2 border-t border-gray-200">
-          {tabs.slice(0, 4).map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                scrollToSection(tab.id);
-                setActiveTab(tab.id);
-              }}
-              className={`p-2 rounded-full transition-colors duration-200 ${
-                activeTab === tab.id
-                  ? 'bg-blue-50 text-blue-600'
-                  : 'text-gray-600'
-              }`}
-              aria-label={tab.label}
-            >
-              <span className="text-xs">{tab.label.split(' ')[0]}</span>
-            </button>
-          ))}
-        </div>
-      </div> */}
     </Main>
   );
 };

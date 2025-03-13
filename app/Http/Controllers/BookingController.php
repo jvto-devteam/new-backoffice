@@ -15,6 +15,7 @@ use App\Models\Booking;
 use App\Models\BookingDetail;
 use App\Models\BookingDocument;
 use App\Models\BookingItinerary;
+use App\Models\BookingPayment;
 use App\Models\BookOthersActivity;
 use App\Models\BookRoomHotel;
 use App\Models\CarConfiguration;
@@ -28,9 +29,11 @@ use App\Models\OthersActivity;
 use App\Models\Package;
 use App\Models\RoomHotel;
 use App\Models\User;
+use App\Models\UserLog;
 use App\Models\WaItinerary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
 
 class BookingController extends Controller
@@ -1335,6 +1338,50 @@ class BookingController extends Controller
             'others' => $totalOthers,
             'resources' => $totalResources,
         ];
+    }
+    function storePayment(Request $request, $id){
+        $booking = Booking::findOrFail($id);
+
+        $description = $request->note;
+
+        $new_payment = new BookingPayment();
+        $new_payment->booking_id = $id;
+        $new_payment->nominal = $request->nominal;
+        $new_payment->payment_method_id = $request->payment_method;
+        $new_payment->description = $description;
+        $new_payment->reference = $request->reference;
+        $new_payment->save();
+
+        $balance = $booking->balance - $new_payment->nominal;
+        $booking->balance = $balance;
+        $booking->payment = $booking->payment + $new_payment->nominal;
+        $booking->save();
+
+        if($request->send_receipt){
+            // Send receipt notification
+            try {
+                $receiptId = $new_payment->id; // Use the new payment ID
+                $response = Http::get(env('APP_URL') . "/api/new-backoffice/send-receipt/{$id}/{$receiptId}");
+                
+                // Optionally log the response
+                \Log::info('Receipt notification sent', [
+                    'payment_id' => $receiptId,
+                    'response' => $response->body()
+                ]);
+            } catch (\Exception $e) {
+                // Log error but don't block the payment process
+                \Log::error('Failed to send receipt', [
+                    'payment_id' => $new_payment->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+    }
+
+    function setPaymentMethod(Request $request, $id){
+        $booking = Booking::findOrFail($id);
+        $booking->outstanding_payment_method = $request->payment_method;
+        $booking->save();
     }
     // function store(Request $request){
     //     // return dd($request->all());

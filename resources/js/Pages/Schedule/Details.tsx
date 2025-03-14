@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Copy, ChevronDown, Menu, X, Pencil, Eye, Download } from 'lucide-react';
 import { Link, useForm } from '@inertiajs/react';
+import {Toast} from '@/utils/swal';
 
 import Main from '@/Layouts/Main';
 
@@ -50,6 +51,10 @@ const Detail = ({ initialData }) => {
       post('/bookings/payment-method/'+initialData.booking_information.id, {
         onSuccess: () => {
           onClose();
+          Toast.fire({
+              icon: 'success',
+              title: 'Payment method updated successfully'
+          });
         }
       });
     };
@@ -153,6 +158,10 @@ const Detail = ({ initialData }) => {
         onSuccess: () => {
           reset();
           onClose();
+          Toast.fire({
+              icon: 'success',
+              title: 'Payment added successfully'
+          });
         }
       });
     };

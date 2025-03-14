@@ -1361,17 +1361,11 @@ class BookingController extends Controller
             // Send receipt notification
             try {
                 $receiptId = $new_payment->id; // Use the new payment ID
-                $response = Http::get(env('APP_URL') . "/api/new-backoffice/send-receipt/{$id}/{$receiptId}");
-                
-                // Optionally log the response
-                \Log::info('Receipt notification sent', [
-                    'payment_id' => $receiptId,
-                    'response' => $response->body()
-                ]);
+                $url = env('API_URL') . "/api/new-backoffice/send-receipt/{$id}/{$receiptId}";
+                $response = Http::get($url);
             } catch (\Exception $e) {
-                // Log error but don't block the payment process
                 \Log::error('Failed to send receipt', [
-                    'payment_id' => $new_payment->id,
+                    'payment_id' => 207,
                     'error' => $e->getMessage()
                 ]);
             }

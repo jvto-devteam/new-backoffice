@@ -10,6 +10,7 @@ use App\Models\Booking;
 use App\Models\BookingCategory;
 use App\Models\BookingDocument;
 use App\Models\BookingItinerary;
+use App\Models\BookingPayment;
 use App\Models\Destination;
 use App\Models\Hotel;
 use App\Models\Package;
@@ -468,6 +469,7 @@ class ScheduleController extends Controller
                 ];
             });            
         }
+        $cekAddOnPaid = BookingPayment::where('booking_id',$id)->where('is_add_on','1')->count();
 
         $details = [
             'payment_method' => PaymentMethod::get()->map(function($data){
@@ -522,6 +524,8 @@ class ScheduleController extends Controller
             'financial_data' => [
                 'payment' =>  $booking->payment,
                 'balance' =>  $booking->balance,
+                'outstanding_payment_link' => $booking->outstanding_payment_link,
+                'add_on_only' => $cekAddOnPaid == 0 ? $booking->book_add_on_total : 0,
                 'paymentMethod' =>  $booking->outstanding_payment_method ? strtoupper($booking->outstanding_payment_method) : $booking->outstanding_payment_method,
                 'invoice' => [
                     'total' => $booking->grand_total+$booking->book_add_on_total,

@@ -1350,6 +1350,9 @@ class BookingController extends Controller
         $new_payment->payment_method_id = $request->payment_method;
         $new_payment->description = $description;
         $new_payment->reference = $request->reference;
+        if($request->invoice_item && $request->invoice_item == 'add_on'){
+            $new_payment->is_add_on = '1';
+        }
         $new_payment->save();
 
         $balance = $booking->balance - $new_payment->nominal;
@@ -1362,7 +1365,7 @@ class BookingController extends Controller
             try {
                 $receiptId = $new_payment->id; // Use the new payment ID
                 $url = env('API_URL') . "/api/new-backoffice/send-receipt/{$id}/{$receiptId}";
-                $response = Http::get($url);
+                $response = Http::post($url);
             } catch (\Exception $e) {
                 \Log::error('Failed to send receipt', [
                     'payment_id' => 207,
@@ -1376,6 +1379,23 @@ class BookingController extends Controller
         $booking = Booking::findOrFail($id);
         $booking->outstanding_payment_method = $request->payment_method;
         $booking->save();
+
+        if($request->payment_method == 'cc' && $request->generate_xendit_link){
+            try {
+                $url = env('API_URL') . "/api/new-backoffice/generate-xendit/{$booking->url}";
+                $payload = [
+                    'type' => 'cc',
+                    'api' => true
+                ];
+                $response = Http::post($url, $payload);
+            } catch (\Exception $e) {
+                \Log::error('Failed to send receipt', [
+                    'payment_id' => 207,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
     }
     // function store(Request $request){
     //     // return dd($request->all());

@@ -24,151 +24,224 @@ const Detail = ({ initialData }) => {
   };
 
   // Edit Payment Method Form Component
-  const EditPaymentMethodForm = ({ onClose }) => {
-    const { data, setData, post, processing, errors } = useForm({
-      payment_method: initialData.financial_data.paymentMethod ? initialData.financial_data.paymentMethod.toLowerCase() : '',
-    });
-    
+// Edit Payment Method Form Component
+const EditPaymentMethodForm = ({ onClose }) => {
+  const { data, setData, post, processing, errors } = useForm({
+    payment_method: initialData.financial_data.paymentMethod ? initialData.financial_data.paymentMethod.toLowerCase() : '',
+    generate_xendit_link: false
+  });
+  
 
-    // Payment method options
-    const paymentMethods = [
-      {
-        value : 'cash', label : 'CASH',
-      },
-      {
-        value : 'cc', label : 'Credit/Debit Card',
-      },
-      {
-        value : 'wise', label : 'WISE',
-      },
-      {
-        value : 'edc', label : 'EDC',
+  // Payment method options
+  const paymentMethods = [
+    {
+      value : 'cash', label : 'CASH',
+    },
+    {
+      value : 'cc', label : 'Credit/Debit Card',
+    },
+    {
+      value : 'wise', label : 'WISE',
+    },
+    {
+      value : 'edc', label : 'EDC',
+    }
+  ];
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    post('/bookings/payment-method/'+initialData.booking_information.id, {
+      onSuccess: () => {
+        onClose();
+        Toast.fire({
+            icon: 'success',
+            title: 'Payment method updated successfully'
+        });
       }
-    ];
-
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      post('/bookings/payment-method/'+initialData.booking_information.id, {
-        onSuccess: () => {
-          onClose();
-          Toast.fire({
-              icon: 'success',
-              title: 'Payment method updated successfully'
-          });
-        }
-      });
-    };
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
-          <div className="flex justify-between items-center p-4 border-b border-gray-200">
-            <h3 className="text-lg font-bold">Edit Payment Method</h3>
-            <button 
-              onClick={onClose}
-              className="p-1 rounded-full hover:bg-gray-100"
-              aria-label="Close"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          
-          <form onSubmit={handleSubmit}>
-            <div className="p-4 space-y-4">
-              <div>
-                <label htmlFor="edit_payment_method" className="block text-sm font-medium text-gray-700 mb-1">
-                  Payment Method
-                </label>
-                <select
-                  id="edit_payment_method"
-                  value={data.payment_method}
-                  onChange={e => setData('payment_method', e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-                  required
-                >
-                  <option value="">Select payment method</option>
-                  {paymentMethods.map(method => (
-                    <option key={method.value} value={method.value}>
-                      {method.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.payment_method && (
-                  <div className="text-red-500 text-sm mt-1">{errors.payment_method}</div>
-                )}
-              </div>
-            </div>
-            
-            <div className="p-4 border-t border-gray-200 flex justify-end space-x-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={processing}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-75"
-              >
-                {processing ? 'Saving...' : 'Save Changes'}
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
+    });
   };
 
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200">
+          <h3 className="text-lg font-bold">Edit Payment Method</h3>
+          <button 
+            onClick={onClose}
+            className="p-1 rounded-full hover:bg-gray-100"
+            aria-label="Close"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="p-4 space-y-4">
+            <div>
+              <label htmlFor="edit_payment_method" className="block text-sm font-medium text-gray-700 mb-1">
+                Payment Method
+              </label>
+              <select
+                id="edit_payment_method"
+                value={data.payment_method}
+                onChange={e => setData('payment_method', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                required
+              >
+                <option value="">Select payment method</option>
+                {paymentMethods.map(method => (
+                  <option key={method.value} value={method.value}>
+                    {method.label}
+                  </option>
+                ))}
+              </select>
+              {errors.payment_method && (
+                <div className="text-red-500 text-sm mt-1">{errors.payment_method}</div>
+              )}
+            </div>
+            
+            {/* Xendit Payment Link Toggle - Only shown when cc is selected */}
+            {data.payment_method === 'cc' && (
+              <div className="flex items-center justify-between mt-4">
+                <label htmlFor="generate_xendit_link" className="text-sm font-medium text-gray-700">
+                  Generate Xendit Payment Link
+                </label>
+                <div 
+                  className="relative inline-block w-12 h-6 cursor-pointer"
+                  onClick={() => setData('generate_xendit_link', !data.generate_xendit_link)}
+                >
+                  <div className={`w-full h-full rounded-full transition-colors duration-200 ease-in ${data.generate_xendit_link ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
+                  <div 
+                    className={`absolute left-0.5 top-0.5 bg-white w-5 h-5 rounded-full shadow transition-transform duration-200 ease-in transform ${data.generate_xendit_link ? 'translate-x-6' : 'translate-x-0'}`}
+                  ></div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="p-4 border-t border-gray-200 flex justify-end space-x-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={processing}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-75"
+            >
+              {processing ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
   // Payment Form Component
   const PaymentForm = ({ onClose }) => {
     const { data, setData, post, processing, errors, reset } = useForm({
-      nominal: '',
+      nominal: (initialData.financial_data.balance-initialData.financial_data.add_on_only).toString(),
       payment_method: '',
       reference: '',
       note: '',
-      send_receipt: true
+      send_receipt: true,
+      invoice_item: 'package' // Default to package
     });
+    
     const [nominalExceedsBalance, setNominalExceedsBalance] = useState(false);
-
-    // Extract only numbers from the input
-    const handleNominalChange = (e) => {
-      const numericValue = e.target.value.replace(/\D/g, '');
-      setData('nominal', numericValue);
-      
-      // Check if payment exceeds balance - Added these lines
+    const hasAddOn = initialData.financial_data.add_on_only > 0;
+    const showInvoiceItemSelect = initialData.financial_data.balance !== 0 && hasAddOn;
+  
+    // Set nominal and note when invoice_item changes
+    useEffect(() => {
+      if (showInvoiceItemSelect && data.invoice_item === 'add_on') {
+        setData({
+          ...data,
+          nominal: initialData.financial_data.add_on_only.toString(),
+          note: 'Payment Add On'
+        });
+      } else if (showInvoiceItemSelect && data.invoice_item === 'package' && data.nominal) {
+        // If switching back to package, verify the amount is valid
+        validateNominal(data.nominal);
+        setData({
+          ...data,
+          nominal: (initialData.financial_data.balance-initialData.financial_data.add_on_only).toString(),
+          note: ''
+        });
+      }
+    }, [data.invoice_item]);
+  
+    // Validate nominal amount against max allowed
+    const validateNominal = (value) => {
+      const numericValue = value.toString().replace(/\D/g, '');
       const balance = initialData.financial_data.balance || 0;
-      setNominalExceedsBalance(parseInt(numericValue) > balance);
+      const addOnAmount = initialData.financial_data.add_on_only || 0;
+      
+      // Determine max amount based on invoice item
+      let maxAmount = balance;
+      if (showInvoiceItemSelect && data.invoice_item === 'package') {
+        maxAmount = balance - addOnAmount;
+      }
+      
+      setNominalExceedsBalance(parseInt(numericValue) > maxAmount);
+      return numericValue;
     };
-
+  
+    // Extract only numbers from the input and validate
+    const handleNominalChange = (e) => {
+      // Don't allow changes if add_on is selected
+      if (showInvoiceItemSelect && data.invoice_item === 'add_on') {
+        return;
+      }
+      
+      const numericValue = validateNominal(e.target.value);
+      setData('nominal', numericValue);
+    };
+  
     // Format value to show in the input field
     const formattedNominal = () => {
       if (!data.nominal) return '';
       return formatCurrency(data.nominal);
     };
-
+  
     const handleSubmit = (e) => {
       e.preventDefault();
       if (nominalExceedsBalance) {
         return;
-      }      
+      }
       
       post('/bookings/payment/'+initialData.booking_information.id, {
         onSuccess: () => {
           reset();
           onClose();
           Toast.fire({
-              icon: 'success',
-              title: 'Payment added successfully'
+            icon: 'success',
+            title: 'Payment added successfully'
           });
         }
       });
     };
-
+  
     // Payment method options
     const paymentMethods = initialData.payment_method;
-
+  
+    // Get error message based on the current state
+    const getNominalErrorMessage = () => {
+      if (!nominalExceedsBalance) return null;
+      
+      const balance = initialData.financial_data.balance || 0;
+      const addOnAmount = initialData.financial_data.add_on_only || 0;
+      
+      if (showInvoiceItemSelect && data.invoice_item === 'package') {
+        return `Payment amount cannot exceed the package balance of ${formatCurrency(balance - addOnAmount)}`;
+      } else {
+        return `Payment amount cannot exceed the balance of ${formatCurrency(balance)}`;
+      }
+    };
+  
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
@@ -185,6 +258,27 @@ const Detail = ({ initialData }) => {
           
           <form onSubmit={handleSubmit}>
             <div className="p-4 space-y-4">
+              {/* Invoice Item Select (Conditional) */}
+              {showInvoiceItemSelect && (
+                <div>
+                  <label htmlFor="invoice_item" className="block text-sm font-medium text-gray-700 mb-1">
+                    Invoice Item
+                  </label>
+                  <select
+                    id="invoice_item"
+                    value={data.invoice_item}
+                    onChange={e => setData('invoice_item', e.target.value)}
+                    className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="package">Package</option>
+                    <option value="add_on">Add On</option>
+                  </select>
+                  {errors.invoice_item && (
+                    <div className="text-red-500 text-sm mt-1">{errors.invoice_item}</div>
+                  )}
+                </div>
+              )}
+              
               {/* Nominal Input */}
               <div>
                 <label htmlFor="nominal" className="block text-sm font-medium text-gray-700 mb-1">
@@ -195,17 +289,21 @@ const Detail = ({ initialData }) => {
                   type="text"
                   value={formattedNominal()}
                   onChange={handleNominalChange}
-                  className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                  className={`w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${
+                    showInvoiceItemSelect && data.invoice_item === 'add_on' ? 'bg-gray-100' : ''
+                  }`}
                   placeholder="Rp 0" 
                   required
+                  readOnly={showInvoiceItemSelect && data.invoice_item === 'add_on'}
                 />
                 {errors.nominal && (
                   <div className="text-red-500 text-sm mt-1">{errors.nominal}</div>
                 )}
-                {nominalExceedsBalance && (
-                  <div className="text-red-500 text-sm mt-1">
-                    Payment amount cannot exceed the balance of {formatCurrency(initialData.financial_data.balance)}
-                  </div>
+                {getNominalErrorMessage() && (
+                  <div className="text-red-500 text-sm mt-1">{getNominalErrorMessage()}</div>
+                )}
+                {showInvoiceItemSelect && data.invoice_item === 'add_on' && (
+                  <div className="text-gray-500 text-sm mt-1">Amount is fixed for Add On payments</div>
                 )}
               </div>
               
@@ -890,6 +988,20 @@ const Detail = ({ initialData }) => {
                           </button>
                       </div>
                     </div>
+                    {initialData.financial_data.outstanding_payment_link && (
+                      <div className="flex gap-3 items-start py-3 border-b border-gray-200">
+                        <div className="w-1/3 text-sm text-gray-600">OUTSTADING PAYMENT LINK</div>
+                        <div className="w-2/3 text-black text-sm flex items-center gap-3">
+                            <a 
+                              href={initialData.financial_data.outstanding_payment_link}
+                              target="_blank" 
+                              className="text-blue-600 hover:text-blue-800 underline"
+                              >
+                              {initialData.financial_data.outstanding_payment_link}
+                            </a>
+                        </div>
+                      </div>
+                    )}
                     </>
                   )}
                 </>
@@ -911,22 +1023,23 @@ const Detail = ({ initialData }) => {
                 label="PROFIT"
                 value={formatCurrency(initialData.financial_data.profit)}
               />
-
+              {initialData.financial_data.balance != 0 && (
+                <div className="mt-6 flex items-center justify-between">
+                  <h3 className="text-lg font-bold">Payment History</h3>
+                  <div>
+                    <button 
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-3 rounded-md flex items-center justify-center transition-colors"
+                      onClick={() => setIsPaymentFormOpen(true)}
+                    >
+                      + Add Payment
+                    </button>
+                  </div>
+                </div>
+              )}
               {/* Payment History */}
               {initialData.financial_data.payment_history.length > 0 && (
                 <>
-                  <div className="mt-6 mb-3 flex items-center justify-between">
-                    <h3 className="text-lg font-bold">Payment History</h3>
-                    <div>
-                      <button 
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-3 rounded-md flex items-center justify-center transition-colors"
-                        onClick={() => setIsPaymentFormOpen(true)}
-                      >
-                        + Add Payment
-                      </button>
-                    </div>
-                  </div>
-                  <div className="space-y-4">
+                  <div className="mt-3 space-y-4">
                     {initialData.financial_data.payment_history.map((payment, index) => (
                       <div
                         key={index}
@@ -950,9 +1063,9 @@ const Detail = ({ initialData }) => {
                             ): payment.paymentMethod}
                           </div>
                           <div>Date: {payment.date}</div>
+                          <div>Receipt No: {initialData.booking_information.booking_reference_id.replace('JVR','RCP')}/{index+1}</div>                               
                           <div className="flex gap-2">
                             <div className="flex items-center gap-2">
-                              Receipt: 
                               <div className="flex gap-3">
                                 <a
                                   href={payment.receipt}

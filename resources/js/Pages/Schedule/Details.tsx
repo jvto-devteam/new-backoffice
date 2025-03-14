@@ -26,7 +26,7 @@ const Detail = ({ initialData }) => {
   // Edit Payment Method Form Component
   const EditPaymentMethodForm = ({ onClose }) => {
     const { data, setData, post, processing, errors } = useForm({
-      payment_method: initialData.financial_data.paymentMethod.toLowerCase() || '',
+      payment_method: initialData.financial_data.paymentMethod ? initialData.financial_data.paymentMethod.toLowerCase() : '',
     });
     
 

@@ -326,7 +326,7 @@ class ScheduleController extends Controller
         });
         // return $itinerary;
         $bookHotel = BookHotel::with(['bookingItinerary','hotel','bookRoom.roomHotel'])->where('booking_id',$id)->get()->map(function($query) use($booking){
-            $night = $query->day - 1;
+            $night = $query->bookingItinerary->day - 1;
             return [
                 'day' => $query->bookingItinerary->day,
                 'hotel_id' => $query->hotel->id,
@@ -490,6 +490,7 @@ class ScheduleController extends Controller
                 'booking_id' => $channel."-".$booking->id,
                 'booking_reference_id' => $channel == 'JVTO' ? $booking->booking_code : $booking->invoice_code_origin,
                 'order_channel' => $channel,
+                'package_id' => $channel != 'TWT' ? $booking->bookingDetail[0]->package_id : '-',
                 'tour_package' => $channel != 'TWT' ? $booking->bookingDetail[0]->package->package_code." | ".$booking->bookingDetail[0]->package->name : '-',
                 'number_of_participants' => $booking->total_pax,
                 'travel_date' => date('d F Y',strtotime($booking->travel_date_start)),

@@ -623,10 +623,23 @@ const EditPaymentMethodForm = ({ onClose }) => {
                 label="ORDER CHANNEL"
                 value={initialData.booking_information.order_channel}
               />
-              <DetailRow
-                label="TOUR PACKAGE"
-                value={initialData.booking_information.tour_package}
-              />
+              <div className="flex gap-3 items-start py-3 border-b border-gray-200">
+                <div className="w-1/3 text-sm text-gray-600">TOUR PACKAGE</div>
+                <div className="w-2/3 text-sm flex items-center">
+                {initialData.booking_information.order_channel != 'TWT' ? (
+                    <a
+                      href={`/package-inventory/edit/`+initialData.booking_information.package_id}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 underline hover:text-blue-700 hover:underline transition-colors duration-200"
+                    >
+                      {initialData.booking_information.tour_package}
+                    </a>
+                ) : (
+                  <span className="text-gray-900">{initialData.booking_information.tour_package}</span>
+                )}
+                </div>
+              </div>
               <DetailRow
                 label="PARTICIPANTS"
                 value={`${initialData.booking_information.number_of_participants} PAX`}
@@ -980,12 +993,16 @@ const EditPaymentMethodForm = ({ onClose }) => {
                       <div className="w-1/3 text-sm text-gray-600">PAYMENT METHOD</div>
                       <div className="w-2/3 text-black text-sm flex items-center gap-3">
                           {initialData.financial_data.paymentMethod ?? '-'}
-                          <button 
-                            onClick={() => setIsEditPaymentMethodOpen(true)} 
-                            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                          >
-                            <Pencil className="h-4 w-4 text-blue-600"/>
-                          </button>
+                          {
+                            initialData.financial_data.balance > 0 && (
+                              <button 
+                                onClick={() => setIsEditPaymentMethodOpen(true)} 
+                                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                              >
+                                <Pencil className="h-4 w-4 text-blue-600"/>
+                              </button>
+                            ) 
+                          }
                       </div>
                     </div>
                     {initialData.financial_data.outstanding_payment_link && (
@@ -1023,7 +1040,7 @@ const EditPaymentMethodForm = ({ onClose }) => {
                 label="PROFIT"
                 value={formatCurrency(initialData.financial_data.profit)}
               />
-              {initialData.financial_data.balance != 0 && (
+              {initialData.booking_information.order_channel === 'JVTO' && initialData.financial_data.balance != 0 && (
                 <div className="mt-6 flex items-center justify-between">
                   <h3 className="text-lg font-bold">Payment History</h3>
                   <div>

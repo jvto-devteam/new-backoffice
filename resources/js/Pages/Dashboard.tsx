@@ -1,5 +1,6 @@
 import Main from '@/Layouts/Main';
 import React, { useState, useEffect } from 'react';
+import {Link,router} from '@inertiajs/react';
 import { 
   Bell, 
   CheckCircle, 
@@ -20,12 +21,15 @@ import {
   ArrowDown,
   Star,
   Clock,
-  Filter
+  Filter,
+  TriangleAlert,
+  ShieldAlert,
 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
+
 // Main Dashboard Component
-const TravelDashboard = () => {
+const TravelDashboard = ({alertData,upcoming}) => {
   const [darkMode, setDarkMode] = useState(false);
   const [bookings, setBookings] = useState([]);
   const [alertStats, setAlertStats] = useState({
@@ -42,48 +46,20 @@ const TravelDashboard = () => {
 
   // Sample data - in a real app, this would come from an API
   useEffect(() => {
-    // Sample bookings data for alerts
-    const sampleBookings = [
-      {
-        id: 'B001',
-        customer: 'Agus Setiawan',
-        destination: 'Bali',
-        date: '2025-03-20',
-        alerts: ['pickup_not_set', 'vehicle_not_assign', 'payment_method_not_set']
-      },
-      {
-        id: 'B002',
-        customer: 'Dewi Anggraini',
-        destination: 'Yogyakarta',
-        date: '2025-03-18',
-        alerts: ['drop_not_set', 'crew_not_assign']
-      },
-      {
-        id: 'B003',
-        customer: 'Budi Santoso',
-        destination: 'Jakarta',
-        date: '2025-03-25',
-        alerts: ['expense_not_created', 'accommodation_not_assign']
-      },
-      {
-        id: 'B004',
-        customer: 'Sarah Mulyani',
-        destination: 'Lombok',
-        date: '2025-03-22',
-        alerts: ['t_shirt_not_set', 'trip_media_not_set']
-      },
-      {
-        id: 'B005',
-        customer: 'Roni Wijaya',
-        destination: 'Raja Ampat',
-        date: '2025-04-02',
-        alerts: ['pickup_not_set', 'drop_not_set', 'crew_not_assign', 'expense_not_created']
-      }
-    ];
 
-    setBookings(sampleBookings);
+    // Mapping dari nama alert baru ke nama alert lama
+    const alertMapping = {
+      'no_pickup': 'pickup_not_set',
+      'no_drop': 'drop_not_set',
+      'no_car': 'vehicle_not_assign',
+      'no_crew': 'crew_not_assign',
+      'no_payment_method': 'payment_method_not_set',
+      'no_hotel': 'accommodation_not_assign',
+      'no_tshirt': 't_shirt_not_set',
+      'no_trip_media': 'trip_media_not_set'
+    };
 
-    // Calculate alert statistics
+    // Alert types untuk label
     const alertTypes = {
       'pickup_not_set': 'Pickup not set',
       'drop_not_set': 'Drop not set',
@@ -96,13 +72,63 @@ const TravelDashboard = () => {
       'trip_media_not_set': 'Trip Media not set'
     };
 
+    // Transformasi data booking
+    const transformedBookings = [];
+    const alertsById = {};
+
+    const orderChannel = (agentId,bookingCategoryId) => {
+      if(agentId === 1){
+        return 'TWT'
+      }
+      else{
+        if(bookingCategoryId !== 3){
+          return 'JVTO'
+        }
+        else{
+          return 'KLOOK'
+        }
+      }
+    }
+
+    // Process each alert type and create bookings
+    Object.keys(alertMapping).forEach(newAlertKey => {
+      const oldAlertKey = alertMapping[newAlertKey];
+      
+      alertData[newAlertKey].forEach(booking => {
+        const bookingId = `${orderChannel(booking.agent_id,booking.booking_category_id)}-${booking.id}`;
+        
+        // If booking doesn't exist yet, create it
+        if (!alertsById[bookingId]) {
+          alertsById[bookingId] = {
+            booking_id: bookingId,
+            id: booking.id,
+            customer: booking.name,
+            destination: `${booking.package_duration}D ${booking.package_duration-1}N Package`,
+            date: booking.travel_date_start,
+            orderChannel : orderChannel(booking.agent_id,booking.booking_category_id),
+            pax: booking.total_pax,
+            alerts: []
+          };
+          transformedBookings.push(alertsById[bookingId]);
+        }
+        
+        // Add this alert type to the booking if not already there
+        if (!alertsById[bookingId].alerts.includes(oldAlertKey)) {
+          alertsById[bookingId].alerts.push(oldAlertKey);
+        }
+      });
+    });
+
+    setBookings(transformedBookings);
+
+    // Calculate alert statistics
     const stats = { total: 0, categories: {} };
     
     Object.keys(alertTypes).forEach(key => {
       stats.categories[key] = 0;
     });
 
-    sampleBookings.forEach(booking => {
+    transformedBookings.forEach(booking => {
       booking.alerts.forEach(alert => {
         stats.categories[alert]++;
         stats.total++;
@@ -219,7 +245,7 @@ const TravelDashboard = () => {
       }
     ];
     
-    setUpcomingSchedules(sampleSchedules);
+    setUpcomingSchedules(upcoming);
     
     // Sample top packages
     const sampleTopPackages = [
@@ -285,43 +311,7 @@ const TravelDashboard = () => {
 
   // Take action function
   const takeAction = (bookingId, alertType) => {
-    // In a real application, this would trigger API calls or navigation
-    console.log(`Taking action on booking ${bookingId} for alert ${alertType}`);
-    
-    // For demo purposes, we'll remove the alert
-    setBookings(bookings.map(booking => {
-      if (booking.id === bookingId) {
-        return {
-          ...booking,
-          alerts: booking.alerts.filter(alert => alert !== alertType)
-        };
-      }
-      return booking;
-    }));
-
-    // Update alert stats
-    setAlertStats(prev => {
-      const newCategories = {
-        ...prev.categories,
-        [alertType]: prev.categories[alertType] - 1
-      };
-      
-      // Calculate new total
-      const newTotal = Object.values(newCategories).reduce((sum, count) => sum + count, 0);
-      
-      return {
-        total: newTotal,
-        categories: newCategories
-      };
-    });
-
-    // If no more alerts of the selected type, select another type with alerts
-    if (alertStats.categories[alertType] <= 1) {
-      const nextAlertType = Object.keys(alertStats.categories).find(key => 
-        key !== alertType && alertStats.categories[key] > 0
-      );
-      setSelectedType(nextAlertType || null);
-    }
+    router.visit("/bookings/edit-booking/"+bookingId);
   };
 
   // Group alerts by type
@@ -334,10 +324,14 @@ const TravelDashboard = () => {
           alertsByType[alertType] = [];
         }
         alertsByType[alertType].push({
-          bookingId: booking.id,
+          bookingId: booking.booking_id,
+          id: booking.id,
           alertType,
           customer: booking.customer,
-          destination: booking.destination
+          destination: booking.destination,
+          date: booking.date,
+          orderChannel: booking.orderChannel,
+          pax: booking.pax,
         });
       });
     });
@@ -353,7 +347,7 @@ const TravelDashboard = () => {
   };
 
   // Alert Item Component
-  const AlertItem = ({ bookingId, alertType, customer, destination }) => {
+  const AlertItem = ({ id,bookingId, alertType, customer, destination,orderChannel,date,pax }) => {
     return (
       <div className={`flex items-center justify-between p-4 rounded-lg mb-2 transition-all duration-200 hover:shadow-md ${
         darkMode 
@@ -363,28 +357,39 @@ const TravelDashboard = () => {
         <div className="flex items-center">
           <div className={`p-3 mr-4 rounded-full ${
             darkMode 
-              ? 'bg-gray-800 text-blue-400' 
-              : 'bg-blue-50 text-blue-500'
+              ? 'bg-gray-800 text-red-400' 
+              : 'bg-red-50 text-red-500'
           }`}>
             {alertIcons[alertType]}
           </div>
           <div>
-            <div className="font-medium text-base">{customer}</div>
+            <div className="font-medium text-base">{customer} <span className="text-xs">({pax} Pax)</span></div>
             <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
               <span className="inline-flex items-center">
+                <Calendar className="w-4 h-4 mr-1" />
+
+                {date}
+                <span className="mx-2 w-1 h-1 rounded-full bg-gray-400"></span>
                 {destination}
                 <span className="mx-2 w-1 h-1 rounded-full bg-gray-400"></span>
+                <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full 
+                  ${orderChannel === 'JVTO' ? 'bg-blue-100 text-blue-800' :
+                    orderChannel === 'TWT' ? 'bg-yellow-100 text-yellow-800' :
+                    orderChannel === 'KLOOK' ? 'bg-green-100 text-green-800' :
+                    'bg-gray-100 text-gray-800'}`}
+                >
                 {bookingId}
+                </span>
               </span>
             </div>
           </div>
         </div>
         <button 
-          onClick={() => takeAction(bookingId, alertType)}
+          onClick={() => takeAction(id, alertType)}
           className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 ${
             darkMode 
-              ? 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white' 
-              : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white shadow-sm'
+              ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white' 
+              : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white shadow-sm'
           }`}
         >
           Fix Now
@@ -444,8 +449,8 @@ const TravelDashboard = () => {
                 className={`group relative flex flex-col items-center p-3 rounded-lg transition-all duration-200 transform hover:scale-105 ${
                   selectedType === type
                     ? darkMode 
-                      ? 'bg-gradient-to-br from-blue-600 to-blue-700 text-white shadow-md' 
-                      : 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md'
+                      ? 'bg-gradient-to-br from-red-600 to-red-700 text-white shadow-md' 
+                      : 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-md'
                     : darkMode
                       ? 'bg-gray-700 hover:bg-gray-600'
                       : 'bg-gray-100 hover:bg-gray-200'
@@ -453,7 +458,7 @@ const TravelDashboard = () => {
               >
                 <div className={`flex items-center justify-center w-10 h-10 mb-2 rounded-full ${
                   selectedType === type
-                    ? 'bg-blue-400 bg-opacity-30'
+                    ? 'bg-red-400 bg-opacity-30'
                     : darkMode
                       ? 'bg-gray-600'
                       : 'bg-white shadow-sm'
@@ -465,7 +470,7 @@ const TravelDashboard = () => {
                   {alertStats.categories[type]}
                 </span>
                 {selectedType === type && (
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 rounded-t-full bg-blue-400"></div>
+                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 rounded-t-full bg-red-400"></div>
                 )}
               </button>
             ))}
@@ -493,7 +498,7 @@ const TravelDashboard = () => {
           <div className="p-6">
             <div className="flex items-center mb-4">
               <div className={`p-2 mr-3 rounded-full ${
-                darkMode ? 'bg-blue-500 bg-opacity-20' : 'bg-blue-100'
+                darkMode ? 'bg-red-500 bg-opacity-20' : 'bg-red-100'
               }`}>
                 {alertIcons[selectedType]}
               </div>
@@ -509,10 +514,14 @@ const TravelDashboard = () => {
               {alertsByType[selectedType].map((alert, index) => (
                 <AlertItem 
                   key={index}
+                  id={alert.id}
                   bookingId={alert.bookingId}
                   alertType={alert.alertType}
-                  customer={bookings.find(b => b.id === alert.bookingId)?.customer}
-                  destination={bookings.find(b => b.id === alert.bookingId)?.destination}
+                  customer={alert.customer}
+                  destination={alert.destination}
+                  date={alert.date}
+                  orderChannel={alert.orderChannel}
+                  pax={alert.pax}
                 />
               ))}
             </div>
@@ -736,29 +745,47 @@ const TravelDashboard = () => {
               >
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-medium">{schedule.destination}</h4>
+                    <h4 className="font-medium">{schedule.user}</h4>
                     <div className={`flex items-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                       <Calendar className="w-4 h-4 mr-1" />
                       <span>{schedule.date}</span>
                       <span className="mx-2 w-1 h-1 rounded-full bg-gray-400"></span>
-                      <Clock className="w-4 h-4 mr-1" />
-                      <span>{schedule.time}</span>
+                      <span>{schedule.package}</span>
+                      <span className="mx-2 w-1 h-1 rounded-full bg-gray-400"></span>
+                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full 
+                        ${schedule.order_channel === 'JVTO' ? 'bg-blue-100 text-blue-800' :
+                          schedule.order_channel === 'TWT' ? 'bg-yellow-100 text-yellow-800' :
+                          schedule.order_channel === 'KLOOK' ? 'bg-green-100 text-green-800' :
+                          'bg-gray-100 text-gray-800'}`}
+                      >
+                      {schedule.order_channel}-{schedule.id}
+                      </span>
                     </div>
                   </div>
                   <div className={`px-3 py-1 rounded-full text-xs ${
                     darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {schedule.pax} pax
+                    {schedule.total_pax} pax
                   </div>
                 </div>
                 <div className="mt-2 pt-2 border-t border-dashed flex justify-between items-center">
                   <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    <span>Guide:</span> 
-                    <span className="font-medium ml-1">{schedule.guide}</span>
+                    <span>
+                      Crews:
+                      <span className="ml-1">
+                      {schedule.crews.map((data,index) => (
+                        <>
+                          {data.name}{data.is_ijen === '1' ? ' (Ijen)' : ''}
+                          {(index+1)!==schedule.crews.length ? ', ' : ''}
+                        </>
+                      ))}  
+                      </span>
+                    </span> 
+                    <span className="font-medium ml-1"></span>
                   </div>
-                  <button className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-600'} font-medium`}>
+                  <Link href={`/bookings/details/${schedule.id}`} className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-600'} font-medium`}>
                     View Details
-                  </button>
+                  </Link>
                 </div>
               </div>
             ))}
@@ -869,13 +896,13 @@ const TravelDashboard = () => {
         change: '-5%',
         positive: false
       },
-      {
-        title: 'Customer Satisfaction',
-        value: '4.8/5',
-        icon: <Star className="w-5 h-5" fill="currentColor" />,
-        change: '+0.2',
-        positive: true
-      }
+      // {
+      //   title: 'Issues',
+      //   value: alertStats.total,
+      //   icon: <Star className="w-5 h-5" fill="currentColor" />,
+      //   change: '+0.2',
+      //   positive: true
+      // }
     ];
 
     return (
@@ -906,6 +933,27 @@ const TravelDashboard = () => {
             </div>
           </div>
         ))}
+          <div 
+            className={`p-4 rounded-xl shadow-md ${
+              darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white'
+            }`}
+          >
+            <div className="flex justify-between items-start">
+              <div>
+                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Current Issues</p>
+                <h3 className={`text-2xl font-bold mt-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{alertStats.total}</h3>
+              </div>
+              <div className={`p-3 rounded-full ${
+                darkMode ? 'bg-gray-700 text-red-400' : 'bg-red-50 text-red-500'
+              }`}>
+                <TriangleAlert/>
+              </div>
+            </div>
+            <div className={`mt-2 flex items-center text-sm text-red-500`}>
+              <ShieldAlert className="w-3 h-3 mr-1"/>              
+              <span> Need to fix</span>
+            </div>
+          </div>
       </div>
     );
   };

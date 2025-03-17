@@ -27,53 +27,90 @@ class DashboardController extends Controller
         // $data['user'] = User::with(['booking' => function($query){
         //     $query->where('status','booked');
         // }])->count();
-        $today = date('Y-04-01');
+        $firstDayMonth = date('Y-m-01');
+        $lastDayMonth = date('Y-m-t');
+        $today = date('Y-m-d');
+        $todayPlus7 = date('Y-m-d',strtotime(date('Y-m-d')." +7 days"));
 
 
-        $data['no_pickup'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',date('Y-04-t'))
+        $alert['no_pickup'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name','total_pax','bookings.agent_id','bookings.booking_category_id')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',$lastDayMonth)
         ->where(function ($query) {
             $query->whereNull('pickup');
         })
         ->where('status','booked')
-        ->get();                                            
-        $data['no_drop'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',date('Y-04-t'))
+        ->orderBy('travel_date_start','asc')->get();                                            
+        $alert['no_drop'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name','total_pax','bookings.agent_id','bookings.booking_category_id')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',$lastDayMonth)
         ->where(function ($query) {
             $query->whereNull('drop');
         })
         ->where('status','booked')
-        ->get();                                            
-        $data['no_car'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',date('Y-04-t'))
+        ->orderBy('travel_date_start','asc')->get();                                            
+        $alert['no_car'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name','total_pax','bookings.agent_id','bookings.booking_category_id')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',$lastDayMonth)
             ->whereDoesntHave('bookCar')
             ->where('status','booked')
-            ->get();
-        $data['no_crew'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name')->join('users','bookings.user_id','users.id')->where('travel_date_start','>=',$today)->where('travel_date_start','<=',date('Y-04-t'))
+            ->orderBy('travel_date_start','asc')->get();
+        $alert['no_crew'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name','total_pax','bookings.agent_id','bookings.booking_category_id')->join('users','bookings.user_id','users.id')->where('travel_date_start','>=',$today)->where('travel_date_start','<=',$lastDayMonth)
         ->whereDoesntHave('guideDriver')
         ->where('status','booked')
-        ->get();
-        $data['no_payment_method'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',date('Y-04-t'))
+        ->orderBy('travel_date_start','asc')->get();
+        $alert['no_payment_method'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name','total_pax','bookings.agent_id','bookings.booking_category_id')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',$lastDayMonth)
         ->whereNull('outstanding_payment_method')
         ->where('status','booked')
         ->where('agent_id',2)
         ->where('booking_category_id','!=',3)
-        ->get();
-        $data['no_hotel'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',date('Y-04-t'))
+        ->orderBy('travel_date_start','asc')->get();
+        $alert['no_hotel'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name','total_pax','bookings.agent_id','bookings.booking_category_id')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',$lastDayMonth)
         ->whereDoesntHave('bookHotel')
         ->where('status','booked')
-        ->get();
-        $data['no_tshirt'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',date('Y-04-t'))
+        ->orderBy('travel_date_start','asc')->get();
+        $alert['no_tshirt'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name','total_pax','bookings.agent_id','bookings.booking_category_id')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',$lastDayMonth)
         ->whereHas('bookingDetail', function ($query) {
             $query->whereRaw(
                 'bookings.total_pax != (xss + xxs + xs + s + m + l + xl + xxl + xxxl)'
             );
         })
         ->where('status','booked')
-        ->get();
-        $data['no_trip_media'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',date('Y-04-t'))
+        ->orderBy('travel_date_start','asc')->get();
+        $alert['no_trip_media'] = Booking::select('bookings.id','package_duration','travel_date_start','users.name','total_pax','bookings.agent_id','bookings.booking_category_id')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',$lastDayMonth)
             ->whereNull('media_link')
             ->where('status','booked')
-            ->get();                                       
-        // return $data;
+            ->orderBy('travel_date_start','asc')->get();
 
-        return Inertia::render('Dashboard',['data' => $data]);
+        $upcoming = Booking::select('bookings.id','package_duration','travel_date_start','users.name','total_pax','bookings.agent_id','bookings.booking_category_id')->with('guideDriver.person')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',$todayPlus7)
+            ->where('status','booked')
+            ->orderBy('travel_date_start','asc')
+            ->get()->map(function($data){
+                $night = $data->package_duration - 1;
+                if($data->agent_id === 1){
+                    $order_channel = 'TWT';
+                }
+                else{
+                    if($data->booking_category_id === 3){
+                        $order_channel = 'KLOOK';
+                    }
+                    else{
+                        $order_channel = 'JVTO';
+                    }
+                }
+                // return $data;
+                return [
+                    'id' => $data->id,
+                    'user' => $data->name,
+                    'package' => $data->package_duration."D ".$night."N Package",
+                    'date' => $data->travel_date_start,
+                    'total_pax' => $data->total_pax,
+                    'order_channel' => $order_channel,
+                    'crews' => $data->guideDriver->map(function($crew){
+                        return [
+                            'name' => $crew->person->name,
+                            'type' => $crew->type,
+                            'is_ijen' => $crew->guide_ijen,
+                        ];
+                    })
+                ];
+            });
+        // return $data['upcoming'];
+
+        return Inertia::render('Dashboard',['alertData' => $alert,'upcoming' => $upcoming]);
     }
 }

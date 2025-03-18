@@ -11,18 +11,41 @@ firebase.initializeApp({
   appId: "1:686756118033:web:995ec466c52118a24e7bb0",
   measurementId: "G-BFF5PLL35Z"
 });
-
+const processedNotifications = new Set();
 const messaging = firebase.messaging();
 
 // Tangani pesan background
 messaging.onBackgroundMessage((payload) => {
   console.log('Pesan diterima dalam background:', payload);
 
+  // Buat ID unik untuk notifikasi
+  const messageId = payload.data?.booking_id || payload.data?.id || payload.messageId;
+  const timestamp = payload.data?.timestamp || Date.now().toString();
+  const notificationId = `${messageId}-${timestamp}`;
+  
+  // Cek apakah notifikasi sudah ditampilkan sebelumnya
+  if (processedNotifications.has(notificationId)) {
+    console.log('Notifikasi duplikat terdeteksi di service worker, mengabaikan:', notificationId);
+    return;
+  }
+  
+  // Tandai notifikasi ini sudah diproses
+  processedNotifications.add(notificationId);
+  
+  // Bersihkan cache setiap kali melebihi 50 item
+  if (processedNotifications.size > 50) {
+    // Ambil iterator
+    const iterator = processedNotifications.values();
+    // Hapus item pertama
+    processedNotifications.delete(iterator.next().value);
+  }
+
+  // Lanjutkan dengan menampilkan notifikasi
   const notificationTitle = payload.notification.title || 'Notifikasi Baru';
   const notificationOptions = {
     body: payload.notification.body || '',
-    icon: '/logo192.png', // Logo aplikasi Anda
-    badge: '/badge-icon.png', // Opsional
+    icon: '/logo192.png',
+    tag: notificationId, // Gunakan tag untuk mencegah duplikasi di level browser
     data: payload.data || {}
   };
 

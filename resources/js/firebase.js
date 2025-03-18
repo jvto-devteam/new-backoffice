@@ -4,12 +4,13 @@ import axios from 'axios';
 
 // Konfigurasi Firebase dari console Firebase
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyBY3Z8QJ5gdPj4xlaCdyJGE_NAbPqdR8-w",
+  authDomain: "new-backoffice-97899.firebaseapp.com",
+  projectId: "new-backoffice-97899",
+  storageBucket: "new-backoffice-97899.firebasestorage.app",
+  messagingSenderId: "686756118033",
+  appId: "1:686756118033:web:995ec466c52118a24e7bb0",
+  measurementId: "G-BFF5PLL35Z"
 };
 
 // Initialize Firebase
@@ -27,7 +28,7 @@ export const requestNotificationPermission = async () => {
       
       // Dapatkan token FCM
       const currentToken = await getToken(messaging, { 
-        vapidKey: 'YOUR_VAPID_KEY' // Dapatkan dari Firebase Console (Web Push certificates)
+        vapidKey: 'BMyEgR0NIMeK5-pVV1Hqnl9NpToz-2mtdYEIRtJ3M6HJPpqLmoK2VT2l7m46ZqEOI6-C5TDsca2UwdpKJarun6o' // Dapatkan dari Firebase Console (Web Push certificates)
       });
       
       if (currentToken) {
@@ -61,7 +62,7 @@ const sendTokenToServer = async (token) => {
     }
     
     // Ganti URL dengan API endpoint Laravel Anda
-    const response = await axios.post('/api/fcm/token', {
+    const response = await axios.post('http://127.0.0.1:8001/api/fcm/token', {
       token,
       device_type: 'web'
     }, {
@@ -78,11 +79,34 @@ const sendTokenToServer = async (token) => {
   }
 };
 
+let processedNotifications = new Set();
+
+// Reset processed notifications setiap 30 menit
+setInterval(() => {
+  processedNotifications.clear();
+}, 30 * 60 * 1000);
+
 // Fungsi untuk menangani pesan yang diterima saat aplikasi aktif (foreground)
 export const onMessageListener = () => {
   return new Promise((resolve) => {
     onMessage(messaging, (payload) => {
-      console.log('Pesan diterima di foreground:', payload);
+      console.log('Pesan diterima:', payload);
+      
+      // Buat ID unik untuk pesan berdasarkan data dan waktu
+      const messageId = payload.data?.booking_id || payload.data?.id || payload.messageId;
+      const timestamp = payload.data?.timestamp || Date.now().toString();
+      const notificationId = `${messageId}-${timestamp}`;
+      
+      // Cek apakah notifikasi sudah ditampilkan sebelumnya
+      if (processedNotifications.has(notificationId)) {
+        console.log('Notifikasi duplikat terdeteksi, mengabaikan:', notificationId);
+        return;
+      }
+      
+      // Tandai notifikasi ini sudah diproses
+      processedNotifications.add(notificationId);
+      
+      // Lanjutkan dengan proses notifikasi
       resolve(payload);
     });
   });

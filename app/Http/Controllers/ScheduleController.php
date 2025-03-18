@@ -422,7 +422,7 @@ class ScheduleController extends Controller
         $tshirts = implode(", ",$tshirt);
 
         $package_information = [];
-        if($channel != 'TWT'){
+        if($channel != 'TWT' && $booking->bookingDetail[0]->package){
             $package_information = $booking->bookingDetail[0]->package->itinerary->map(function($query, $index) use ($booking) {
                 // Get total days to identify first and last day
                 $totalDays = $booking->bookingDetail[0]->package->itinerary->count();
@@ -490,8 +490,8 @@ class ScheduleController extends Controller
                 'booking_id' => $channel."-".$booking->id,
                 'booking_reference_id' => $channel == 'JVTO' ? $booking->booking_code : $booking->invoice_code_origin,
                 'order_channel' => $channel,
-                'package_id' => $channel != 'TWT' ? $booking->bookingDetail[0]->package_id : '-',
-                'tour_package' => $channel != 'TWT' ? $booking->bookingDetail[0]->package->package_code." | ".$booking->bookingDetail[0]->package->name : '-',
+                'package_id' => $channel != 'TWT' && $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package_id : '-',
+                'tour_package' => $channel != 'TWT' && $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->package_code." | ".$booking->bookingDetail[0]->package->name : '-',
                 'number_of_participants' => $booking->total_pax,
                 'travel_date' => date('d F Y',strtotime($booking->travel_date_start)),
                 'booking_date' => date('d F Y',strtotime($booking->booking_date)),

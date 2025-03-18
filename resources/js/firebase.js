@@ -33,6 +33,7 @@ export const requestNotificationPermission = async () => {
       
       if (currentToken) {
         console.log('Token FCM:', currentToken);
+        // alert('Token FCM: '+currentToken);
         
         // Kirim token ke server Laravel
         await sendTokenToServer(currentToken);

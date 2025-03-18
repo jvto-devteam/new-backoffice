@@ -692,6 +692,7 @@ const EditPaymentMethodForm = ({ onClose }) => {
           </div>
 
           {/* Package Details */}
+          {initialData.package_information.length != 0 && (
           <div
             ref={el => sectionsRef.current['itinerary'] = el}
             className="bg-white rounded-lg shadow-sm mb-6 transition-all duration-200 hover:shadow-md">
@@ -828,6 +829,7 @@ const EditPaymentMethodForm = ({ onClose }) => {
               )}
             </div>
           </div>
+          )}
 
           <div
             ref={el => sectionsRef.current['activities'] = el}

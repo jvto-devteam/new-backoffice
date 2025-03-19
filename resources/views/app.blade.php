@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+        {{-- <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests"> --}}
         <meta property="og:type" content="article" />
         <meta property="og:title" content="New Back Office JVTO" />
         <meta property="og:description" content="Welcome to New Back Office JVTO" />

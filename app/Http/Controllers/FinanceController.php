@@ -9,6 +9,7 @@ use App\Models\BookGuideDriver;
 use App\Models\BookHotel;
 use App\Models\BookHotelMeal;
 use App\Models\Booking;
+use App\Models\BookingPayment;
 use App\Models\BookOthersActivity;
 use App\Models\BookRoomHotel;
 use App\Models\Car;
@@ -849,5 +850,9 @@ class FinanceController extends Controller
     }
     function settlement(){
         $booking = Booking::where('status','')->get();
+    }
+    function receivableIncome(){
+        $month = date('Y-m');
+        BookingPayment::where
     }
 }

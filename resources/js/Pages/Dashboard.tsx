@@ -973,7 +973,7 @@ const TravelDashboard = ({alertData,upcoming}) => {
         </header>
 
         {/* Main Content */}
-        <main className="container mx-auto px-4 py-6">
+        <main className="px-4 py-6">
           {/* Quick Stats Section */}
           <div className="mb-6">
             <QuickStatsSection />

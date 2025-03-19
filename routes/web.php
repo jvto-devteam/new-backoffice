@@ -40,6 +40,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
+Route::get('preview-file', [ScheduleController::class,'previewFile']);
 // Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [DashboardController::class,'index']);
@@ -88,6 +89,13 @@ Route::middleware('guest')->group(function () {
     });
     
     Route::prefix('finance')->group(function () {
+        Route::get('/receivable-income', [FinanceController::class, 'receivableIncome']);
+        Route::get('/payable-report', [FinanceController::class, 'payableReport']);
+        Route::get('/profitability-report', [FinanceController::class, 'profitabilityReport']);
+        Route::get('/transaction-log', [FinanceController::class, 'transactionLog']);
+
+
+
         Route::get('/invoice-manager', [FinanceController::class, 'invoice']);
         Route::get('/expense-manager', [FinanceController::class, 'expense']);
         Route::get('/expense-manager/{id}/edit', [FinanceController::class, 'editExpense']);

@@ -154,7 +154,7 @@ class ScheduleController extends Controller
                     $bookingDocument = BookingDocument::where('booking_id',$booking->id)->where('attachment_type_id',$attachmentType)->first();
                     if($bookingDocument){
                         $invoiceLinks = [
-                            'https://new-backoffice.javavolcano-touroperator.com/assets/customer-document/'.$bookingDocument->file,
+                            '/preview-file?title=Invoice '.$booking->user->name.'&url=https://new-backoffice.javavolcano-touroperator.com/assets/customer-document/'.$bookingDocument->file,
                         ];
                     }
                 }
@@ -945,108 +945,111 @@ class ScheduleController extends Controller
         return $getTumpakSewuData->get();
     }
 
-public function plotting(Request $request)
-{
-    try {
-        DB::beginTransaction();
-        
-        $booking = Booking::where('id', $request->booking_id)->first();
-        
-        if (!$booking) {
-            throw new \Exception('Booking not found');
-        }
+    public function plotting(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+            
+            $booking = Booking::where('id', $request->booking_id)->first();
+            
+            if (!$booking) {
+                throw new \Exception('Booking not found');
+            }
 
-        $dateStart = Carbon::parse($booking->travel_date_start);
-        $dateEnd = Carbon::parse($booking->travel_date_end);
-        
-        $night = $dateStart->diffInDays($dateEnd);
-        $day = $night + 1;
-        
-        // Delete existing records
-        BookCar::where('booking_id', $request->booking_id)->delete();
-        BookGuideDriver::where('booking_id', $request->booking_id)->delete();
-        
-        // Save vehicles
-        foreach ($request->vehicles as $value) {
-            $bookCar = new BookCar();
-            $bookCar->booking_id = $request->booking_id;
-            $bookCar->car_id = $value;
-            $bookCar->quantity = 1;
-            $bookCar->start_date = $booking->travel_date_start;
-            if ($booking->is_shuttle == '1') {
-                $bookCar->duration = $night;
-                $bookCar->end_date = date('Y-m-d', strtotime($booking->travel_date_end." -1 days"));
-            } else {
-                $bookCar->duration = $day;
-                $bookCar->end_date = $booking->travel_date_end;
+            $dateStart = Carbon::parse($booking->travel_date_start);
+            $dateEnd = Carbon::parse($booking->travel_date_end);
+            
+            $night = $dateStart->diffInDays($dateEnd);
+            $day = $night + 1;
+            
+            // Delete existing records
+            BookCar::where('booking_id', $request->booking_id)->delete();
+            BookGuideDriver::where('booking_id', $request->booking_id)->delete();
+            
+            // Save vehicles
+            foreach ($request->vehicles as $value) {
+                $bookCar = new BookCar();
+                $bookCar->booking_id = $request->booking_id;
+                $bookCar->car_id = $value;
+                $bookCar->quantity = 1;
+                $bookCar->start_date = $booking->travel_date_start;
+                if ($booking->is_shuttle == '1') {
+                    $bookCar->duration = $night;
+                    $bookCar->end_date = date('Y-m-d', strtotime($booking->travel_date_end." -1 days"));
+                } else {
+                    $bookCar->duration = $day;
+                    $bookCar->end_date = $booking->travel_date_end;
+                }
+                $bookCar->save();
             }
-            $bookCar->save();
-        }
-        
-        // Save drivers
-        foreach ($request->drivers as $value) {
-            $bookDriver = new BookGuideDriver();
-            $bookDriver->booking_id = $request->booking_id;
-            $bookDriver->guide_id = $value;
-            $bookDriver->type = 'driver';
-            $bookDriver->start_date = $booking->travel_date_start;
-            if ($booking->is_shuttle == '1') {
-                $bookDriver->duration = $night;
-                $bookDriver->end_date = date('Y-m-d', strtotime($booking->travel_date_end." -1 days"));
-            } else {
-                $bookDriver->duration = $day;
-                $bookDriver->end_date = $booking->travel_date_end;
+            
+            // Save drivers
+            foreach ($request->drivers as $value) {
+                $bookDriver = new BookGuideDriver();
+                $bookDriver->booking_id = $request->booking_id;
+                $bookDriver->guide_id = $value;
+                $bookDriver->type = 'driver';
+                $bookDriver->start_date = $booking->travel_date_start;
+                if ($booking->is_shuttle == '1') {
+                    $bookDriver->duration = $night;
+                    $bookDriver->end_date = date('Y-m-d', strtotime($booking->travel_date_end." -1 days"));
+                } else {
+                    $bookDriver->duration = $day;
+                    $bookDriver->end_date = $booking->travel_date_end;
+                }
+                $bookDriver->save();
             }
-            $bookDriver->save();
-        }
-        
-        // Save escort guides
-        foreach ($request->escortGuides as $value) {
-            $bookDriver = new BookGuideDriver();
-            $bookDriver->booking_id = $request->booking_id;
-            $bookDriver->type = 'guide';
-            $bookDriver->guide_id = $value;
-            $bookDriver->start_date = $booking->travel_date_start;
-            if ($booking->is_shuttle == '1') {
-                $bookDriver->duration = $night;
-                $bookDriver->end_date = date('Y-m-d', strtotime($booking->travel_date_end." -1 days"));
-            } else {
-                $bookDriver->duration = $day;
-                $bookDriver->end_date = $booking->travel_date_end;
-            }
-            $bookDriver->save();
-        }
-        
-        // Save ijen guides if applicable
-        if ($booking->at_bondowoso) {
-            foreach ($request->ijenGuides as $value) {
+            
+            // Save escort guides
+            foreach ($request->escortGuides as $value) {
                 $bookDriver = new BookGuideDriver();
                 $bookDriver->booking_id = $request->booking_id;
                 $bookDriver->type = 'guide';
                 $bookDriver->guide_id = $value;
-                $bookDriver->duration = 1;
-                $bookDriver->start_date = $booking->at_bondowoso;
-                $bookDriver->end_date = $booking->at_bondowoso;
-                $bookDriver->guide_ijen = '1';
+                $bookDriver->start_date = $booking->travel_date_start;
+                if ($booking->is_shuttle == '1') {
+                    $bookDriver->duration = $night;
+                    $bookDriver->end_date = date('Y-m-d', strtotime($booking->travel_date_end." -1 days"));
+                } else {
+                    $bookDriver->duration = $day;
+                    $bookDriver->end_date = $booking->travel_date_end;
+                }
                 $bookDriver->save();
             }
-        }
-        
-        // Save notes
-        $booking->note = $request->notes;
-        $booking->save();
+            
+            // Save ijen guides if applicable
+            if ($booking->at_bondowoso) {
+                foreach ($request->ijenGuides as $value) {
+                    $bookDriver = new BookGuideDriver();
+                    $bookDriver->booking_id = $request->booking_id;
+                    $bookDriver->type = 'guide';
+                    $bookDriver->guide_id = $value;
+                    $bookDriver->duration = 1;
+                    $bookDriver->start_date = $booking->at_bondowoso;
+                    $bookDriver->end_date = $booking->at_bondowoso;
+                    $bookDriver->guide_ijen = '1';
+                    $bookDriver->save();
+                }
+            }
+            
+            // Save notes
+            $booking->note = $request->notes;
+            $booking->save();
 
-        DB::commit();
-        
-        return back()->with('message', 'Plotting saved successfully');
-        
-    } catch (\Exception $e) {
-        DB::rollBack();
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to save plotting: ' . $e->getMessage()
-        ], 500);
+            DB::commit();
+            
+            return back()->with('message', 'Plotting saved successfully');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save plotting: ' . $e->getMessage()
+            ], 500);
+        }
     }
+    function previewFile(){
+        return view('preview-file');
     }
 }

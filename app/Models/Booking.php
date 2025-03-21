@@ -131,4 +131,8 @@ class Booking extends Model
         return $this->hasMany(Participant::class,'booking_id');
     }
 
+    public function paymentMethodVendor()
+    {
+        return $this->belongsTo(PaymentMethod::class, 'is_vendor_paid_payment_method');
+    }
 }

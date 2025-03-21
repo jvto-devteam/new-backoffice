@@ -19,6 +19,7 @@ use App\Models\DestinationActivity;
 use App\Models\Itinerary;
 use App\Models\OthersActivity;
 use App\Models\Package;
+use App\Models\PaymentMethod;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use PDF;
@@ -851,8 +852,98 @@ class FinanceController extends Controller
     function settlement(){
         $booking = Booking::where('status','')->get();
     }
-    function receivableIncome(){
-        $month = date('Y-m');
-        BookingPayment::where
+    function receivableIncome(Request $request){
+        $startDate = $request->start_date ? $request->start_date : date('Y-m-01');
+        $endDate = $request->end_date ? $request->end_date : date('Y-m-t');
+        $jvto = BookingPayment::with(['paymentMethod','booking.user'])->whereBetween('created_at',[$startDate,$endDate])->orderBy('created_at','asc')->get()->map(function($query){
+            return [
+                'id' => $query->id,
+                'source' => 'JVTO',
+                'booking_code' => $query->booking->booking_code,
+                'date' => date('d F Y', strtotime($query->created_at)),                
+                'customer' => $query->booking->user->name,
+                'booking_id' => $query->booking_id,
+                'payment_method_id' => $query->payment_method_id,
+                'payment_method' => $query->paymentMethod->name,
+                'reference' => $query->reference,
+                'description' => $query->is_add_on == '1' ? $query->description." (Add On)" : $query->description,
+                'nominal' => $query->nominal,
+                'status' => 'PAID',
+            ];
+        });
+        $others = Booking::where('status', 'booked')
+        ->whereBetween('travel_date_start',[$startDate,$endDate])
+        ->where(function($query) {
+            $query->where('agent_id', 2)
+                  ->where('booking_category_id', 3)
+                  ->orWhere('agent_id', 1);
+        })
+        ->get()
+        ->map(function($query) {
+            // Determine the source based on agent_id
+            $source = $query->agent_id == 2 ? 'KLOOK' : 'TWT';
+    
+            return [
+                'id' => $query->id,
+                'source' => $source,
+                'booking_code' => $query->invoice_code_origin,
+                'date' => date('d F Y',strtotime($query->travel_date_start)),
+                'customer' => $query->user->name,
+                'booking_id' => $query->id,
+                'payment_method_id' => $query->payment_method_vendor_id,
+                'payment_method' => $query->is_vendor_paid == '1' ? $query->paymentMethodVendor->name : '-',
+                'reference' => $query->is_vendor_paid == '1' ? $query->is_vendor_paid_reference : '-',
+                'description' => $source,
+                'nominal' => $query->grand_total,
+                'status' => $query->is_vendor_paid == '1' ? 'PAID' : 'UNPAID',
+            ];
+        });
+        $paymentMethod = PaymentMethod::get();
+        $filters = $request->only(['search','source','status','payment_method']);
+        $filters['start_date'] = $startDate;
+        $filters['end_date'] = $endDate;
+        $payment = $others->merge($jvto)->sortBy('date')->values();
+        if (!empty($filters)) {
+            $payment = $payment->filter(function($item) use ($filters) {
+                $keep = true;
+                
+                // Filter by search term (case-insensitive search in customer name and booking code)
+                if (!empty($filters['search'])) {
+                    $searchTerm = strtolower($filters['search']);
+                    $customerName = strtolower($item['customer']);
+                    $bookingCode = strtolower($item['booking_code']);
+                    
+                    if (strpos($customerName, $searchTerm) === false && strpos($bookingCode, $searchTerm) === false) {
+                        $keep = false;
+                    }
+                }
+                
+                // Filter by source (KLOOK, TWT, JVTO)
+                if (!empty($filters['source']) && $item['source'] !== $filters['source']) {
+                    $keep = false;
+                }
+                
+                // Filter by status (PAID, UNPAID)
+                if (!empty($filters['status']) && $item['status'] !== $filters['status']) {
+                    $keep = false;
+                }
+                
+                // Filter by payment method
+                if (!empty($filters['payment_method']) && $item['payment_method_id'] != $filters['payment_method']) {
+                    $keep = false;
+                }
+                
+                // Date filtering is already handled in the initial database queries
+                
+                return $keep;
+            })->values(); // Reset array keys after filtering
+        }        
+        // return [
+        //     'filters' => $filters,
+        //     'payment' => $payment,
+        // ];
+
+        return Inertia::render('Finance/ReceivableIncome', ['payments' => $payment,'filters' => $filters,'paymentMethod' => $paymentMethod]);
+
     }
 }

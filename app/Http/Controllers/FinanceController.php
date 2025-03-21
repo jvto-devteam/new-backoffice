@@ -938,12 +938,76 @@ class FinanceController extends Controller
                 return $keep;
             })->values(); // Reset array keys after filtering
         }        
-        // return [
-        //     'filters' => $filters,
-        //     'payment' => $payment,
-        // ];
 
         return Inertia::render('Finance/ReceivableIncome', ['payments' => $payment,'filters' => $filters,'paymentMethod' => $paymentMethod]);
 
+    }
+    function profitabilityReport(Request $request){
+        $monthParam = $request->month ? $request->month : date('m');  
+        $month = $request->month ? date('Y-'.$request->month) : date('Y-m');
+        $getJvto = Booking::where('status', 'booked')
+        ->where('agent_id', 2)
+        ->where('booking_category_id', '!=', 3)
+        ->where('travel_date_start','like',$month.'%')
+        ->get();
+
+        $jvto['totalRevenue'] = $getJvto->sum(function($booking) {
+            return $booking->grand_total + $booking->book_add_on_total;
+        });
+        $jvto['totalOperational'] = $getJvto->sum('expense_internal_total');
+        $jvto['totalProfit'] = $jvto['totalRevenue']-$jvto['totalOperational'];
+        $jvto['profitPercentage'] = $jvto['totalRevenue'] > 0 
+        ? round(($jvto['totalProfit'] / $jvto['totalRevenue']) * 100, 2) 
+        : 0;        
+        $jvto['color'] = "#0EA5E9";
+        $jvto['bgColor'] = "#F0F9FF";
+        $jvto['icon'] = "https://javavolcano-touroperator.com/assets/img/download.png";
+        $jvto['description'] = "Japan Volcano Tour Operator";
+        $jvto['name'] = "JVTO";
+
+        $getKlook = Booking::where('status', 'booked')
+        ->where('agent_id', 2)
+        ->where('booking_category_id', 3)
+        ->where('travel_date_start','like',$month.'%')
+        ->get();
+
+        $klook['totalRevenue'] = $getKlook->sum(function($booking) {
+            return $booking->grand_total + $booking->book_add_on_total;
+        });
+        $klook['totalOperational'] = $getKlook->sum('expense_internal_total');
+        $klook['totalProfit'] = $klook['totalRevenue']-$klook['totalOperational'];
+        $klook['profitPercentage'] = $klook['totalRevenue'] > 0 
+        ? round(($klook['totalProfit'] / $klook['totalRevenue']) * 100, 2) 
+        : 0;        
+        $klook['color'] = "#10B981";
+        $klook['bgColor'] = "#ECFDF5";
+        $klook['icon'] = "https://img.involve.asia/ia_background/803_ULo2708G.png";
+        $klook['description'] = "Online Travel Booking Platform";
+        $klook['name'] = "Klook";
+
+
+        $getTwt = Booking::where('status', 'booked')
+        ->where('agent_id', 1)
+        ->where('travel_date_start','like',$month.'%')
+        ->get();
+
+        $twt['totalRevenue'] = $getTwt->sum(function($booking) {
+            return $booking->grand_total + $booking->book_add_on_total;
+        });
+        $twt['totalOperational'] = $getTwt->sum('expense_internal_total');
+        $twt['totalProfit'] = $twt['totalRevenue']-$twt['totalOperational'];
+        $twt['profitPercentage'] = $twt['totalRevenue'] > 0 
+        ? round(($twt['totalProfit'] / $twt['totalRevenue']) * 100, 2) 
+        : 0;    
+        $twt['color'] = "#F59E0B";
+        $twt['bgColor'] = "#FFFBEB";
+        $twt['icon'] = "https://static.wixstatic.com/media/096aa7_9a15b0951a7441caa3d8323cc6b8da8b~mv2.png/v1/fit/w_2500,h_1330,al_c/096aa7_9a15b0951a7441caa3d8323cc6b8da8b~mv2.png";
+        $twt['description'] = "The Window Travel";
+        $twt['name'] = "TWT";
+
+
+        $data = [$jvto,$klook,$twt];
+
+        return Inertia::render('Finance/ProfitabilityReport', ['data' => $data, 'month' => $monthParam]);
     }
 }

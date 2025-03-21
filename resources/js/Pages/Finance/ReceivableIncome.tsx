@@ -372,7 +372,7 @@ export default function ReceivableIncome({ payments, summary, filters, paymentMe
                             className="gap-2 dark:text-white"
                         >
                             <Download className="h-4 w-4" />
-                            Export CSV
+                            Export Excel
                         </Button>
                         <div className="relative" ref={filterRef}>
                             <Button

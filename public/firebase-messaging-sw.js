@@ -94,11 +94,11 @@ self.addEventListener('notificationclick', (event) => {
   // Tentukan URL tujuan berdasarkan tipe notifikasi
   let targetUrl = '/';
   
-  if (data.type === 'new_booking' && data.booking_id) {
-    targetUrl = `/bookings/${data.booking_id}`;
-  } else if (data.url) {
-    targetUrl = data.url;
-  }
+  // if (data.type === 'new_booking' && data.booking_id) {
+  //   targetUrl = `/bookings/${data.booking_id}`;
+  // } else if (data.url) {
+  // }
+  targetUrl = data.url;
   
   // Handler untuk action khusus
   if (event.action === 'view') {

@@ -159,6 +159,25 @@ class ScheduleController extends Controller
                     }
                 }
 
+                if($booking->balance == 0){
+                    $lastPayment = BookingPayment::where('booking_id', $booking->id)
+                        ->where('is_add_on', '0')
+                        ->orderBy('id', 'desc')  // Or use created_at if that's more appropriate
+                        ->first();
+
+                    // Then sum all payments except the one with that ID
+                    $dp = BookingPayment::where('booking_id', $booking->id)
+                        ->where('is_add_on', '0')
+                        ->when($lastPayment, function($query) use ($lastPayment) {
+                            return $query->where('id', '!=', $lastPayment->id);
+                        })
+                        ->sum('nominal');
+                }
+                else{
+                    $dp = $booking->balance;
+                }
+                $profit = $dp - $booking->expense_internal_total;
+
                 return [
                     'booking_id' => $booking->id,
                     'id' => $orderChannel."-".$booking->id,
@@ -205,7 +224,7 @@ class ScheduleController extends Controller
                             'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : '/finance/expense-manager/'.$booking->id.'/edit',
                             'target' => '_blank'
                         ],
-                        'profit' =>  $booking->grand_total+$booking->book_add_on_total-$booking->expense_internal_total
+                        'profit' =>  $profit
                     ],
                     'paymentHistory' => $booking->bookingPayment->map(function($payment){
                         return [
@@ -219,6 +238,7 @@ class ScheduleController extends Controller
                     'notes' => $booking->note,
                 ];
             });
+            // return $data;
 
             // return $data['booking']; 
             $data['package'] = Package::with('duration')->where('is_publish','1')->get();
@@ -313,6 +333,7 @@ class ScheduleController extends Controller
                     $booking->booking->book_hotel = $hotels;
                 }
             }
+            
     
             return [
                 'day' => $query->day,
@@ -471,6 +492,26 @@ class ScheduleController extends Controller
         }
         $cekAddOnPaid = BookingPayment::where('booking_id',$id)->where('is_add_on','1')->count();
 
+        if($booking->balance == 0){
+            $lastPayment = BookingPayment::where('booking_id', $booking->id)
+                ->where('is_add_on', '0')
+                ->orderBy('id', 'desc')  // Or use created_at if that's more appropriate
+                ->first();
+
+            // Then sum all payments except the one with that ID
+            $dp = BookingPayment::where('booking_id', $booking->id)
+                ->where('is_add_on', '0')
+                ->when($lastPayment, function($query) use ($lastPayment) {
+                    return $query->where('id', '!=', $lastPayment->id);
+                })
+                ->sum('nominal');
+        }
+        else{
+            $dp = $booking->balance;
+        }
+        $profit = $dp - $booking->expense_internal_total;
+
+
         $details = [
             'payment_method' => PaymentMethod::get()->map(function($data){
                 return [
@@ -537,7 +578,7 @@ class ScheduleController extends Controller
                     'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : '/finance/expense-manager/'.$booking->id.'/edit',
                     'target' => '_blank'
                 ],
-                'profit' =>  $booking->grand_total+$booking->book_add_on_total-$booking->expense_internal_total,
+                'profit' =>  $profit,
                 'payment_history' => $booking->bookingPayment->map(function($payment) use($booking){
                     return [
                         'id' => $payment->id,

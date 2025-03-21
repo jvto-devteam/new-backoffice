@@ -495,7 +495,7 @@ class ScheduleController extends Controller
         if($booking->balance == 0){
             $lastPayment = BookingPayment::where('booking_id', $booking->id)
                 ->where('is_add_on', '0')
-                ->orderBy('id', 'desc')  // Or use created_at if that's more appropriate
+                ->orderBy('id', 'asc')  // Or use created_at if that's more appropriate
                 ->first();
 
             // Then sum all payments except the one with that ID

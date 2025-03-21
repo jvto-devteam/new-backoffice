@@ -161,7 +161,6 @@ class ScheduleController extends Controller
 
                 if($booking->balance == 0){
                     $lastPayment = BookingPayment::where('booking_id', $booking->id)
-                        ->where('is_add_on', '0')
                         ->orderBy('id', 'asc')  // Or use created_at if that's more appropriate
                         ->first();
 
@@ -500,7 +499,6 @@ class ScheduleController extends Controller
 
             // Then sum all payments except the one with that ID
             $dp = BookingPayment::where('booking_id', $booking->id)
-                ->where('is_add_on', '0')
                 ->when($lastPayment, function($query) use ($lastPayment) {
                     return $query->where('id', '!=', $lastPayment->id);
                 })

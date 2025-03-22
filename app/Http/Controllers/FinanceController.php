@@ -20,6 +20,7 @@ use App\Models\Itinerary;
 use App\Models\OthersActivity;
 use App\Models\Package;
 use App\Models\PaymentMethod;
+use App\Models\Vendor;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use PDF;
@@ -1009,5 +1010,58 @@ class FinanceController extends Controller
         $data = [$jvto,$klook,$twt];
 
         return Inertia::render('Finance/ProfitabilityReport', ['data' => $data, 'month' => $monthParam]);
+    }
+    
+    function payableReport(Request $request){
+        $month = $request->month ? $request->month : date('Y-m');
+        $vendor = Vendor::with('vendorCategory')->orderBy('vendor_category_id','asc')->get()->map(function($query) use($month){
+            $data = [];
+            $total = 0;
+            switch ($query->vendor_category_id) {
+                case 1:
+                    $data = BookRoomHotel::with(['booking.user', 'bookingItinerary','bookHotel.bookHotelMeal'])
+                    ->whereHas('bookHotel.hotel',function($q) use($query){
+                        $q->where('vendor_id',$query->id);
+                    })
+                    ->whereHas('booking', function($q) use ($month) {
+                        $q->whereHas('bookingItinerary', function($subQ) use ($q, $month) {
+                            $subQ->whereRaw("DATE_FORMAT(DATE_ADD(bookings.travel_date_start, INTERVAL (booking_itineraries.day-1) DAY), '%Y-%m') = ?", [$month]);
+                        });
+                    })
+                    ->get()->map(function($q){
+                        return [
+                            'user' => $q->booking->user->name,
+                            'travel_date_start' => $q->booking->travel_date_start,
+                            'day' => $q->bookingItinerary->day,
+                            'current_date' => $q->current_date,
+                            'subtotal' => $q->subtotal,
+                            'meals' => $q->bookHotel->bookHotelMeal->sum('subtotal'),
+                        ];
+                    });
+                    break;
+                case 2:
+                    break;
+                case 3:
+                    break;
+                case 4:
+                    break;
+            }
+            return [
+                'id' => $query->id,
+                'name' => $query->name,
+                'category' => $query->vendorCategory->name,
+                'total' => 0,
+                'status' => 'paid',
+                'data' => $data
+            ];
+        });
+        return [
+            'vendor' => $vendor
+        ];
+        return Inertia::render('Finance/PayableReport');
+    }
+    
+    function payableReportDetails($id){
+        return Inertia::render('Finance/PayableReportDetails');
     }
 }

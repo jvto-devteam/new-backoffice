@@ -1028,16 +1028,10 @@ class FinanceController extends Controller
                             $subQ->whereRaw("DATE_FORMAT(DATE_ADD(bookings.travel_date_start, INTERVAL (booking_itineraries.day-1) DAY), '%Y-%m') = ?", [$month]);
                         });
                     })
-                    ->get()->map(function($q){
-                        return [
-                            'user' => $q->booking->user->name,
-                            'travel_date_start' => $q->booking->travel_date_start,
-                            'day' => $q->bookingItinerary->day,
-                            'current_date' => $q->current_date,
-                            'subtotal' => $q->subtotal,
-                            'meals' => $q->bookHotel->bookHotelMeal->sum('subtotal'),
-                        ];
-                    });
+                    ->get();
+                    $total = $data->sum(function($item) {
+                        return $item->subtotal + $item->bookHotel->bookHotelMeal->sum('subtotal');
+                    });                
                     break;
                 case 2:
                     break;
@@ -1050,9 +1044,9 @@ class FinanceController extends Controller
                 'id' => $query->id,
                 'name' => $query->name,
                 'category' => $query->vendorCategory->name,
-                'total' => 0,
+                'total' => $total,
                 'status' => 'paid',
-                'data' => $data
+                // 'data' => $data
             ];
         });
         return [

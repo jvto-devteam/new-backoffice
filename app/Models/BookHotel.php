@@ -34,4 +34,21 @@ class BookHotel extends Model
         return $this->hasMany(BookHotelMeal::class, 'book_hotel_id');
     }
 
+    // Custom attribute for total rooms
+    public function getTotalRoomsAttribute()
+    {
+        return $this->bookRoom->sum('subtotal');
+    }
+
+    // Custom attribute for total meals
+    public function getTotalMealsAttribute()
+    {
+        return $this->bookHotelMeal->sum('subtotal');
+    }
+
+    // Custom attribute for combined total
+    public function getTotalAttribute()
+    {
+        return $this->total_rooms + $this->total_meals;
+    }
 }

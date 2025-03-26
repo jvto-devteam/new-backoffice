@@ -29,7 +29,7 @@ use Illuminate\Support\Str;
 
 class FinanceController extends Controller
 {
-    function invoice(Request $request){
+    function invoiceManager(Request $request){
         $search = $request->input('search');
         $startDate = $request->get('start_date') ? $request->get('start_date') : date('Y-m-01');
         $endDate = $request->get('end_date') ? $request->get('end_date') : date('Y-m-t');
@@ -1063,5 +1063,67 @@ class FinanceController extends Controller
     
     function payableReportDetails($id){
         return Inertia::render('Finance/PayableReportDetails');
+    }
+    
+    function invoice(){
+        $month = date('Y-m');
+        $inv = BookingPayment::withoutGlobalScope('paid')
+        ->with(['booking.user','booking.bookingDetail.package.duration'])
+        ->whereHas('booking', function($query) use($month) {
+            // $query->where('travel_date_start', 'like', $month."%");
+            $query->where('travel_date_start', '>=', date('Y-m-01'));
+        })
+        ->join('bookings', 'booking_payments.booking_id', '=', 'bookings.id')
+        ->orderBy('bookings.booking_code', 'asc')
+        ->select('booking_payments.*')
+        ->get()->map(function($booking){
+            // Hitung total pembayaran hingga saat ini
+            $totalPaid = BookingPayment::where('booking_id', $booking->booking_id)
+                ->where('id', '<=', $booking->id)
+                ->sum('nominal');
+            
+            // Grand total booking
+            $grandTotal = $booking->booking->grand_total + $booking->booking->book_add_on_total;
+            
+            // Tentukan nilai session
+            $session = '';
+            if($totalPaid == $grandTotal) {
+                $session = '-FULL';
+            } else {
+                // Hitung urutan pembayaran ini
+                $paymentNumber = BookingPayment::where('booking_id', $booking->booking_id)
+                    ->where('id', '<=', $booking->id)
+                    ->count();
+
+                $paymentNumber = $paymentNumber == 0 ? 1 : $paymentNumber;
+                
+                $session = '-DP' . $paymentNumber;
+            }
+
+            $invNumber = $booking->booking->booking_code.$session;
+            $invNumber = str_replace('JVR','INV',$invNumber);
+            $receiptNumber = str_replace('INV','RCP',$invNumber);
+            $night = $booking->booking->package_duration-1;
+            return [
+                'id' => $booking->id,
+                'booking_id' => $booking->booking->id,
+                'booking_code' => $booking->booking->booking_code,
+                'inv_number' => $invNumber,
+                'inv_date' => date('d M Y', strtotime($booking->created_at)),
+                'description' => $session == '-FULL' ? 'Full Payment' : 'Deposit Payment',
+                'travel_date_start' => date('d M Y', strtotime($booking->booking->travel_date_start)),
+                'customer' => $booking->booking->user->name,
+                'total_pax' => $booking->booking->total_pax,
+                'duration' => !empty($booking->booking->bookingDetail[0]->package->duration->day) ? $booking->booking->bookingDetail[0]->package->duration->day : $booking->booking->package_duration,
+                'nominal' => $booking->nominal,
+                'package_id' => !empty($booking->booking->bookingDetail[0]->package_id) ? $booking->booking->bookingDetail[0]->package_id : null,
+                'package_name' => !empty($booking->booking->bookingDetail[0]->package_id) ? $booking->booking->bookingDetail[0]->package->name : $booking->booking->package_duration." Days ".$night." Nights Package",
+                'status' => $booking->is_paid == '1' ? 'PAID' : 'UNPAID',
+                'paid_at' => $booking->is_paid == '1' ? date('d M Y', strtotime($booking->paid_at)) : null,
+                'receipt' => $booking->is_paid == '1' ? $receiptNumber : null
+            ];
+        });
+        // return $inv;
+        return Inertia::render('Finance/Invoices', ['inv' => $inv]);
     }
 }

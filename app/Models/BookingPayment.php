@@ -9,6 +9,15 @@ class BookingPayment extends Model
 {
     use HasFactory;
 
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::addGlobalScope('paid', function ($query) {
+            $query->where('is_paid', '1');
+        });
+    }
+
     public function paymentMethod()
     {
         return $this->belongsTo(PaymentMethod::class, 'payment_method_id');
@@ -18,5 +27,4 @@ class BookingPayment extends Model
     {
         return $this->belongsTo(Booking::class, 'booking_id');
     }
-
 }

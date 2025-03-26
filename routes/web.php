@@ -21,6 +21,7 @@ use App\Http\Controllers\VendorController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
+use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 
 // Route::get('/', function () {
 //     return Inertia::render('Welcome', [
@@ -40,6 +41,7 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
 });
 
+Route::get('generate-inv', [DashboardController::class,'generateInv']);
 Route::get('preview-file', [ScheduleController::class,'previewFile']);
 // Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -97,7 +99,8 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
 
 
 
-        Route::get('/invoice-manager', [FinanceController::class, 'invoice']);
+        Route::get('/invoice-manager', [FinanceController::class, 'invoiceManager']);
+        Route::get('/invoice', [FinanceController::class, 'invoice']);
         Route::get('/expense-manager', [FinanceController::class, 'expense']);
         Route::get('/expense-manager/{id}/edit', [FinanceController::class, 'editExpense']);
         Route::post('/expense-manager/{id}/update', [FinanceController::class, 'updateExpense']);

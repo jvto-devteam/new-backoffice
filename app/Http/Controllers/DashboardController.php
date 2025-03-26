@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
+use App\Models\BookingPayment;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -112,5 +113,51 @@ class DashboardController extends Controller
         // return $data['upcoming'];
 
         return Inertia::render('Dashboard',['alertData' => $alert,'upcoming' => $upcoming]);
+    }
+    function generateInv(){
+        // $new = new BookingPayment;
+        // $new->booking_id = 981;
+        // $new->nominal = 1500000;
+        // $new->payment_method_id = 7;    
+        // $new->description = 'Down Payment';
+        // $new->is_paid = '0';
+        // $new->save();
+        \DB::table('booking_payments')->where('is_paid','1')->update([
+            'paid_at' => \DB::raw('created_at')
+        ]);
+        
+        $booking = Booking::with(['user','bookingPayment' => function ($query) {
+            $query->withoutGlobalScope('paid');
+        }])->where('agent_id',2)->where('booking_category_id','!=',3)->where('travel_date_start','>=',date('Y-m-01'))->orderBy('travel_date_start','asc')->get()->map(function($booking){
+            if(count($booking->bookingPayment) == 0){
+                $new = new BookingPayment;
+                $new->booking_id = $booking->id;
+                $new->nominal = $booking->dp;
+                if($booking->payment_method == 'cc'){
+                    $new->payment_method_id = 3;    
+                }
+                else if($booking->payment_method == 'wise'){
+                    $new->payment_method_id = 5;    
+                }
+                else if($booking->payment_method == 'pay later'){
+                    $new->payment_method_id = 7;    
+                }
+                $new->description = 'Down Payment';
+                $new->reference = $booking->payment_link;
+                $new->is_paid = '0';
+                $new->save();
+            }
+            return [
+                'id' => $booking->id,
+                'user' => $booking->user->name,
+                'travel_date_start' => $booking->travel_date_start,
+                'status' => $booking->status,
+                'dp' => $booking->dp,
+                'payment_method' => $booking->payment_method,
+                'payment_link' => $booking->payment_link,
+                'payment' => $booking->bookingPayment,
+            ];
+        });
+        return $booking;
     }
 }

@@ -269,7 +269,7 @@ class PackageController extends Controller
                 foreach ($value->itineraryDestination->secondDestination->activity as $index => $val) {
                     $activities[$value->itineraryDestination->secondDestination->name][] = [
                         'id' => $val->id,
-                        'item' => $val->item,
+                        'item' => $val->name,
                         'formula' => $val->formula,
                         'price' => $val->price,
                     ];
@@ -311,7 +311,7 @@ class PackageController extends Controller
             'others' => $othersActivities,
             'resources' => $resources,
         ];
-        // return $data['expense'];
+        return $data['expense'];
         $fileName = "Master Expense Package ".$package->name . '.json';
 
         // Convert to pretty-printed JSON

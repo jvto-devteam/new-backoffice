@@ -193,13 +193,13 @@ const Index = (data) => {
                                               >
                                                   Detail
                                               </button>
-                                              {/* <a
+                                              <a
                                                   href={`/package-inventory/${orderChannel}?id=${item.id}&json=true`}
                                                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                                               >
                                                   Json
                                               </a>
-                                              <button
+                                              {/* <button
                                                   onClick={() => {
                                                       setSelectedPackage(item);
                                                       setShowQRCode(true);

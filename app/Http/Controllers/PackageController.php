@@ -311,7 +311,7 @@ class PackageController extends Controller
             'others' => $othersActivities,
             'resources' => $resources,
         ];
-        return $data['expense'];
+        // return $data['expense'];
         $fileName = "Master Expense Package ".$package->name . '.json';
 
         // Convert to pretty-printed JSON

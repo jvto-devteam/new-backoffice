@@ -19,21 +19,25 @@ class HotelController extends Controller
         $data['hotels'] = [];
         try {
             $getHotels = Hotel::with('roomHotel')
-                ->select('hotels.id', 'hotels.name', 'hotels.phone', 'hotels.address', 'hotels.banner')
-                ->where('is_publish', '1')
-                ->whereNull('deleted_at')
-                ->orderBy('id', 'asc');
+                ->join('destinations', 'hotels.destination_id', '=', 'destinations.id') // Ensure the correct foreign key
+                ->select('hotels.id', 'hotels.code', 'hotels.name', 'hotels.phone', 'hotels.address', 'hotels.banner', 'destinations.name as destination')
+                ->where('hotels.is_publish', '1')
+                ->whereNull('hotels.deleted_at')
+                ->whereNotNull('hotels.code')
+                ->orderBy('hotels.code', 'asc');
 
             if ($search) {
-                $getHotels = $getHotels->where('name', 'like', '%' . $search . '%')->orWhere('id', 'like', '%' . $search . '%');
+                $getHotels = $getHotels->where('hotels.name', 'like', '%' . $search . '%')
+                    ->orWhere('hotels.id', 'like', '%' . $search . '%');
             }
+
             $data['hotels'] = $getHotels->get();
             $data['search'] = $search;
-//            return $getHotels->get();
 
         } catch (\Illuminate\Database\QueryException $e) {
             return $e->getMessage();
         }
+//        return $data;
         return Inertia::render('Hotel/HotelList',['data' => $data]);
     }
 

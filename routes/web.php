@@ -6,6 +6,8 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\AccommodationController;
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\TransportationController;
+use App\Http\Controllers\MiscellaneousController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\TaskManagementController;
@@ -58,6 +60,8 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
     Route::get('/data-master-management/hotels', [HotelController::class,'index']);
     Route::get('/data-master-management/accommodation', [AccommodationController::class,'index']);
     Route::get('/data-master-management/activities', [ActivityController::class,'index']);
+    Route::get('/data-master-management/transportation', [TransportationController::class,'index']);
+    Route::get('/data-master-management/miscellaneous', [MiscellaneousController::class,'index']);
 
     Route::get('/short-link', [ShortLinkController::class,'index']);
     Route::post('/short-link/store', [ShortLinkController::class,'store']);

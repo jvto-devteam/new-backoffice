@@ -6,6 +6,8 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\AccommodationController;
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\TransportationController;
+use App\Http\Controllers\MiscellaneousController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\TaskManagementController;
@@ -18,6 +20,7 @@ use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\VendorController;
+use App\Http\Controllers\ArticleController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -52,12 +55,14 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
     Route::get('/booking-analist', [ScheduleController::class,'bookingAnalist']);
     Route::get('/expense-package', [ExpenseController::class,'expensePackage']);
     Route::get('/expense-item', [ExpenseController::class,'expenseItem']);
-    
+
     //data master management
     Route::get('/data-master-management/hotels', [HotelController::class,'index']);
     Route::get('/data-master-management/accommodation', [AccommodationController::class,'index']);
     Route::get('/data-master-management/activities', [ActivityController::class,'index']);
-    
+    Route::get('/data-master-management/transportation', [TransportationController::class,'index']);
+    Route::get('/data-master-management/miscellaneous', [MiscellaneousController::class,'index']);
+
     Route::get('/short-link', [ShortLinkController::class,'index']);
     Route::post('/short-link/store', [ShortLinkController::class,'store']);
     Route::delete('/short-link/{id}', [ShortLinkController::class, 'destroy'])->name('short-link.destroy');
@@ -67,13 +72,13 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
         Route::post('/flipbook/store', [FlipBookController::class,'store']);
         Route::delete('/flipbook/{id}', [FlipBookController::class, 'destroy']);
         Route::put('/flipbook/{id}', [FlipBookController::class, 'update']);
-    
+
         Route::get('/short-link', [ShortLinkController::class,'index']);
         Route::post('/short-link/store', [ShortLinkController::class,'store']);
         Route::delete('/short-link/{id}', [ShortLinkController::class, 'destroy']);
         Route::put('/short-link/{id}', [ShortLinkController::class, 'update']);
     });
-    
+
     Route::prefix('bookings')->group(function () {
         Route::get('/details/{id}', [ScheduleController::class, 'details']);
         Route::post('/payment/{id}', [BookingController::class, 'storePayment']);
@@ -89,7 +94,7 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
         Route::get('/accommodation/{id}', [VendorController::class, 'accommodation']);
         Route::post('/accommodation/update-room', [VendorController::class, 'updateRoom']);
     });
-    
+
     Route::prefix('finance')->group(function () {
         Route::get('/receivable-income', [FinanceController::class, 'receivableIncome']);
         Route::get('/payable-report', [FinanceController::class, 'payableReport']);
@@ -119,15 +124,18 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
         Route::get('/{order_channel}', [PackageController::class, 'index']);
         Route::get('/details/{code}', [PackageController::class, 'details']);
     });
-    
+
     Route::get('/task-management', [TaskManagementController::class, 'index']);
     Route::get('/calendar', [TaskManagementController::class, 'calendar']);
     Route::get('/klook-expense-calculation', [KlookExpenseController::class, 'index']);
-    
+
     Route::get('/package-detail', [PackageController::class, 'packageDetail']);
-    
+
     // Client Management Routes
     Route::get('/client-management', [ClientController::class,'index']);
+
+    Route::resource('articles', ArticleController::class);
+
 // });
 
 // require __DIR__.'/auth.php';

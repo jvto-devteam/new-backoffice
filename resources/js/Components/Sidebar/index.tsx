@@ -136,9 +136,9 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
 
                                     Homepage
                                 </Link>
-                            </li>                            
+                            </li>
                         </ul>
-                        <h3 className="mb-4 ml-4 text-sm font-semibold text-bodydark2">BOOKINGS</h3>                        
+                        <h3 className="mb-4 ml-4 text-sm font-semibold text-bodydark2">BOOKINGS</h3>
                         <ul className="mb-6 flex flex-col gap-1.5">
                             {/* <!-- Menu Item Calendar --> */}
                             <li>
@@ -233,7 +233,7 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                             d="M12.0789 13.8093H3.97891C3.64141 13.8093 3.33203 14.0906 3.33203 14.4562C3.33203 14.8218 3.61328 15.1031 3.97891 15.1031H12.0789C12.4164 15.1031 12.7258 14.8218 12.7258 14.4562C12.7258 14.0906 12.4164 13.8093 12.0789 13.8093Z"
                                             fill=""></path>
                                     </svg>
-                                    Client Management 
+                                    Client Management
                                 </Link>
                             </li>
 
@@ -443,7 +443,7 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                                         <li>
                                                             <Link
                                                                 href="/finance/profit-loss-summary">
-                                                                Profit & Loss Summary 
+                                                                Profit & Loss Summary
                                                             </Link>
                                                         </li>
                                                     </ul>
@@ -454,7 +454,7 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                 </SidebarLinkGroup> */}
 
                             </ul>
-                            <h3 className="mb-4 ml-4 text-sm font-semibold text-bodydark2">DATA MASTER</h3>                        
+                            <h3 className="mb-4 ml-4 text-sm font-semibold text-bodydark2">DATA MASTER</h3>
                             <ul className="mb-6 flex flex-col gap-1.5">
                             {/* <!-- Menu Item Forms --> */}
                             <SidebarLinkGroup
@@ -623,7 +623,7 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                                     />
                                                 </svg>
                                             </Link>
-                                            <h3 className="mb-4 mt-6 ml-4 text-sm font-semibold text-bodydark2">TOOLS</h3>                        
+                                            <h3 className="mb-4 mt-6 ml-4 text-sm font-semibold text-bodydark2">TOOLS</h3>
                                             <ul className="mb-6 flex flex-col gap-1.5">
                                             <SidebarLinkGroup
                                                 activeCondition={
@@ -744,6 +744,18 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                                             Activities
                                                         </Link>
                                                     </li>
+                                                    <li>
+                                                        <Link
+                                                            href="/data-master-management/transportation">
+                                                            Transportation
+                                                        </Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link
+                                                            href="/data-master-management/miscellaneous">
+                                                            Miscellaneous
+                                                        </Link>
+                                                    </li>
                                                 </ul>
                                             </div>
                                             {/* <!-- Dropdown Menu End --> */}
@@ -751,7 +763,7 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                     );
                                 }}
                             </SidebarLinkGroup>
-                            {/* <!-- Menu Item Forms --> */}
+                                {/* <!-- Menu Item Forms --> */}
 
                         </ul>
                     </div>

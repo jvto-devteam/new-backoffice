@@ -15,10 +15,11 @@ class ActivityController extends Controller
         $search = $request->input('search');
         $data['activities'] = [];
         try {
-            $getActivities = DestinationActivity::select('destination_activities.id', 'destination_activities.name', 'destination_activities.unit', 'destination_activities.price', 'destinations.name as destination')
+            $getActivities = DestinationActivity::select('destination_activities.id', 'destination_activities.destination_activity_code','destination_activities.name', 'destination_activities.unit', 'destination_activities.price', 'destinations.name as destination')
                 ->join('destinations', 'destinations.id', '=', 'destination_activities.destination_id')
-                ->orderBy('id', 'asc');
-
+                ->orderBy('destination_activity_code', 'asc')
+//                ->whereNotNull('destination_activities.destination_activity_code')
+            ->where('destination_activities.destination_activity_code', '!=', '');
             if ($search) {
                 $getActivities = $getActivities->where('destination_activities.name', 'like', '%' . $search . '%')->orWhere('destination_activities.id', 'like', '%' . $search . '%');
             }

@@ -221,7 +221,9 @@ class PackageController extends Controller
     }
 
     function details($code){
-        $package = Package::select('id','name','duration_id')->with(['duration' => function($duration){
+        $package = Package::with(['packagePrice' => function($query){
+            $query->select('package_prices.id','package_id','price_categories.temp_text as pax','price')->join('price_categories','package_prices.price_category_id','price_categories.id')->where('price_plan_id',2);
+        },'startDestination','endDestination','duration' => function($duration){
             $duration->select('id','name','day');
         },'itinerary' => function($query){
             $query->select('id','package_id','day')->with(['itineraryDestination' => function($itiDest){
@@ -267,7 +269,7 @@ class PackageController extends Controller
                 foreach ($value->itineraryDestination->secondDestination->activity as $index => $val) {
                     $activities[$value->itineraryDestination->secondDestination->name][] = [
                         'id' => $val->id,
-                        'item' => $val->item,
+                        'item' => $val->name,
                         'formula' => $val->formula,
                         'price' => $val->price,
                     ];
@@ -278,27 +280,50 @@ class PackageController extends Controller
         $othersActivities = OthersActivity::select('id','name','formula','price')->where('is_default','1')->get();
         $resources = CarConfiguration::with(['car','crewJvtoRole'])->whereNotNull('crew_jvto_role_id')->get()->map(function($query){
             return [
+                'id' => $query->id,
+                'pax' => $query->pax,
                 'cars' => [
-                    'pax' => $query->pax,
                     'car_id' => $query->car_id,
                     'car_name' => $query->car->name,
                     'price' => $query->price,
                 ],
                 'crews' => [
-                    'pax' => $query->pax,
                     'crew_role_id' => $query->crewJvtoRole->id,
                     'crew_name' => $query->crewJvtoRole->role,
                     'price' => $query->crewJvtoRole->rate,
                 ],
             ];
         });
+
         $data['expense'] = [
+            'package' => [
+                'id' => $package->id,
+                'code' => $package->package_code,
+                'name' => $package->name,
+                'start' => $package->startDestination->name,
+                'end' => $package->endDestination->name,
+                'duration_day' => $package->duration->day,
+                'duration_name' => $package->duration->name,
+                'prices' => $package->packagePrice
+            ],
             'accommodation' => $package->packageHotel,
             'activities' => $activities,
             'others' => $othersActivities,
             'resources' => $resources,
         ];
-        return $data['expense'];
+        // return $data['expense'];
+        $fileName = "Master Expense Package ".$package->name . '.json';
+
+        // Convert to pretty-printed JSON
+        $jsonContent = json_encode($data['expense'], JSON_PRETTY_PRINT);
+
+        return response()->streamDownload(function () use ($jsonContent) {
+            echo $jsonContent;
+        }, $fileName, [
+            'Content-Type' => 'application/json',
+            'Content-Disposition' => 'attachment; filename="' . $fileName . '"',
+        ]);
+
     }
 
     function create()

@@ -41,11 +41,17 @@ const HotelRow = ({ hotel, isExpanded, onToggle }) => {
                 <td className="align-top px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center">
                         {isExpanded ? (
-                            <ChevronDown className="h-4 w-4 mr-2" />
+                            <ChevronDown className="h-4 w-4 mr-2"/>
                         ) : (
-                            <ChevronRight className="h-4 w-4 mr-2" />
+                            <ChevronRight className="h-4 w-4 mr-2"/>
                         )}
-                        <div className="font-medium">{hotel.id}</div>
+                        <div className="font-medium">{hotel.code}</div>
+                    </div>
+                </td>
+                <td className="align-top px-4 py-3">
+                    <div className="flex items-center space-x-2">
+
+                        <span>{hotel.destination}</span>
                     </div>
                 </td>
                 <td className="align-top px-4 py-3 whitespace-nowrap">
@@ -54,18 +60,7 @@ const HotelRow = ({ hotel, isExpanded, onToggle }) => {
                         <span>{hotel.name}</span>
                     </div>
                 </td>
-                <td className="align-top px-4 py-3">
-                    <div className="flex items-center space-x-2">
-                        <Phone className="h-4 w-4 text-gray-400" />
-                        <span>{hotel.phone}</span>
-                    </div>
-                </td>
-                <td className="align-top px-4 py-3">
-                    <div className="flex items-center space-x-2">
-                        <MapPin className="h-4 w-4 text-gray-400" />
-                        <span>{hotel.address}</span>
-                    </div>
-                </td>
+
                 <td className="align-top px-4 py-3 text-center">
                     <div className="text-sm font-medium">
                         {hotel.room_hotel.length} Rooms
@@ -189,14 +184,12 @@ const Index = ({ data }) => {
                                 <tr>
                                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                                         Hotel ID
-                                    </th><th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                                    </th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
+                                        Destination
+                                    </th>
+                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
                                         Hotel Name
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
-                                        Contact
-                                    </th>
-                                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400">
-                                        Address
                                     </th>
                                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400">
                                         Room Types

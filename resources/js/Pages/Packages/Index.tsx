@@ -199,7 +199,7 @@ const Index = (data) => {
                                               >
                                                   Json
                                               </a>
-                                              <button
+                                              {/* <button
                                                   onClick={() => {
                                                       setSelectedPackage(item);
                                                       setShowQRCode(true);
@@ -208,12 +208,17 @@ const Index = (data) => {
                                                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                                               >
                                                   QR Code
-                                              </button>
-                                              <a href={`/package-inventory/flipbook/${item.url}`}
+                                              </button> */}
+                                              <a href={`/package-inventory/details/${item.package_code}`}
+                                                 className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                              >
+                                                  Master Data Expense
+                                              </a>
+                                              {/* <a href={`/package-inventory/flipbook/${item.url}`}
                                                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                                               >
                                                   Flipbook
-                                              </a>
+                                              </a> */}
                                               <Link href={`/package-inventory/edit/${item.id}`}
                                                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
                                               >

@@ -4,14 +4,14 @@ import Authenticated from '@/Layouts/Main';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Filter, Plus, Edit, Trash, X } from 'lucide-react';
+import { Filter, Plus, Edit, Trash, X, Eye } from 'lucide-react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
 
 export default function ArticleIndex({ articles, filters }) {
     // State untuk filter artikel
     const [search, setSearch] = useState(filters.search || '');
-    const [publishDate, setPublishDate] = useState(filters.publish_date || '');
+    const [publishDate, setPublishDate] = useState(filters.published_at || '');
 
     // State untuk toggle filter dropdown
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -25,19 +25,26 @@ export default function ArticleIndex({ articles, filters }) {
         slug: '',
         content: '',
         tags: '',
-        publish_date: '',
-        status: 'draft'
+        published_at: '',
+        status: 'published',
+        author: '',
+        featured_image: '',
+        meta_title: '',
+        meta_description: '',
+        articleMedia: []
     });
 
     // Handler untuk submit filter
     const handleFilterSubmit = (e) => {
         e.preventDefault();
-        router.get('/dashboard/articles', { search, publish_date: publishDate }, { preserveState: true, preserveScroll: true });
+        router.get('/articles', { search, published_at: publishDate }, { preserveState: true, preserveScroll: true });
         setIsFilterOpen(false);
     };
 
     // Handler untuk membuka form tambah artikel
+    // Saat membuka form baru, inisialisasi field tambahan dan articleMedia sebagai array kosong
     const openForm = () => {
+        const today = new Date().toISOString().split('T')[0]; // format YYYY-MM-DD
         setIsFormOpen(true);
         setIsEditing(false);
         setFormData({
@@ -46,23 +53,83 @@ export default function ArticleIndex({ articles, filters }) {
             slug: '',
             content: '',
             tags: '',
-            publish_date: '',
-            status: 'draft'
+            published_at: today,
+            status: 'published',
+            author: '',
+            featured_image: null,
+            meta_title: '',
+            meta_description: '',
+            articleMedia: []
         });
     };
 
+// Fungsi untuk menambah satu entry article media
+    const addMedia = () => {
+        setFormData(prev => ({
+            ...prev,
+            articleMedia: [...(prev.articleMedia || []), { file: null, caption: '', alt_text: '', type: 'image' }]
+        }));
+    };
+
+// Fungsi untuk menghapus entry article media berdasarkan index
+    const removeMedia = (index) => {
+        setFormData(prev => {
+            const newMedia = [...prev.articleMedia];
+            newMedia.splice(index, 1);
+            return { ...prev, articleMedia: newMedia };
+        });
+    };
+
+// Fungsi untuk menangani perubahan input pada setiap article media
+    const handleMediaChange = (index, key, value) => {
+        setFormData(prev => {
+            const newMedia = [...prev.articleMedia];
+            newMedia[index] = { ...newMedia[index], [key]: value };
+            return { ...prev, articleMedia: newMedia };
+        });
+    };
+
+
     // Handler untuk membuka form edit artikel dan mengisi data yang ada
     const openEditForm = (article) => {
+
         setIsFormOpen(true);
         setIsEditing(true);
+
+        // Konversi tags dari JSON ke comma-separated string
+        let tagsValue = '';
+        try {
+            const parsed = JSON.parse(article.tags);
+            if (Array.isArray(parsed)) {
+                tagsValue = parsed.join(', ');
+            } else {
+                tagsValue = article.tags;
+            }
+        } catch (e) {
+            tagsValue = article.tags;
+        }
+
+        // Mapping article_media dari backend menjadi articleMedia untuk state form
+        const articleMedia = (article.article_media || []).map((media) => ({
+            media_url: media.media_url || '',
+            caption: media.caption || '',
+            alt_text: media.alt_text || '',
+            type: media.type || 'image',
+        }));
+
         setFormData({
             id: article.id,
             title: article.title,
             slug: article.slug,
             content: article.content,
-            tags: article.tags,
-            publish_date: article.publish_date,
+            tags: tagsValue,
+            published_at: article.published_at, // perhatikan nama field published_at
             status: article.status,
+            author: article.author,
+            featured_image: article.featured_image,
+            meta_title: article.meta_title,
+            meta_description: article.meta_description,
+            articleMedia: articleMedia, // gunakan key articleMedia untuk state form
         });
     };
 
@@ -79,13 +146,22 @@ export default function ArticleIndex({ articles, filters }) {
     // Submit form (create atau update artikel)
     const handleFormSubmit = (e) => {
         e.preventDefault();
+        console.log('Submitting form with data:', formData); // Debug: cek payload sebelum dikirim
         if (isEditing) {
-            router.put(`/dashboard/articles/${formData.id}`, formData, {
-                onSuccess: () => setIsFormOpen(false),
+            router.put(`/articles/${formData.id}`, formData, {
+                onSuccess: () => {
+                    closeForm();
+                },
+                preserveState: true,
+                preserveScroll: true,
             });
         } else {
-            router.post('/dashboard/articles', formData, {
-                onSuccess: () => setIsFormOpen(false),
+            router.post('/articles', formData, {
+                onSuccess: () => {
+                    closeForm();
+                },
+                preserveState: true,
+                preserveScroll: true,
             });
         }
     };
@@ -93,13 +169,13 @@ export default function ArticleIndex({ articles, filters }) {
     // Handler untuk menghapus artikel
     const handleDelete = (articleId) => {
         if (confirm('Are you sure you want to delete this article?')) {
-            router.delete(`/dashboard/articles/${articleId}`);
+            router.delete(`/articles/${articleId}`);
         }
     };
 
     // Handler untuk pagination
     const handlePageChange = (url) => {
-        router.get(url, { search, publish_date: publishDate }, { preserveState: true, preserveScroll: true });
+        router.get(url, { search, published_at: publishDate }, { preserveState: true, preserveScroll: true });
     };
 
     // Fungsi format tanggal agar lebih mudah dibaca
@@ -160,26 +236,46 @@ export default function ArticleIndex({ articles, filters }) {
                         <TableHeader className="bg-gray-100">
                             <TableRow>
                                 <TableHead>Title</TableHead>
-                                <TableHead>Tags</TableHead>
-                                <TableHead>Publish Date</TableHead>
+                                <TableHead>Slug</TableHead>
+                                <TableHead>Created At</TableHead>
+                                <TableHead>Author</TableHead>
                                 <TableHead>Status</TableHead>
+                                <TableHead>Featured Image</TableHead>
+                                <TableHead>Tags</TableHead>
                                 <TableHead className="text-center">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {articles.data.map((article) => (
                                 <TableRow key={article.id}>
-                                    <TableCell className="font-medium">{article.title}</TableCell>
-                                    <TableCell>{article.tags}</TableCell>
-                                    <TableCell>{formatDate(article.publish_date)}</TableCell>
+                                    <TableCell>{article.title}</TableCell>
+                                    <TableCell>{article.slug}</TableCell>
+                                    <TableCell>{formatDate(article.created_at)}</TableCell>
+                                    <TableCell>{article.author}</TableCell>
                                     <TableCell>{article.status}</TableCell>
+                                    <TableCell>
+                                        {article.featured_image ? (
+                                            <img
+                                                src={`/storage/${article.featured_image}`}
+                                                alt="Featured"
+                                                className="max-w-[80px] object-cover"
+                                            />
+                                        ) : '-'}
+                                    </TableCell>
+                                    <TableCell>{article.tags}</TableCell>
                                     <TableCell className="text-center space-x-2">
+                                        <Button variant="ghost" size="icon" onClick={() => router.get(`/articles/${article.id}`)}>
+                                            {/* Menggunakan icon Eye dari lucide-react untuk tombol Detail */}
+                                            <Eye className="w-4 h-4" />
+                                        </Button>
+
                                         <Button variant="ghost" size="icon" onClick={() => openEditForm(article)}>
                                             <Edit className="w-4 h-4" />
                                         </Button>
                                         <Button variant="ghost" size="icon" onClick={() => handleDelete(article.id)}>
                                             <Trash className="w-4 h-4" />
                                         </Button>
+
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -213,17 +309,22 @@ export default function ArticleIndex({ articles, filters }) {
                 {/* Modal Form untuk Tambah/Edit Artikel */}
                 {isFormOpen && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                        <div className="bg-white rounded-lg p-6 w-full max-w-3xl">
+                        <div className="bg-white rounded-lg p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
                             <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-semibold">{isEditing ? 'Edit Article' : 'Add Article'}</h2>
+                                <h2 className="text-xl font-semibold">
+                                    {isEditing ? 'Edit Article' : 'Add Article'}
+                                </h2>
                                 <Button variant="ghost" size="icon" onClick={closeForm}>
                                     <X className="w-4 h-4" />
                                 </Button>
                             </div>
                             <form onSubmit={handleFormSubmit} className="space-y-4">
+                                {/* Title dan Slug */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Title</label>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Title
+                                        </label>
                                         <Input
                                             type="text"
                                             value={formData.title}
@@ -232,7 +333,9 @@ export default function ArticleIndex({ articles, filters }) {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Slug</label>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Slug
+                                        </label>
                                         <Input
                                             type="text"
                                             value={formData.slug}
@@ -241,17 +344,82 @@ export default function ArticleIndex({ articles, filters }) {
                                         />
                                     </div>
                                 </div>
+                                {/* Input Author */}
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">Content</label>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Author
+                                    </label>
+                                    <Input
+                                        type="text"
+                                        value={formData.author}
+                                        onChange={(e) => handleFormChange('author', e.target.value)}
+                                    />
+                                </div>
+                                {/* Featured Image */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Featured Image
+                                    </label>
+                                    <Input
+                                        type="file"
+                                        onChange={(e) =>
+                                            handleFormChange('featured_image', e.target.files[0])
+                                        }
+                                    />
+                                    {/* Jika featured_image sudah ada (edit), tampilkan preview */}
+                                    {formData.featured_image &&
+                                        typeof formData.featured_image === 'string' && (
+                                            <div className="mt-2">
+                                                <img
+                                                    src={`/storage/${formData.featured_image}`}
+                                                    alt="Featured"
+                                                    className="max-w-xs"
+                                                />
+                                            </div>
+                                        )}
+                                </div>
+                                {/* Content */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Content
+                                    </label>
                                     <ReactQuill
                                         theme="snow"
                                         value={formData.content}
                                         onChange={(value) => handleFormChange('content', value)}
                                     />
                                 </div>
+                                {/* Meta Title & Meta Description */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Meta Title
+                                        </label>
+                                        <Input
+                                            type="text"
+                                            value={formData.meta_title}
+                                            onChange={(e) => handleFormChange('meta_title', e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Meta Description
+                                        </label>
+                                        <Input
+                                            type="text"
+                                            value={formData.meta_description}
+                                            onChange={(e) =>
+                                                handleFormChange('meta_description', e.target.value)
+                                            }
+                                        />
+                                    </div>
+                                </div>
+                                {/* Tags, Publish Date, dan Status */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Tags</label>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Tags
+                                        </label>
                                         <Input
                                             type="text"
                                             placeholder="e.g., tech, news"
@@ -260,15 +428,21 @@ export default function ArticleIndex({ articles, filters }) {
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Publish Date</label>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Publish Date
+                                        </label>
                                         <Input
                                             type="date"
-                                            value={formData.publish_date}
-                                            onChange={(e) => handleFormChange('publish_date', e.target.value)}
+                                            value={formData.published_at}
+                                            onChange={(e) =>
+                                                handleFormChange('published_at', e.target.value)
+                                            }
                                         />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700">Status</label>
+                                        <label className="block text-sm font-medium text-gray-700">
+                                            Status
+                                        </label>
                                         <select
                                             value={formData.status}
                                             onChange={(e) => handleFormChange('status', e.target.value)}
@@ -279,14 +453,79 @@ export default function ArticleIndex({ articles, filters }) {
                                         </select>
                                     </div>
                                 </div>
+                                {/* Dynamic Input untuk Article Media */}
+                                {/* Dynamic Input untuk Article Media */}
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Article Media
+                                    </label>
+                                    {formData.articleMedia &&
+                                        formData.articleMedia.map((media, index) => (
+                                            <div key={index} className="border p-4 mb-4 rounded">
+                                                {media.media_url && (
+                                                    <div className="mb-2">
+                                                        <img
+                                                            src={`/storage/${media.media_url}`}
+                                                            alt={media.caption || 'Article Media'}
+                                                            className="max-w-xs"
+                                                        />
+                                                    </div>
+                                                )}
+                                                <div className="mb-2">
+                                                    <label className="block text-sm font-medium text-gray-700">Upload Image</label>
+                                                    <Input
+                                                        type="file"
+                                                        onChange={(e) => handleMediaChange(index, 'file', e.target.files[0])}
+                                                    />
+                                                </div>
+                                                <div className="mb-2">
+                                                    <label className="block text-sm font-medium text-gray-700">Caption</label>
+                                                    <Input
+                                                        type="text"
+                                                        value={media.caption || ''}
+                                                        onChange={(e) => handleMediaChange(index, 'caption', e.target.value)}
+                                                    />
+                                                </div>
+                                                <div className="mb-2">
+                                                    <label className="block text-sm font-medium text-gray-700">Alt Text</label>
+                                                    <Input
+                                                        type="text"
+                                                        value={media.alt_text || ''}
+                                                        onChange={(e) => handleMediaChange(index, 'alt_text', e.target.value)}
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <Button type="button" variant="outline" onClick={() => removeMedia(index)}>
+                                                        Remove Media
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        ))
+                                    }
+
+                                    <Button type="button" onClick={addMedia}>
+                                        Add Media
+                                    </Button>
+
+                                </div>
+
+
+                                {/* Tombol Submit & Cancel */}
                                 <div className="flex justify-end gap-2">
-                                    <Button type="button" variant="outline" onClick={closeForm}>Cancel</Button>
-                                    <Button type="submit">{isEditing ? 'Update Article' : 'Create Article'}</Button>
+                                    <Button type="button" variant="outline" onClick={closeForm}>
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit">
+                                        {isEditing ? 'Update Article' : 'Create Article'}
+                                    </Button>
                                 </div>
                             </form>
                         </div>
                     </div>
                 )}
+
+
+
             </div>
         </Authenticated>
     );

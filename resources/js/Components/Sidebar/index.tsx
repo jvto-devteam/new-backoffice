@@ -658,123 +658,154 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                 }}
                             </SidebarLinkGroup>
 
-                            {/* <!-- Menu Item Forms --> */}
-                            <SidebarLinkGroup
-                                activeCondition={
-                                    pathname === '/data-master-management' || pathname.includes('data-master-management')
-                                }
-                            >
-                                {(handleClick, open) => {
-                                    return (
-                                        <React.Fragment>
-                                            <h3 className="mb-4 mt-6 ml-4 text-sm font-semibold text-bodydark2">TOOLS</h3>
-                                            <ul className="mb-6 flex flex-col gap-1.5">
-                                            <SidebarLinkGroup
-                                                activeCondition={
-                                                    pathname === '/generator' || pathname.includes('generator')
-                                                }
-                                            >
-                                                {(handleClick, open) => {
-                                                    return (
-                                                        <React.Fragment>
-                                                            <Link
-                                                                href="#"
-                                                                className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                                                                    (pathname === '/generator' ||
-                                                                        pathname.includes('generator')) &&
-                                                                    'bg-graydark dark:bg-meta-4'
-                                                                }`}
-                                                                onClick={(e) => {
-                                                                    e.preventDefault();
-                                                                    sidebarExpanded
-                                                                        ? handleClick()
-                                                                        : setSidebarExpanded(true);
-                                                                }}
-                                                            >
-                                                                <svg className="fill-current" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg"><g clipPath="url(#clip0_1184_13869)"><path d="M10.8559 0.506226C10.5184 0.506226 10.209 0.787476 10.209 1.1531V6.7781C10.209 7.1156 10.4902 7.42498 10.8559 7.42498H16.8746C17.0434 7.42498 17.2121 7.3406 17.3246 7.2281C17.4371 7.08748 17.4934 6.91873 17.4934 6.74998C17.2684 3.23435 14.3434 0.506226 10.8559 0.506226ZM11.4746 6.1031V1.79998C13.809 2.08123 15.6934 3.82498 16.1434 6.13123H11.4746V6.1031Z" fill=""></path><path d="M15.384 8.69057H9.11211V2.6437C9.11211 2.3062 8.83086 2.02495 8.49336 2.02495C8.40898 2.02495 8.32461 2.02495 8.24023 2.02495C3.96523 1.99682 0.505859 5.48432 0.505859 9.75932C0.505859 14.0343 3.99336 17.5218 8.26836 17.5218C12.5434 17.5218 16.0309 14.0343 16.0309 9.75932C16.0309 9.59057 16.0309 9.42182 16.0027 9.2812C16.0027 8.9437 15.7215 8.69057 15.384 8.69057ZM8.26836 16.2562C4.66836 16.2562 1.77148 13.3593 1.77148 9.75932C1.77148 6.32807 4.47148 3.48745 7.87461 3.29057V9.30932C7.87461 9.64682 8.15586 9.9562 8.52148 9.9562H14.7934C14.6809 13.4437 11.784 16.2562 8.26836 16.2562Z" fill=""></path></g><defs><clipPath id="clip0_1184_13869"><rect width="18" height="18" fill="white"></rect></clipPath></defs></svg>
-                                                                Generator
-                                                                <svg
-                                                                    className={`absolute right-4 top-1/2 -translate-y-1/2 fill-current ${
-                                                                        open && 'rotate-180'
-                                                                    }`}
-                                                                    width="20"
-                                                                    height="20"
-                                                                    viewBox="0 0 20 20"
-                                                                    fill="none"
-                                                                    xmlns="http://www.w3.org/2000/svg"
-                                                                >
-                                                                    <path
-                                                                        fillRule="evenodd"
-                                                                        clipRule="evenodd"
-                                                                        d="M4.41107 6.9107C4.73651 6.58527 5.26414 6.58527 5.58958 6.9107L10.0003 11.3214L14.4111 6.91071C14.7365 6.58527 15.2641 6.58527 15.5896 6.91071C15.915 7.23614 15.915 7.76378 15.5896 8.08922L10.5896 13.0892C10.2641 13.4147 9.73651 13.4147 9.41107 13.0892L4.41107 8.08922C4.08563 7.76378 4.08563 7.23614 4.41107 6.9107Z"
-                                                                        fill=""
-                                                                    />
-                                                                </svg>
-                                                            </Link>
-                                                            {/* <!-- Dropdown Menu Start --> */}
-                                                            <div
-                                                                className={`translate transform overflow-hidden ${
-                                                                    !open && 'hidden'
-                                                                }`}
-                                                            >
-                                                                <ul className="mt-4 mb-5.5 flex flex-col gap-2.5 pl-6">
-                                                                    <li>
-                                                                        <Link
-                                                                            href="/generator/short-link">
-                                                                            Short Link
-                                                                        </Link>
-                                                                    </li>
-                                                                    <li>
-                                                                        <Link
-                                                                            href="/generator/flipbook">
-                                                                            Flipbook
-                                                                        </Link>
-                                                                    </li>
-                                                                </ul>
-                                                            </div>
-                                                            {/* <!-- Dropdown Menu End --> */}
-                                                        </React.Fragment>
-                                                    );
-                                                }}
-                                            </SidebarLinkGroup>
-                                            <li>
-                                <Link
-                                    href="/crew-assignment"
-                                    className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                                        pathname.includes('crew-assignment') && 'bg-graydark dark:bg-meta-4'
-                                    }`}
+                                {/* <!-- Menu Item Forms --> */}
+                                <SidebarLinkGroup
+                                    activeCondition={
+                                        pathname === '/data-master-management' || pathname.includes('data-master-management')
+                                    }
                                 >
-                                    <svg
-                                        className="fill-current"
-                                        width="18"
-                                        height="18"
-                                        viewBox="0 0 18 18"
-                                        fill="none"
-                                        xmlns="http://www.w3.org/2000/svg"
-                                    >
-                                        <path
-                                            d="M9.0002 7.79065C11.0814 7.79065 12.7689 6.1594 12.7689 4.1344C12.7689 2.1094 11.0814 0.478149 9.0002 0.478149C6.91895 0.478149 5.23145 2.1094 5.23145 4.1344C5.23145 6.1594 6.91895 7.79065 9.0002 7.79065ZM9.0002 1.7719C10.3783 1.7719 11.5033 2.84065 11.5033 4.16252C11.5033 5.4844 10.3783 6.55315 9.0002 6.55315C7.62207 6.55315 6.49707 5.4844 6.49707 4.16252C6.49707 2.84065 7.62207 1.7719 9.0002 1.7719Z"
-                                            fill=""
-                                        />
-                                        <path
-                                            d="M10.8283 9.05627H7.17207C4.16269 9.05627 1.71582 11.5313 1.71582 14.5406V16.875C1.71582 17.2125 1.99707 17.5219 2.3627 17.5219C2.72832 17.5219 3.00957 17.2407 3.00957 16.875V14.5406C3.00957 12.2344 4.89394 10.3219 7.22832 10.3219H10.8564C13.1627 10.3219 15.0752 12.2063 15.0752 14.5406V16.875C15.0752 17.2125 15.3564 17.5219 15.7221 17.5219C16.0877 17.5219 16.3689 17.2407 16.3689 16.875V14.5406C16.2846 11.5313 13.8377 9.05627 10.8283 9.05627Z"
-                                            fill=""
-                                        />
-                                    </svg>
+                                    {(handleClick, open) => {
+                                        return (
+                                            <React.Fragment>
+                                                <h3 className="mb-4 mt-6 ml-4 text-sm font-semibold text-bodydark2">TOOLS</h3>
+                                                <ul className="mb-6 flex flex-col gap-1.5">
+                                                    <SidebarLinkGroup
+                                                        activeCondition={
+                                                            pathname === '/generator' || pathname.includes('generator')
+                                                        }
+                                                    >
+                                                        {(handleClick, open) => {
+                                                            return (
+                                                                <React.Fragment>
+                                                                    <Link
+                                                                        href="#"
+                                                                        className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                                                                            (pathname === '/generator' ||
+                                                                                pathname.includes('generator')) &&
+                                                                            'bg-graydark dark:bg-meta-4'
+                                                                        }`}
+                                                                        onClick={(e) => {
+                                                                            e.preventDefault();
+                                                                            sidebarExpanded
+                                                                                ? handleClick()
+                                                                                : setSidebarExpanded(true);
+                                                                        }}
+                                                                    >
+                                                                        <svg className="fill-current" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                                            <g clipPath="url(#clip0_1184_13869)">
+                                                                                <path d="M10.8559 0.506226C10.5184 0.506226 10.209 0.787476 10.209 1.1531V6.7781C10.209 7.1156 10.4902 7.42498 10.8559 7.42498H16.8746C17.0434 7.42498 17.2121 7.3406 17.3246 7.2281C17.4371 7.08748 17.4934 6.91873 17.4934 6.74998C17.2684 3.23435 14.3434 0.506226 10.8559 0.506226ZM11.4746 6.1031V1.79998C13.809 2.08123 15.6934 3.82498 16.1434 6.13123H11.4746V6.1031Z" fill=""></path>
+                                                                                <path d="M15.384 8.69057H9.11211V2.6437C9.11211 2.3062 8.83086 2.02495 8.49336 2.02495C8.40898 2.02495 8.32461 2.02495 8.24023 2.02495C3.96523 1.99682 0.505859 5.48432 0.505859 9.75932C0.505859 14.0343 3.99336 17.5218 8.26836 17.5218C12.5434 17.5218 16.0309 14.0343 16.0309 9.75932C16.0309 9.59057 16.0309 9.42182 16.0027 9.2812C16.0027 8.9437 15.7215 8.69057 15.384 8.69057ZM8.26836 16.2562C4.66836 16.2562 1.77148 13.3593 1.77148 9.75932C1.77148 6.32807 4.47148 3.48745 7.87461 3.29057V9.30932C7.87461 9.64682 8.15586 9.9562 8.52148 9.9562H14.7934C14.6809 13.4437 11.784 16.2562 8.26836 16.2562Z" fill=""></path>
+                                                                            </g>
+                                                                            <defs>
+                                                                                <clipPath id="clip0_1184_13869">
+                                                                                    <rect width="18" height="18" fill="white"></rect>
+                                                                                </clipPath>
+                                                                            </defs>
+                                                                        </svg>
+                                                                        Generator
+                                                                        <svg
+                                                                            className={`absolute right-4 top-1/2 -translate-y-1/2 fill-current ${
+                                                                                open && 'rotate-180'
+                                                                            }`}
+                                                                            width="20"
+                                                                            height="20"
+                                                                            viewBox="0 0 20 20"
+                                                                            fill="none"
+                                                                            xmlns="http://www.w3.org/2000/svg"
+                                                                        >
+                                                                            <path
+                                                                                fillRule="evenodd"
+                                                                                clipRule="evenodd"
+                                                                                d="M4.41107 6.9107C4.73651 6.58527 5.26414 6.58527 5.58958 6.9107L10.0003 11.3214L14.4111 6.91071C14.7365 6.58527 15.2641 6.58527 15.5896 6.91071C15.915 7.23614 15.915 7.76378 15.5896 8.08922L10.5896 13.0892C10.2641 13.4147 9.73651 13.4147 9.41107 13.0892L4.41107 8.08922C4.08563 7.76378 4.08563 7.23614 4.41107 6.9107Z"
+                                                                                fill=""
+                                                                            />
+                                                                        </svg>
+                                                                    </Link>
+                                                                    {/* <!-- Dropdown Menu Start --> */}
+                                                                    <div
+                                                                        className={`translate transform overflow-hidden ${
+                                                                            !open && 'hidden'
+                                                                        }`}
+                                                                    >
+                                                                        <ul className="mt-4 mb-5.5 flex flex-col gap-2.5 pl-6">
+                                                                            <li>
+                                                                                <Link
+                                                                                    href="/generator/short-link">
+                                                                                    Short Link
+                                                                                </Link>
+                                                                            </li>
+                                                                            <li>
+                                                                                <Link
+                                                                                    href="/generator/flipbook">
+                                                                                    Flipbook
+                                                                                </Link>
+                                                                            </li>
+                                                                        </ul>
+                                                                    </div>
+                                                                    {/* <!-- Dropdown Menu End --> */}
+                                                                </React.Fragment>
+                                                            );
+                                                        }}
+                                                    </SidebarLinkGroup>
 
-                                    Crew Assignment
-                                </Link>
-                            </li>
+                                                    {/* <!-- Article Management Menu Item --> */}
+                                                    <li>
+                                                        <Link
+                                                            href="/articles"
+                                                            className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                                                                pathname.includes('article-management') && 'bg-graydark dark:bg-meta-4'
+                                                            }`}
+                                                        >
+                                                            <svg
+                                                                className="fill-current"
+                                                                width="18"
+                                                                height="18"
+                                                                viewBox="0 0 18 18"
+                                                                fill="none"
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                            >
+                                                                <path
+                                                                    d="M16.0755 2.8875C15.9375 2.6156 15.6195 2.4375 15.2933 2.4375H12.8855L13.4449 0.6094C13.545 0.2813 13.4449 0 13.1449 0C13.0448 0 12.9447 0 12.8446 0.0938L8.0673 2.625H8.0222H8.0402H7.9951C7.9951 2.625 7.977 2.625 7.9319 2.625L3.1096 0.0938C3.0546 0.0469 2.9995 0 2.9445 0C2.6445 0 2.4894 0.2344 2.5894 0.6094L3.1488 2.4375H0.696C0.396 2.4375 0.096 2.6156 0.0059 2.8875C-0.0841 3.1313 0.0059 3.4219 0.216 3.5906L3.0095 5.9063L2.1303 8.3906C2.0483 8.6344 2.1453 8.925 2.3554 9.0938C2.5204 9.2156 2.8204 9.2156 3.0095 9.0938L7.9319 6.75L12.8546 9.0938C12.9546 9.1406 13.0547 9.1875 13.1548 9.1875C13.3648 9.1875 13.6199 9.0469 13.7199 8.8313C13.775 8.7375 13.8049 8.5781 13.73 8.3906L12.8506 5.9063L15.6541 3.5906C15.8642 3.4219 15.9643 3.1313 15.8642 2.8875H16.0755H16.0755Z" fill=""></path>
+                                                                <path
+                                                                    d="M13.0448 11.2969H4.99536C4.73536 11.2969 4.52539 11.5156 4.52539 11.7656V17.5312C4.52539 17.7812 4.74536 18 4.99536 18H13.0448C13.3048 18 13.5148 17.7812 13.5148 17.5312V11.7656C13.5148 11.5156 13.3048 11.2969 13.0448 11.2969ZM12.5746 16.8281H5.46532V12H12.5746V16.8281Z" fill=""></path>
+                                                            </svg>
+                                                            Article Management
+                                                        </Link>
+                                                    </li>
 
-
-                                            </ul>
-
-
-                                            {/* <!-- Dropdown Menu End --> */}
-                                        </React.Fragment>
-                                    );
-                                }}
-                            </SidebarLinkGroup>
+                                                    <li>
+                                                        <Link
+                                                            href="/crew-assignment"
+                                                            className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                                                                pathname.includes('crew-assignment') && 'bg-graydark dark:bg-meta-4'
+                                                            }`}
+                                                        >
+                                                            <svg
+                                                                className="fill-current"
+                                                                width="18"
+                                                                height="18"
+                                                                viewBox="0 0 18 18"
+                                                                fill="none"
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                            >
+                                                                <path
+                                                                    d="M9.0002 7.79065C11.0814 7.79065 12.7689 6.1594 12.7689 4.1344C12.7689 2.1094 11.0814 0.478149 9.0002 0.478149C6.91895 0.478149 5.23145 2.1094 5.23145 4.1344C5.23145 6.1594 6.91895 7.79065 9.0002 7.79065ZM9.0002 1.7719C10.3783 1.7719 11.5033 2.84065 11.5033 4.16252C11.5033 5.4844 10.3783 6.55315 9.0002 6.55315C7.62207 6.55315 6.49707 5.4844 6.49707 4.16252C6.49707 2.84065 7.62207 1.7719 9.0002 1.7719Z"
+                                                                    fill=""
+                                                                />
+                                                                <path
+                                                                    d="M10.8283 9.05627H7.17207C4.16269 9.05627 1.71582 11.5313 1.71582 14.5406V16.875C1.71582 17.2125 1.99707 17.5219 2.3627 17.5219C2.72832 17.5219 3.00957 17.2407 3.00957 16.875V14.5406C3.00957 12.2344 4.89394 10.3219 7.22832 10.3219H10.8564C13.1627 10.3219 15.0752 12.2063 15.0752 14.5406V16.875C15.0752 17.2125 15.3564 17.5219 15.7221 17.5219C16.0877 17.5219 16.3689 17.2407 16.3689 16.875V14.5406C16.2846 11.5313 13.8377 9.05627 10.8283 9.05627Z"
+                                                                    fill=""
+                                                                />
+                                                            </svg>
+                                                            Crew Assignment
+                                                        </Link>
+                                                    </li>
+                                                </ul>
+                                                {/* <!-- Dropdown Menu End --> */}
+                                            </React.Fragment>
+                                        );
+                                    }}
+                                </SidebarLinkGroup>
                                 {/* <!-- Menu Item Forms --> */}
 
                         </ul>

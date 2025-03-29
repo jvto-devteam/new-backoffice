@@ -145,8 +145,9 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit,onDelete  }) => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">NO</th>
-              <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">SUB CATEGORY</th>
+              <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">CODE</th>
               <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">DESCRIPTION</th>
+              <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">SUB CATEGORY</th>
               <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">UNIT</th>
               <th className="px-4 py-3 text-right text-sm font-bold text-gray-500">QTY</th>
               <th className="px-4 py-3 text-right text-sm font-bold text-gray-500">RATE</th>
@@ -177,8 +178,9 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit,onDelete  }) => {
                     return (
                       <tr key={item.id} className={item.isDebt ? 'bg-yellow-50' : 'bg-white'}>
                         <td className="px-4 py-3 text-sm">{currentNumber}</td>
-                        <td className="px-4 py-3 text-sm">{item.subCategory}</td>
+                        <td className="px-4 py-3 text-sm">{item.code}</td>
                         <td className="px-4 py-3 text-sm">{item.description}</td>
+                        <td className="px-4 py-3 text-sm">{item.subCategory}</td>
                         <td className="px-4 py-3 text-sm">{item.unit}</td>
                         
                         {/* QTY Cell */}

@@ -122,9 +122,6 @@ class DashboardController extends Controller
         // $new->description = 'Down Payment';
         // $new->is_paid = '0';
         // $new->save();
-        \DB::table('booking_payments')->where('is_paid','1')->update([
-            'paid_at' => \DB::raw('created_at')
-        ]);
         
         $booking = Booking::with(['user','bookingPayment' => function ($query) {
             $query->withoutGlobalScope('paid');
@@ -158,6 +155,11 @@ class DashboardController extends Controller
                 'payment' => $booking->bookingPayment,
             ];
         });
+
+        \DB::table('booking_payments')->where('is_paid','1')->update([
+            'paid_at' => \DB::raw('created_at')
+        ]);
+
         return $booking;
     }
 }

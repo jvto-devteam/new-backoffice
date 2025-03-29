@@ -459,7 +459,7 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                             {/* <!-- Menu Item Forms --> */}
                             <SidebarLinkGroup
                                 activeCondition={
-                                    pathname === '/data-master-management' || pathname.includes('data-master-management')
+                                    pathname === '/package-inventory' || pathname.includes('package-inventory')
                                 }
                             >
                                 {(handleClick, open) => {
@@ -468,8 +468,8 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                             <Link
                                                 href="#"
                                                 className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                                                    (pathname === '/data-master-management' ||
-                                                        pathname.includes('data-master-management')) &&
+                                                    (pathname === '/package-inventory' ||
+                                                        pathname.includes('package-inventory')) &&
                                                     'bg-graydark dark:bg-meta-4'
                                                 }`}
                                                 onClick={(e) => {
@@ -551,8 +551,6 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                     );
                                 }}
                             </SidebarLinkGroup>
-
-                            {/* <!-- Menu Item Forms --> */}
                             <SidebarLinkGroup
                                 activeCondition={
                                     pathname === '/data-master-management' || pathname.includes('data-master-management')
@@ -623,6 +621,52 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                                     />
                                                 </svg>
                                             </Link>
+                                            <div
+                                                className={`translate transform overflow-hidden ${
+                                                    !open && 'hidden'
+                                                }`}
+                                            >
+                                                <ul className="mt-4 mb-5.5 flex flex-col gap-2.5 pl-6">
+                                                    <li>
+                                                        <Link
+                                                            href="/data-master-management/hotels">
+                                                            Hotels
+                                                        </Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link
+                                                            href="/data-master-management/activities">
+                                                            Activities
+                                                        </Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link
+                                                            href="/data-master-management/transportation">
+                                                            Transportation
+                                                        </Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link
+                                                            href="/data-master-management/miscellaneous">
+                                                            Miscellaneous
+                                                        </Link>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </React.Fragment>
+                                    );
+                                }}
+                            </SidebarLinkGroup>
+
+                            {/* <!-- Menu Item Forms --> */}
+                            <SidebarLinkGroup
+                                activeCondition={
+                                    pathname === '/data-master-management' || pathname.includes('data-master-management')
+                                }
+                            >
+                                {(handleClick, open) => {
+                                    return (
+                                        <React.Fragment>
                                             <h3 className="mb-4 mt-6 ml-4 text-sm font-semibold text-bodydark2">TOOLS</h3>
                                             <ul className="mb-6 flex flex-col gap-1.5">
                                             <SidebarLinkGroup
@@ -725,39 +769,7 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
 
                                             </ul>
 
-                                            {/* <!-- Dropdown Menu Start --> */}
-                                            <div
-                                                className={`translate transform overflow-hidden ${
-                                                    !open && 'hidden'
-                                                }`}
-                                            >
-                                                <ul className="mt-4 mb-5.5 flex flex-col gap-2.5 pl-6">
-                                                    <li>
-                                                        <Link
-                                                            href="/data-master-management/hotels">
-                                                            Hotels
-                                                        </Link>
-                                                    </li>
-                                                    <li>
-                                                        <Link
-                                                            href="/data-master-management/activities">
-                                                            Activities
-                                                        </Link>
-                                                    </li>
-                                                    <li>
-                                                        <Link
-                                                            href="/data-master-management/transportation">
-                                                            Transportation
-                                                        </Link>
-                                                    </li>
-                                                    <li>
-                                                        <Link
-                                                            href="/data-master-management/miscellaneous">
-                                                            Miscellaneous
-                                                        </Link>
-                                                    </li>
-                                                </ul>
-                                            </div>
+
                                             {/* <!-- Dropdown Menu End --> */}
                                         </React.Fragment>
                                     );

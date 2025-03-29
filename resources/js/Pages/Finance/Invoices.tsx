@@ -329,7 +329,20 @@ const Invoices = ({inv}) => {
 
   // Menghitung total nominal
   const totalNominal = filteredInvoices.reduce((sum, invoice) => sum + invoice.nominal, 0);
-
+  const totalDp = filteredInvoices.reduce((sum, invoice) => {
+    if (invoice.description === 'Deposit Payment') {
+      return sum + invoice.nominal;
+    }
+    return sum;
+  }, 0);
+  
+  const totalFull = filteredInvoices.reduce((sum, invoice) => {
+    if (invoice.description === 'Full Payment') {
+      return sum + invoice.nominal;
+    }
+    return sum;
+  }, 0);
+  
   // Menghitung total pax
   const totalPax = filteredInvoices.reduce((sum, invoice) => sum + invoice.total_pax, 0);
 
@@ -352,30 +365,34 @@ const Invoices = ({inv}) => {
         </div>
         
         {/* Statistik Ringkasan */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
             <p className="text-sm font-medium text-gray-500">Total Invoice</p>
             <p className="text-2xl font-bold text-gray-800">{filteredInvoices.length}</p>
-            <div className="mt-2 flex items-center text-sm">
-              <span className="text-gray-600">Dari {invoices.length} total invoice</span>
-            </div>
           </div>
           
           <div className="bg-white rounded-lg shadow p-4 border-l-4 border-green-500">
             <p className="text-sm font-medium text-gray-500">Total Nominal</p>
             <p className="text-2xl font-bold text-gray-800">{formatCurrency(totalNominal)}</p>
-            <div className="mt-2 flex items-center text-sm">
-              <span className="text-gray-600">Rata-rata {formatCurrency(totalNominal / filteredInvoices.length)}</span>
-            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-orange-500">
+            <p className="text-sm font-medium text-gray-500">Total Deposit</p>
+            <p className="text-2xl font-bold text-gray-800">{formatCurrency(totalDp)}</p>
+          </div>
+
+          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-blue-500">
+            <p className="text-sm font-medium text-gray-500">Total Full Payment</p>
+            <p className="text-2xl font-bold text-gray-800">{formatCurrency(totalFull)}</p>
           </div>
           
-          <div className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
+          {/* <div className="bg-white rounded-lg shadow p-4 border-l-4 border-purple-500">
             <p className="text-sm font-medium text-gray-500">Total Penumpang</p>
             <p className="text-2xl font-bold text-gray-800">{totalPax}</p>
             <div className="mt-2 flex items-center text-sm">
               <span className="text-gray-600">Rata-rata {(totalPax / filteredInvoices.length).toFixed(1)} per invoice</span>
             </div>
-          </div>
+          </div> */}
         </div>
         
         {/* Search and Filter Bar */}
@@ -666,9 +683,6 @@ const Invoices = ({inv}) => {
                       )}
                     </div>
                   </th>
-                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Aksi
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -714,10 +728,6 @@ const Invoices = ({inv}) => {
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{invoice.paid_at ? invoice.paid_at : '-'}</div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                        <button className="text-blue-600 hover:text-blue-900 mr-3">Detail</button>
-                        <button className="text-gray-600 hover:text-gray-900">Edit</button>
                       </td>
                     </tr>
                   ))

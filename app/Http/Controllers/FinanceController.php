@@ -1117,7 +1117,6 @@ class FinanceController extends Controller
                 'receipt' => $booking->is_paid == '1' ? $receiptNumber : null
             ];
         });
-        // return $inv;
         return Inertia::render('Finance/Invoices', ['inv' => $inv]);
     }
 }

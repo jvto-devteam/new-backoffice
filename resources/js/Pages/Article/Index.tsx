@@ -188,6 +188,18 @@ export default function ArticleIndex({ articles, filters }) {
         });
     };
 
+    //modul untuk teks editor
+    const modules = {
+        toolbar: [
+            [{ header: '1' }, { header: '2' }, { font: [] }],
+            [{ size: [] }],
+            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
+            [{ list: 'ordered' }, { list: 'bullet' }, { indent: '-1' }, { indent: '+1' }],
+            ['link', 'image', 'video'],
+            ['clean']
+        ],
+    };
+
     return (
         <Authenticated>
             <Head title="CMS Articles" />
@@ -387,6 +399,7 @@ export default function ArticleIndex({ articles, filters }) {
                                         theme="snow"
                                         value={formData.content}
                                         onChange={(value) => handleFormChange('content', value)}
+                                        modules={modules}
                                     />
                                 </div>
                                 {/* Meta Title & Meta Description */}

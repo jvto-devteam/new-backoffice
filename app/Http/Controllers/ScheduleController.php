@@ -608,7 +608,7 @@ class ScheduleController extends Controller
 
             ],
         ];
-        return $details;
+        // return $details;
         return Inertia::render('Schedule/Details', ['initialData' => $details]);
     }
 

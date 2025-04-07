@@ -1128,7 +1128,12 @@ class FinanceController extends Controller
             return $item->destination->name;
         });
         $others = OthersActivity::select('id','name')->orderBy('name','asc')->get();
-        $role = CrewRole::select('id','role as name')->orderBy('name','asc')->get();
+        $role = CrewRole::with('orderChannel')->orderBy('role','asc')->get()->map(function($query){
+            return [
+                'id' => $query->id,
+                'name' => $query->orderChannel->name." - ".$query->role,
+            ];
+        });
         $car = Car::select('id','name')->where('id',1)->orWhere('id',5)->orderBy('name','asc')->get();
 
         $data['masters'] = [

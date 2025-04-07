@@ -111,7 +111,7 @@ const ExpenseRecap = ({ masters, filters, data }) => {
   const renderDataTable = () => {
     if (!data || data.length === 0) {
       return (
-        <div className="text-center p-8 bg-gray-50 rounded-lg">
+        <div className="text-center p-8 bg-gray-50 rounded-lg min-h-[300px] flex items-center justify-center">
           <p className="text-gray-500">No data available for the selected criteria.</p>
         </div>
       );

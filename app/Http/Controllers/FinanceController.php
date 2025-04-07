@@ -9,6 +9,7 @@ use App\Models\BookGuideDriver;
 use App\Models\BookHotel;
 use App\Models\BookHotelMeal;
 use App\Models\Booking;
+use App\Models\BookingItinerary;
 use App\Models\BookingPayment;
 use App\Models\BookOthersActivity;
 use App\Models\BookRoomHotel;
@@ -16,7 +17,9 @@ use App\Models\Car;
 use App\Models\CarConfiguration;
 use App\Models\CrewRole;
 use App\Models\DestinationActivity;
+use App\Models\Hotel;
 use App\Models\Itinerary;
+use App\Models\ItineraryDestination;
 use App\Models\OthersActivity;
 use App\Models\Package;
 use App\Models\PaymentMethod;
@@ -1118,5 +1121,160 @@ class FinanceController extends Controller
             ];
         });
         return Inertia::render('Finance/Invoices', ['inv' => $inv]);
+    }
+    function expenseRecap(Request $request){
+        $hotel = Hotel::select('id','name')->orderBy('name','asc')->get();
+        $destinationActivity = DestinationActivity::with(['destination:id,name'])->select('id','name','destination_id')->orderBy('name','asc')->get()->groupBy(function($item) {
+            return $item->destination->name;
+        });
+        $others = OthersActivity::select('id','name')->orderBy('name','asc')->get();
+        $role = CrewRole::select('id','role as name')->orderBy('name','asc')->get();
+        $car = Car::select('id','name')->where('id',1)->orWhere('id',5)->orderBy('name','asc')->get();
+
+        $data['masters'] = [
+            'hotel' => $hotel,
+            'activity' => $destinationActivity,
+            'miscellaneous' => $others,
+            'role' => $role,
+            'car' => $car,
+        ];
+        $start = $request->start_date ? $request->start_date : date('Y-m-01');
+        $end = $request->end_date ? $request->end_date : date('Y-m-t');
+        $data['filters'] = [
+            'id' => $request->id,
+            'startDate' => $start,
+            'endDate' => $end,
+            'type' => $request->type,
+        ];
+
+
+        $id = $request->id;
+
+        if($request->type == 'hotel'){
+            $data['data'] = BookHotel::with(['bookHotelMeal','booking.user', 'bookingItinerary', 'hotel', 'bookRoom.roomHotel'])->where('hotel_id', $id)
+            ->whereHas('bookingItinerary', function ($query) use ($start, $end) {
+                $query->whereHas('booking', function ($subQuery) use ($start, $end) {
+                    $subQuery->whereRaw("
+                        DATE_ADD(travel_date_start, INTERVAL (booking_itineraries.day - 1) DAY) 
+                        BETWEEN ? AND ?", [$start, $end]);
+                });
+            })
+            ->get()
+            ->map(function ($query) {
+                $night = $query->bookingItinerary->day - 1;
+                $checkIn = date('Y-m-d', strtotime($query->booking->travel_date_start . " +$night days"));
+                $checkOut = date('Y-m-d', strtotime($query->booking->travel_date_start . " +".$query->bookingItinerary->day." days"));
+                
+                return [
+                    'guest' => $query->booking->user->name,
+                    'check_in' => date('d F Y', strtotime($checkIn)),
+                    'check_out' => date('d F Y', strtotime($checkOut)),
+                    'pax' => $query->booking->total_pax,
+                    'rooms' => $query->bookRoom->map(function ($q) {
+                        return [
+                            'room_name' => $q->roomHotel->room_name,
+                            'quantity' => $q->quantity,
+                        ];
+                    }),
+                    'rooms_cost' => $query->bookRoom->sum('subtotal'),
+                    'meals' => $query->bookHotelMeal->map(function($q){
+                        return [
+                            'meals' => $q->meals,
+                            'quantity' => $q->qty,
+                        ];
+                    }),
+                    'meals_cost' => $query->bookHotelMeal->sum('subtotal'),
+                    'total' => $query->bookRoom->sum('subtotal') + $query->bookHotelMeal->sum('subtotal'),
+                ];
+            })
+            ->sortBy('check_in')
+            ->values();
+        }
+        else if($request->type == 'activity'){
+            $data['data'] = BookDestinationActivity::with(['destinationActivity','booking.user'])
+            ->where('destination_activity_id', $id)->whereHas('booking',function($query) use($start,$end){
+                $query->whereBetween('travel_date_start',[$start,$end]);
+            })->get()->map(function($value){
+                $bookingId = $value->booking_id;
+                $destinationId = $value->destination_id;
+                $getActiviyDate = BookingItinerary::where('booking_id',$bookingId)->whereHas('activityStart',function($query) use($destinationId){
+                    $query->where('destination_id',$destinationId);
+                })->first();
+                $activityDate = null;
+                if($getActiviyDate){
+                    $activityDate = date('d F Y',strtotime($value->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
+                }
+                else{
+                    if($destinationId == 6){
+                        $destinationId = 1;
+
+                        $getActiviyDate = BookingItinerary::where('booking_id',$bookingId)->whereHas('activityStart',function($query) use($destinationId){
+                            $query->where('destination_id',$destinationId);
+                        })->first();
+                        $activityDate = date('d F Y',strtotime($value->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
+                    }
+                    else if($destinationId == 9){
+                        $destinationId = 2;
+
+                        $getActiviyDate = BookingItinerary::where('booking_id',$bookingId)->whereHas('activityStart',function($query) use($destinationId){
+                            $query->where('destination_id',$destinationId);
+                        })->first();
+                        $activityDate = date('d F Y',strtotime($value->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
+                    }
+                }
+
+                return [
+                    'guest' => $value->booking->user->name,
+                    'travel_date' => date('d F Y',strtotime($value->booking->travel_date_start)),
+                    'activity_date' => $activityDate,
+                    'qty' => $value->qty,
+                    'rate' => $value->price,
+                    'amount' => $value->subtotal,
+                ];
+            })->sortBy('activity_date')->values();
+        }
+        else if($request->type == 'miscellaneous'){
+            $data['data'] = BookOthersActivity::with(['othersActivity','booking.user'])
+            ->where('others_activity_id', $id)->whereHas('booking',function($query) use($start,$end){
+                $query->whereBetween('travel_date_start',[$start,$end]);
+            })->get()->map(function($value){
+                return [
+                    'guest' => $value->booking->user->name,
+                    'travel_date' => date('d F Y',strtotime($value->booking->travel_date_start)),
+                    'qty' => $value->qty,
+                    'rate' => $value->price,
+                    'amount' => $value->subtotal,
+                ];
+            })->sortBy('travel_date')->values();
+        }
+        else if($request->type == 'role'){
+            $data['data'] = BookCrewActivity::with(['crewRole','booking.user'])
+            ->where('crew_role_id', $id)->whereHas('booking',function($query) use($start,$end){
+                $query->whereBetween('travel_date_start',[$start,$end]);
+            })->get()->map(function($value){
+                return [
+                    'guest' => $value->booking->user->name,
+                    'travel_date' => date('d F Y',strtotime($value->booking->travel_date_start)),
+                    'qty' => $value->qty,
+                    'rate' => $value->price,
+                    'amount' => $value->subtotal,
+                ];
+            })->sortBy('travel_date')->values();
+        }
+        else if($request->type == 'car'){
+            $data['data'] = BookCarActivity::with(['car','booking.user'])
+            ->where('car_id', $id)->whereHas('booking',function($query) use($start,$end){
+                $query->whereBetween('travel_date_start',[$start,$end]);
+            })->get()->map(function($value){
+                return [
+                    'guest' => $value->booking->user->name,
+                    'travel_date' => date('d F Y',strtotime($value->booking->travel_date_start)),
+                    'qty' => $value->qty,
+                    'rate' => $value->price,
+                    'amount' => $value->subtotal,
+                ];
+            })->sortBy('travel_date')->values();
+        }
+        return Inertia::render('Finance/ExpenseRecap', $data);
     }
 }

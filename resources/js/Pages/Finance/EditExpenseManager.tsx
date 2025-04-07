@@ -72,11 +72,11 @@ const SummaryCards = ({ booking,totals }) => {
       {/* Pay Later Items */}
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex justify-between items-center">
-          <span className="text-gray-500 text-sm">Pay Later Items</span>
+          <span className="text-gray-500 text-sm">Invoice</span>
           <span className="text-red-500">◯</span>
         </div>
         <div className="text-red-500 text-2xl font-bold mt-1">
-          {totals.payLaterItemsCount}
+          {formatCurrency(booking.grand_total+booking.book_add_on_total)}
         </div>
       </div>
     </div>

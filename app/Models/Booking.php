@@ -135,4 +135,9 @@ class Booking extends Model
     {
         return $this->belongsTo(PaymentMethod::class, 'is_vendor_paid_payment_method');
     }
+
+    public function noteCategory()
+    {
+        return $this->belongsTo(NoteCategory::class, 'note_category_id');
+    }
 }

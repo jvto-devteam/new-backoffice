@@ -37,4 +37,9 @@ class BookDestinationActivity extends Model
     {
         return $this->belongsTo(Destination::class);
     }
+     
+    public function booking()
+    {
+        return $this->belongsTo(Booking::class);
+    }
 }

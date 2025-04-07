@@ -10,4 +10,9 @@ class BookCarActivity extends Model
     {
         return $this->belongsTo(Car::class);
     }
+    public function booking()
+    {
+        return $this->belongsTo(Booking::class);
+    }
+
 }

@@ -13,6 +13,7 @@ use App\Models\BookingItinerary;
 use App\Models\BookingPayment;
 use App\Models\Destination;
 use App\Models\Hotel;
+use App\Models\NoteCategory;
 use App\Models\Package;
 use App\Models\PaymentMethod;
 use Illuminate\Http\Request;
@@ -34,7 +35,11 @@ class ScheduleController extends Controller
             'month' => $request->month ? $request->month : date('Y-m'),
             'channel' => $request->channel ? $request->channel : '',
             'filterType' => $request->filter_type ? $request->filter_type : 'month',
+            // 'view' => $request->view ? $request->view : 'pickup,dropoff,tshirtSize,activities,itinerary,accommodation,vehicleCrew,financial,notes', // Add this line
+            'view' => $request->view ? $request->view : 'pickup,dropoff,itinerary,accommodation,vehicleCrew,financial,notes', // Add this line
         ];
+        
+        $data['note_categories'] = NoteCategory::get();
 
         try {
             $data['booking'] = Booking::with(['bookingPayment.paymentMethod','bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination','bookingDocument']);
@@ -69,9 +74,23 @@ class ScheduleController extends Controller
                 $itinerary = [];
                 $hotels = [];
                 foreach ($booking->bookingItinerary as $key => $value) {
+                    $activity = $value->activityStart && $value->activityStart->destination ? ($value->activityStart->destination->activityDestination ? $value->activityStart->destination->activityDestination->name : $value->activityStart->destination->name) : null;
+
+                    if($activity){
+                        if($value->activity_start_id == 7){
+                            $activity .= ", Madakaripura Warterfall Tour";
+                        }
+                        else if($value->activity_start_id == 5){
+                            $activity .= ", Papuma Beach Tour";
+                        }
+                    }
+                
+
                     $itinerary[]= [
                         'day' => $value->day,
                         'itinerary' => $value->itinerary,
+                        'activity' => $activity,
+    
                     ];
                     if(count($value->bookHotel) != 0){
                         $night = $value->day - 1;
@@ -405,7 +424,7 @@ class ScheduleController extends Controller
             $bookingDocument = BookingDocument::where('booking_id',$booking->id)->where('attachment_type_id',$attachmentType)->first();
             if($bookingDocument){
                 $invoiceLinks = [
-                    'https://new-backoffice.javavolcano-touroperator.com/assets/customer-document/'.$bookingDocument->file,
+                    '/preview-file?title=Invoice '.$booking->user->name.'&url=https://new-backoffice.javavolcano-touroperator.com/assets/customer-document/'.$bookingDocument->file,                    
                 ];
             }
         }
@@ -589,7 +608,7 @@ class ScheduleController extends Controller
 
             ],
         ];
-        // return $details;
+        return $details;
         return Inertia::render('Schedule/Details', ['initialData' => $details]);
     }
 
@@ -980,6 +999,15 @@ class ScheduleController extends Controller
         }
 
         return $getTumpakSewuData->get();
+    }
+
+    function updateBookingNote(Request $request){
+        $booking = Booking::find($request->booking_id);
+        $booking->note = $request->note;
+        $booking->note_category_id = $request->category_id;
+        $booking->save();
+
+        return back()->with('message', 'Note updated successfully');
     }
 
     public function plotting(Request $request)

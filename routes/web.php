@@ -51,6 +51,7 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
     Route::get('/', [DashboardController::class,'index']);
     Route::get('/booking-overview', [ScheduleController::class,'index']);
     Route::post('/plotting', [ScheduleController::class,'plotting']);
+    Route::post('/update-booking-note', [ScheduleController::class,'updateBookingNote']);
     Route::get('/booking-list', [ScheduleController::class,'bookingList']);
     Route::get('/booking-analist', [ScheduleController::class,'bookingAnalist']);
     Route::get('/expense-package', [ExpenseController::class,'expensePackage']);
@@ -101,6 +102,7 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
         Route::get('/payable-report/details/{id}', [FinanceController::class, 'payableReportDetails']);
         Route::get('/profitability-report', [FinanceController::class, 'profitabilityReport']);
         Route::get('/transaction-log', [FinanceController::class, 'transactionLog']);
+        Route::get('/expense-recap', [FinanceController::class, 'expenseRecap']);
 
 
 

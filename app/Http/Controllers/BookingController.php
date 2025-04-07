@@ -508,6 +508,22 @@ class BookingController extends Controller
                     $bookHotel->status = NULL;
                     $bookHotel->save();
 
+                    $textMeals = "";
+                    if($bookHotel->d == '1' || $bookHotel->l == '1'){
+                        $textMeals = "Include ";
+                        if($bookHotel->d == '1' && $bookHotel->l == '1'){
+                            $textMeals .= "Dinner & Lunch ";
+                        }
+                        else if($bookHotel->d == '1' && $bookHotel->l != '1'){
+                            $textMeals .= "Dinner ";
+                        }
+                        else if($bookHotel->d != '1' && $bookHotel->l == '1'){
+                            $textMeals .= "Lunch ";
+                        }
+                        $textMeals .= $booking->total_pax." pax\r\n\r\n";
+                    }                    
+
+
                     if ($getStart->destination_id == 1) {
                         $updateAtBromo = Booking::find($booking->id);
                         $updateAtBromo->bromo_hotel_id = $value['hotel'];
@@ -517,8 +533,10 @@ class BookingController extends Controller
 
                     $hotelRooms = '';
                     $currentRoomIndex = 0;
-
+                    $hotelRoomNames = "";
+                    $roomCount = count($value['rooms']);
                     foreach ($value['rooms'] as $keyRoom => $valueRoom) {
+                        $currentRoomIndex++;                                    
                         if($valueRoom['room'] && $valueRoom['room'] != ''){
                             $getRoomDetails = RoomHotel::find($valueRoom['room']);
     
@@ -530,7 +548,43 @@ class BookingController extends Controller
                             $bookRoom->quantity = $valueRoom['quantity'];
                             $bookRoom->subtotal = $bookRoom->quantity * $getRoomDetails->rate;
                             $bookRoom->save();
+                            $more = ($currentRoomIndex < $roomCount) ? " + " : "";                                        
+
+                            $hotelRoomNames .= $getRoomDetails->room_name . " x " . $valueRoom['quantity'].$more;
                         }
+                    }
+
+                    $cekHotel = Hotel::find($value['hotel']);
+                    if($cekHotel->group_wa_id){
+                        $dataSending = Array();
+                        $dataSending["api_key"] = config('wa.wa_api_key');
+                        $dataSending["number_key"] = config('wa.wa_number_key');
+                        $night = $day - 1;
+                        $checkInDate = date('d M Y', strtotime($booking->travel_date_start . " +$night days"));
+                        $checkOutDate = date('d M Y', strtotime($booking->travel_date_start . " +$day days"));
+                                        
+                        $dataSending["group_id"] = $cekHotel->group_wa_id;
+                        $customerName = $user->name;
+                        $dataSending["message"] = "*📩 Room Reservation ".$cekHotel->name."*\r\n\r\n🗓 Check In : $checkInDate\r\n\r\n🛫Check Out : $checkOutDate\r\n\r\n👥 Guest : $customerName\r\n\r\n🛏 Rooms : $hotelRoomNames\r\n\r\n".$textMeals."Cek detail Reservasi ⬇️⬇️\r\nhttps://partner.javavolcano-touroperator.com/reservation/".$cekHotel->slug."\r\n\r\nTerima kasih";
+    
+                        $curl = curl_init();
+                        curl_setopt_array($curl, array(
+                          CURLOPT_URL => 'https://api.watzap.id/v1/send_message_group',
+                          CURLOPT_RETURNTRANSFER => true,
+                          CURLOPT_ENCODING => '',
+                          CURLOPT_MAXREDIRS => 10,
+                          CURLOPT_TIMEOUT => 0,
+                          CURLOPT_FOLLOWLOCATION => true,
+                          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                          CURLOPT_CUSTOMREQUEST => 'POST',
+                          CURLOPT_POSTFIELDS => json_encode($dataSending),
+                          CURLOPT_HTTPHEADER => array(
+                            'Content-Type: application/json'
+                          ),
+                        ));
+                        $response = curl_exec($curl);
+                        curl_close($curl);
+                        $res = json_decode($response);
                     }
                 }
                 $startSchedule++;
@@ -568,6 +622,37 @@ class BookingController extends Controller
 
         if($request->channel != 'TWT' ){
             $this->generateExpense($booking->id);            
+        }
+
+        if($booking->is_send_wa == '1'){
+            $dataSending = Array();
+            $dataSending["api_key"] = config('wa.wa_api_key');
+            $dataSending["number_key"] = config('wa.wa_number_key');
+            $isJvto = $booking->booking_category_id != 3 ? "\r\nYour *payment receipt, remaining balance*, and *tour itinerary* have all been sent to your registered email address.\r\n\r\nPlease kindly check your inbox (and spam folder just in case), or you can access it directly via the link below\r\n\r\n🔗 https://javavolcano-touroperator.com/bookings/details/".$booking->url : '';
+                
+            $dataSending["message"] = "✅ *Booking Confirmed – Java Volcano Tour Operator (JVTO)*\r\nThank you, ".$user->name.", for completing your *booking*.\r\n\r\nWe’re pleased to confirm that your *tour booking is now secured*. 📩".$isJvto."\r\n\r\nIf you have any questions or special requests, feel free to contact us via WhatsApp or email.\r\n\r\n🙏 We truly appreciate your trust. We look forward to welcoming you on an unforgettable journey!\r\n\r\n*JVTO Team*";
+            $dataSending["phone_no"] = (string)$user->phone;
+            $dataSending["url"] = "https://javavolcano-touroperator.com/assets/img/banner.jpeg";
+            $dataSending["separate_caption"] = "0";
+    
+            $curl = curl_init();
+            curl_setopt_array($curl, array(
+              CURLOPT_URL => 'https://api.watzap.id/v1/send_image_url',
+              CURLOPT_RETURNTRANSFER => true,
+              CURLOPT_ENCODING => '',
+              CURLOPT_MAXREDIRS => 10,
+              CURLOPT_TIMEOUT => 0,
+              CURLOPT_FOLLOWLOCATION => true,
+              CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+              CURLOPT_CUSTOMREQUEST => 'POST',
+              CURLOPT_POSTFIELDS => json_encode($dataSending),
+              CURLOPT_HTTPHEADER => array(
+                'Content-Type: application/json'
+              ),
+            ));
+            $response = curl_exec($curl);
+            curl_close($curl);
+            $res = json_decode($response);      
         }
 
         return back()->with('message', 'Booking saved successfully');

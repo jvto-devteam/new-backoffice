@@ -1144,7 +1144,7 @@ class FinanceController extends Controller
             'id' => $request->id,
             'startDate' => $start,
             'endDate' => $end,
-            'type' => $request->type,
+            'type' => $request->type ? $request->type : 'hotel',
         ];
 
 

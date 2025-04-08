@@ -555,7 +555,7 @@ class BookingController extends Controller
                     }
 
                     $cekHotel = Hotel::find($value['hotel']);
-                    if($cekHotel->group_wa_id){
+                    if($cekHotel->group_wa_id && $request->channel != 'TWT'){
                         $dataSending = Array();
                         $dataSending["api_key"] = config('wa.wa_api_key');
                         $dataSending["number_key"] = config('wa.wa_number_key');

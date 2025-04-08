@@ -59,7 +59,7 @@ const SummaryCards = ({ booking,totals }) => {
       {/* Pay Later Total */}
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex justify-between items-center">
-          <span className="text-gray-500 text-sm">Pay Later Total</span>
+          <span className="text-gray-500 text-sm">Pay Later Total ({totals.payLaterItemsCount})</span>
           <div className="flex gap-1">
             <a href={`/finance/expense-manager/${booking.id}/pay-later`} className="text-orange-500"><Download/></a>
           </div>
@@ -73,7 +73,9 @@ const SummaryCards = ({ booking,totals }) => {
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex justify-between items-center">
           <span className="text-gray-500 text-sm">Invoice</span>
-          <span className="text-red-500">◯</span>
+          <div className="flex gap-1">
+            <a href={`https://javavolcano-touroperator.com/bookings/invoice/${booking.url}`} className="text-orange-500"><Download/></a>
+          </div>
         </div>
         <div className="text-red-500 text-2xl font-bold mt-1">
           {formatCurrency(booking.grand_total+booking.book_add_on_total)}

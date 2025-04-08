@@ -210,7 +210,7 @@ class FinanceController extends Controller
         ]);
     }
     function editExpense($id){
-        $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id','booking_date','package_duration','invoice_code_origin')->with(['user' => function($query){
+        $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id','booking_date','package_duration','invoice_code_origin','url')->with(['user' => function($query){
             $query->select('id','name');
         },'bookingDetail' => function($query){
             $query->select('id','package_id','booking_id')->with(['package' => function($q){

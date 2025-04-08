@@ -628,7 +628,7 @@ class BookingController extends Controller
             $dataSending = Array();
             $dataSending["api_key"] = config('wa.wa_api_key');
             $dataSending["number_key"] = config('wa.wa_number_key');
-            $isJvto = $booking->booking_category_id != 3 ? "\r\nYour *payment receipt, remaining balance*, and *tour itinerary* have all been sent to your registered email address.\r\n\r\nPlease kindly check your inbox (and spam folder just in case), or you can access it directly via the link below\r\n\r\n🔗 https://javavolcano-touroperator.com/bookings/details/".$booking->url : '';
+            $isJvto = $booking->booking_category_id != 3 ? "\r\nYour *payment receipt, remaining balance, payment method*, and *tour itinerary* have all been sent to your registered email address.\r\n\r\nPlease kindly check your inbox (and spam folder just in case), or you can access it directly via the link below\r\n\r\n🔗 https://javavolcano-touroperator.com/bookings/details/".$booking->url : '';
                 
             $dataSending["message"] = "✅ *Booking Confirmed – Java Volcano Tour Operator (JVTO)*\r\nThank you, ".$user->name.", for completing your *booking*.\r\n\r\nWe’re pleased to confirm that your *tour booking is now secured*. 📩".$isJvto."\r\n\r\nIf you have any questions or special requests, feel free to contact us via WhatsApp or email.\r\n\r\n🙏 We truly appreciate your trust. We look forward to welcoming you on an unforgettable journey!\r\n\r\n*JVTO Team*";
             $dataSending["phone_no"] = (string)$user->phone;

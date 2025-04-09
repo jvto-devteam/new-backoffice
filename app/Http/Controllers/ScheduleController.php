@@ -88,20 +88,36 @@ class ScheduleController extends Controller
 
                     $itinerary[]= [
                         'day' => $value->day,
+                        'date' => date('d M Y',strtotime($booking->travel_date_start." +$key days")),
                         'itinerary' => $value->itinerary,
                         'activity' => $activity,
+                        'destination_id' => $value->activityStart->destination ? $value->activityStart->destination->id : null,
+                        'destination' => $value->activityStart->destination ? $value->activityStart->destination->name : null,
     
                     ];
                     if(count($value->bookHotel) != 0){
                         $night = $value->day - 1;
+                        $meals = [];
+                        if($value->bookHotel[0]->b == '1'){
+                            array_push($meals,"Breakfast");
+                        }
+                        if($value->bookHotel[0]->l == '1'){
+                            array_push($meals,"Lunch");
+                        }
+                        if($value->bookHotel[0]->d == '1'){
+                            array_push($meals,"Dinner");
+                        }
                         $hotels[]= [
                             'day' => $value->day,
                             'checkIn' => date('d M Y',strtotime($booking->travel_date_start." +$night days")),
+                            'hotelId' => $value->bookHotel[0]->hotel->id,
                             'hotel' => $value->bookHotel[0]->hotel->name,
                             'rooms' => [],
+                            'meals' => $meals,
                         ];
                         foreach ($value->bookHotel[0]->bookRoom as $index => $data) {
                             $hotels[$key]['rooms'] = [
+                                'roomId' => $data->roomHotel->id,
                                 'roomName' => $data->roomHotel->room_name,
                                 'quantity' => $data->quantity,
                             ];
@@ -173,7 +189,7 @@ class ScheduleController extends Controller
                     $bookingDocument = BookingDocument::where('booking_id',$booking->id)->where('attachment_type_id',$attachmentType)->first();
                     if($bookingDocument){
                         $invoiceLinks = [
-                            '/preview-file?title=Invoice '.$booking->user->name.'&url=https://new-backoffice.javavolcano-touroperator.com/assets/customer-document/'.$bookingDocument->file,
+                            'https://new-backoffice.javavolcano-touroperator.com/preview-file?title=Invoice '.$booking->user->name.'&url=https://new-backoffice.javavolcano-touroperator.com/assets/customer-document/'.$bookingDocument->file,
                         ];
                     }
                 }
@@ -201,9 +217,19 @@ class ScheduleController extends Controller
                     'orderChannel' => $orderChannel,
                     'guest_id' => $booking->user_id,
                     'guest' => $booking->user->name,
+                    'guestDetails' => [
+                        'id' => $booking->user->id,
+                        'name' => $booking->user->name,
+                        'phone' => $booking->user->phone,
+                        'email' => $booking->user->email,
+                        'country_id' => $booking->user->country?->id,
+                        'country' => $booking->user->country?->long_name,
+                    ],
                     'total_pax' => $booking->total_pax,
                     'duration' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->duration->day."D ".$booking->bookingDetail[0]->package->duration->night."N" : $booking->package_duration."D ".($booking->package_duration-1)."N",
+                    'package_id' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package_id : null,
                     'package' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->name : $booking->package_duration."D ".($booking->package_duration-1)."N Package",
+                    'booking_date' => date('d M y',strtotime($booking->booking_date)),
                     'date' => [
                         'start_ymd' => $booking->travel_date_start,
                         'start' => date('d M y',strtotime($booking->travel_date_start)),
@@ -215,12 +241,14 @@ class ScheduleController extends Controller
                         'meeting_point_arrival' => $booking->meeting_point_arrival,
                         'meeting_point_value' => $booking->meeting_point_value,
                         'pickup_time' => date("H:i",strtotime($booking->pickup_time)),
+                        'text' => $booking->pickup
                     ],
                     'dropoff' => [
                         'drop_point' => $booking->drop_point,
                         'drop_point_arrival' => $booking->drop_point_arrival,
                         'drop_point_value' => $booking->drop_point_value,
                         'drop_time' => date("H:i",strtotime($booking->drop_time)),
+                        'text' => $booking->drop
                     ],
                     'itinerary' => $itinerary,
                     'hotels' => $hotels,
@@ -228,6 +256,7 @@ class ScheduleController extends Controller
                     'vehicles' => $vehicles,
                     'drivers' => $drivers,
                     'guides' => $guides,
+                    'at_ijen' => $booking->at_bondowoso ? date('d M y',strtotime($booking->at_bondowoso)) : null,
                     'financial' => [
                         'payment' =>  $booking->payment,
                         'balance' =>  $booking->balance,
@@ -238,7 +267,7 @@ class ScheduleController extends Controller
                         ],
                         'expense' => [
                             'total' => $booking->expense_internal_total,
-                            'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : '/finance/expense-manager/'.$booking->id.'/edit',
+                            'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : 'https://new-backoffice.javavolcano-touroperator.com//finance/expense-manager/'.$booking->id.'/edit',
                             'target' => '_blank'
                         ],
                         'profit' =>  $profit
@@ -257,7 +286,9 @@ class ScheduleController extends Controller
             });
             // return $data;
 
-            // return $data['booking']; 
+            if($request->json){
+                return $data['booking']; 
+            }
             $data['package'] = Package::with('duration')->where('is_publish','1')->get();
 
         } catch (\Illuminate\Database\QueryException $e) {

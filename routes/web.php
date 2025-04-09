@@ -21,6 +21,7 @@ use App\Http\Controllers\ClientController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\CrewController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -63,6 +64,7 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
     Route::get('/data-master-management/activities', [ActivityController::class,'index']);
     Route::get('/data-master-management/transportation', [TransportationController::class,'index']);
     Route::get('/data-master-management/miscellaneous', [MiscellaneousController::class,'index']);
+    Route::get('/data-master-management/crew', [CrewController::class,'index']);
 
     Route::get('/short-link', [ShortLinkController::class,'index']);
     Route::post('/short-link/store', [ShortLinkController::class,'store']);

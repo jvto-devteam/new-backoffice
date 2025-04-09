@@ -37,6 +37,9 @@ class HotelController extends Controller
         } catch (\Illuminate\Database\QueryException $e) {
             return $e->getMessage();
         }
+        if($request->json){
+            return $data['hotels'];
+        }
 //        return $data;
         return Inertia::render('Hotel/HotelList',['data' => $data]);
     }

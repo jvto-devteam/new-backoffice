@@ -267,7 +267,7 @@ class ScheduleController extends Controller
                         ],
                         'expense' => [
                             'total' => $booking->expense_internal_total,
-                            'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : 'https://new-backoffice.javavolcano-touroperator.com//finance/expense-manager/'.$booking->id.'/edit',
+                            'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : 'https://new-backoffice.javavolcano-touroperator.com/finance/expense-manager/'.$booking->id.'/edit',
                             'target' => '_blank'
                         ],
                         'profit' =>  $profit

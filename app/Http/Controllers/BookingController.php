@@ -564,7 +564,7 @@ class BookingController extends Controller
                         $checkOutDate = date('d M Y', strtotime($booking->travel_date_start . " +$day days"));
                                         
                         $dataSending["group_id"] = $cekHotel->group_wa_id;
-                        $customerName = $user->name;
+                        $customerName = $user->name." (".$booking->total_pax." PAX)";
                         $dataSending["message"] = "*📩 Room Reservation ".$cekHotel->name."*\r\n\r\n🗓 Check In : $checkInDate\r\n\r\n🛫Check Out : $checkOutDate\r\n\r\n👥 Guest : $customerName\r\n\r\n🛏 Rooms : $hotelRoomNames\r\n\r\n".$textMeals."Cek detail Reservasi ⬇️⬇️\r\nhttps://partner.javavolcano-touroperator.com/reservation/".$cekHotel->slug."\r\n\r\nTerima kasih";
     
                         $curl = curl_init();

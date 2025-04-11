@@ -575,6 +575,8 @@ class ScheduleController extends Controller
                 'contact_number' => $booking->user->phone,
                 'email_address' => $booking->user->email,
                 'nationality' => $booking->user->country ? $booking->user->country->long_name : '-',
+                'media_link' => $booking->media_link,
+                'portal' => $channel != 'TWT' ? 'https://javavolcano-touroperator.com/bookings/details/'.$booking->url : null,
             ],
             'booking_information' => [
                 'id' => $booking->id,

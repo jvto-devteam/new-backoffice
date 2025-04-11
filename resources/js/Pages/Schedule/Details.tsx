@@ -593,6 +593,40 @@ const EditPaymentMethodForm = ({ onClose }) => {
                     label="NATIONALITY"
                     value={initialData.client_information.nationality}
                   />
+                  {initialData.order_channel !== 'TWT' && (
+                    <>
+                      <div className="flex gap-3 items-start py-3 border-b border-gray-200">
+                        <div className="w-1/3 text-sm text-gray-600">Trip Media</div>
+                        <div className="w-2/3 text-sm flex items-center">
+                        {initialData.client_information.media_link ? (
+                          <a
+                            href={initialData.client_information.media_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline hover:text-blue-700 hover:underline transition-colors duration-200"
+                          >
+                            {initialData.client_information.media_link}
+                          </a>
+                        ) : '-'}
+                        </div>
+                      </div>
+                      <div className="flex gap-3 items-start py-3 border-b border-gray-200">
+                        <div className="w-1/3 text-sm text-gray-600">Client Portal</div>
+                        <div className="w-2/3 text-sm flex items-center">
+                          <a
+                            href={initialData.client_information.portal}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 underline hover:text-blue-700 hover:underline transition-colors duration-200"
+                          >
+                            {initialData.client_information.portal}
+                          </a>
+                        </div>
+                      </div>
+                      
+                    </>
+                  )}
+
                 </>
               )}
             </div>

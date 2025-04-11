@@ -2115,6 +2115,25 @@ export default function Index({ data }) {
                                                     </svg>
                                                     Excel
                                                 </a>
+                                                <a
+                                                    href={`/booking-overview?filter_type=${filterType}&${filterType === "month" ? "month=" + selectedMonth : "date_range=" + startDate + "_" + endDate}&search=${searchTerm}&channel=${selectedChannel}&json=true&download=true`}
+                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                                                    onClick={() => setIsDownloadOpen(false)}
+                                                >
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        className="h-5 w-5 mr-2 text-blue-600"
+                                                        viewBox="0 0 20 20"
+                                                        fill="currentColor"
+                                                    >
+                                                        <path
+                                                            fillRule="evenodd"
+                                                            d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h6a1 1 0 100-2H4V5h12v5a1 1 0 102 0V5a2 2 0 00-2-2H4zm8.293 9.707a1 1 0 011.414 0L16 15l-2.293 2.293a1 1 0 01-1.414-1.414L13.586 15l-1.293-1.293a1 1 0 010-1.414z"
+                                                            clipRule="evenodd"
+                                                        />
+                                                    </svg>
+                                                    JSON
+                                                </a>                                                
                                             </div>
                                         )}
                                     </div>

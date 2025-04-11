@@ -228,6 +228,7 @@ class ScheduleController extends Controller
                         'email' => $booking->user->email,
                         'country_id' => $booking->user->country?->id,
                         'country' => $booking->user->country?->long_name,
+                        'trip_media' => $booking->media_link,
                     ],
                     'total_pax' => $booking->total_pax,
                     'duration' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->duration->day."D ".$booking->bookingDetail[0]->package->duration->night."N" : $booking->package_duration."D ".($booking->package_duration-1)."N",
@@ -260,6 +261,7 @@ class ScheduleController extends Controller
                     'vehicles' => $vehicles,
                     'drivers' => $drivers,
                     'guides' => $guides,
+                    'is_shuttle' => $booking->is_shuttle == '1' ? 'YES' : 'NO', 
                     'at_ijen' => $booking->at_bondowoso ? date('d M y',strtotime($booking->at_bondowoso)) : null,
                     'financial' => [
                         'payment' =>  $booking->payment,
@@ -291,7 +293,18 @@ class ScheduleController extends Controller
             // return $data;
 
             if($request->json){
-                return $data['booking']; 
+                if($request->download){
+                    $jsonData = json_encode($data['booking'], JSON_PRETTY_PRINT);
+
+                    return response()->streamDownload(function () use ($jsonData) {
+                        echo $jsonData;
+                    }, 'booking.json', [
+                        'Content-Type' => 'application/json',
+                    ]);
+                }
+                else{
+                    return $data['booking']; 
+                }
             }
             $data['package'] = Package::with('duration')->where('is_publish','1')->get();
 

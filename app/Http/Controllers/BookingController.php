@@ -1664,6 +1664,12 @@ class BookingController extends Controller
         }
     }
 
+    function updateTripMedia(Request $request, $id){
+        $booking = Booking::findOrFail($id);
+        $booking->media_link = $request->media_link;
+        $booking->save();
+    }
+
     function setPaymentMethod(Request $request, $id){
         $booking = Booking::findOrFail($id);
         $booking->outstanding_payment_method = $request->payment_method;

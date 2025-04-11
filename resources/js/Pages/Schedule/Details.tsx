@@ -13,6 +13,7 @@ const Detail = ({ initialData }) => {
   const [copiedId, setCopiedId] = useState(null);
   const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
   const [isEditPaymentMethodOpen, setIsEditPaymentMethodOpen] = useState(false);
+  const [isEditTripMediaOpen, setIsEditTripMediaOpen] = useState(false);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
@@ -405,6 +406,82 @@ const EditPaymentMethodForm = ({ onClose }) => {
     );
   };
 
+  // Edit Trip Media Form Component
+const EditTripMediaForm = ({ onClose }) => {
+  const { data, setData, post, processing, errors } = useForm({
+    media_link: initialData.client_information.media_link || '',
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    post('/bookings/trip-media/'+initialData.booking_information.id, {
+      onSuccess: () => {
+        onClose();
+        Toast.fire({
+          icon: 'success',
+          title: 'Trip Media link updated successfully'
+        });
+      }
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-md mx-4">
+        <div className="flex justify-between items-center p-4 border-b border-gray-200">
+          <h3 className="text-lg font-bold">Edit Trip Media</h3>
+          <button 
+            onClick={onClose}
+            className="p-1 rounded-full hover:bg-gray-100"
+            aria-label="Close"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="p-4 space-y-4">
+            <div>
+              <label htmlFor="edit_media_link" className="block text-sm font-medium text-gray-700 mb-1">
+                Trip Media Link
+              </label>
+              <input
+                id="edit_media_link"
+                type="url"
+                value={data.media_link}
+                onChange={e => setData('media_link', e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                placeholder="https://example.com/"
+                required
+              />
+              {errors.media_link && (
+                <div className="text-red-500 text-sm mt-1">{errors.media_link}</div>
+              )}
+            </div>
+          </div>
+          
+          <div className="p-4 border-t border-gray-200 flex justify-end space-x-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-md transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={processing}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-75"
+            >
+              {processing ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
   const tabs = [
     { id: 'transaction', label: 'Client Information' },
     { id: 'booking', label: 'Booking Information' },
@@ -508,6 +585,7 @@ const EditPaymentMethodForm = ({ onClose }) => {
     <Main>
       {isPaymentFormOpen && <PaymentForm onClose={() => setIsPaymentFormOpen(false)} />}
       {isEditPaymentMethodOpen && <EditPaymentMethodForm onClose={() => setIsEditPaymentMethodOpen(false)} />}
+      {isEditTripMediaOpen && <EditTripMediaForm onClose={() => setIsEditTripMediaOpen(false)} />}
       
       <div className="flex flex-col lg:flex-row gap-5 p-4">
         {/* Sidebar */}
@@ -597,17 +675,23 @@ const EditPaymentMethodForm = ({ onClose }) => {
                     <>
                       <div className="flex gap-3 items-start py-3 border-b border-gray-200">
                         <div className="w-1/3 text-sm text-gray-600">Trip Media</div>
-                        <div className="w-2/3 text-sm flex items-center">
-                        {initialData.client_information.media_link ? (
-                          <a
-                            href={initialData.client_information.media_link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 underline hover:text-blue-700 hover:underline transition-colors duration-200"
+                        <div className="w-2/3 text-sm flex items-center gap-3">
+                          {initialData.client_information.media_link ? (
+                            <a
+                              href={initialData.client_information.media_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline hover:text-blue-700 hover:underline transition-colors duration-200"
+                            >
+                              {initialData.client_information.media_link}
+                            </a>
+                          ) : '-'}
+                          <button 
+                            onClick={() => setIsEditTripMediaOpen(true)} 
+                            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
                           >
-                            {initialData.client_information.media_link}
-                          </a>
-                        ) : '-'}
+                            <Pencil className="h-4 w-4 text-blue-600"/>
+                          </button>
                         </div>
                       </div>
                       <div className="flex gap-3 items-start py-3 border-b border-gray-200">
@@ -617,7 +701,7 @@ const EditPaymentMethodForm = ({ onClose }) => {
                             href={initialData.client_information.portal}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 underline hover:text-blue-700 hover:underline transition-colors duration-200"
+                            className="text-blue-600 underline hover:text-blue-700 hover:underline transition-colors duration-200 w-full break-words"
                           >
                             {initialData.client_information.portal}
                           </a>

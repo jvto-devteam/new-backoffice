@@ -2074,7 +2074,7 @@ export default function Index({ data }) {
                                         {isDownloadOpen && (
                                             <div className="absolute z-10 w-full mt-1 bg-white rounded-md shadow-lg border border-gray-200">
                                                 <a
-                                                    href={`/booking-overview?filter_type=${filterType}&${filterType === "month" ? "month=" + selectedMonth : "date_range=" + startDate + "_" + endDate}&search=${searchTerm}&channel=${selectedChannel}&pdf=true`}
+                                                    href={`/booking-overview?filter_type=${filterType}&${filterType === "month" ? "month=" + selectedMonth : "date_range=" + startDate + "_" + endDate}&search=${searchTerm}&sort_column=${sortColumn}&sort_order=${sortOrder}&channel=${selectedChannel}&pdf=true`}
                                                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                                                     onClick={() =>
                                                         setIsDownloadOpen(false)
@@ -2095,7 +2095,7 @@ export default function Index({ data }) {
                                                     PDF
                                                 </a>
                                                 <a
-                                                    href={`/booking-overview?filter_type=${filterType}&${filterType === "month" ? "month=" + selectedMonth : "date_range=" + startDate + "_" + endDate}&search=${searchTerm}&channel=${selectedChannel}&export=true`}
+                                                    href={`/booking-overview?filter_type=${filterType}&${filterType === "month" ? "month=" + selectedMonth : "date_range=" + startDate + "_" + endDate}&search=${searchTerm}&sort_column=${sortColumn}&sort_order=${sortOrder}&channel=${selectedChannel}&export=true`}
                                                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                                                     onClick={() =>
                                                         setIsDownloadOpen(false)
@@ -2116,7 +2116,7 @@ export default function Index({ data }) {
                                                     Excel
                                                 </a>
                                                 <a
-                                                    href={`/booking-overview?filter_type=${filterType}&${filterType === "month" ? "month=" + selectedMonth : "date_range=" + startDate + "_" + endDate}&search=${searchTerm}&channel=${selectedChannel}&json=true&download=true`}
+                                                    href={`/booking-overview?filter_type=${filterType}&${filterType === "month" ? "month=" + selectedMonth : "date_range=" + startDate + "_" + endDate}&search=${searchTerm}&sort_column=${sortColumn}&sort_order=${sortOrder}&channel=${selectedChannel}&json=true&download=true`}
                                                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
                                                     onClick={() => setIsDownloadOpen(false)}
                                                 >

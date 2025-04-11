@@ -92,6 +92,7 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
         Route::post('/', [BookingController::class, 'store']);
         Route::post('/update-bookings', [BookingController::class, 'update']);
         Route::post('/store', [BookingController::class, 'store']);
+        Route::delete('/delete/{id}', [BookingController::class, 'delete']);
     });
     Route::prefix('vendor')->group(function () {
         Route::get('/accommodation/{id}', [VendorController::class, 'accommodation']);

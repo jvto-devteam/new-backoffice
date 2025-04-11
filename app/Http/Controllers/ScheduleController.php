@@ -37,6 +37,8 @@ class ScheduleController extends Controller
             'filterType' => $request->filter_type ? $request->filter_type : 'month',
             // 'view' => $request->view ? $request->view : 'pickup,dropoff,tshirtSize,activities,itinerary,accommodation,vehicleCrew,financial,notes', // Add this line
             'view' => $request->view ? $request->view : 'pickup,dropoff,itinerary,accommodation,vehicleCrew,financial,notes', // Add this line
+            'sort_column' => $request->sort_column ? $request->sort_column : 'date',
+            'sort_order' => $request->sort_order ? $request->sort_order : 'asc',
         ];
         
         $data['note_categories'] = NoteCategory::get();
@@ -67,7 +69,9 @@ class ScheduleController extends Controller
                 });
             }
             $status = "booked";
-            $data['booking'] = $data['booking']->where('status', $status)->orderBy('travel_date_start','asc')->get();
+            $orderByBookingColumn = $data['filters']['sort_column'] == 'date' ? 'travel_date_start' : $data['filters']['sort_column'];
+            $orderByBookingOrder = $data['filters']['sort_order'] == 'asc' ? 'asc' : 'desc';
+            $data['booking'] = $data['booking']->where('status', $status)->orderBy($orderByBookingColumn,$orderByBookingOrder)->get();
             $data['bookingReal'] = $data['booking'];
             $data['booking'] = $data['booking']->map(function($booking){
                 $orderChannel = $booking->agent_id == 1 ? 'TWT' : ($booking->agent_id == 2 && $booking->booking_category_id == 3 ? 'KLOOK' : 'JVTO');
@@ -229,7 +233,7 @@ class ScheduleController extends Controller
                     'duration' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->duration->day."D ".$booking->bookingDetail[0]->package->duration->night."N" : $booking->package_duration."D ".($booking->package_duration-1)."N",
                     'package_id' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package_id : null,
                     'package' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->name : $booking->package_duration."D ".($booking->package_duration-1)."N Package",
-                    'booking_date' => date('d M y',strtotime($booking->booking_date)),
+                    'booking_date' => date('d M Y',strtotime($booking->booking_date)),
                     'date' => [
                         'start_ymd' => $booking->travel_date_start,
                         'start' => date('d M y',strtotime($booking->travel_date_start)),

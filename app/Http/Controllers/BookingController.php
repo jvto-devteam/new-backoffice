@@ -6,9 +6,11 @@ use App\Models\ActivityEnd;
 use App\Models\ActivityStart;
 use App\Models\AddOn;
 use App\Models\BookAddOn;
+use App\Models\BookCar;
 use App\Models\BookCarActivity;
 use App\Models\BookCrewActivity;
 use App\Models\BookDestinationActivity;
+use App\Models\BookGuideDriver;
 use App\Models\BookHotel;
 use App\Models\BookHotelMeal;
 use App\Models\Booking;
@@ -16,6 +18,7 @@ use App\Models\BookingDetail;
 use App\Models\BookingDocument;
 use App\Models\BookingItinerary;
 use App\Models\BookingPayment;
+use App\Models\BookJeep;
 use App\Models\BookOthersActivity;
 use App\Models\BookRoomHotel;
 use App\Models\CarConfiguration;
@@ -28,10 +31,14 @@ use App\Models\Itinerary;
 use App\Models\OthersActivity;
 use App\Models\Package;
 use App\Models\RoomHotel;
+use App\Models\TwCalculation;
+use App\Models\TwCalculationDetail;
 use App\Models\User;
 use App\Models\UserLog;
 use App\Models\WaItinerary;
+use App\Models\WaLog;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
 use Inertia\Inertia;
@@ -281,6 +288,9 @@ class BookingController extends Controller
         $booking->booking_category_id = $booking_category_id;
         if($request->bookingDate && $request->bookingDate != null && $request->bookingDate != 'null' && $request->bookingDate != ''){
             $booking->booking_date = $request->bookingDate;
+        }
+        else{
+            $booking->booking_date = date('Y-m-d');
         }
         if($request->dueDate && $request->dueDate != null && $request->dueDate != 'null' && $request->dueDate != ''){
             $booking->due_date = $request->dueDate;
@@ -913,10 +923,137 @@ class BookingController extends Controller
         $daySchedule = date('Y-m-d 20:00:00', strtotime($booking->travel_date_start . " -1 days"));
         $day = 0;
 
+        // WaItinerary::where('booking_id',$booking->id)->delete();
+        // BookRoomHotel::where('booking_id',$booking->id)->delete();
+        // BookHotel::where('booking_id',$booking->id)->delete();
+        // BookingItinerary::where('booking_id',$booking->id)->delete();
+        // foreach ($packageDays as $key => $value) {
+        //     $day++;
+        //     if ($value['startActivity'] && $value['startActivity'] != '') {
+        //         $getStart = ActivityStart::find($value['startActivity']);
+        //         $getEnd = ActivityEnd::find($value['endActivity']);
+
+        //         if ($getStart->destination_id == 2) {
+        //             $updateAtIjen = Booking::find($booking->id);
+        //             $plus = $day - 1;
+        //             $updateAtIjen->at_bondowoso = date('Y-m-d', strtotime($booking->travel_date_start . " +$plus days"));
+        //             $updateAtIjen->save();
+        //         }
+
+        //         if ($getStart->destination_id == 1) {
+        //             $updateAtBromo = Booking::find($booking->id);
+        //             $plus = $day - 1;
+        //             $updateAtBromo->at_bromo = date('Y-m-d', strtotime($booking->travel_date_start . " +$plus days"));
+        //             $updateAtBromo->save();
+        //         }
+        //         $getEndName = '';
+        //         $getEndId = null;
+        //         if ($getEnd) {
+        //             $getEndName = $getEnd->name;
+        //             $getEndId = $getEnd->id;
+        //         }
+        //         $bookingItinerary = new BookingItinerary();
+        //         $bookingItinerary->booking_id = $booking->id;
+        //         $bookingItinerary->day = $day;
+        //         $bookingItinerary->activity_start_id = $getStart->id;
+        //         $bookingItinerary->activity_end_id = $getEndId;
+        //         $bookingItinerary->itinerary = $getStart->name . ' - ' . $getEndName;
+        //         $bookingItinerary->activity = $value['itinerary'];
+        //         $bookingItinerary->b = $value['meals']['breakfast'] ? '1' : '0';
+        //         $bookingItinerary->l = $value['meals']['lunch'] ? '1' : '0';
+        //         $bookingItinerary->d = $value['meals']['dinner'] ? '1' : '0';
+        //         $bookingItinerary->save();
+        //         if ($request->isSendWa) {
+        //             $waItinerary = new WaItinerary();
+        //             $waItinerary->booking_id = $booking->id;
+        //             $waItinerary->user_id = $booking->user_id;
+        //             $waItinerary->day = $day;
+        //             $waItinerary->message = "*" . $bookingItinerary->itinerary . "*{br}" . $bookingItinerary->activity;
+        //             $waItinerary->schedule = date('Y-m-d 20:00:00', strtotime($daySchedule . " +$startSchedule days"));
+        //             $waItinerary->save();
+        //         }
+        //         if ($value['hotel'] && $value['hotel'] != '') {
+        //             $bookHotel = new BookHotel();
+        //             $bookHotel->booking_id = $booking->id;
+        //             $bookHotel->booking_itinerary_id = $bookingItinerary->id;
+        //             $bookHotel->hotel_id = $value['hotel'];
+        //             $bookHotel->b = $value['meals']['breakfast'] ? '1' : '0';
+        //             $bookHotel->l = $value['meals']['lunch'] ? '1' : '0';
+        //             $bookHotel->d = $value['meals']['dinner'] ? '1' : '0';
+        //             $bookHotel->status = NULL;
+        //             $bookHotel->save();
+
+        //             if ($getStart->destination_id == 1) {
+        //                 $updateAtBromo = Booking::find($booking->id);
+        //                 $updateAtBromo->bromo_hotel_id = $value['hotel'];
+        //                 $updateAtBromo->bromo_hotel_checkin = date('Y-m-d', strtotime($updateAtBromo->at_bromo . " -1 days"));
+        //                 $updateAtBromo->save();
+        //             }
+
+        //             $hotelRooms = '';
+        //             $currentRoomIndex = 0;
+
+        //             foreach ($value['rooms'] as $keyRoom => $valueRoom) {
+        //                 if($valueRoom['room'] && $valueRoom['room'] != ''){
+        //                     $getRoomDetails = RoomHotel::find($valueRoom['room']);
+    
+        //                     $bookRoom = new BookRoomHotel();
+        //                     $bookRoom->booking_id = $booking->id;
+        //                     $bookRoom->booking_itinerary_id = $bookingItinerary->id;
+        //                     $bookRoom->book_hotel_id = $bookHotel->id;
+        //                     $bookRoom->room_hotel_id = $valueRoom['room'];
+        //                     $bookRoom->quantity = $valueRoom['quantity'];
+        //                     $bookRoom->subtotal = $bookRoom->quantity * $getRoomDetails->rate;
+        //                     $bookRoom->save();
+        //                 }
+        //             }
+        //         }
+        //         $startSchedule++;
+        //     }
+        // }
+
+        // Pendekatan ini hanya menghapus WaItinerary di awal
+        // BookingItinerary, BookHotel, dan BookRoomHotel akan diproses selektif
         WaItinerary::where('booking_id',$booking->id)->delete();
-        BookRoomHotel::where('booking_id',$booking->id)->delete();
-        BookHotel::where('booking_id',$booking->id)->delete();
-        BookingItinerary::where('booking_id',$booking->id)->delete();
+
+        // Simpan data hotel yang ada untuk referensi
+        $existingHotels = [];
+        $existingBookHotels = BookHotel::where('booking_id', $booking->id)->get();
+        foreach ($existingBookHotels as $existingHotel) {
+            $itinerary = BookingItinerary::find($existingHotel->booking_itinerary_id);
+            if ($itinerary) {
+                $day = $itinerary->day;
+                $existingHotels[$day] = [
+                    'hotel_id' => $existingHotel->hotel_id,
+                    'book_hotel_id' => $existingHotel->id,
+                    'booking_itinerary_id' => $existingHotel->booking_itinerary_id,
+                    'rooms' => []
+                ];
+                
+                // Simpan data room yang ada
+                $existingRooms = BookRoomHotel::where('book_hotel_id', $existingHotel->id)->get();
+                foreach ($existingRooms as $room) {
+                    $existingHotels[$day]['rooms'][] = [
+                        'id' => $room->id,
+                        'room_hotel_id' => $room->room_hotel_id,
+                        'quantity' => $room->quantity
+                    ];
+                }
+            }
+        }
+
+        // Simpan referensi ke itinerary yang ada
+        $existingItineraries = [];
+        $itineraries = BookingItinerary::where('booking_id', $booking->id)->get();
+        foreach ($itineraries as $itinerary) {
+            $existingItineraries[$itinerary->day] = $itinerary;
+        }
+
+        // Array untuk melacak ID yang akan dipertahankan
+        $usedHotelIds = [];
+        $usedItineraryIds = [];
+        $day = 0;
+
         foreach ($packageDays as $key => $value) {
             $day++;
             if ($value['startActivity'] && $value['startActivity'] != '') {
@@ -936,23 +1073,42 @@ class BookingController extends Controller
                     $updateAtBromo->at_bromo = date('Y-m-d', strtotime($booking->travel_date_start . " +$plus days"));
                     $updateAtBromo->save();
                 }
+                
                 $getEndName = '';
                 $getEndId = null;
                 if ($getEnd) {
                     $getEndName = $getEnd->name;
                     $getEndId = $getEnd->id;
                 }
-                $bookingItinerary = new BookingItinerary();
-                $bookingItinerary->booking_id = $booking->id;
-                $bookingItinerary->day = $day;
-                $bookingItinerary->activity_start_id = $getStart->id;
-                $bookingItinerary->activity_end_id = $getEndId;
-                $bookingItinerary->itinerary = $getStart->name . ' - ' . $getEndName;
-                $bookingItinerary->activity = $value['itinerary'];
-                $bookingItinerary->b = $value['meals']['breakfast'] ? '1' : '0';
-                $bookingItinerary->l = $value['meals']['lunch'] ? '1' : '0';
-                $bookingItinerary->d = $value['meals']['dinner'] ? '1' : '0';
-                $bookingItinerary->save();
+                
+                // Proses itinerary (update jika sudah ada, buat baru jika belum)
+                if (isset($existingItineraries[$day])) {
+                    $bookingItinerary = $existingItineraries[$day];
+                    $bookingItinerary->activity_start_id = $getStart->id;
+                    $bookingItinerary->activity_end_id = $getEndId;
+                    $bookingItinerary->itinerary = $getStart->name . ' - ' . $getEndName;
+                    $bookingItinerary->activity = $value['itinerary'];
+                    $bookingItinerary->b = $value['meals']['breakfast'] ? '1' : '0';
+                    $bookingItinerary->l = $value['meals']['lunch'] ? '1' : '0';
+                    $bookingItinerary->d = $value['meals']['dinner'] ? '1' : '0';
+                    $bookingItinerary->save();
+                } else {
+                    $bookingItinerary = new BookingItinerary();
+                    $bookingItinerary->booking_id = $booking->id;
+                    $bookingItinerary->day = $day;
+                    $bookingItinerary->activity_start_id = $getStart->id;
+                    $bookingItinerary->activity_end_id = $getEndId;
+                    $bookingItinerary->itinerary = $getStart->name . ' - ' . $getEndName;
+                    $bookingItinerary->activity = $value['itinerary'];
+                    $bookingItinerary->b = $value['meals']['breakfast'] ? '1' : '0';
+                    $bookingItinerary->l = $value['meals']['lunch'] ? '1' : '0';
+                    $bookingItinerary->d = $value['meals']['dinner'] ? '1' : '0';
+                    $bookingItinerary->save();
+                }
+                
+                // Tambahkan ID itinerary ke daftar yang digunakan
+                $usedItineraryIds[] = $bookingItinerary->id;
+                
                 if ($request->isSendWa) {
                     $waItinerary = new WaItinerary();
                     $waItinerary->booking_id = $booking->id;
@@ -962,16 +1118,40 @@ class BookingController extends Controller
                     $waItinerary->schedule = date('Y-m-d 20:00:00', strtotime($daySchedule . " +$startSchedule days"));
                     $waItinerary->save();
                 }
+                
                 if ($value['hotel'] && $value['hotel'] != '') {
-                    $bookHotel = new BookHotel();
-                    $bookHotel->booking_id = $booking->id;
-                    $bookHotel->booking_itinerary_id = $bookingItinerary->id;
-                    $bookHotel->hotel_id = $value['hotel'];
-                    $bookHotel->b = $value['meals']['breakfast'] ? '1' : '0';
-                    $bookHotel->l = $value['meals']['lunch'] ? '1' : '0';
-                    $bookHotel->d = $value['meals']['dinner'] ? '1' : '0';
-                    $bookHotel->status = NULL;
-                    $bookHotel->save();
+                    // Cek apakah hotel untuk hari ini sama dengan yang sudah ada
+                    $hotelExists = isset($existingHotels[$day]) && $existingHotels[$day]['hotel_id'] == $value['hotel'];
+                    
+                    if ($hotelExists) {
+                        // Update hotel yang sudah ada
+                        $bookHotel = BookHotel::find($existingHotels[$day]['book_hotel_id']);
+                        $bookHotel->booking_itinerary_id = $bookingItinerary->id;
+                        $bookHotel->b = $value['meals']['breakfast'] ? '1' : '0';
+                        $bookHotel->l = $value['meals']['lunch'] ? '1' : '0';
+                        $bookHotel->d = $value['meals']['dinner'] ? '1' : '0';
+                        $bookHotel->save();
+                        
+                        // Tandai hotel ini sebagai digunakan
+                        $usedHotelIds[] = $bookHotel->id;
+                        
+                        // Hapus semua room dulu karena akan diupdate
+                        BookRoomHotel::where('book_hotel_id', $bookHotel->id)->delete();
+                    } else {
+                        // Buat hotel baru
+                        $bookHotel = new BookHotel();
+                        $bookHotel->booking_id = $booking->id;
+                        $bookHotel->booking_itinerary_id = $bookingItinerary->id;
+                        $bookHotel->hotel_id = $value['hotel'];
+                        $bookHotel->b = $value['meals']['breakfast'] ? '1' : '0';
+                        $bookHotel->l = $value['meals']['lunch'] ? '1' : '0';
+                        $bookHotel->d = $value['meals']['dinner'] ? '1' : '0';
+                        $bookHotel->status = NULL;
+                        $bookHotel->save();
+                        
+                        // Tandai hotel ini sebagai digunakan
+                        $usedHotelIds[] = $bookHotel->id;
+                    }
 
                     if ($getStart->destination_id == 1) {
                         $updateAtBromo = Booking::find($booking->id);
@@ -980,13 +1160,11 @@ class BookingController extends Controller
                         $updateAtBromo->save();
                     }
 
-                    $hotelRooms = '';
-                    $currentRoomIndex = 0;
-
+                    // Tambahkan room baru
                     foreach ($value['rooms'] as $keyRoom => $valueRoom) {
                         if($valueRoom['room'] && $valueRoom['room'] != ''){
                             $getRoomDetails = RoomHotel::find($valueRoom['room']);
-    
+
                             $bookRoom = new BookRoomHotel();
                             $bookRoom->booking_id = $booking->id;
                             $bookRoom->booking_itinerary_id = $bookingItinerary->id;
@@ -1001,6 +1179,31 @@ class BookingController extends Controller
                 $startSchedule++;
             }
         }
+
+        // Hapus hotel yang tidak lagi digunakan dalam update ini
+        // Pastikan untuk menghapus data room terlebih dahulu
+        $unusedHotels = BookHotel::where('booking_id', $booking->id)
+                                ->whereNotIn('id', $usedHotelIds)
+                                ->get();
+                                
+        foreach ($unusedHotels as $unusedHotel) {
+            BookRoomHotel::where('book_hotel_id', $unusedHotel->id)->delete();
+            $unusedHotel->delete();
+        }
+
+        // Hapus itinerary yang tidak lagi digunakan
+        // Pastikan untuk menghapus setelah hotel karena ada foreign key constraint
+        $unusedItineraries = BookingItinerary::where('booking_id', $booking->id)
+                                            ->whereNotIn('id', $usedItineraryIds)
+                                            ->get();
+                                            
+        foreach ($unusedItineraries as $unusedItinerary) {
+            // Periksa terlebih dahulu apakah tidak ada hotel yang terkait
+            $relatedHotel = BookHotel::where('booking_itinerary_id', $unusedItinerary->id)->first();
+            if (!$relatedHotel) {
+                $unusedItinerary->delete();
+            }
+        }        
 
         foreach ($invoiceHistory as $key => $value) {
             $invoiceHistory = new InvoiceHistory();
@@ -1481,6 +1684,35 @@ class BookingController extends Controller
             }
         }
 
+    }
+    function delete($id){
+        $booking = Booking::findOrFail($id);
+        DB::transaction(function () use ($id) {
+            BookGuideDriver::where('booking_id', $id)->delete();
+            BookCar::where('booking_id', $id)->delete();
+            WaLog::where('booking_id', $id)->delete();
+            WaItinerary::where('booking_id', $id)->delete();
+            BookingDocument::where('booking_id', $id)->delete();
+            BookingPayment::where('booking_id', $id)->delete();
+            BookRoomHotel::where('booking_id', $id)->delete();
+            BookHotel::where('booking_id', $id)->delete();
+            BookingItinerary::where('booking_id', $id)->delete();
+            BookingDetail::where('booking_id', $id)->delete();
+            BookAddOn::where('booking_id', $id)->delete();
+            InvoiceHistory::where('booking_id', $id)->delete();
+            $calc = TwCalculation::where('booking_id', $id)->first();
+            if ($calc) {
+                TwCalculationDetail::where('tw_calculation_id', $calc->id)->delete();
+                $calc->delete();
+            }
+            $discount = Discount::where('booking_id', $id)->first();
+            if ($discount) {
+                $discount->delete();
+            }
+
+            Booking::where('id', $id)->delete();
+        });
+        return redirect()->back()->withStatus('Booking Deleted Successfully');
     }
     // function store(Request $request){
     //     // return dd($request->all());

@@ -377,29 +377,36 @@ const BookingRow = ({
             <td className="py-3 px-2 align-top">{index + 1}</td>
 
             {/* Date Column */}
-            <td className="py-3 px-4 align-top">
+            <td className="py-3 px-4 align-top whitespace-nowrap">
                 <div className="text-blue-600 font-bold">
                     {format(booking.date.start, "dd MMM")} -{" "}
                     {format(booking.date.end, "dd MMM")}
                 </div>
-                <div className="text-xs text-gray-400">{booking.date.days}</div>
+                <div className="text-gray-800 font-bold">
+                    {booking.date.days}
+                </div>
+                <div className="text-gray-800 mt-5">
+                    <span className="text-gray-600 text-xs mr-1 block">Booking Date:</span>
+                    <span className="text-xs font-bold tracking-wide">
+                        {format(booking.booking_date, "dd MMM yyyy")}
+                    </span>
+                </div>
             </td>
-
             {/* Guest & Package */}
             <td className="py-3 px-4 align-top space-y-1">
                 <div>
                     <Link href={`bookings/edit-booking/${booking.booking_id}`}>
                         <span
                             className={`inline-block px-2 py-1 text-xs font-medium rounded-full 
-              ${
-                  booking.orderChannel === "JVTO"
-                      ? "bg-blue-100 text-blue-800"
-                      : booking.orderChannel === "TWT"
-                        ? "bg-yellow-100 text-yellow-800"
-                        : booking.orderChannel === "KLOOK"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-800"
-              }`}
+                            ${
+                                booking.orderChannel === "JVTO"
+                                    ? "bg-blue-100 text-blue-800"
+                                    : booking.orderChannel === "TWT"
+                                        ? "bg-yellow-100 text-yellow-800"
+                                        : booking.orderChannel === "KLOOK"
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-gray-100 text-gray-800"
+                            }`}
                         >
                             {booking.id}
                         </span>
@@ -421,6 +428,7 @@ const BookingRow = ({
                     {booking.duration} / {booking.total_pax} PAX
                 </div>
             </td>
+
 
             {/* Pickup Details */}
             {viewColumns.includes("pickup") && (
@@ -848,10 +856,6 @@ const BookingRow = ({
                             className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg z-50 py-1"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <Link className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150" href={`bookings/edit-booking/${booking.booking_id}`}>
-                            Edit
-                            </Link>
-
                             <button
                                 onClick={() =>
                                     window.open(
@@ -874,7 +878,39 @@ const BookingRow = ({
                             >
                                 Plotting
                             </button>
+                            <Link className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150" href={`bookings/edit-booking/${booking.booking_id}`}>
+                            Edit
+                            </Link>
+                            <button onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
 
+                                Swal.fire({
+                                    title: 'Are you sure?',
+                                    text: 'This action cannot be undone.',
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonColor: '#d33',
+                                    cancelButtonColor: '#3085d6',
+                                    confirmButtonText: 'Yes, delete it!',
+                                  }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        router.delete("/bookings/delete/"+booking.booking_id, {
+                                            onSuccess: (page) => {
+                                                Toast.fire({
+                                                    icon: "success",
+                                                    title: "Booking Deleted Successfully",
+                                                });
+                                                setTimeout(() => {
+                                                    window.location.href = ''; // reload current page
+                                                }, 1500); // delay 1.5 detik (1500 ms)                                            
+                                            },
+                                        });
+                                    }
+                                });                                
+                            }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150">
+                            Delete
+                            </button>
                         </div>
                     )}
                 </div>
@@ -1016,6 +1052,26 @@ export default function Index({ data }) {
                   "notes",
               ],
     );
+    const [sortColumn, setSortColumn] = useState(data.filters.sort_column); // Get from props or default to date
+    const [sortOrder, setSortOrder] = useState(data.filters.sort_order); // Get from props or default to asc
+    const [isDateSortDropdownOpen, setIsDateSortDropdownOpen] = useState(false); // New state to control dropdown visibility
+    const dateSortDropdownRef = useRef(null); // Reference for the dropdown
+    
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+          if (dateSortDropdownRef.current && !dateSortDropdownRef.current.contains(event.target)) {
+            setIsDateSortDropdownOpen(false);
+          }
+        };
+      
+        if (isDateSortDropdownOpen) {
+          document.addEventListener("mousedown", handleClickOutside);
+        }
+        
+        return () => {
+          document.removeEventListener("mousedown", handleClickOutside);
+        };
+      }, [isDateSortDropdownOpen]);        
 
     const viewColumns = data.filters.view.split(",")
 
@@ -2072,8 +2128,119 @@ export default function Index({ data }) {
                     <table className="min-w-full text-left text-sm text-gray-700">
                         <thead className="bg-gray-100 text-gray-600 text-sm uppercase">
                             <tr>
-                                <th className="py-3 px-4 min-w-15">#</th>
-                                <th className="py-3 px-4 min-w-35">Date</th>
+                                <th className="py-3 px-4">#</th>
+                                <th className="py-3 px-4 min-w-35 relative whitespace-nowrap">
+                                    <div className="flex items-center">
+                                        <div className="relative" ref={dateSortDropdownRef}>
+                                        <button 
+                                            className="ml-1 text-gray-600 text-left font-bold hover:text-gray-700"
+                                            onClick={() => setIsDateSortDropdownOpen(!isDateSortDropdownOpen)}
+                                        >
+                                            <span className="mr-3">DATE</span>
+                                            {sortColumn === "date" || sortColumn === "booking_date" ? (
+                                            <span>{sortOrder === "asc" ? "↑" : "↓"}</span>
+                                            ) : (
+                                            <ChevronDown className="h-4 w-4" />
+                                            )}
+                                        </button>
+                                        
+                                        {isDateSortDropdownOpen && (
+                                            <div className="absolute left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                                            <div className="py-1">
+                                                <button 
+                                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                                                    sortColumn === "date" && sortOrder === "asc" 
+                                                    ? "bg-blue-50 text-blue-700" 
+                                                    : "text-gray-700"
+                                                }`}
+                                                onClick={() => {
+                                                    setIsDateSortDropdownOpen(false);
+                                                    router.get("/booking-overview", {
+                                                    filter_type: filterType,
+                                                    month: selectedMonth,
+                                                    date_range: startDate + "_" + endDate,
+                                                    search: searchTerm,
+                                                    channel: selectedChannel,
+                                                    view: selectedColumns.join(","),
+                                                    sort_column: "date",
+                                                    sort_order: "asc"
+                                                    });
+                                                }}
+                                                >
+                                                Travel Date (Earliest first)
+                                                </button>
+                                                <button 
+                                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                                                    sortColumn === "date" && sortOrder === "desc" 
+                                                    ? "bg-blue-50 text-blue-700" 
+                                                    : "text-gray-700"
+                                                }`}
+                                                onClick={() => {
+                                                    setIsDateSortDropdownOpen(false);
+                                                    router.get("/booking-overview", {
+                                                    filter_type: filterType,
+                                                    month: selectedMonth,
+                                                    date_range: startDate + "_" + endDate,
+                                                    search: searchTerm,
+                                                    channel: selectedChannel,
+                                                    view: selectedColumns.join(","),
+                                                    sort_column: "date",
+                                                    sort_order: "desc"
+                                                    });
+                                                }}
+                                                >
+                                                Travel Date (Latest first)
+                                                </button>
+                                                <button 
+                                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                                                    sortColumn === "booking_date" && sortOrder === "asc" 
+                                                    ? "bg-blue-50 text-blue-700" 
+                                                    : "text-gray-700"
+                                                }`}
+                                                onClick={() => {
+                                                    setIsDateSortDropdownOpen(false);
+                                                    router.get("/booking-overview", {
+                                                    filter_type: filterType,
+                                                    month: selectedMonth,
+                                                    date_range: startDate + "_" + endDate,
+                                                    search: searchTerm,
+                                                    channel: selectedChannel,
+                                                    view: selectedColumns.join(","),
+                                                    sort_column: "booking_date",
+                                                    sort_order: "asc"
+                                                    });
+                                                }}
+                                                >
+                                                Booking Date (Earliest first)
+                                                </button>
+                                                <button 
+                                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                                                    sortColumn === "booking_date" && sortOrder === "desc" 
+                                                    ? "bg-blue-50 text-blue-700" 
+                                                    : "text-gray-700"
+                                                }`}
+                                                onClick={() => {
+                                                    setIsDateSortDropdownOpen(false);
+                                                    router.get("/booking-overview", {
+                                                    filter_type: filterType,
+                                                    month: selectedMonth,
+                                                    date_range: startDate + "_" + endDate,
+                                                    search: searchTerm,
+                                                    channel: selectedChannel,
+                                                    view: selectedColumns.join(","),
+                                                    sort_column: "booking_date",
+                                                    sort_order: "desc"
+                                                    });
+                                                }}
+                                                >
+                                                Booking Date (Latest first)
+                                                </button>
+                                            </div>
+                                            </div>
+                                        )}
+                                        </div>
+                                    </div>
+                                </th>                                
                                 <th className="py-3 px-4 min-w-35">
                                     Guest & Pax
                                 </th>

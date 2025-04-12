@@ -329,6 +329,8 @@ const EditableNote = ({ note, bookingId, onNoteUpdate, noteCategories }) => {
     );
 };
 const BookingRow = ({
+    isCompleted=false,
+    startNumb,
     booking,
     index,
     handleMoreVerticalClick,
@@ -372,9 +374,9 @@ const BookingRow = ({
     };
 
     return (
-        <tr className="border-b">
+        <tr className={`border-b ${isCompleted ? "bg-green-50" : ""}`}>
             {/* Row Index */}
-            <td className="py-3 px-2 align-top">{index + 1}</td>
+            <td className="py-3 px-2 align-top">{startNumb}</td>
 
             {/* Date Column */}
             <td className="py-3 px-4 align-top whitespace-nowrap">
@@ -1022,6 +1024,7 @@ const ColumnSelector = ({ selectedColumns, setSelectedColumns }) => {
 export default function Index({ data }) {
     // Local state
     const [bookings, setBookings] = useState(data.booking);
+    const [showCompletedTrips, setShowCompletedTrips] = useState(false);
     // Filter states
     const [searchTerm, setSearchTerm] = useState(data.filters.search);
     const [selectedChannel, setSelectedChannel] = useState(
@@ -2312,19 +2315,79 @@ export default function Index({ data }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {bookings.map((booking, index) => (
-                                <BookingRow
-                                    key={booking.id}
-                                    booking={booking}
-                                    index={index}
-                                    handleMoreVerticalClick={
-                                        handleMoreVerticalClick
-                                    }
-                                    updateBookingNote={updateBookingNote}
-                                    noteCategories={data.note_categories}
-                                    viewColumns={viewColumns}
-                                />
-                            ))}
+                            {/* Completed Trips Collapsible Section */}
+                            <tr className="border-b bg-green-50">
+                                <td colSpan={selectedColumns.length + 4} className="py-2 px-4">
+                                    <button 
+                                        onClick={() => setShowCompletedTrips(!showCompletedTrips)}
+                                        className="w-full flex items-center justify-between text-left font-medium text-green-700"
+                                    >
+                                        <div className="flex items-center">
+                                            <div>
+                                                <span className="text-xs mr-3 bg-green-200 px-2 py-1 rounded-full">
+                                                    {bookings.filter(b => new Date(b.date.end_ymd) < new Date()).length}
+                                                </span>
+                                                Completed Trips
+                                            </div>
+                                            {showCompletedTrips ? 
+                                                <ChevronDown className="h-5 w-5 mr-2" /> : 
+                                                <ChevronRight className="h-5 w-5 mr-2" />
+                                            }
+                                        </div>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            {/* Add this state to the component */}
+                            {/* const [showCompletedTrips, setShowCompletedTrips] = useState(false); */}
+                            
+                            {showCompletedTrips && bookings
+                                .filter(booking => new Date(booking.date.end_ymd) < new Date())
+                                .map((booking, index) => (
+                                    <BookingRow
+                                        isCompleted={true}
+                                        startNumb={1 + index}
+                                        key={booking.id}
+                                        booking={booking}
+                                        index={index}
+                                        handleMoreVerticalClick={handleMoreVerticalClick}
+                                        updateBookingNote={updateBookingNote}
+                                        noteCategories={data.note_categories}
+                                        viewColumns={viewColumns}
+                                    />
+                                ))}
+                            
+                            {/* Active/Upcoming Trips Label */}
+                            <tr className="border-b bg-blue-50">
+                                <td colSpan={selectedColumns.length + 4} className="py-2 px-4">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center font-medium text-blue-700">
+                                            <div>
+                                                <span className="text-xs mr-3 bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                                    {bookings.filter(b => new Date(b.date.end_ymd) >= new Date()).length}
+                                                </span>
+                                                Active & Upcoming Trips
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            {/* Then replace the original bookings.map with this */}
+                            {bookings
+                                .filter(booking => new Date(booking.date.end_ymd) >= new Date())
+                                .map((booking, index) => (
+                                    <BookingRow
+                                        startNumb={bookings.filter(b => new Date(b.date.end_ymd) < new Date()).length + 1 + index}
+                                        key={booking.id}
+                                        booking={booking}
+                                        index={index}
+                                        handleMoreVerticalClick={handleMoreVerticalClick}
+                                        updateBookingNote={updateBookingNote}
+                                        noteCategories={data.note_categories}
+                                        viewColumns={viewColumns}
+                                    />
+                                ))}
                         </tbody>
                     </table>
                 </div>

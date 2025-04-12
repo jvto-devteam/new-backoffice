@@ -237,6 +237,7 @@ class ScheduleController extends Controller
                     'booking_date' => date('d M Y',strtotime($booking->booking_date)),
                     'date' => [
                         'start_ymd' => $booking->travel_date_start,
+                        'end_ymd' => $booking->travel_date_end,
                         'start' => date('d M y',strtotime($booking->travel_date_start)),
                         'end' => date('d M y',strtotime($booking->travel_date_end)),
                         'days' => date('D',strtotime($booking->travel_date_start))." - ".date('D',strtotime($booking->travel_date_end)),

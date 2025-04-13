@@ -32,6 +32,141 @@ use Illuminate\Support\Str;
 
 class FinanceController extends Controller
 {
+    function index(Request $request){
+        $month = $request->month ? $request->month : date('m');
+        $year = $request->year ? $request->year : date('Y');
+
+        $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id','booking_date','package_duration','invoice_code_origin','url','expense_internal_total')->with(['user' => function($query){
+            $query->select('id','name');
+        },'bookingDetail' => function($query){
+            $query->select('id','package_id','booking_id')->with(['package' => function($q){
+                $q->select('id','name','duration_id')->with('duration');
+            }]);
+        },'guideDriver.person'])->where('status','booked')->whereLike('travel_date_start','%'.$year.'-'.$month.'%')->orderBy('travel_date_start','asc')->get()->map(function($query){
+            $channel = $query->agent_id == 1 ? 'TWT' : ($query->booking_category_id ==3 ? 'KLOOK' : 'JVTO');
+            $night = $query->package_duration - 1;
+
+            $bookRoom = BookHotel::select('id','booking_id','hotel_id','b','l','d','is_paid','is_debt')->with(['hotel' => function($q){
+                $q->select('id','name','lunch_rate','dinner_rate');
+            },'bookRoom' => function($q){
+                $q->select('id','book_hotel_id','room_hotel_id','quantity','subtotal')->with(['roomHotel' => function($q){
+                    $q->select('id','room_name','rate');
+                }]);
+            },'bookHotelMeal']);
+            $bookRoom = $bookRoom->where('booking_id',$query->id)
+            ->get()->map(function($q){
+                return [
+                    'hotel' => $q->hotel->name,
+                    'is_debt' => $q->is_debt == '1' ? 'YES' : 'NO',
+                    'rooms' => $q->bookRoom->map(function($room){
+                        return [
+                            'room' => $room->roomHotel->room_name,
+                            'quantity' => $room->quantity,
+                            'price' => $room->subtotal/$room->quantity,
+                            'subtotal' => $room->subtotal,
+                        ];
+                    }),
+                    'meals' => $q->bookHotelMeal->map(function($meals){
+                        return [
+                            'meals' => $meals->meals,
+                            'quantity' => $meals->qty,
+                            'price' => $meals->price,
+                            'subtotal' => $meals->subtotal,
+                        ];
+                    })
+                ];
+            });
+
+            $destinations = BookDestinationActivity::select('id','destination_id','destination_activity_id','qty','price','subtotal','status_paid','is_debt')->with(['destination' => function($q){
+                $q->select('id','name');
+            },'destinationActivity' => function($q){
+                $q->select('id','name','unit');
+            }]);
+        
+            $destinations = $destinations->where('booking_id',$query->id)->get()
+            ->groupBy(fn($item) => $item->destination->name) // Grouping sebelum mapping
+            ->map(function ($items) {
+                return $items->map(function ($q) {
+                    return [
+                        'item' => $q->destinationActivity->name,
+                        'quantity' => $q->qty,
+                        'price' => $q->price,
+                        'subtotal' => $q->subtotal,
+                        'is_debt' => $q->is_debt == '1' ? 'YES' : 'NO',
+                    ];
+                });
+            });     
+            
+            $resources['transport'] = BookCarActivity::with(['car' => function($q) {
+                $q->select('id', 'name');
+            }]);
+            $resources['transport'] = $resources['transport']->where('booking_id', $query->id)
+            ->get()->map(function($q){
+                return [
+                    'item' => $q->car->name,
+                    'quantity' => $q->qty,
+                    'price' => $q->price,
+                    'subtotal' => $q->subtotal,
+                    'is_debt' => $q->is_debt == '1' ? 'YES' : 'NO',
+                ];
+            });
+    
+            $resources['crew'] = BookCrewActivity::with(['crewRole' => function($q) {
+                $q->select('id', 'role');
+            }]);
+    
+            $resources['crew'] = $resources['crew']->where('booking_id', $query->id)
+            ->get()->map(function($q){
+                return [
+                    'item' => $q->crewRole->role,
+                    'quantity' => $q->qty,
+                    'price' => $q->price,
+                    'subtotal' => $q->subtotal,
+                    'is_debt' => $q->is_debt == '1' ? 'YES' : 'NO',
+                ];
+            });
+    
+            $others = BookOthersActivity::with('othersActivity')
+            ->where('booking_id', $query->id);
+            
+            $others = $others->get()->map(function($q){
+                return [
+                    'item' => $q->othersActivity->name,
+                    'quantity' => $q->qty,
+                    'price' => $q->price,
+                    'subtotal' => $q->subtotal,
+                    'is_debt' => $q->is_debt == '1' ? 'YES' : 'NO',
+                ];
+            });
+                
+    
+    
+            return [
+                'id' => $channel."-".$query->id,
+                'name' => $query->user->name,
+                'total_pax' => $query->total_pax,
+                'package' => $query->bookingDetail[0]->package ? $query->bookingDetail[0]->package->name : $query->package_duration."Days ".$night." Nights Package",
+                'travel_date' => date('d F Y', strtotime($query->travel_date_start)),                
+                'crews' => $query->guideDriver->map(function($q){
+                    return [
+                        'name' => $q->person->name,
+                        'role' => $q->type == 'driver' ? 'Driver' : ($q->guide_ijen == '1' ? 'Guide Ijen' : 'Escort Guide'),
+                    ];
+                }),
+                'total_invoice' => $query->grand_total + $query->book_add_on_total,
+                'total_expense' => $query->expense_internal_total,
+                'expenses' => [
+                    'accommodations' => $bookRoom,
+                    'activities' => $destinations,
+                    'resources' => $resources,
+                    'others' => $others
+                ]
+
+            ];
+        });
+
+        return $booking;
+    }
     function invoiceManager(Request $request){
         $search = $request->input('search');
         $startDate = $request->get('start_date') ? $request->get('start_date') : date('Y-m-01');

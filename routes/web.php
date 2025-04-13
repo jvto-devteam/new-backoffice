@@ -101,6 +101,7 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
     });
 
     Route::prefix('finance')->group(function () {
+        Route::get('/', [FinanceController::class, 'index']);
         Route::get('/receivable-income', [FinanceController::class, 'receivableIncome']);
         Route::get('/payable-report', [FinanceController::class, 'payableReport']);
         Route::get('/payable-report/details/{id}', [FinanceController::class, 'payableReportDetails']);

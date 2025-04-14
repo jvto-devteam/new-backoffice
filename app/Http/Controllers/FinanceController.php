@@ -670,6 +670,7 @@ class FinanceController extends Controller
         ]);
     }
     function updateExpense(Request $request){
+        // return  dd($request->all());
         $booking = Booking::where('id',$request->booking_id)->first();
         if($request->accommodations){
             foreach ($request->accommodations as $key => $value) {
@@ -755,7 +756,7 @@ class FinanceController extends Controller
                 $othersActivityId = $value['others_activity_id'] ?? null;
                 
                 // Si no hay ID o el item es nuevo, crea una nueva actividad
-                if(empty($othersActivityId) || empty($value['id'])){
+                if(empty($othersActivityId)){
                     $othersActivity = new OthersActivity;
                     $othersActivity->name = $value['name'] ?? 'Unnamed Activity';
                     $othersActivity->other_activity_code = '';

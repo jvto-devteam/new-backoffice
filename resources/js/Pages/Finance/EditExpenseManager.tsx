@@ -372,7 +372,8 @@ const AddDestinationModal = ({
         price: price || (isNewActivity ? 0 : getActivityPrice(selectedDestination, selectedActivity)),
         name: activityName,
         status_paid: 'unpaid',
-        is_debt: '0'
+        is_debt: '0',
+        isNewActivity : isNewActivity
       };
       
       onAddActivity(newActivityData);
@@ -562,9 +563,13 @@ const AddOthersModal = ({
       
       // Para items nuevos, no envíes others_activity_id directamente
       const originalData = isNewActivity 
-        ? { type: 'other', name: activityName } // Solo envía el nombre y tipo
-        : { type: 'other', others_activity_id: selectedActivityData.id };
-      
+      ? { type: 'other', name: activityName, isNewActivity: true } 
+      : { 
+          type: 'other', 
+          others_activity_id: selectedActivityData.id,
+          isNewActivity: false 
+        };
+
       onAddItem({
         category: 'Others',
         subCategory: 'Additional',
@@ -1025,7 +1030,8 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
             type: 'destination', 
             destName: newItem.destinationName, // Usar la misma información
             destination_id: newItem.destination_id,
-            ...(newItem.destination_activity_id ? { destination_activity_id: newItem.destination_activity_id } : {}),
+            isNewActivity: newItem.isNewActivity,
+            ...(newItem.isNewActivity ? {} : { destination_activity_id: newItem.destination_activity_id }),
             activityName: newItem.name || newItem.destination_activity.name
           }
         };
@@ -1296,6 +1302,9 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
       destinations: Object.entries(groupedDestinations).map(([destName, activities]) => ({
         activities: activities.map(item => {
           const isNewItem = String(item.id).startsWith('new_');
+                    // Gunakan flag isNewActivity dari originalData
+          const isNewActivity = isNewItem && item.originalData.isNewActivity;
+
           return {
             // Para item existente, usar id normal, para nuevo usar null
             id: isNewItem ? null : item.id,
@@ -1305,10 +1314,10 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
             // Para actividades nuevas:
             // 1. No incluir destination_activity_id (omitirlo en lugar de enviar null)
             // 2. Asegurarse de que name esté presente para crear la nueva actividad
-            ...(isNewItem 
+            ...(isNewActivity 
               ? { name: item.description } 
               : { destination_activity_id: item.originalData.destination_activity_id }),
-            
+                     
             quantity: item.qty,
             price: parseInt(item.rate),
             is_debt: item.isDebt ? '1' : '0'
@@ -1321,12 +1330,16 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
       .filter(item => item.category === 'Others')
       .map(item => {
         const isNewItem = String(item.id).startsWith('new_');
+        // Gunakan flag isNewActivity dari originalData
+        const isNewActivity = isNewItem && item.originalData.isNewActivity;        
         return {
           // Para items nuevos, envía id: null
           id: isNewItem ? null : item.id,
           // Para items nuevos, omite others_activity_id en lugar de enviar null
           // Si el item ya existe, envía el ID
-          ...(isNewItem ? {} : { others_activity_id: item.originalData.others_activity_id }),
+          ...(isNewActivity 
+            ? {} 
+            : { others_activity_id: item.originalData.others_activity_id }),
           quantity: item.qty,
           name: item.description, // Asegura que name tenga valor
           price: parseInt(item.rate),

@@ -593,33 +593,33 @@ class FinanceController extends Controller
                 $insertCar->save();
             }
 
-            $cekCrewActivities = BookCrewActivity::where('booking_id',$id)->count();
-            if($cekCrewActivities == 0 && $cekCar){
-                $insertCrew = new BookCrewActivity;
-                $insertCrew->booking_id = $id;
+            // $cekCrewActivities = BookCrewActivity::where('booking_id',$id)->count();
+            // if($cekCrewActivities == 0 && $cekCar){
+            //     $insertCrew = new BookCrewActivity;
+            //     $insertCrew->booking_id = $id;
                 
-                if($booking->agent_id == 1){
-                    $crew_role_id = $cekCar->crew_twt_role_id;
-                    $crew_price = $cekCar->crewTwtRole->rate;
-                }
-                else if($booking->agent_id == 2){
-                    if($booking->booking_category_id == 3){
-                        $crew_role_id = $cekCar->crew_klook_role_id;
-                        $crew_price = $cekCar->crewKlookRole->rate;
-                    }
-                    else{
-                        $crew_role_id = $cekCar->crew_jvto_role_id;
-                        $crew_price = $cekCar->crewJvtoRole->rate;
-                    }
-                }
-                $insertCrew->crew_role_id = $crew_role_id;
-                $insertCrew->qty = $day;
-                $insertCrew->price = $crew_price;
+            //     if($booking->agent_id == 1){
+            //         $crew_role_id = $cekCar->crew_twt_role_id;
+            //         $crew_price = $cekCar->crewTwtRole->rate;
+            //     }
+            //     else if($booking->agent_id == 2){
+            //         if($booking->booking_category_id == 3){
+            //             $crew_role_id = $cekCar->crew_klook_role_id;
+            //             $crew_price = $cekCar->crewKlookRole->rate;
+            //         }
+            //         else{
+            //             $crew_role_id = $cekCar->crew_jvto_role_id;
+            //             $crew_price = $cekCar->crewJvtoRole->rate;
+            //         }
+            //     }
+            //     $insertCrew->crew_role_id = $crew_role_id;
+            //     $insertCrew->qty = $day;
+            //     $insertCrew->price = $crew_price;
 
-                $insertCrew->subtotal = $insertCrew->qty*$insertCrew->price;
-                $insertCrew->status_paid = 'unpaid';
-                $insertCrew->save();
-            }
+            //     $insertCrew->subtotal = $insertCrew->qty*$insertCrew->price;
+            //     $insertCrew->status_paid = 'unpaid';
+            //     $insertCrew->save();
+            // }
         }
         
         $resources['cars'] = BookCarActivity::with(['car' => function($query) {
@@ -802,22 +802,20 @@ class FinanceController extends Controller
             }
         }
 
-        if($request->resources['crews']){
-            BookCrewActivity::where('booking_id',$request->booking_id)->delete();
-            foreach ($request->resources['crews'] as $key => $value) {
-                $bookCrewActivity = new BookCrewActivity;
-                $bookCrewActivity->booking_id = $request->booking_id;
-                $bookCrewActivity->crew_role_id = $value['crew_role_id'];
-                $bookCrewActivity->qty = $value['quantity'];
-                $bookCrewActivity->price = $value['price'];
-                $bookCrewActivity->subtotal = $value['quantity']*$value['price'];
-                $bookCrewActivity->status_paid = $value['is_debt'] == '0' ? 'paid' : 'unpaid';
-                if($bookCrewActivity->status_paid == 'paid'){
-                    $bookCrewActivity->paid_date = date('Y-m-d');
-                }
-                $bookCrewActivity->is_debt = $value['is_debt'];
-                $bookCrewActivity->save();
+        BookCrewActivity::where('booking_id',$request->booking_id)->delete();
+        foreach ($request->resources['crews'] as $key => $value) {
+            $bookCrewActivity = new BookCrewActivity;
+            $bookCrewActivity->booking_id = $request->booking_id;
+            $bookCrewActivity->crew_role_id = $value['crew_role_id'];
+            $bookCrewActivity->qty = $value['quantity'];
+            $bookCrewActivity->price = $value['price'];
+            $bookCrewActivity->subtotal = $value['quantity']*$value['price'];
+            $bookCrewActivity->status_paid = $value['is_debt'] == '0' ? 'paid' : 'unpaid';
+            if($bookCrewActivity->status_paid == 'paid'){
+                $bookCrewActivity->paid_date = date('Y-m-d');
             }
+            $bookCrewActivity->is_debt = $value['is_debt'];
+            $bookCrewActivity->save();
         }
 
         if(!$booking->expense_file_internal){

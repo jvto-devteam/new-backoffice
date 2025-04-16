@@ -1,0 +1,1561 @@
+import React, { useState, useMemo } from 'react';
+import Swal from '@/utils/swal';
+import { router } from '@inertiajs/react';
+import Authenticated from '@/Layouts/Main';
+import { Download } from 'lucide-react';
+
+
+const formatCurrency = (value) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(value).replace('IDR', 'Rp');
+};
+
+const BookingInfo = ({ booking }) => {
+  return (
+    <div className="mb-6">
+      <h1 className="text-2xl font-bold mb-4">Tour Expense Details</h1>
+      <div className="text-gray-600 space-y-1">
+        <p>Order Channel: {booking.channel}</p>
+        <p>Reference: {booking.reference}</p>
+        <p>Client: {booking.user.name}</p>
+        <p>Package: {booking.booking_detail[0]?.package?.name || `${booking.package_duration}D ${booking.package_duration-1}N Packages`}</p>
+        <p>Number of Pax: {booking.total_pax}</p>
+      </div>
+    </div>
+  );
+};
+
+const SummaryCards = ({ booking,totals }) => {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      {/* Total Expenses */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-500 text-sm">Total Expenses</span>
+          <a href={`/finance/expense-manager/${booking.id}/internal`} className="text-blue-600"><Download/></a>
+        </div>
+        <div className="text-blue-600 text-2xl font-bold mt-1">
+          {formatCurrency(totals.totalAmount)}
+        </div>
+      </div>
+
+      {/* Net Total */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-500 text-sm">Net Total</span>
+          <div className="flex gap-1">
+          <a href={`/finance/expense-manager/${booking.id}/crew`} className="text-green-600"><Download/></a>
+          </div>
+        </div>
+        <div className="text-green-600 text-2xl font-bold mt-1">
+          {formatCurrency(totals.paidAmount)}
+        </div>
+      </div>
+
+      {/* Pay Later Total */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-500 text-sm">Pay Later Total ({totals.payLaterItemsCount})</span>
+          <div className="flex gap-1">
+            <a href={`/finance/expense-manager/${booking.id}/pay-later`} className="text-orange-500"><Download/></a>
+          </div>
+        </div>
+        <div className="text-orange-500 text-2xl font-bold mt-1">
+          {formatCurrency(totals.debtAmount)}
+        </div>
+      </div>
+
+      {/* Pay Later Items */}
+      <div className="bg-white rounded-lg shadow p-4">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-500 text-sm">Invoice</span>
+          <div className="flex gap-1">
+            <a href={`https://javavolcano-touroperator.com/bookings/invoice/${booking.url}`} className="text-orange-500"><Download/></a>
+          </div>
+        </div>
+        <div className="text-red-500 text-2xl font-bold mt-1">
+          {formatCurrency(booking.grand_total+booking.book_add_on_total)}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ExpenseTable = ({ items, onPayLaterChange, onEdit,onDelete  }) => {
+  const [editingCell, setEditingCell] = useState(null); // Format: "itemId-field" (e.g. "1-qty")
+  const [editValue, setEditValue] = useState("");
+
+  const handleKeyPress = (e, itemId, field, index) => {
+    if (e.key === 'Enter') {
+      handleSave(itemId, field, index);
+    }
+  };  
+  // Group items berdasarkan hotel untuk accommodation
+  const hotelGroups = items.reduce((acc, item) => {
+    if (item.category === 'Accommodation') {
+      const hotelId = item.originalData.hotelId;
+      if (!acc[hotelId]) {
+        acc[hotelId] = { index: items.indexOf(item), isDebt: item.isDebt };
+      }
+    }
+    return acc;
+  }, {});
+
+  const handleEdit = (itemId, field, value) => {
+    setEditingCell(`${itemId}-${field}`);
+    setEditValue(value.toString());
+  };
+
+  const handleSave = (itemId, field, index) => {
+    let newValue = editValue;
+    
+    // Convert to appropriate type and validate
+    if (field === 'qty') {
+      newValue = parseInt(editValue) || 1; // Minimum 1
+    } else if (field === 'rate') {
+      newValue = parseInt(editValue.replace(/[^\d]/g, '')) || 0;
+    }
+
+    // Update parent state
+    onEdit(index, field, newValue);
+    
+    // Reset edit state
+    setEditingCell(null);
+    setEditValue("");
+  };
+  const groupedItems = items.reduce((acc, item) => {
+    if (!acc[item.category]) {
+      acc[item.category] = [];
+    }
+    acc[item.category].push(item);
+    return acc;
+  }, {});
+
+  const categoryOrder = ['Accommodation', 'Destination', 'Others', 'Transport', 'Resource'];
+
+  let counter = 1;
+
+  return (
+    <div className="bg-white rounded-lg shadow">
+      <h2 className="text-xl font-bold p-4 border-b">Expense Items</h2>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">NO</th>
+              <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">DESCRIPTION</th>
+              <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">SUB CATEGORY</th>
+              <th className="px-4 py-3 text-left text-sm font-bold text-gray-500">UNIT</th>
+              <th className="px-4 py-3 text-right text-sm font-bold text-gray-500">QTY</th>
+              <th className="px-4 py-3 text-right text-sm font-bold text-gray-500">RATE</th>
+              <th className="px-4 py-3 text-right text-sm font-bold text-gray-500">AMOUNT</th>
+              <th className="px-4 py-3 text-center text-sm font-bold text-gray-500">PAY LATER</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500"></th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {categoryOrder.map(category => {
+              const categoryItems = groupedItems[category] || [];
+              if (categoryItems.length === 0) return null;
+              
+              return (
+                <React.Fragment key={category}>
+                  {/* Category Header Row */}
+                  <tr className="bg-gray-200">
+                    <td colSpan="9" className="px-4 py-2 font-bold">{category}</td>
+                  </tr>
+                  
+                  {/* Category Items */}
+                  {categoryItems.map((item, itemIndex) => {
+                    const currentNumber = counter++;
+                    const hotelId = item.originalData?.hotelId;
+                    const showToggle = item.category !== 'Accommodation' || 
+                                     (hotelGroups[hotelId] && hotelGroups[hotelId].index === items.indexOf(item));
+
+                    return (
+                      <tr key={item.id} className={item.isDebt ? 'bg-yellow-50' : 'bg-white'}>
+                        <td className="px-4 py-3 text-sm">{currentNumber}</td>
+                        <td className="px-4 py-3 text-sm">{item.description}</td>
+                        <td className="px-4 py-3 text-sm">{item.subCategory}</td>
+                        <td className="px-4 py-3 text-sm">{item.unit}</td>
+                        
+                        {/* QTY Cell */}
+                        <td className="px-4 py-3 text-sm text-right">
+                          {editingCell === `${item.id}-qty` ? (
+                            <div className="flex items-center justify-end gap-1">
+                              <input
+                                type="number"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onKeyPress={(e) => handleKeyPress(e, item.id, 'qty', items.indexOf(item))}
+                                className="w-16 p-1 border rounded text-right"
+                                min="1"
+                                autoFocus
+                              />
+                              <button 
+                                onClick={() => handleSave(item.id, 'qty', items.indexOf(item))}
+                                className="text-green-600 hover:text-green-800"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-end gap-1">
+                              <span>{item.qty}</span>
+                              <button 
+                                onClick={() => handleEdit(item.id, 'qty', item.qty)}
+                                className="text-gray-400 hover:text-gray-600"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                        </td>
+
+                        {/* RATE Cell */}
+                        <td className="px-4 py-3 text-sm text-right">
+                          {editingCell === `${item.id}-rate` ? (
+                            <div className="flex items-center justify-end gap-1">
+                              <input
+                                type="text"
+                                value={editValue.startsWith('Rp') ? editValue : formatCurrency(editValue)}
+                                onChange={(e) => setEditValue(e.target.value.replace(/[^\d]/g, ''))}
+                                onKeyPress={(e) => handleKeyPress(e, item.id, 'rate', items.indexOf(item))}
+                                className="w-32 p-1 border rounded text-right"
+                                autoFocus
+                              />
+                              <button 
+                                onClick={() => handleSave(item.id, 'rate', items.indexOf(item))}
+                                className="text-green-600 hover:text-green-800"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center justify-end gap-1">
+                              <span>{formatCurrency(item.rate)}</span>
+                              <button 
+                                onClick={() => handleEdit(item.id, 'rate', item.rate)}
+                                className="text-gray-400 hover:text-gray-600"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-right">{formatCurrency(item.amount)}</td>
+                        <td className="px-4 py-3">
+                          {showToggle && (
+                            <div className="flex justify-center">
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={item.isDebt}
+                                  onChange={(e) => onPayLaterChange(items.indexOf(item), e.target.checked)}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                              </label>
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          {item.category !== 'Accommodation' && (
+                            <div className="flex justify-center">
+                              <button
+                                onClick={() => onDelete(items.indexOf(item))}
+                                className="text-red-500 hover:text-red-700"
+                                title="Delete item"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </React.Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// Modal-modal tambahan
+const AddDestinationModal = ({ 
+  isOpen, 
+  onClose, 
+  onAddActivity, 
+  listForNewItems,
+  existingItems 
+}) => {
+  const [selectedDestination, setSelectedDestination] = useState('');
+  const [selectedActivity, setSelectedActivity] = useState('');
+  const [newActivity, setNewActivity] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(0);
+  const [isNewActivity, setIsNewActivity] = useState(false);
+  
+  const availableDestinations = useMemo(() => {
+    return Object.keys(listForNewItems || {});
+  }, [listForNewItems]);
+
+  const availableActivities = useMemo(() => {
+    if (!selectedDestination || !listForNewItems || !listForNewItems[selectedDestination]) {
+      return [];
+    }
+
+    // Get existing activities for this destination
+    const existingActivitiesForDestination = existingItems
+      .filter(item => item.subCategory === selectedDestination)
+      .map(item => item.description);
+
+    // Filter available activities that are not in existingItems
+    return listForNewItems[selectedDestination]
+      .filter(activity => 
+        activity && 
+        activity.name && 
+        !existingActivitiesForDestination.includes(activity.name)
+      )
+      .map(activity => ({
+        id: activity.id,
+        name: activity.name,
+        price: activity.price
+      }));
+
+  }, [selectedDestination, listForNewItems, existingItems]);
+
+
+  const getActivityPrice = (destName, activityName) => {
+    const activity = (listForNewItems[destName] || [])
+      .find(a => a.name === activityName);
+    return activity ? parseFloat(activity.price) : 0;
+  };
+
+  const handleSubmit = () => {
+    const activityName = isNewActivity ? newActivity : selectedActivity;
+    if (selectedDestination && activityName) {
+      const selectedDestinationData = listForNewItems[selectedDestination]?.[0];
+      const selectedActivityData = listForNewItems[selectedDestination]?.find(a => a.name === selectedActivity);
+      
+      const newActivityData = {
+        destination_id: selectedDestinationData?.destination_id,
+        // Incluir el nombre del destino
+        destinationName: selectedDestination,
+        
+        destination_activity: { 
+          name: activityName,
+          id: isNewActivity ? null : selectedActivityData?.id 
+        },
+        
+        ...(isNewActivity ? {} : { destination_activity_id: selectedActivityData?.id }),
+        
+        qty: quantity,
+        price: price || (isNewActivity ? 0 : getActivityPrice(selectedDestination, selectedActivity)),
+        name: activityName,
+        status_paid: 'unpaid',
+        is_debt: '0',
+        isNewActivity : isNewActivity
+      };
+      
+      onAddActivity(newActivityData);
+
+      // Reset modal (sin cambios)
+      setSelectedDestination('');
+      setSelectedActivity('');
+      setNewActivity('');
+      setQuantity(1);
+      setPrice(0);
+      setIsNewActivity(false);
+      onClose();
+    }
+  };
+
+  const handleSwitchChange = (checked) => {
+    setIsNewActivity(checked);
+    setSelectedActivity('');
+    setNewActivity('');
+    setPrice(0);
+  };
+
+  const isSubmitDisabled = 
+    !selectedDestination || 
+    (isNewActivity ? !newActivity : !selectedActivity) || 
+    quantity <= 0;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+        <h2 className="text-xl font-bold mb-4">Add New Destination Activity</h2>
+        
+        {/* Destination Selection */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Select Destination</label>
+          <select
+            value={selectedDestination}
+            onChange={(e) => {
+              setSelectedDestination(e.target.value);
+              setSelectedActivity('');
+              setNewActivity('');
+            }}
+            className="w-full p-2 border rounded"
+          >
+            <option value="">Select a destination</option>
+            {availableDestinations.map((dest) => (
+              <option key={dest} value={dest}>{dest}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Switch Toggle for New/Existing Activity */}
+        <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded">
+          <span className="text-sm text-gray-700">New Activity</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={isNewActivity}
+              onChange={(e) => handleSwitchChange(e.target.checked)}
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
+        {/* Activity Selection */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">
+            {isNewActivity ? "Enter New Activity" : "Select Activity"}
+          </label>
+          {isNewActivity ? (
+            <input
+              type="text"
+              value={newActivity}
+              onChange={(e) => setNewActivity(e.target.value)}
+              className="w-full p-2 border rounded"
+              placeholder="Enter activity name"
+              disabled={!selectedDestination}
+            />
+          ) : (
+            <select
+              value={selectedActivity}
+              onChange={(e) => {
+                const activity = e.target.value;
+                setSelectedActivity(activity);
+                const selectedActivityData = availableActivities.find(a => a.name === activity);
+                setPrice(selectedActivityData ? selectedActivityData.price : 0);
+              }}
+              className="w-full p-2 border rounded"
+              disabled={!selectedDestination}
+            >
+              <option value="">Select an activity</option>
+              {availableActivities.map((activity) => (
+                <option key={activity.id} value={activity.name}>
+                  {activity.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {/* Quantity */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Quantity</label>
+          <input
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+            min="1"
+            className="w-full p-2 border rounded"
+          />
+        </div>
+        
+        {/* Price */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Price</label>
+          <input
+            type="text"
+            value={formatCurrency(price)}
+            onChange={(e) => setPrice(parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+            className="w-full p-2 border rounded"
+          />
+        </div>
+        
+        {/* Buttons */}
+        <div className="flex justify-end gap-2">
+          <button 
+            onClick={onClose} 
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSubmit} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            disabled={isSubmitDisabled}
+          >
+            Add Activity
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+const AddOthersModal = ({ 
+  isOpen, 
+  onClose, 
+  onAddItem, 
+  listForNewItems,
+  existingItems 
+}) => {
+  const [selectedActivity, setSelectedActivity] = useState('');
+  const [newActivity, setNewActivity] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(0);
+  const [isNewActivity, setIsNewActivity] = useState(false);
+
+  const availableActivities = useMemo(() => {
+    console.log('listForNewItems:', listForNewItems); // Untuk debug
+
+    // Pastikan listForNewItems adalah array
+    const othersList = Array.isArray(listForNewItems) ? listForNewItems : [];
+
+    // Get existing others activities
+    const existingActivities = existingItems.map(item => item.description);
+
+    // Filter out activities that already exist in the table
+    return othersList
+      .filter(activity => 
+        activity && 
+        activity.name && 
+        !existingActivities.includes(activity.name)
+      );
+  }, [listForNewItems, existingItems]);
+
+  const getActivityPrice = (activityName) => {
+    const activity = listForNewItems.find(a => a.name === activityName);
+    return activity ? parseFloat(activity.price) : 0;
+  };
+
+  const handleSubmit = () => {
+    const activityName = isNewActivity ? newActivity : selectedActivity;
+    if (activityName) {
+      const selectedActivityData = listForNewItems.find(a => a.name === selectedActivity);
+      
+      // Para items nuevos, no envíes others_activity_id directamente
+      const originalData = isNewActivity 
+      ? { type: 'other', name: activityName, isNewActivity: true } 
+      : { 
+          type: 'other', 
+          others_activity_id: selectedActivityData.id,
+          isNewActivity: false 
+        };
+
+      onAddItem({
+        category: 'Others',
+        subCategory: 'Additional',
+        description: activityName,
+        unit: 'Item',
+        qty: quantity,
+        rate: price || (isNewActivity ? 0 : getActivityPrice(selectedActivity)),
+        amount: quantity * (price || (isNewActivity ? 0 : getActivityPrice(selectedActivity))),
+        isDebt: false,
+        originalData: originalData
+      });
+      // Reset modal
+      setSelectedActivity('');
+      setNewActivity('');
+      setQuantity(1);
+      setPrice(0);
+      setIsNewActivity(false);
+      onClose();
+    }
+  };
+
+  const isSubmitDisabled = 
+    (isNewActivity ? !newActivity : !selectedActivity) || 
+    quantity <= 0;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+        <h2 className="text-xl font-bold mb-4">Add New Others Item</h2>
+
+        {/* Switch Toggle for New/Existing Activity */}
+        <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded">
+          <span className="text-sm text-gray-700">New Item</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={isNewActivity}
+              onChange={(e) => {
+                setIsNewActivity(e.target.checked);
+                setSelectedActivity('');
+                setNewActivity('');
+              }}
+            />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+          </label>
+        </div>
+
+        {/* Activity Selection */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">
+            {isNewActivity ? "Enter New Item" : "Select Others"}
+          </label>
+          {isNewActivity ? (
+            <input
+              type="text"
+              value={newActivity}
+              onChange={(e) => setNewActivity(e.target.value)}
+              className="w-full p-2 border rounded"
+              placeholder="Enter item name"
+            />
+          ) : (
+            <select
+              value={selectedActivity}
+              onChange={(e) => {
+                const activityName = e.target.value;
+                setSelectedActivity(activityName);
+                setPrice(getActivityPrice(activityName));
+              }}
+              className="w-full p-2 border rounded"
+            >
+              <option value="">Select an item</option>
+              {availableActivities.map((activity) => (
+                <option key={activity.id} value={activity.name}>
+                  {activity.name}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+
+        {/* Quantity */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Quantity</label>
+          <input
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+            min="1"
+            className="w-full p-2 border rounded"
+          />
+        </div>
+
+        {/* Price */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Price</label>
+          <input
+            type="text"
+            value={formatCurrency(price)}
+            onChange={(e) => setPrice(parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+            className="w-full p-2 border rounded"
+          />
+        </div>
+
+        {/* Buttons */}
+        <div className="flex justify-end gap-2">
+          <button 
+            onClick={onClose} 
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSubmit} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            disabled={isSubmitDisabled}
+          >
+            Add Item
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AddTransportationModal = ({ 
+  isOpen, 
+  onClose, 
+  onAddItem, 
+  listForNewItems,
+  existingItems 
+}) => {
+  const [selectedTransportation, setSelectedTransportation] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(0);
+
+  const availableTransportations = useMemo(() => {
+    // Pastikan listForNewItems.cars adalah array dan sudah ada
+    const transportList = listForNewItems && Array.isArray(listForNewItems) ? listForNewItems : [];
+    const existingVehicles = existingItems.map(item => item.description);
+
+    return transportList
+      .filter(car => 
+        car && 
+        car.name && 
+        !existingVehicles.includes(car.name)
+      );
+  }, [listForNewItems, existingItems]);
+  
+  const getTransportationPrice = (transportationName) => {
+    const cars = listForNewItems.cars || [];
+    const car = cars.find(c => c.name === transportationName);
+    return car ? car.price : 0;
+  };
+
+  const handleSubmit = () => {
+    if (selectedTransportation) {
+      const transportation = listForNewItems.find(c => c.name === selectedTransportation);
+      
+      onAddItem({
+        category: 'Transport',
+        subCategory: 'Airport Transfer',
+        description: selectedTransportation,
+        unit: 'Unit',
+        qty: quantity,
+        rate: price || getTransportationPrice(selectedTransportation),
+        amount: quantity * (price || getTransportationPrice(selectedTransportation)),
+        isDebt: false,
+        originalData: { 
+          type: 'transport', 
+          car_id: transportation.id
+        }
+      });
+
+      // Reset modal
+      setSelectedTransportation('');
+      setQuantity(1);
+      setPrice(0);
+      onClose();
+    }
+  };
+
+  const isSubmitDisabled = 
+    !selectedTransportation || 
+    quantity <= 0;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+        <h2 className="text-xl font-bold mb-4">Add New Transportation</h2>
+        
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Select Transportation</label>
+          <select
+            value={selectedTransportation}
+            onChange={(e) => {
+              const transportName = e.target.value;
+              setSelectedTransportation(transportName);
+              const selectedTransport = availableTransportations.find(t => t.name === transportName);
+              setPrice(selectedTransport ? parseFloat(selectedTransport.price) : 0);
+            }}
+            className="w-full p-2 border rounded"
+          >
+            <option value="">Select a transportation</option>
+            {availableTransportations.map((transport) => (
+              <option key={transport.id} value={transport.name}>
+                {transport.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Quantity</label>
+          <input
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+            min="1"
+            className="w-full p-2 border rounded"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Price</label>
+          <input
+            type="text"
+            value={formatCurrency(price)}
+            onChange={(e) => setPrice(parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+            className="w-full p-2 border rounded"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <button 
+            onClick={onClose} 
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSubmit} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            disabled={isSubmitDisabled}
+          >
+            Add Transportation
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AddCrewModal = ({ 
+  isOpen, 
+  onClose, 
+  onAddItem, 
+  listForNewItems,
+  existingItems 
+}) => {
+  const [selectedCrew, setSelectedCrew] = useState('');
+  const [quantity, setQuantity] = useState(1);
+  const [price, setPrice] = useState(0);
+
+  const availableCrews = useMemo(() => {
+    // Pastikan listForNewItems adalah array
+    const crewList = listForNewItems && Array.isArray(listForNewItems) ? listForNewItems : [];
+    const existingCrews = existingItems.map(item => item.description);
+
+    return crewList
+      .filter(crew => 
+        crew && 
+        crew.role &&
+        !existingCrews.includes(crew.role)
+      );
+  }, [listForNewItems, existingItems]);
+
+  
+  const getCrewPrice = (crewRole) => {
+    const crews = listForNewItems.crews || [];
+    const crew = crews.find(c => c.role === crewRole);
+    return crew ? crew.rate : 0;
+  };
+
+  const handleSubmit = () => {
+    if (selectedCrew) {
+      const crew = listForNewItems.find(c => c.role === selectedCrew);
+      
+      onAddItem({
+        category: 'Resource',
+        subCategory: 'Crew',
+        description: selectedCrew,
+        unit: 'Person',
+        qty: quantity,
+        rate: price || getCrewPrice(selectedCrew),
+        amount: quantity * (price || getCrewPrice(selectedCrew)),
+        isDebt: false,
+        originalData: { 
+          type: 'crew', 
+          crew_role_id: crew.id
+        }
+      });
+
+      // Reset modal
+      setSelectedCrew('');
+      setQuantity(1);
+      setPrice(0);
+      onClose();
+    }
+  };
+
+  const isSubmitDisabled = 
+    !selectedCrew || 
+    quantity <= 0;
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+        <h2 className="text-xl font-bold mb-4">Add New Crew</h2>
+        
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Select Crew</label>
+          <select
+            value={selectedCrew}
+            onChange={(e) => {
+              const crewRole = e.target.value;
+              setSelectedCrew(crewRole);
+              const selectedCrew = availableCrews.find(c => c.role === crewRole);
+              setPrice(selectedCrew ? parseFloat(selectedCrew.rate) : 0);
+            }}
+            className="w-full p-2 border rounded"
+          >
+            <option value="">Select a crew</option>
+            {availableCrews.map((crew) => (
+              <option key={crew.id} value={crew.role}>
+                {crew.role}
+              </option>
+            ))}
+          </select>
+        </div>
+
+
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Quantity</label>
+          <input
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+            min="1"
+            className="w-full p-2 border rounded"
+          />
+        </div>
+
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-2">Price</label>
+          <input
+            type="text"
+            value={formatCurrency(price)}
+            onChange={(e) => setPrice(parseInt(e.target.value.replace(/\D/g, '')) || 0)}
+            className="w-full p-2 border rounded"
+          />
+        </div>
+
+        <div className="flex justify-end gap-2">
+          <button 
+            onClick={onClose} 
+            className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+          >
+            Cancel
+          </button>
+          <button 
+            onClick={handleSubmit} 
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            disabled={isSubmitDisabled}
+          >
+            Add Crew
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const EditExpenseManager = ({ booking, accommodations, destinations, others, resources, listForNewItems }) => {
+  const [isDestinationModalOpen, setIsDestinationModalOpen] = useState(false);
+  const [isOthersModalOpen, setIsOthersModalOpen] = useState(false);
+  const [isTransportationModalOpen, setIsTransportationModalOpen] = useState(false);
+  const [isCrewModalOpen, setIsCrewModalOpen] = useState(false);
+
+  const sortItems = (items) => {
+    // Definisikan urutan kategori
+    const categoryOrder = {
+      'Accommodation': 1,
+      'Destination': 2,
+      'Others': 3,
+      'Transport': 4,
+      'Resource': 5
+    };
+  
+    return [...items].sort((a, b) => {
+      // Pertama sort berdasarkan kategori
+      const categoryDiff = categoryOrder[a.category] - categoryOrder[b.category];
+      if (categoryDiff !== 0) return categoryDiff;
+  
+      // Jika kategori sama, sort berdasarkan subCategory
+      const subCategoryDiff = a.subCategory.localeCompare(b.subCategory);
+      if (subCategoryDiff !== 0) return subCategoryDiff;
+  
+      // Jika subCategory sama, new items selalu di bawah
+      const aIsNew = String(a.id).startsWith('new_');
+      const bIsNew = String(b.id).startsWith('new_');
+      if (aIsNew !== bIsNew) {
+        return aIsNew ? 1 : -1; // New items go to bottom
+      }
+  
+      // Jika keduanya item baru atau item lama, sort berdasarkan ID
+      if (aIsNew && bIsNew) {
+        // Untuk item baru, bandingkan timestamp
+        return parseInt(a.id.split('_')[1]) - parseInt(b.id.split('_')[1]);
+      }
+  
+      // Untuk item lama, bandingkan ID asli
+      return parseInt(a.id) - parseInt(b.id);
+    });
+  };
+
+  
+  const handleAddNewItem = (newItem) => {
+    setItems(prevItems => {
+      // Crear ID para el nuevo item
+      const newId = `new_${Date.now()}`;
+      
+      let processedItem;
+      
+      if (newItem.destination_id) {
+        // Es una actividad de destino
+        // Necesitamos extraer el nombre del destino del newItem
+        // En AddDestinationModal, debemos incluir esta información
+        processedItem = {
+          id: newId,
+          category: 'Destination',
+          // Obtener subCategory desde el destino en newItem en lugar de selectedDestination
+          subCategory: newItem.destinationName, // Añadir esta propiedad en AddDestinationModal
+          description: newItem.name || newItem.destination_activity.name,
+          unit: 'Pax',
+          qty: newItem.qty,
+          rate: newItem.price,
+          amount: newItem.qty * newItem.price,
+          isDebt: newItem.is_debt === '1',
+          originalData: { 
+            type: 'destination', 
+            destName: newItem.destinationName, // Usar la misma información
+            destination_id: newItem.destination_id,
+            isNewActivity: newItem.isNewActivity,
+            ...(newItem.isNewActivity ? {} : { destination_activity_id: newItem.destination_activity_id }),
+            activityName: newItem.name || newItem.destination_activity.name
+          }
+        };
+      } else {
+        // Procesar otros tipos de items como antes
+        processedItem = {
+          ...newItem,
+          id: newId
+        };
+      }
+      
+      // Agregar el nuevo item y ordenar
+      const updatedItems = [...prevItems, processedItem];
+      return sortItems(updatedItems);
+    });
+  };
+      // Initialize items state with all expense items
+  const [items, setItems] = useState(() => {
+    // Pertama, kumpulkan semua item accommodation dan kelompokkan berdasarkan hotel
+    const accommodationItems = accommodations.reduce((acc, hotel) => {
+      // Room items
+      const roomItems = hotel.book_room.map(room => ({
+        id: room.id,
+        category: 'Accommodation',
+        subCategory: hotel.hotel.name,
+        description: room.room_hotel.room_name,
+        unit: 'No',
+        qty: room.quantity,
+        rate: room.room_hotel.rate,
+        amount: room.quantity * room.room_hotel.rate,
+        isDebt: hotel.is_debt === '1',
+        originalData: { 
+          type: 'room', 
+          hotelId: hotel.id, 
+          roomId: room.id,
+          isPaid: hotel.is_paid
+        }
+      }));
+   
+      // Meal items
+      const mealItems = hotel.book_hotel_meal.map(meal => ({
+        id: `meal-${meal.id}`,
+        category: 'Accommodation',
+        subCategory: hotel.hotel.name,
+        description: `${meal.meals.charAt(0).toUpperCase() + meal.meals.slice(1)} Meal`,
+        unit: 'Pax',
+        qty: meal.qty,
+        rate: meal.price,
+        amount: meal.qty * meal.price,
+        isDebt: hotel.is_debt === '1',
+        originalData: { 
+          type: 'meal', 
+          hotelId: hotel.id, 
+          mealId: meal.id,
+          mealType: meal.meals,
+          isPaid: hotel.is_paid
+        }
+      }));
+   
+      // Gabungkan room dan meal untuk hotel ini
+      acc.push(...roomItems, ...mealItems);
+      return acc;
+    }, []);
+   
+    // Sort accommodation items berdasarkan subCategory (nama hotel)
+    const sortedAccommodationItems = accommodationItems.sort((a, b) => {
+      // Pertama sort berdasarkan nama hotel
+      const hotelCompare = a.subCategory.localeCompare(b.subCategory);
+      if (hotelCompare !== 0) return hotelCompare;
+      
+      // Jika hotel sama, room ditampilkan dulu baru meal
+      if (a.originalData.type === 'room' && b.originalData.type === 'meal') return -1;
+      if (a.originalData.type === 'meal' && b.originalData.type === 'room') return 1;
+      
+      // Jika keduanya meal, sort berdasarkan tipe meal (lunch dulu, dinner kemudian)
+      if (a.originalData.type === 'meal' && b.originalData.type === 'meal') {
+        return a.originalData.mealType.localeCompare(b.originalData.mealType);
+      }
+      
+      return 0;
+    });
+   
+    const initialItems = [
+      ...sortedAccommodationItems,
+      // Destination items
+      ...Object.entries(destinations).flatMap(([destName, activities]) =>
+        activities.map(activity => ({
+          id: activity.id,
+          category: 'Destination',
+          subCategory: destName,
+          description: activity.destination_activity.name,
+          unit: 'Pax',
+          qty: activity.qty,
+          rate: activity.price,
+          amount: activity.qty * activity.price,
+          isDebt: activity.is_debt === '1',
+          originalData: { 
+            type: 'destination', 
+            destName, 
+            destination_id: activity.destination_id,
+            destination_activity_id: activity.destination_activity_id,
+            activityId: activity.id
+          }
+        }))
+      ),
+      // Others items
+      ...others.map(item => ({
+        id: item.id,
+        category: 'Others',
+        subCategory: 'Additional',
+        description: item.others_activity.name,
+        unit: 'Item',
+        qty: item.qty,
+        rate: item.price,
+        amount: item.qty * item.price,
+        isDebt: item.is_debt === '1',
+        originalData: { 
+          type: 'other', 
+          others_activity_id: item.others_activity.id,
+          itemId: item.id
+        }
+      })),
+      // Transport items
+      ...resources.cars.map(car => ({
+        id: car.id,
+        category: 'Transport',
+        subCategory: 'Airport Transfer',
+        description: car.car.name,
+        unit: 'Unit',
+        qty: car.qty,
+        rate: car.price,
+        amount: car.qty * car.price,
+        isDebt: car.is_debt === '1',
+        originalData: { 
+          type: 'transport', 
+          car_id: car.car.id,
+          carId: car.id
+        }
+      })),
+      // Crew items
+      ...resources.crews.map(crew => ({
+        id: crew.id,
+        category: 'Resource',
+        subCategory: 'Crew',
+        description: crew.crew_role.role,
+        unit: 'Person',
+        qty: crew.qty,
+        rate: crew.price,
+        amount: crew.qty * crew.price,
+        isDebt: crew.is_debt === '1',
+        originalData: { 
+          type: 'crew',
+          crew_role_id: crew.crew_role.id,
+          crewId: crew.id
+        }
+      }))
+    ];
+   
+    return initialItems;
+   });
+  // Handle pay later toggle
+  const handlePayLaterChange = (index, isDebt) => {
+    setItems(prevItems => {
+      const newItems = [...prevItems];
+      const targetItem = newItems[index];
+  
+      // Jika item adalah accommodation, update semua item dari hotel yang sama
+      if (targetItem.category === 'Accommodation') {
+        const hotelId = targetItem.originalData.hotelId;
+        return newItems.map(item => {
+          if (item.category === 'Accommodation' && item.originalData.hotelId === hotelId) {
+            return { ...item, isDebt };
+          }
+          return item;
+        });
+      }
+  
+      // Untuk item non-accommodation, hanya update item tersebut
+      newItems[index] = { ...newItems[index], isDebt };
+      return newItems;
+    });
+  };
+  const handleEdit = (index, field, value) => {
+    setItems(prevItems => {
+      const newItems = [...prevItems];
+      const item = { ...newItems[index] };
+      
+      // Update field
+      item[field] = value;
+      
+      // Recalculate amount
+      item.amount = item.qty * item.rate;
+      
+      newItems[index] = item;
+      return newItems;
+    });
+  };
+  // Calculate summary totals
+  const summaryTotals = useMemo(() => {
+    const payLaterItems = items.filter(item => item.isDebt);
+    const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+    const debtAmount = payLaterItems.reduce((sum, item) => sum + item.amount, 0);
+    
+    return {
+      totalAmount,
+      paidAmount: totalAmount - debtAmount,
+      debtAmount,
+      payLaterItemsCount: payLaterItems.length
+    };
+  }, [items]);
+  const handleSubmit = () => {
+    const formatDecimal = (num) => Number(num).toFixed(2);
+ 
+    // Pertama, kelompokkan items akomodasi berdasarkan hotel
+    const groupedAccommodations = items
+      .filter(item => item.category === 'Accommodation')
+      .reduce((acc, item) => {
+        const hotelId = item.originalData.hotelId;
+        if (!acc[hotelId]) {
+          acc[hotelId] = {
+            rooms: [],
+            meals: [],
+            isDebt: item.isDebt
+          };
+        }
+        if (item.originalData.type === 'room') {
+          acc[hotelId].rooms.push(item);
+        } else {
+          acc[hotelId].meals.push(item);
+        }
+        return acc;
+      }, {});
+   
+    // Kelompokkan destinasi
+    const groupedDestinations = items
+      .filter(item => item.category === 'Destination')
+      .reduce((acc, item) => {
+        const destName = item.subCategory;
+        if (!acc[destName]) {
+          acc[destName] = [];
+        }
+        acc[destName].push(item);
+        return acc;
+      }, {});
+   
+    const submitData = {
+      booking_id: booking.id,
+      
+      // Transform accommodations - Tidak berubah
+      accommodations: Object.entries(groupedAccommodations).map(([hotelId, data]) => ({
+        hotel_id: parseInt(hotelId),
+        is_paid: !data.isDebt ? '1' : '0',
+        is_debt: data.isDebt ? '1' : '0',
+        rooms: data.rooms.map(room => ({
+          id: room.originalData.roomId,
+          quantity: room.qty,
+          rate: parseInt(room.rate)
+        })),
+        meals: data.meals.map(meal => ({
+          id: meal.originalData.mealId,
+          type: meal.originalData.mealType,
+          qty: meal.qty,
+          price: formatDecimal(meal.rate)
+        }))
+      })),
+   
+      // Perbaikan struktur destinations
+      destinations: Object.entries(groupedDestinations).map(([destName, activities]) => ({
+        activities: activities.map(item => {
+          const isNewItem = String(item.id).startsWith('new_');
+                    // Gunakan flag isNewActivity dari originalData
+          const isNewActivity = isNewItem && item.originalData.isNewActivity;
+
+          return {
+            // Para item existente, usar id normal, para nuevo usar null
+            id: isNewItem ? null : item.id,
+            
+            destination_id: item.originalData.destination_id,
+            
+            // Para actividades nuevas:
+            // 1. No incluir destination_activity_id (omitirlo en lugar de enviar null)
+            // 2. Asegurarse de que name esté presente para crear la nueva actividad
+            ...(isNewActivity 
+              ? { name: item.description } 
+              : { destination_activity_id: item.originalData.destination_activity_id }),
+                     
+            quantity: item.qty,
+            price: parseInt(item.rate),
+            is_debt: item.isDebt ? '1' : '0'
+          };
+        })
+      })),
+
+      // Perbaikan struktur others
+    others: items
+      .filter(item => item.category === 'Others')
+      .map(item => {
+        const isNewItem = String(item.id).startsWith('new_');
+        // Gunakan flag isNewActivity dari originalData
+        const isNewActivity = isNewItem && item.originalData.isNewActivity;        
+        return {
+          // Para items nuevos, envía id: null
+          id: isNewItem ? null : item.id,
+          // Para items nuevos, omite others_activity_id en lugar de enviar null
+          // Si el item ya existe, envía el ID
+          ...(isNewActivity 
+            ? {} 
+            : { others_activity_id: item.originalData.others_activity_id }),
+          quantity: item.qty,
+          name: item.description, // Asegura que name tenga valor
+          price: parseInt(item.rate),
+          is_debt: item.isDebt ? '1' : '0'
+        };
+      }),
+   
+      // Perbaikan struktur resources
+      resources: {
+        cars: items
+          .filter(item => item.category === 'Transport')
+          .map(item => {
+            const isNewItem = String(item.id).startsWith('new_');
+            return {
+              id: isNewItem ? null : item.id,
+              car_id: item.originalData.car_id,
+              quantity: item.qty,
+              price: parseInt(item.rate),
+              // Hapus status_paid karena tidak digunakan
+              is_debt: item.isDebt ? '1' : '0'
+            };
+          }),
+        crews: items
+          .filter(item => item.category === 'Resource')
+          .map(item => {
+            const isNewItem = String(item.id).startsWith('new_');
+            return {
+              id: isNewItem ? null : item.id,
+              crew_role_id: item.originalData.crew_role_id,
+              quantity: item.qty,
+              price: parseInt(item.rate),
+              // Hapus status_paid karena tidak digunakan
+              is_debt: item.isDebt ? '1' : '0'
+            };
+          })
+      },
+   
+      summary: {
+        totalAmount: summaryTotals.totalAmount,
+        paidAmount: summaryTotals.paidAmount,
+        debtAmount: summaryTotals.debtAmount,
+        // Hapus fields yang tidak digunakan
+        // balanceAmount: summaryTotals.balanceAmount,
+        // profit: summaryTotals.profit
+      }
+    };
+   
+    router.post(`/finance/expense-manager/${booking.id}/update`, submitData, {
+      onBefore: () => {
+        Swal.fire({
+          title: 'Processing...',
+          html: 'Please wait while we process your expense.',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+      },
+      onSuccess: () => {
+        Swal.fire({
+          title: 'Success!',
+          text: 'Expense has been successfully updated',
+          icon: 'success'
+        }).then(() => {
+          router.visit(`/finance/expense-manager/${booking.id}/edit`);
+        });
+      },
+      onError: (errors) => {
+        Swal.fire({
+          title: 'Error!',
+          text: 'There was a problem updating your expense.',
+          icon: 'error'
+        });
+        console.error('Submission errors:', errors);
+      },
+      preserveState: true,
+      preserveScroll: true
+    });
+   
+    console.log('Data to submit:', submitData);
+  };
+  const handleDelete = (index) => {
+    setItems(prevItems => {
+      const newItems = [...prevItems];
+      newItems.splice(index, 1);
+      // Sort items setelah menghapus
+      return sortItems(newItems);
+    });
+  };  
+  return (
+    <Authenticated>
+      <div className="px-4 sm:px-6 lg:px-8 py-8">
+        <BookingInfo booking={booking} />
+        <SummaryCards booking={booking} totals={summaryTotals} />
+        <ExpenseTable 
+          items={items} 
+          onPayLaterChange={handlePayLaterChange}
+          onEdit={handleEdit}
+          onDelete={handleDelete}          
+        />        
+      <div className="mt-6 flex justify-between items-center">
+      <div className="relative inline-block text-left">
+  <div 
+    id="add-item-dropdown"
+    className="hidden absolute bottom-full left-0 mb-2 w-56 origin-bottom-left rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+    role="menu"
+    aria-orientation="vertical"
+    aria-labelledby="menu-button"
+    tabIndex="-1"
+  >
+    <div className="py-1 rounded-md" role="none">
+      <button
+        onClick={() => {
+          setIsDestinationModalOpen(true);
+          document.getElementById('add-item-dropdown').classList.add('hidden');
+        }}
+        className="text-gray-700 block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 hover:rounded-t-md"
+        role="menuitem"
+        tabIndex="-1"
+      >
+        Destination Activity
+      </button>
+      <button
+        onClick={() => {
+          setIsOthersModalOpen(true);
+          document.getElementById('add-item-dropdown').classList.add('hidden');
+        }}
+        className="text-gray-700 block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+        role="menuitem"
+        tabIndex="-1"
+      >
+        Others Item
+      </button>
+      <button
+        onClick={() => {
+          setIsTransportationModalOpen(true);
+          document.getElementById('add-item-dropdown').classList.add('hidden');
+        }}
+        className="text-gray-700 block w-full px-4 py-2 text-left text-sm hover:bg-gray-100"
+        role="menuitem"
+        tabIndex="-1"
+      >
+        Transportation
+      </button>
+      <button
+        onClick={() => {
+          setIsCrewModalOpen(true);
+          document.getElementById('add-item-dropdown').classList.add('hidden');
+        }}
+        className="text-gray-700 block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 hover:rounded-b-md"
+        role="menuitem"
+        tabIndex="-1"
+      >
+        Crew
+      </button>
+    </div>
+  </div>
+
+  <button
+    type="button"
+    className="inline-flex w-full justify-center gap-x-1.5 rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700"
+    id="menu-button"
+    aria-expanded="true"
+    aria-haspopup="true"
+    onClick={() => {
+      const dropdown = document.getElementById('add-item-dropdown');
+      dropdown.classList.toggle('hidden');
+    }}
+  >
+    Add New Item
+    <svg className="-mr-1 h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+    </svg>
+  </button>
+</div>
+<button
+            onClick={handleSubmit}
+            className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+          >
+            Submit Changes
+          </button>
+
+      </div>
+        {/* Modal-modal */}
+        <AddDestinationModal 
+          isOpen={isDestinationModalOpen}
+          onClose={() => setIsDestinationModalOpen(false)}
+          onAddActivity={handleAddNewItem}          
+          listForNewItems={listForNewItems.destinations}
+          existingItems={items.filter(item => item.category === 'Destination')}
+        />
+        <AddOthersModal 
+          isOpen={isOthersModalOpen}
+          onClose={() => setIsOthersModalOpen(false)}
+          onAddItem={handleAddNewItem}
+          listForNewItems={listForNewItems.others}
+          existingItems={items.filter(item => item.category === 'Others')}
+        />
+        <AddTransportationModal 
+          isOpen={isTransportationModalOpen}
+          onClose={() => setIsTransportationModalOpen(false)}
+          onAddItem={handleAddNewItem}
+          listForNewItems={listForNewItems.cars}
+          existingItems={items.filter(item => item.category === 'Transport')}
+        />
+        <AddCrewModal 
+          isOpen={isCrewModalOpen}
+          onClose={() => setIsCrewModalOpen(false)}
+          onAddItem={handleAddNewItem}
+          listForNewItems={listForNewItems.crews}
+          existingItems={items.filter(item => item.category === 'Resource')}
+        />
+
+      </div>
+    </Authenticated>
+  );
+};
+
+export default EditExpenseManager;

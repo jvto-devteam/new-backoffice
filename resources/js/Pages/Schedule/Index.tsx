@@ -2325,7 +2325,7 @@ export default function Index({ data }) {
                                         <div className="flex items-center">
                                             <div>
                                                 <span className="text-xs mr-3 bg-green-200 px-2 py-1 rounded-full">
-                                                    {bookings.filter(b => new Date(b.date.end_ymd) < new Date()).length}
+                                                    {bookings.filter(b => new Date(b.date.end_ymd) < new Date(data.now)).length}
                                                 </span>
                                                 Completed Trips
                                             </div>
@@ -2340,9 +2340,9 @@ export default function Index({ data }) {
 
                             {/* Add this state to the component */}
                             {/* const [showCompletedTrips, setShowCompletedTrips] = useState(false); */}
-                            
+                                        
                             {showCompletedTrips && bookings
-                                .filter(booking => new Date(booking.date.end_ymd) < new Date())
+                                .filter(booking => new Date(booking.date.end_ymd) < new Date(data.now))
                                 .map((booking, index) => (
                                     <BookingRow
                                         isCompleted={true}
@@ -2364,7 +2364,7 @@ export default function Index({ data }) {
                                         <div className="flex items-center font-medium text-blue-700">
                                             <div>
                                                 <span className="text-xs mr-3 bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                                    {bookings.filter(b => new Date(b.date.end_ymd) >= new Date()).length}
+                                                    {bookings.filter(b => new Date(b.date.end_ymd) >= new Date(data.now)).length}
                                                 </span>
                                                 Active & Upcoming Trips
                                             </div>
@@ -2375,10 +2375,10 @@ export default function Index({ data }) {
 
                             {/* Then replace the original bookings.map with this */}
                             {bookings
-                                .filter(booking => new Date(booking.date.end_ymd) >= new Date())
+                                .filter(booking => new Date(booking.date.end_ymd) >= new Date(data.now))
                                 .map((booking, index) => (
                                     <BookingRow
-                                        startNumb={bookings.filter(b => new Date(b.date.end_ymd) < new Date()).length + 1 + index}
+                                        startNumb={bookings.filter(b => new Date(b.date.end_ymd) < new Date(data.now)).length + 1 + index}
                                         key={booking.id}
                                         booking={booking}
                                         index={index}

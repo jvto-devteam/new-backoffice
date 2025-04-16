@@ -291,6 +291,7 @@ class ScheduleController extends Controller
                     'notes' => $booking->note,
                 ];
             });
+            $data['now'] = date('Y-m-d');
             // return $data;
 
             if($request->json){

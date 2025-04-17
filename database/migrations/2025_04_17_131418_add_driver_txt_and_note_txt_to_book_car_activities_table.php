@@ -1,0 +1,20 @@
+<?php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    public function up(): void
+    {
+        Schema::table('book_car_activities', function (Blueprint $table) {
+            $table->string('note_txt')->nullable()->after('driver_txt');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table('book_car_activities', function (Blueprint $table) {
+            $table->dropColumn(['note_txt', 'driver_txt']);
+        });
+    }
+};

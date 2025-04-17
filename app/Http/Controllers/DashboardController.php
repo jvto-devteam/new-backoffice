@@ -114,6 +114,9 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard',['alertData' => $alert,'upcoming' => $upcoming]);
     }
+    function portalVendor(){
+        return Inertia::render('PortalVendor');
+    }
     function generateInv(){
         // $new = new BookingPayment;
         // $new->booking_id = 981;

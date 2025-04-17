@@ -965,6 +965,8 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
   const [isOthersModalOpen, setIsOthersModalOpen] = useState(false);
   const [isTransportationModalOpen, setIsTransportationModalOpen] = useState(false);
   const [isCrewModalOpen, setIsCrewModalOpen] = useState(false);
+  const [deletedItems, setDeletedItems] = useState([]);
+
 
   const sortItems = (items) => {
     // Definisikan urutan kategori
@@ -1026,6 +1028,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
           rate: newItem.price,
           amount: newItem.qty * newItem.price,
           isDebt: newItem.is_debt === '1',
+          status: 'new',
           originalData: { 
             type: 'destination', 
             destName: newItem.destinationName, // Usar la misma información
@@ -1039,7 +1042,8 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
         // Procesar otros tipos de items como antes
         processedItem = {
           ...newItem,
-          id: newId
+          id: newId,
+          status: 'new'
         };
       }
       
@@ -1115,7 +1119,10 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
     });
    
     const initialItems = [
-      ...sortedAccommodationItems,
+      ...sortedAccommodationItems.map(item => ({
+        ...item,
+        status: 'unchanged' // Add status field
+      })),
       // Destination items
       ...Object.entries(destinations).flatMap(([destName, activities]) =>
         activities.map(activity => ({
@@ -1128,6 +1135,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
           rate: activity.price,
           amount: activity.qty * activity.price,
           isDebt: activity.is_debt === '1',
+          status: 'unchanged',
           originalData: { 
             type: 'destination', 
             destName, 
@@ -1148,6 +1156,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
         rate: item.price,
         amount: item.qty * item.price,
         isDebt: item.is_debt === '1',
+        status: 'unchanged',
         originalData: { 
           type: 'other', 
           others_activity_id: item.others_activity.id,
@@ -1165,6 +1174,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
         rate: car.price,
         amount: car.qty * car.price,
         isDebt: car.is_debt === '1',
+        status: 'unchanged',
         originalData: { 
           type: 'transport', 
           car_id: car.car.id,
@@ -1182,6 +1192,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
         rate: crew.price,
         amount: crew.qty * crew.price,
         isDebt: crew.is_debt === '1',
+        status: 'unchanged',
         originalData: { 
           type: 'crew',
           crew_role_id: crew.crew_role.id,
@@ -1197,23 +1208,32 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
     setItems(prevItems => {
       const newItems = [...prevItems];
       const targetItem = newItems[index];
-  
-      // Jika item adalah accommodation, update semua item dari hotel yang sama
+      
+      // If item is accommodation, update all items from the same hotel
       if (targetItem.category === 'Accommodation') {
         const hotelId = targetItem.originalData.hotelId;
         return newItems.map(item => {
           if (item.category === 'Accommodation' && item.originalData.hotelId === hotelId) {
-            return { ...item, isDebt };
+            return { 
+              ...item, 
+              isDebt,
+              status: item.status === 'unchanged' ? 'modified' : item.status
+            };
           }
           return item;
         });
       }
-  
-      // Untuk item non-accommodation, hanya update item tersebut
-      newItems[index] = { ...newItems[index], isDebt };
+      
+      // For non-accommodation items, only update the specific item
+      newItems[index] = { 
+        ...newItems[index], 
+        isDebt,
+        status: newItems[index].status === 'unchanged' ? 'modified' : newItems[index].status
+      };
       return newItems;
     });
   };
+
   const handleEdit = (index, field, value) => {
     setItems(prevItems => {
       const newItems = [...prevItems];
@@ -1224,6 +1244,10 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
       
       // Recalculate amount
       item.amount = item.qty * item.rate;
+
+      if (item.status === 'unchanged') {
+        item.status = 'modified';
+      }
       
       newItems[index] = item;
       return newItems;
@@ -1244,10 +1268,24 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
   }, [items]);
   const handleSubmit = () => {
     const formatDecimal = (num) => Number(num).toFixed(2);
+
+    // Group visible items by category and status
+    const itemsByStatus = {
+      modified: [],
+      new: [],
+      deleted: []
+    };
+    
+    // Filter and organize items
+    items.forEach(item => {
+      if (item.status === 'modified' || item.status === 'new') {
+        itemsByStatus[item.status].push(item);
+      }
+    });    
  
     // Pertama, kelompokkan items akomodasi berdasarkan hotel
     const groupedAccommodations = items
-      .filter(item => item.category === 'Accommodation')
+      .filter(item => item.category === 'Accommodation' && item.status !== 'deleted')
       .reduce((acc, item) => {
         const hotelId = item.originalData.hotelId;
         if (!acc[hotelId]) {
@@ -1266,16 +1304,48 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
       }, {});
    
     // Kelompokkan destinasi
-    const groupedDestinations = items
-      .filter(item => item.category === 'Destination')
-      .reduce((acc, item) => {
-        const destName = item.subCategory;
-        if (!acc[destName]) {
-          acc[destName] = [];
-        }
-        acc[destName].push(item);
-        return acc;
-      }, {});
+    const groupedDestinations = {
+      modified: itemsByStatus.modified
+        .filter(item => item.category === 'Destination')
+        .reduce((acc, item) => {
+          const destName = item.subCategory;
+          if (!acc[destName]) {
+            acc[destName] = [];
+          }
+          acc[destName].push(item);
+          return acc;
+        }, {}),
+        
+      new: itemsByStatus.new
+        .filter(item => item.category === 'Destination')
+        .reduce((acc, item) => {
+          const destName = item.subCategory;
+          if (!acc[destName]) {
+            acc[destName] = [];
+          }
+          acc[destName].push(item);
+          return acc;
+        }, {})
+    };
+    
+
+      const groupedDeletedItems = {
+        destinations: deletedItems
+          .filter(item => item.category === 'Destination')
+          .map(item => item.id),
+        
+        others: deletedItems
+          .filter(item => item.category === 'Others')
+          .map(item => item.id),
+        
+        cars: deletedItems
+          .filter(item => item.category === 'Transport')
+          .map(item => item.id),
+        
+        crews: deletedItems
+          .filter(item => item.category === 'Resource')
+          .map(item => item.id)
+      };      
    
     const submitData = {
       booking_id: booking.id,
@@ -1299,84 +1369,110 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
       })),
    
       // Perbaikan struktur destinations
-      destinations: Object.entries(groupedDestinations).map(([destName, activities]) => ({
-        activities: activities.map(item => {
-          const isNewItem = String(item.id).startsWith('new_');
-                    // Gunakan flag isNewActivity dari originalData
-          const isNewActivity = isNewItem && item.originalData.isNewActivity;
+      destinations: {
+        deleted: groupedDeletedItems.destinations,
 
-          return {
-            // Para item existente, usar id normal, para nuevo usar null
-            id: isNewItem ? null : item.id,
-            
+        modified: Object.entries(groupedDestinations.modified).flatMap(([destName, activities]) =>
+          activities.map(item => ({
+            id: item.id,
             destination_id: item.originalData.destination_id,
-            
-            // Para actividades nuevas:
-            // 1. No incluir destination_activity_id (omitirlo en lugar de enviar null)
-            // 2. Asegurarse de que name esté presente para crear la nueva actividad
-            ...(isNewActivity 
-              ? { name: item.description } 
-              : { destination_activity_id: item.originalData.destination_activity_id }),
-                     
+            destination_activity_id: item.originalData.destination_activity_id,
             quantity: item.qty,
             price: parseInt(item.rate),
             is_debt: item.isDebt ? '1' : '0'
-          };
-        })
-      })),
-
-      // Perbaikan struktur others
-    others: items
-      .filter(item => item.category === 'Others')
-      .map(item => {
-        const isNewItem = String(item.id).startsWith('new_');
-        // Gunakan flag isNewActivity dari originalData
-        const isNewActivity = isNewItem && item.originalData.isNewActivity;        
-        return {
-          // Para items nuevos, envía id: null
-          id: isNewItem ? null : item.id,
-          // Para items nuevos, omite others_activity_id en lugar de enviar null
-          // Si el item ya existe, envía el ID
-          ...(isNewActivity 
-            ? {} 
-            : { others_activity_id: item.originalData.others_activity_id }),
-          quantity: item.qty,
-          name: item.description, // Asegura que name tenga valor
-          price: parseInt(item.rate),
-          is_debt: item.isDebt ? '1' : '0'
-        };
-      }),
-   
-      // Perbaikan struktur resources
-      resources: {
-        cars: items
-          .filter(item => item.category === 'Transport')
-          .map(item => {
-            const isNewItem = String(item.id).startsWith('new_');
+          }))
+        ),
+        
+        new: Object.entries(groupedDestinations.new).flatMap(([destName, activities]) =>
+          activities.map(item => {
+            const isNewActivity = item.originalData.isNewActivity;
             return {
-              id: isNewItem ? null : item.id,
-              car_id: item.originalData.car_id,
+              destination_id: item.originalData.destination_id,
+              ...(isNewActivity 
+                ? { name: item.description } 
+                : { destination_activity_id: item.originalData.destination_activity_id }),
               quantity: item.qty,
               price: parseInt(item.rate),
-              // Hapus status_paid karena tidak digunakan
-              is_debt: item.isDebt ? '1' : '0'
-            };
-          }),
-        crews: items
-          .filter(item => item.category === 'Resource')
-          .map(item => {
-            const isNewItem = String(item.id).startsWith('new_');
-            return {
-              id: isNewItem ? null : item.id,
-              crew_role_id: item.originalData.crew_role_id,
-              quantity: item.qty,
-              price: parseInt(item.rate),
-              // Hapus status_paid karena tidak digunakan
               is_debt: item.isDebt ? '1' : '0'
             };
           })
+        )
       },
-   
+
+      // Perbaikan struktur others
+      others: {
+        deleted: groupedDeletedItems.others,        
+        modified: itemsByStatus.modified
+          .filter(item => item.category === 'Others')
+          .map(item => ({
+            id: item.id,
+            others_activity_id: item.originalData.others_activity_id,
+            quantity: item.qty,
+            price: parseInt(item.rate),
+            is_debt: item.isDebt ? '1' : '0'
+          })),
+          
+        new: itemsByStatus.new
+          .filter(item => item.category === 'Others')
+          .map(item => {
+            const isNewActivity = item.originalData.isNewActivity;
+            return {
+              ...(isNewActivity 
+                ? {} 
+                : { others_activity_id: item.originalData.others_activity_id }),
+              name: item.description,
+              quantity: item.qty,
+              price: parseInt(item.rate),
+              is_debt: item.isDebt ? '1' : '0'
+            };
+          })
+      },   
+      // Perbaikan struktur resources
+      resources: {
+        cars: {
+          deleted: groupedDeletedItems.cars,          
+          modified: itemsByStatus.modified
+            .filter(item => item.category === 'Transport')
+            .map(item => ({
+              id: item.id,
+              car_id: item.originalData.car_id,
+              quantity: item.qty,
+              price: parseInt(item.rate),
+              is_debt: item.isDebt ? '1' : '0'
+            })),
+            
+          new: itemsByStatus.new
+            .filter(item => item.category === 'Transport')
+            .map(item => ({
+              car_id: item.originalData.car_id,
+              quantity: item.qty,
+              price: parseInt(item.rate),
+              is_debt: item.isDebt ? '1' : '0'
+            }))
+        },
+        
+        crews: {
+          deleted: groupedDeletedItems.crews,          
+          modified: itemsByStatus.modified
+            .filter(item => item.category === 'Resource')
+            .map(item => ({
+              id: item.id,
+              crew_role_id: item.originalData.crew_role_id,
+              quantity: item.qty,
+              price: parseInt(item.rate),
+              is_debt: item.isDebt ? '1' : '0'
+            })),
+            
+          new: itemsByStatus.new
+            .filter(item => item.category === 'Resource')
+            .map(item => ({
+              crew_role_id: item.originalData.crew_role_id,
+              quantity: item.qty,
+              price: parseInt(item.rate),
+              is_debt: item.isDebt ? '1' : '0'
+            }))
+        }
+      },   
       summary: {
         totalAmount: summaryTotals.totalAmount,
         paidAmount: summaryTotals.paidAmount,
@@ -1424,11 +1520,20 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
   const handleDelete = (index) => {
     setItems(prevItems => {
       const newItems = [...prevItems];
-      newItems.splice(index, 1);
-      // Sort items setelah menghapus
+      const item = newItems[index];
+      
+      // If it's a new item, just remove it
+      if (item.status === 'new') {
+        newItems.splice(index, 1);
+      } else {
+        // For existing items, remove from visible list and add to deleted list
+        setDeletedItems(prevDeleted => [...prevDeleted, item]);
+        newItems.splice(index, 1);
+      }
+      
       return sortItems(newItems);
     });
-  };  
+  };
   return (
     <Authenticated>
       <div className="px-4 sm:px-6 lg:px-8 py-8">

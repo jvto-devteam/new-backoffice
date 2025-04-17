@@ -672,6 +672,8 @@ class FinanceController extends Controller
     function updateExpense(Request $request){
         // return  dd($request->all());
         $booking = Booking::where('id',$request->booking_id)->first();
+        
+        // Accommodation updates (unchanged)
         if($request->accommodations){
             foreach ($request->accommodations as $key => $value) {
                 $bookHotel = BookHotel::find($value['hotel_id']);
@@ -684,6 +686,7 @@ class FinanceController extends Controller
                     $bookHotel->paid_at = null;
                 }
                 $bookHotel->save();
+                
                 if(count($request->accommodations[$key]['rooms']) != 0){
                     foreach ($request->accommodations[$key]['rooms'] as $index => $val) {
                         $bookRoom = BookRoomHotel::find($val['id']);
@@ -692,7 +695,7 @@ class FinanceController extends Controller
                         $bookRoom->save();
                     }
                 }     
-
+    
                 if(count($request->accommodations[$key]['meals']) != 0){
                     foreach ($request->accommodations[$key]['meals'] as $index => $val) {
                         $bookHotelMeals = BookHotelMeal::find($val['id']);
@@ -702,122 +705,226 @@ class FinanceController extends Controller
                         $bookHotelMeals->save();
                     }
                 }                
-
             }
         }
-
+    
+        // Destination Activities - Granular updates
         if($request->destinations){
-            BookDestinationActivity::where('booking_id',$request->booking_id)->delete();
-            foreach ($request->destinations as $key => $value) {
-                foreach ($value['activities'] as $index => $val) {
-                    // Verificar si necesitamos crear una nueva actividad de destino
-                    $destinationActivityId = $val['destination_activity_id'] ?? null;
+            // Delete items marked for deletion
+            if(!empty($request->destinations['deleted'])){
+                BookDestinationActivity::whereIn('id', $request->destinations['deleted'])->delete();
+            }
+            
+            // Update modified items
+            if(!empty($request->destinations['modified'])){
+                foreach($request->destinations['modified'] as $item){
+                    $bookDestinationActivity = BookDestinationActivity::find($item['id']);
+                    if($bookDestinationActivity){
+                        $bookDestinationActivity->qty = $item['quantity'];
+                        $bookDestinationActivity->price = $item['price'];
+                        $bookDestinationActivity->subtotal = $item['quantity'] * $item['price'];
+                        $bookDestinationActivity->status_paid = $item['is_debt'] == '0' ? 'paid' : 'unpaid';
+                        if($bookDestinationActivity->status_paid == 'paid'){
+                            $bookDestinationActivity->paid_date = date('Y-m-d');
+                        }
+                        $bookDestinationActivity->is_debt = $item['is_debt'];
+                        $bookDestinationActivity->save();
+                    }
+                }
+            }
+            
+            // Insert new items
+            if(!empty($request->destinations['new'])){
+                foreach($request->destinations['new'] as $item){
+                    // Check if we need to create a new destination activity
+                    $destinationActivityId = $item['destination_activity_id'] ?? null;
                     
-                    if(empty($destinationActivityId)){
-                        // Crear nueva actividad de destino
+                    if(empty($destinationActivityId) && isset($item['name'])){
+                        // Create new destination activity
                         $destinationActivity = new DestinationActivity;
-                        $destinationActivity->destination_id = $val['destination_id'];
-                        $destinationActivity->name = $val['name'];
+                        $destinationActivity->destination_id = $item['destination_id'];
+                        $destinationActivity->name = $item['name'];
                         $destinationActivity->destination_activity_code = '';
                         $destinationActivity->unit = 'no';
                         $destinationActivity->formula = '1';
-                        $destinationActivity->price = $val['price'];
+                        $destinationActivity->price = $item['price'];
                         $destinationActivity->is_default_jvto = '0';
                         $destinationActivity->is_default_klook = '0';
                         $destinationActivity->is_default_twt = '0';
                         $destinationActivity->save();
         
-                        // Asignar el ID a una variable local
+                        // Assign the ID to a local variable
                         $destinationActivityId = $destinationActivity->id;
                     }
         
-                    // Crear la asociación con la reserva
+                    // Create the booking association
                     $bookDestinationActivity = new BookDestinationActivity;
                     $bookDestinationActivity->booking_id = $request->booking_id;
-                    $bookDestinationActivity->destination_id = $val['destination_id'];
+                    $bookDestinationActivity->destination_id = $item['destination_id'];
                     $bookDestinationActivity->destination_activity_id = $destinationActivityId;
-                    $bookDestinationActivity->qty = $val['quantity'];
-                    $bookDestinationActivity->price = $val['price'];
-                    $bookDestinationActivity->subtotal = $val['quantity']*$val['price'];
-                    $bookDestinationActivity->status_paid = $val['is_debt'] == '0' ? 'paid' : 'unpaid';
+                    $bookDestinationActivity->qty = $item['quantity'];
+                    $bookDestinationActivity->price = $item['price'];
+                    $bookDestinationActivity->subtotal = $item['quantity']*$item['price'];
+                    $bookDestinationActivity->status_paid = $item['is_debt'] == '0' ? 'paid' : 'unpaid';
                     if($bookDestinationActivity->status_paid == 'paid'){
                         $bookDestinationActivity->paid_date = date('Y-m-d');
                     }
-                    $bookDestinationActivity->is_debt = $val['is_debt'];
+                    $bookDestinationActivity->is_debt = $item['is_debt'];
                     $bookDestinationActivity->save();
                 }
             }
         }
         
+        // Others Activities - Granular updates
         if($request->others){
-            BookOthersActivity::where('booking_id',$request->booking_id)->delete();
-            foreach ($request->others as $key => $value) {
-                // Primero, asegúrate de tener un others_activity_id válido
-                $othersActivityId = $value['others_activity_id'] ?? null;
-                
-                // Si no hay ID o el item es nuevo, crea una nueva actividad
-                if(empty($othersActivityId)){
-                    $othersActivity = new OthersActivity;
-                    $othersActivity->name = $value['name'] ?? 'Unnamed Activity';
-                    $othersActivity->other_activity_code = '';
-                    $othersActivity->unit = 'no';
-                    $othersActivity->formula = '1';
-                    $othersActivity->price = $value['price'];
-                    $othersActivity->is_default = '0';
-                    $othersActivity->save();
-        
-                    // Usa directamente el ID recién creado
-                    $othersActivityId = $othersActivity->id;
+            // Delete items marked for deletion
+            if(!empty($request->others['deleted'])){
+                BookOthersActivity::whereIn('id', $request->others['deleted'])->delete();
+            }
+            
+            // Update modified items
+            if(!empty($request->others['modified'])){
+                foreach($request->others['modified'] as $item){
+                    $bookOthersActivity = BookOthersActivity::find($item['id']);
+                    if($bookOthersActivity){
+                        $bookOthersActivity->qty = $item['quantity'];
+                        $bookOthersActivity->price = $item['price'];
+                        $bookOthersActivity->subtotal = $item['quantity'] * $item['price'];
+                        $bookOthersActivity->status_paid = $item['is_debt'] == '0' ? 'paid' : 'unpaid';
+                        if($bookOthersActivity->status_paid == 'paid'){
+                            $bookOthersActivity->paid_date = date('Y-m-d');
+                        }
+                        $bookOthersActivity->is_debt = $item['is_debt'];
+                        $bookOthersActivity->save();
+                    }
                 }
+            }
+            
+            // Insert new items
+            if(!empty($request->others['new'])){
+                foreach($request->others['new'] as $item){
+                    // Check if we need to create a new activity
+                    $othersActivityId = $item['others_activity_id'] ?? null;
+                    
+                    if(empty($othersActivityId)){
+                        $othersActivity = new OthersActivity;
+                        $othersActivity->name = $item['name'] ?? 'Unnamed Activity';
+                        $othersActivity->other_activity_code = '';
+                        $othersActivity->unit = 'no';
+                        $othersActivity->formula = '1';
+                        $othersActivity->price = $item['price'];
+                        $othersActivity->is_default = '0';
+                        $othersActivity->save();
         
-                $bookOthersActivity = new BookOthersActivity;
-                $bookOthersActivity->booking_id = $request->booking_id;
-                $bookOthersActivity->others_activity_id = $othersActivityId; // Usa la variable local
-                $bookOthersActivity->qty = $value['quantity'];
-                $bookOthersActivity->price = $value['price'];
-                $bookOthersActivity->subtotal = $value['quantity']*$value['price'];
-                $bookOthersActivity->status_paid = $value['is_debt'] == '0' ? 'paid' : 'unpaid';
-                if($bookOthersActivity->status_paid == 'paid'){
-                    $bookOthersActivity->paid_date = date('Y-m-d');
+                        // Use the newly created ID
+                        $othersActivityId = $othersActivity->id;
+                    }
+        
+                    $bookOthersActivity = new BookOthersActivity;
+                    $bookOthersActivity->booking_id = $request->booking_id;
+                    $bookOthersActivity->others_activity_id = $othersActivityId;
+                    $bookOthersActivity->qty = $item['quantity'];
+                    $bookOthersActivity->price = $item['price'];
+                    $bookOthersActivity->subtotal = $item['quantity']*$item['price'];
+                    $bookOthersActivity->status_paid = $item['is_debt'] == '0' ? 'paid' : 'unpaid';
+                    if($bookOthersActivity->status_paid == 'paid'){
+                        $bookOthersActivity->paid_date = date('Y-m-d');
+                    }
+                    $bookOthersActivity->is_debt = $item['is_debt'];
+                    $bookOthersActivity->save();
                 }
-                $bookOthersActivity->is_debt = $value['is_debt'];
-                $bookOthersActivity->save();
             }
         }
+        
+        // Car Activities - Granular updates
         if($request->resources['cars']){
-            BookCarActivity::where('booking_id',$request->booking_id)->delete();
-            foreach ($request->resources['cars'] as $key => $value) {
-                $bookCarActivity = new BookCarActivity;
-                $bookCarActivity->booking_id = $request->booking_id;
-                $bookCarActivity->car_id = $value['car_id'];
-                $bookCarActivity->qty = $value['quantity'];
-                $bookCarActivity->price = $value['price'];
-                $bookCarActivity->subtotal = $value['quantity']*$value['price'];
-                $bookCarActivity->status_paid = $value['is_debt'] == '0' ? 'paid' : 'unpaid';
-                if($bookCarActivity->status_paid == 'paid'){
-                    $bookCarActivity->paid_date = date('Y-m-d');
+            // Delete items marked for deletion
+            if(!empty($request->resources['cars']['deleted'])){
+                BookCarActivity::whereIn('id', $request->resources['cars']['deleted'])->delete();
+            }
+            
+            // Update modified items
+            if(!empty($request->resources['cars']['modified'])){
+                foreach($request->resources['cars']['modified'] as $item){
+                    $bookCarActivity = BookCarActivity::find($item['id']);
+                    if($bookCarActivity){
+                        $bookCarActivity->qty = $item['quantity'];
+                        $bookCarActivity->price = $item['price'];
+                        $bookCarActivity->subtotal = $item['quantity'] * $item['price'];
+                        $bookCarActivity->status_paid = $item['is_debt'] == '0' ? 'paid' : 'unpaid';
+                        if($bookCarActivity->status_paid == 'paid'){
+                            $bookCarActivity->paid_date = date('Y-m-d');
+                        }
+                        $bookCarActivity->is_debt = $item['is_debt'];
+                        $bookCarActivity->save();
+                    }
                 }
-                $bookCarActivity->is_debt = $value['is_debt'];
-                $bookCarActivity->save();
+            }
+            
+            // Insert new items
+            if(!empty($request->resources['cars']['new'])){
+                foreach($request->resources['cars']['new'] as $item){
+                    $bookCarActivity = new BookCarActivity;
+                    $bookCarActivity->booking_id = $request->booking_id;
+                    $bookCarActivity->car_id = $item['car_id'];
+                    $bookCarActivity->qty = $item['quantity'];
+                    $bookCarActivity->price = $item['price'];
+                    $bookCarActivity->subtotal = $item['quantity']*$item['price'];
+                    $bookCarActivity->status_paid = $item['is_debt'] == '0' ? 'paid' : 'unpaid';
+                    if($bookCarActivity->status_paid == 'paid'){
+                        $bookCarActivity->paid_date = date('Y-m-d');
+                    }
+                    $bookCarActivity->is_debt = $item['is_debt'];
+                    $bookCarActivity->save();
+                }
             }
         }
-
-        BookCrewActivity::where('booking_id',$request->booking_id)->delete();
-        foreach ($request->resources['crews'] as $key => $value) {
-            $bookCrewActivity = new BookCrewActivity;
-            $bookCrewActivity->booking_id = $request->booking_id;
-            $bookCrewActivity->crew_role_id = $value['crew_role_id'];
-            $bookCrewActivity->qty = $value['quantity'];
-            $bookCrewActivity->price = $value['price'];
-            $bookCrewActivity->subtotal = $value['quantity']*$value['price'];
-            $bookCrewActivity->status_paid = $value['is_debt'] == '0' ? 'paid' : 'unpaid';
-            if($bookCrewActivity->status_paid == 'paid'){
-                $bookCrewActivity->paid_date = date('Y-m-d');
+    
+        // Crew Activities - Granular updates
+        if($request->resources['crews']){
+            // Delete items marked for deletion
+            if(!empty($request->resources['crews']['deleted'])){
+                BookCrewActivity::whereIn('id', $request->resources['crews']['deleted'])->delete();
             }
-            $bookCrewActivity->is_debt = $value['is_debt'];
-            $bookCrewActivity->save();
+            
+            // Update modified items
+            if(!empty($request->resources['crews']['modified'])){
+                foreach($request->resources['crews']['modified'] as $item){
+                    $bookCrewActivity = BookCrewActivity::find($item['id']);
+                    if($bookCrewActivity){
+                        $bookCrewActivity->qty = $item['quantity'];
+                        $bookCrewActivity->price = $item['price'];
+                        $bookCrewActivity->subtotal = $item['quantity'] * $item['price'];
+                        $bookCrewActivity->status_paid = $item['is_debt'] == '0' ? 'paid' : 'unpaid';
+                        if($bookCrewActivity->status_paid == 'paid'){
+                            $bookCrewActivity->paid_date = date('Y-m-d');
+                        }
+                        $bookCrewActivity->is_debt = $item['is_debt'];
+                        $bookCrewActivity->save();
+                    }
+                }
+            }
+            
+            // Insert new items
+            if(!empty($request->resources['crews']['new'])){
+                foreach($request->resources['crews']['new'] as $item){
+                    $bookCrewActivity = new BookCrewActivity;
+                    $bookCrewActivity->booking_id = $request->booking_id;
+                    $bookCrewActivity->crew_role_id = $item['crew_role_id'];
+                    $bookCrewActivity->qty = $item['quantity'];
+                    $bookCrewActivity->price = $item['price'];
+                    $bookCrewActivity->subtotal = $item['quantity']*$item['price'];
+                    $bookCrewActivity->status_paid = $item['is_debt'] == '0' ? 'paid' : 'unpaid';
+                    if($bookCrewActivity->status_paid == 'paid'){
+                        $bookCrewActivity->paid_date = date('Y-m-d');
+                    }
+                    $bookCrewActivity->is_debt = $item['is_debt'];
+                    $bookCrewActivity->save();
+                }
+            }
         }
-
+    
+        // Update booking summary data (unchanged)
         if(!$booking->expense_file_internal){
             $booking->expense_internal_total = $request->summary['totalAmount'];
             $booking->total_expense_paid = $request->summary['paidAmount'];
@@ -825,8 +932,167 @@ class FinanceController extends Controller
             $booking->total_expense_debt = $request->summary['debtAmount'];
             $booking->save();
         }
+        
         return back()->with('message', 'Expense saved successfully');
-    }
+    }    
+    // function updateExpense(Request $request){
+    //     // return  dd($request->all());
+    //     $booking = Booking::where('id',$request->booking_id)->first();
+    //     if($request->accommodations){
+    //         foreach ($request->accommodations as $key => $value) {
+    //             $bookHotel = BookHotel::find($value['hotel_id']);
+    //             $bookHotel->is_paid = $value['is_debt'] == '0' ? '1' : '0';
+    //             $bookHotel->is_debt = $value['is_debt'];
+    //             if($bookHotel->is_paid == '1'){
+    //                 $bookHotel->paid_at = date('Y-m-d H:i:s');
+    //             }
+    //             else{
+    //                 $bookHotel->paid_at = null;
+    //             }
+    //             $bookHotel->save();
+    //             if(count($request->accommodations[$key]['rooms']) != 0){
+    //                 foreach ($request->accommodations[$key]['rooms'] as $index => $val) {
+    //                     $bookRoom = BookRoomHotel::find($val['id']);
+    //                     $bookRoom->quantity = $val['quantity'];
+    //                     $bookRoom->subtotal = $val['quantity']*$val['rate'];
+    //                     $bookRoom->save();
+    //                 }
+    //             }     
+
+    //             if(count($request->accommodations[$key]['meals']) != 0){
+    //                 foreach ($request->accommodations[$key]['meals'] as $index => $val) {
+    //                     $bookHotelMeals = BookHotelMeal::find($val['id']);
+    //                     $bookHotelMeals->qty = $val['qty'];
+    //                     $bookHotelMeals->price = $val['price'];
+    //                     $bookHotelMeals->subtotal = $val['qty']*$val['price'];
+    //                     $bookHotelMeals->save();
+    //                 }
+    //             }                
+
+    //         }
+    //     }
+
+    //     if($request->destinations){
+    //         BookDestinationActivity::where('booking_id',$request->booking_id)->delete();
+    //         foreach ($request->destinations as $key => $value) {
+    //             foreach ($value['activities'] as $index => $val) {
+    //                 // Verificar si necesitamos crear una nueva actividad de destino
+    //                 $destinationActivityId = $val['destination_activity_id'] ?? null;
+                    
+    //                 if(empty($destinationActivityId)){
+    //                     // Crear nueva actividad de destino
+    //                     $destinationActivity = new DestinationActivity;
+    //                     $destinationActivity->destination_id = $val['destination_id'];
+    //                     $destinationActivity->name = $val['name'];
+    //                     $destinationActivity->destination_activity_code = '';
+    //                     $destinationActivity->unit = 'no';
+    //                     $destinationActivity->formula = '1';
+    //                     $destinationActivity->price = $val['price'];
+    //                     $destinationActivity->is_default_jvto = '0';
+    //                     $destinationActivity->is_default_klook = '0';
+    //                     $destinationActivity->is_default_twt = '0';
+    //                     $destinationActivity->save();
+        
+    //                     // Asignar el ID a una variable local
+    //                     $destinationActivityId = $destinationActivity->id;
+    //                 }
+        
+    //                 // Crear la asociación con la reserva
+    //                 $bookDestinationActivity = new BookDestinationActivity;
+    //                 $bookDestinationActivity->booking_id = $request->booking_id;
+    //                 $bookDestinationActivity->destination_id = $val['destination_id'];
+    //                 $bookDestinationActivity->destination_activity_id = $destinationActivityId;
+    //                 $bookDestinationActivity->qty = $val['quantity'];
+    //                 $bookDestinationActivity->price = $val['price'];
+    //                 $bookDestinationActivity->subtotal = $val['quantity']*$val['price'];
+    //                 $bookDestinationActivity->status_paid = $val['is_debt'] == '0' ? 'paid' : 'unpaid';
+    //                 if($bookDestinationActivity->status_paid == 'paid'){
+    //                     $bookDestinationActivity->paid_date = date('Y-m-d');
+    //                 }
+    //                 $bookDestinationActivity->is_debt = $val['is_debt'];
+    //                 $bookDestinationActivity->save();
+    //             }
+    //         }
+    //     }
+        
+    //     if($request->others){
+    //         BookOthersActivity::where('booking_id',$request->booking_id)->delete();
+    //         foreach ($request->others as $key => $value) {
+    //             // Primero, asegúrate de tener un others_activity_id válido
+    //             $othersActivityId = $value['others_activity_id'] ?? null;
+                
+    //             // Si no hay ID o el item es nuevo, crea una nueva actividad
+    //             if(empty($othersActivityId)){
+    //                 $othersActivity = new OthersActivity;
+    //                 $othersActivity->name = $value['name'] ?? 'Unnamed Activity';
+    //                 $othersActivity->other_activity_code = '';
+    //                 $othersActivity->unit = 'no';
+    //                 $othersActivity->formula = '1';
+    //                 $othersActivity->price = $value['price'];
+    //                 $othersActivity->is_default = '0';
+    //                 $othersActivity->save();
+        
+    //                 // Usa directamente el ID recién creado
+    //                 $othersActivityId = $othersActivity->id;
+    //             }
+        
+    //             $bookOthersActivity = new BookOthersActivity;
+    //             $bookOthersActivity->booking_id = $request->booking_id;
+    //             $bookOthersActivity->others_activity_id = $othersActivityId; // Usa la variable local
+    //             $bookOthersActivity->qty = $value['quantity'];
+    //             $bookOthersActivity->price = $value['price'];
+    //             $bookOthersActivity->subtotal = $value['quantity']*$value['price'];
+    //             $bookOthersActivity->status_paid = $value['is_debt'] == '0' ? 'paid' : 'unpaid';
+    //             if($bookOthersActivity->status_paid == 'paid'){
+    //                 $bookOthersActivity->paid_date = date('Y-m-d');
+    //             }
+    //             $bookOthersActivity->is_debt = $value['is_debt'];
+    //             $bookOthersActivity->save();
+    //         }
+    //     }
+    //     if($request->resources['cars']){
+    //         BookCarActivity::where('booking_id',$request->booking_id)->delete();
+    //         foreach ($request->resources['cars'] as $key => $value) {
+    //             $bookCarActivity = new BookCarActivity;
+    //             $bookCarActivity->booking_id = $request->booking_id;
+    //             $bookCarActivity->car_id = $value['car_id'];
+    //             $bookCarActivity->qty = $value['quantity'];
+    //             $bookCarActivity->price = $value['price'];
+    //             $bookCarActivity->subtotal = $value['quantity']*$value['price'];
+    //             $bookCarActivity->status_paid = $value['is_debt'] == '0' ? 'paid' : 'unpaid';
+    //             if($bookCarActivity->status_paid == 'paid'){
+    //                 $bookCarActivity->paid_date = date('Y-m-d');
+    //             }
+    //             $bookCarActivity->is_debt = $value['is_debt'];
+    //             $bookCarActivity->save();
+    //         }
+    //     }
+
+    //     BookCrewActivity::where('booking_id',$request->booking_id)->delete();
+    //     foreach ($request->resources['crews'] as $key => $value) {
+    //         $bookCrewActivity = new BookCrewActivity;
+    //         $bookCrewActivity->booking_id = $request->booking_id;
+    //         $bookCrewActivity->crew_role_id = $value['crew_role_id'];
+    //         $bookCrewActivity->qty = $value['quantity'];
+    //         $bookCrewActivity->price = $value['price'];
+    //         $bookCrewActivity->subtotal = $value['quantity']*$value['price'];
+    //         $bookCrewActivity->status_paid = $value['is_debt'] == '0' ? 'paid' : 'unpaid';
+    //         if($bookCrewActivity->status_paid == 'paid'){
+    //             $bookCrewActivity->paid_date = date('Y-m-d');
+    //         }
+    //         $bookCrewActivity->is_debt = $value['is_debt'];
+    //         $bookCrewActivity->save();
+    //     }
+
+    //     if(!$booking->expense_file_internal){
+    //         $booking->expense_internal_total = $request->summary['totalAmount'];
+    //         $booking->total_expense_paid = $request->summary['paidAmount'];
+    //         $booking->total_expense_balance = 0;
+    //         $booking->total_expense_debt = $request->summary['debtAmount'];
+    //         $booking->save();
+    //     }
+    //     return back()->with('message', 'Expense saved successfully');
+    // }
     function downloadExpense($id){
         $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id','booking_date','package_duration')->with(['user' => function($query){
             $query->select('id','name');

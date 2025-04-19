@@ -1,1003 +1,599 @@
+import React, { useState } from 'react';
 import Main from '@/Layouts/Main';
-import React, { useState, useEffect } from 'react';
-import {Link,router} from '@inertiajs/react';
 import { 
-  Bell, 
-  CheckCircle, 
-  Moon, 
-  Sun, 
-  Car, 
-  MapPin, 
-  Users, 
-  CreditCard, 
-  Home, 
-  ShoppingBag, 
-  Image, 
-  Menu, 
-  Calendar,
-  TrendingUp,
-  BarChart4,
-  ArrowUp,
-  ArrowDown,
-  Star,
-  Clock,
-  Filter,
-  TriangleAlert,
-  ShieldAlert,
+  Users, Calendar, CheckCircle, Clock, AlertTriangle, CreditCard, 
+  Filter, Search, Package, DollarSign, TrendingUp, List, MoreHorizontal,
+  Layers, MapPin, Car, UserCheck, CreditCard as CardIcon, Hotel, Shirt, Camera,
+  ChevronDown, ChevronUp, ChevronRight
 } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import {Link,router} from '@inertiajs/react';
 
+export default function Dashboard({ dashboardData }) {
+  const { summaryOrderChannel, summary, paymentHistory, upcoming, alert } = dashboardData;
+  const [activeTab, setActiveTab] = useState('active');
+  // To track which payment details are expanded
+    const [expandedPayments, setExpandedPayments] = useState([]);
 
-// Main Dashboard Component
-const TravelDashboard = ({alertData,upcoming}) => {
-  const [darkMode, setDarkMode] = useState(false);
-  const [bookings, setBookings] = useState([]);
-  const [alertStats, setAlertStats] = useState({
-    total: 0,
-    categories: {}
-  });
-  const [selectedType, setSelectedType] = useState(null);
-  const [selectedTimeframe, setSelectedTimeframe] = useState('day');
-  const [selectedChannel, setSelectedChannel] = useState('all');
-  const [bookingStats, setBookingStats] = useState([]);
-  const [upcomingSchedules, setUpcomingSchedules] = useState([]);
-  const [topPackages, setTopPackages] = useState([]);
-  const [channelStats, setChannelStats] = useState([]);
-
-  // Sample data - in a real app, this would come from an API
-  useEffect(() => {
-
-    // Mapping dari nama alert baru ke nama alert lama
-    const alertMapping = {
-      'no_pickup': 'pickup_not_set',
-      'no_drop': 'drop_not_set',
-      'no_car': 'vehicle_not_assign',
-      'no_crew': 'crew_not_assign',
-      'no_payment_method': 'payment_method_not_set',
-      'no_hotel': 'accommodation_not_assign',
-      'no_tshirt': 't_shirt_not_set',
-      'no_trip_media': 'trip_media_not_set'
-    };
-
-    // Alert types untuk label
-    const alertTypes = {
-      'pickup_not_set': 'Pickup not set',
-      'drop_not_set': 'Drop not set',
-      'vehicle_not_assign': 'Vehicle not assign',
-      'crew_not_assign': 'Crew not assign',
-      'expense_not_created': 'Expense not created',
-      'payment_method_not_set': 'Payment Method not set',
-      'accommodation_not_assign': 'Accommodation not assign',
-      't_shirt_not_set': 'T-Shirt not set',
-      'trip_media_not_set': 'Trip Media not set'
-    };
-
-    // Transformasi data booking
-    const transformedBookings = [];
-    const alertsById = {};
-
-    const orderChannel = (agentId,bookingCategoryId) => {
-      if(agentId === 1){
-        return 'TWT'
-      }
-      else{
-        if(bookingCategoryId !== 3){
-          return 'JVTO'
-        }
-        else{
-          return 'KLOOK'
-        }
-      }
+    // Function to toggle a payment's expanded state
+    const togglePaymentDetail = (paymentId) => {
+    if (expandedPayments.includes(paymentId)) {
+        setExpandedPayments(expandedPayments.filter(id => id !== paymentId));
+    } else {
+        setExpandedPayments([...expandedPayments, paymentId]);
     }
-
-    // Process each alert type and create bookings
-    Object.keys(alertMapping).forEach(newAlertKey => {
-      const oldAlertKey = alertMapping[newAlertKey];
-      
-      alertData[newAlertKey].forEach(booking => {
-        const bookingId = `${orderChannel(booking.agent_id,booking.booking_category_id)}-${booking.id}`;
-        
-        // If booking doesn't exist yet, create it
-        if (!alertsById[bookingId]) {
-          alertsById[bookingId] = {
-            booking_id: bookingId,
-            id: booking.id,
-            customer: booking.name,
-            destination: `${booking.package_duration}D ${booking.package_duration-1}N Package`,
-            date: booking.travel_date_start,
-            orderChannel : orderChannel(booking.agent_id,booking.booking_category_id),
-            pax: booking.total_pax,
-            alerts: []
-          };
-          transformedBookings.push(alertsById[bookingId]);
-        }
-        
-        // Add this alert type to the booking if not already there
-        if (!alertsById[bookingId].alerts.includes(oldAlertKey)) {
-          alertsById[bookingId].alerts.push(oldAlertKey);
-        }
-      });
-    });
-
-    setBookings(transformedBookings);
-
-    // Calculate alert statistics
-    const stats = { total: 0, categories: {} };
-    
-    Object.keys(alertTypes).forEach(key => {
-      stats.categories[key] = 0;
-    });
-
-    transformedBookings.forEach(booking => {
-      booking.alerts.forEach(alert => {
-        stats.categories[alert]++;
-        stats.total++;
-      });
-    });
-
-    setAlertStats(stats);
-    
-    // Set default selected type to the first one with alerts
-    const firstAlertType = Object.keys(stats.categories).find(key => stats.categories[key] > 0);
-    setSelectedType(firstAlertType);
-
-    // Sample booking statistics by day for the last 30 days
-    const currentDate = new Date();
-    const dailyBookingStats = Array.from({ length: 30 }, (_, i) => {
-      const date = new Date();
-      date.setDate(currentDate.getDate() - 29 + i);
-      
-      // Generate different values for different channels
-      const jvtoCount = Math.floor(Math.random() * 15) + 5;
-      const klookCount = Math.floor(Math.random() * 10) + 2;
-      const twtCount = Math.floor(Math.random() * 8) + 1;
-      
-      return {
-        date: date.toISOString().split('T')[0],
-        day: `${date.getDate()}/${date.getMonth() + 1}`,
-        all: jvtoCount + klookCount + twtCount,
-        jvto: jvtoCount,
-        klook: klookCount,
-        twt: twtCount
-      };
-    });
-    
-    setBookingStats(dailyBookingStats);
-
-    // Sample weekly booking stats
-    const weeklyBookingStats = Array.from({ length: 4 }, (_, i) => {
-      const weekNum = i + 1;
-      
-      // Generate different values for different channels
-      const jvtoCount = Math.floor(Math.random() * 70) + 30;
-      const klookCount = Math.floor(Math.random() * 50) + 15;
-      const twtCount = Math.floor(Math.random() * 40) + 10;
-      
-      return {
-        week: `Week ${weekNum}`,
-        all: jvtoCount + klookCount + twtCount,
-        jvto: jvtoCount,
-        klook: klookCount,
-        twt: twtCount
-      };
-    });
-
-    // Sample channel statistics
-    const channelData = [
-      {
-        name: 'JVTO',
-        total: 425,
-        color: '#4287f5',
-        increase: 12,
-        id: 'jvto'
-      },
-      {
-        name: 'KLOOK',
-        total: 318,
-        color: '#f54242',
-        increase: -5,
-        id: 'klook'
-      },
-      {
-        name: 'TWT',
-        total: 254,
-        color: '#42f563',
-        increase: 8,
-        id: 'twt'
-      }
-    ];
-    
-    setChannelStats(channelData);
-    
-    // Sample upcoming schedules
-    const sampleSchedules = [
-      {
-        id: 'SCH001',
-        destination: 'Bali Sunset Tour',
-        date: '2025-03-18',
-        time: '16:30',
-        pax: 12,
-        guide: 'Wayan Dharma'
-      },
-      {
-        id: 'SCH002',
-        destination: 'Mount Bromo Sunrise',
-        date: '2025-03-19',
-        time: '03:00',
-        pax: 8,
-        guide: 'Budi Prakoso'
-      },
-      {
-        id: 'SCH003',
-        destination: 'Komodo Island Expedition',
-        date: '2025-03-20',
-        time: '07:30',
-        pax: 6,
-        guide: 'Eko Nugroho'
-      },
-      {
-        id: 'SCH004',
-        destination: 'Raja Ampat Diving',
-        date: '2025-03-21',
-        time: '09:00',
-        pax: 4,
-        guide: 'Andre Wijaya'
-      }
-    ];
-    
-    setUpcomingSchedules(upcoming);
-    
-    // Sample top packages
-    const sampleTopPackages = [
-      {
-        id: 'PKG001',
-        name: 'Bali 3 Days 2 Nights Adventure',
-        sales: 145,
-        revenue: 87000000,
-        rating: 4.8,
-        image: 'bali.jpg'
-      },
-      {
-        id: 'PKG002',
-        name: 'Lombok Beach Getaway',
-        sales: 112,
-        revenue: 67200000,
-        rating: 4.7,
-        image: 'lombok.jpg'
-      },
-      {
-        id: 'PKG003',
-        name: 'Yogyakarta Cultural Tour',
-        sales: 98,
-        revenue: 49000000,
-        rating: 4.6,
-        image: 'yogyakarta.jpg'
-      }
-    ];
-    
-    setTopPackages(sampleTopPackages);
-  }, []);
-
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
+    };
+  
+  // States for interactive elements
+  const [paymentExpanded, setPaymentExpanded] = useState(false);
+  const [selectedAlert, setSelectedAlert] = useState('no_car');
+  const [upcomingExpanded, setUpcomingExpanded] = useState(true);
+  
+  // Colors for order channels
+  const channelColors = {
+    jvto: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100',
+    klook: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100',
+    twt: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100'
   };
-
-  // Alert type to icon mapping
-  const alertIcons = {
-    'pickup_not_set': <MapPin className="w-4 h-4" />,
-    'drop_not_set': <MapPin className="w-4 h-4" />,
-    'vehicle_not_assign': <Car className="w-4 h-4" />,
-    'crew_not_assign': <Users className="w-4 h-4" />,
-    'expense_not_created': <CreditCard className="w-4 h-4" />,
-    'payment_method_not_set': <CreditCard className="w-4 h-4" />,
-    'accommodation_not_assign': <Home className="w-4 h-4" />,
-    't_shirt_not_set': <ShoppingBag className="w-4 h-4" />,
-    'trip_media_not_set': <Image className="w-4 h-4" />
+  
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
   };
-
-  // Alert type to human-readable format
-  const alertLabels = {
-    'pickup_not_set': 'Pickup not set',
-    'drop_not_set': 'Drop not set',
-    'vehicle_not_assign': 'Vehicle not assign',
-    'crew_not_assign': 'Crew not assign',
-    'expense_not_created': 'Expense not created',
-    'payment_method_not_set': 'Payment Method not set',
-    'accommodation_not_assign': 'Accommodation not assign',
-    't_shirt_not_set': 'T-Shirt not set',
-    'trip_media_not_set': 'Trip Media not set'
-  };
-
-  // Take action function
-  const takeAction = (bookingId, alertType) => {
-    router.visit("/bookings/edit-booking/"+bookingId);
-  };
-
-  // Group alerts by type
-  const getAlertsByType = () => {
-    const alertsByType = {};
-    
-    bookings.forEach(booking => {
-      booking.alerts.forEach(alertType => {
-        if (!alertsByType[alertType]) {
-          alertsByType[alertType] = [];
-        }
-        alertsByType[alertType].push({
-          bookingId: booking.booking_id,
-          id: booking.id,
-          alertType,
-          customer: booking.customer,
-          destination: booking.destination,
-          date: booking.date,
-          orderChannel: booking.orderChannel,
-          pax: booking.pax,
-        });
-      });
-    });
-    
-    // Remove any alert types with zero items
-    Object.keys(alertsByType).forEach(key => {
-      if (alertsByType[key].length === 0) {
-        delete alertsByType[key];
-      }
-    });
-    
-    return alertsByType;
-  };
-
-  // Alert Item Component
-  const AlertItem = ({ id,bookingId, alertType, customer, destination,orderChannel,date,pax }) => {
-    return (
-      <div className={`flex items-center justify-between p-4 rounded-lg mb-2 transition-all duration-200 hover:shadow-md ${
-        darkMode 
-          ? 'bg-gray-700 border border-gray-600' 
-          : 'bg-white border border-gray-100 shadow-sm'
-      }`}>
-        <div className="flex items-center">
-          <div className={`p-3 mr-4 rounded-full ${
-            darkMode 
-              ? 'bg-gray-800 text-red-400' 
-              : 'bg-red-50 text-red-500'
-          }`}>
-            {alertIcons[alertType]}
-          </div>
-          <div>
-            <div className="font-medium text-base">{customer} <span className="text-xs">({pax} Pax)</span></div>
-            <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-              <span className="inline-flex items-center">
-                <Calendar className="w-4 h-4 mr-1" />
-
-                {date}
-                <span className="mx-2 w-1 h-1 rounded-full bg-gray-400"></span>
-                {destination}
-                <span className="mx-2 w-1 h-1 rounded-full bg-gray-400"></span>
-                <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full 
-                  ${orderChannel === 'JVTO' ? 'bg-blue-100 text-blue-800' :
-                    orderChannel === 'TWT' ? 'bg-yellow-100 text-yellow-800' :
-                    orderChannel === 'KLOOK' ? 'bg-green-100 text-green-800' :
-                    'bg-gray-100 text-gray-800'}`}
-                >
-                {bookingId}
-                </span>
-              </span>
-            </div>
-          </div>
-        </div>
-        <button 
-          onClick={() => takeAction(id, alertType)}
-          className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 transform hover:scale-105 ${
-            darkMode 
-              ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white' 
-              : 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white shadow-sm'
-          }`}
-        >
-          Fix Now
-        </button>
-      </div>
-    );
-  };
-
-  // Unified Alert Dashboard
-  const UnifiedAlertDashboard = () => {
-    const alertsByType = getAlertsByType();
-    
-    // Filter out alert types with zero count
-    const activeAlertTypes = Object.keys(alertStats.categories).filter(
-      type => alertStats.categories[type] > 0
-    );
-    
-    // Handle empty state
-    if (Object.keys(alertsByType).length === 0) {
-      return (
-        <div className={`p-8 text-center rounded-xl shadow-lg ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white'}`}>
-          <CheckCircle className="mx-auto w-12 h-12 text-green-500 mb-4" />
-          <h3 className="text-xl font-medium mb-2">All Clear!</h3>
-          <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            No bookings require attention at this time.
-          </p>
-        </div>
-      );
-    }
-    
-    // Effect to select first active alert type if none selected
-    useEffect(() => {
-      if (!selectedType || alertStats.categories[selectedType] === 0) {
-        setSelectedType(activeAlertTypes[0] || null);
-      }
-    }, [selectedType, alertStats, activeAlertTypes]);
+  
+  // Get channel badge
+  const getChannelBadge = (channel) => {
+    const channelMap = {
+      'JVTO': channelColors.jvto,
+      'KLOOK': channelColors.klook,
+      'TWT': channelColors.twt
+    };
     
     return (
-      <div className={`overflow-hidden rounded-xl shadow-lg ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white'}`}>
-        {/* Header with subtle gradient background */}
-        <div className={`px-6 py-4 ${darkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
-          <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-            Alert Management Center
-          </h3>
-          <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            {alertStats.total} issues requiring your attention
-          </p>
-        </div>
-
-        {/* Alert Type Selector Buttons - Only show active alert types */}
-        <div className="p-4 overflow-x-auto">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-4 gap-2">
-            {activeAlertTypes.map(type => (
-              <button
-                key={type}
-                onClick={() => setSelectedType(type)}
-                className={`group relative flex flex-col items-center p-3 rounded-lg transition-all duration-200 transform hover:scale-105 ${
-                  selectedType === type
-                    ? darkMode 
-                      ? 'bg-gradient-to-br from-red-600 to-red-700 text-white shadow-md' 
-                      : 'bg-gradient-to-br from-red-500 to-red-600 text-white shadow-md'
-                    : darkMode
-                      ? 'bg-gray-700 hover:bg-gray-600'
-                      : 'bg-gray-100 hover:bg-gray-200'
-                }`}
-              >
-                <div className={`flex items-center justify-center w-10 h-10 mb-2 rounded-full ${
-                  selectedType === type
-                    ? 'bg-red-400 bg-opacity-30'
-                    : darkMode
-                      ? 'bg-gray-600'
-                      : 'bg-white shadow-sm'
-                }`}>
-                  {alertIcons[type]}
-                </div>
-                <span className="text-center text-sm font-medium">{alertLabels[type]}</span>
-                <span className={`text-lg font-bold mt-1 ${selectedType === type ? 'text-white' : ''}`}>
-                  {alertStats.categories[type]}
-                </span>
-                {selectedType === type && (
-                  <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-8 h-1 rounded-t-full bg-red-400"></div>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-        
-        {/* Show message when no active alerts */}
-        {activeAlertTypes.length === 0 && (
-          <div className="p-8 text-center">
-            <CheckCircle className="mx-auto w-12 h-12 text-green-500 mb-4" />
-            <h3 className="text-xl font-medium mb-2">All Clear!</h3>
-            <p className={`${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              No bookings require attention at this time.
-            </p>
-          </div>
-        )}
-        
-        {/* Divider - only show if we have active alerts */}
-        {activeAlertTypes.length > 0 && (
-          <div className={`h-px mx-6 ${darkMode ? 'bg-gray-700' : 'bg-gray-200'}`}></div>
-        )}
-        
-        {/* Alert List */}
-        {selectedType && alertsByType[selectedType] && alertsByType[selectedType].length > 0 && (
-          <div className="p-6">
-            <div className="flex items-center mb-4">
-              <div className={`p-2 mr-3 rounded-full ${
-                darkMode ? 'bg-red-500 bg-opacity-20' : 'bg-red-100'
-              }`}>
-                {alertIcons[selectedType]}
-              </div>
-              <h3 className="text-lg font-medium">
-                {alertLabels[selectedType]} 
-                <span className={`ml-2 text-sm font-normal ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  ({alertsByType[selectedType].length} issues)
-                </span>
-              </h3>
-            </div>
-            
-            <div className="space-y-3 max-h-72 overflow-y-auto">
-              {alertsByType[selectedType].map((alert, index) => (
-                <AlertItem 
-                  key={index}
-                  id={alert.id}
-                  bookingId={alert.bookingId}
-                  alertType={alert.alertType}
-                  customer={alert.customer}
-                  destination={alert.destination}
-                  date={alert.date}
-                  orderChannel={alert.orderChannel}
-                  pax={alert.pax}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${channelMap[channel] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}`}>
+        {channel}
+      </span>
     );
   };
-
-  // Booking Chart Component
-  const BookingChartSection = () => {
-    // Filter data based on selected channel
-    const filteredData = bookingStats.map(item => ({
-      ...item,
-      value: selectedChannel === 'all' ? item.all : item[selectedChannel]
-    }));
-
-    // For weekly view, group the data accordingly
-    const weeklyData = selectedTimeframe === 'week' 
-      ? Array.from({ length: 4 }, (_, weekIdx) => {
-          const weekStart = weekIdx * 7;
-          const weekEnd = weekStart + 6;
-          const weekData = bookingStats.slice(weekStart, weekEnd + 1);
-          
-          return {
-            week: `Week ${weekIdx + 1}`,
-            value: selectedChannel === 'all' 
-              ? weekData.reduce((sum, day) => sum + day.all, 0)
-              : weekData.reduce((sum, day) => sum + day[selectedChannel], 0)
-          };
-        })
-      : null;
-
-    const displayData = selectedTimeframe === 'day' ? filteredData : weeklyData;
-    const dataKey = selectedTimeframe === 'day' ? 'day' : 'week';
-
-    // Calculate total bookings and compare with previous period to show growth
-    const totalBookings = displayData.reduce((sum, item) => sum + item.value, 0);
-    // Simulate previous period data (this would come from API in real app)
-    const previousPeriodTotal = Math.floor(totalBookings * 0.9); // Assuming 10% growth
-    const growthPercentage = Math.round((totalBookings - previousPeriodTotal) / previousPeriodTotal * 100);
-
+  
+  // Get payment badge
+  const getPaymentBadge = (method) => {
+    const methodMap = {
+      'Debit/Credit Card': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100',
+      'Bank Transfer': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100',
+      'WISE': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-100',
+      'cash': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100',
+      'cc': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100'
+    };
+    
     return (
-      <div className={`rounded-xl shadow-lg overflow-hidden ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white'}`}>
-        <div className={`px-6 py-4 ${darkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
-          <div className="flex justify-between items-center">
-            <div>
-              <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                Booking Statistics
-              </h3>
-              <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                {selectedTimeframe === 'day' ? 'Daily' : 'Weekly'} booking overview
-              </p>
-            </div>
-            <div className="flex space-x-2">
-              <button 
-                onClick={() => setSelectedTimeframe('day')}
-                className={`px-3 py-1 text-xs rounded-full ${
-                  selectedTimeframe === 'day'
-                    ? darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
-                    : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
-                }`}
-              >
-                Daily
-              </button>
-              <button 
-                onClick={() => setSelectedTimeframe('week')}
-                className={`px-3 py-1 text-xs rounded-full ${
-                  selectedTimeframe === 'week'
-                    ? darkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
-                    : darkMode ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-600'
-                }`}
-              >
-                Weekly
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-4">
-          {/* Channel Filter Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
-            <div 
-              onClick={() => setSelectedChannel('all')}
-              className={`p-4 rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                selectedChannel === 'all'
-                  ? darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-200'
-                  : darkMode ? 'bg-gray-700' : 'bg-gray-50'
-              } border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}
-            >
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>All Channels</p>
-                  <h4 className="text-2xl font-bold">{totalBookings}</h4>
-                </div>
-                <div className={`p-3 rounded-full ${darkMode ? 'bg-gray-600' : 'bg-white'}`}>
-                  <BarChart4 className={`w-5 h-5 ${darkMode ? 'text-blue-400' : 'text-blue-500'}`} />
-                </div>
-              </div>
-              <div className={`flex items-center mt-2 text-sm ${growthPercentage >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {growthPercentage >= 0 ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
-                <span>{Math.abs(growthPercentage)}% vs previous {selectedTimeframe}</span>
-              </div>
-            </div>
-
-            {channelStats.map(channel => {
-              // Calculate percentage change for each channel
-              const channelTotal = displayData.reduce((sum, item) => sum + (selectedTimeframe === 'day' ? item[channel.id] : item[channel.id]), 0);
-              
-              return (
-                <div 
-                  key={channel.id}
-                  onClick={() => setSelectedChannel(channel.id)}
-                  className={`p-4 rounded-lg cursor-pointer transition-all hover:shadow-md ${
-                    selectedChannel === channel.id
-                      ? darkMode ? 'bg-blue-900 border-blue-700' : 'bg-blue-50 border-blue-200'
-                      : darkMode ? 'bg-gray-700' : 'bg-gray-50'
-                  } border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-500'}`}>{channel.name}</p>
-                      <h4 className="text-2xl font-bold">{channelTotal}</h4>
-                    </div>
-                    <div className={`p-3 rounded-full ${darkMode ? 'bg-gray-600' : 'bg-white'}`} style={{ color: channel.color }}>
-                      <BarChart4 className="w-5 h-5" />
-                    </div>
-                  </div>
-                  <div className={`flex items-center mt-2 text-sm ${channel.increase >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {channel.increase >= 0 ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
-                    <span>{Math.abs(channel.increase)}% vs previous month</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Chart */}
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              {selectedTimeframe === 'day' ? (
-                <LineChart data={displayData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#555' : '#eee'} />
-                  <XAxis 
-                    dataKey={dataKey} 
-                    stroke={darkMode ? '#aaa' : '#666'}
-                    tick={{ fill: darkMode ? '#aaa' : '#666' }}
-                  />
-                  <YAxis stroke={darkMode ? '#aaa' : '#666'} tick={{ fill: darkMode ? '#aaa' : '#666' }} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: darkMode ? '#333' : '#fff',
-                      color: darkMode ? '#fff' : '#333',
-                      border: `1px solid ${darkMode ? '#555' : '#ddd'}`
-                    }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="value" 
-                    stroke={selectedChannel === 'all' ? '#3b82f6' : 
-                            selectedChannel === 'jvto' ? '#4287f5' :
-                            selectedChannel === 'klook' ? '#f54242' : '#42f563'} 
-                    strokeWidth={2} 
-                    dot={{ r: 4 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              ) : (
-                <BarChart data={displayData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#555' : '#eee'} />
-                  <XAxis 
-                    dataKey={dataKey}
-                    stroke={darkMode ? '#aaa' : '#666'}
-                    tick={{ fill: darkMode ? '#aaa' : '#666' }}
-                  />
-                  <YAxis stroke={darkMode ? '#aaa' : '#666'} tick={{ fill: darkMode ? '#aaa' : '#666' }} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: darkMode ? '#333' : '#fff',
-                      color: darkMode ? '#fff' : '#333',
-                      border: `1px solid ${darkMode ? '#555' : '#ddd'}`
-                    }}
-                  />
-                  <Bar 
-                    dataKey="value" 
-                    fill={selectedChannel === 'all' ? '#3b82f6' : 
-                        selectedChannel === 'jvto' ? '#4287f5' :
-                        selectedChannel === 'klook' ? '#f54242' : '#42f563'} 
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              )}
-            </ResponsiveContainer>
-          </div>
-        </div>
-      </div>
+      <span className={`px-2 py-1 rounded-full text-xs font-medium ${methodMap[method] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'}`}>
+        {method}
+      </span>
     );
   };
-
-  // Upcoming Schedule Component
-  const UpcomingScheduleSection = () => {
-    return (
-      <div className={`rounded-xl shadow-lg overflow-hidden ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white'}`}>
-        <div className={`px-6 py-4 ${darkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
-          <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-            Upcoming Schedules
-          </h3>
-          <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            Next 7 days departure
-          </p>
-        </div>
-        
-        <div className="p-4">
-          <div className="space-y-3 max-h-80 overflow-y-auto">
-            {upcomingSchedules.map(schedule => (
-              <div 
-                key={schedule.id} 
-                className={`p-4 rounded-lg border ${
-                  darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
-                } transition-all hover:shadow-md`}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-medium">{schedule.user}</h4>
-                    <div className={`flex items-center text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      <Calendar className="w-4 h-4 mr-1" />
-                      <span>{schedule.date}</span>
-                      <span className="mx-2 w-1 h-1 rounded-full bg-gray-400"></span>
-                      <span>{schedule.package}</span>
-                      <span className="mx-2 w-1 h-1 rounded-full bg-gray-400"></span>
-                      <span className={`inline-block px-2 py-1 text-xs font-medium rounded-full 
-                        ${schedule.order_channel === 'JVTO' ? 'bg-blue-100 text-blue-800' :
-                          schedule.order_channel === 'TWT' ? 'bg-yellow-100 text-yellow-800' :
-                          schedule.order_channel === 'KLOOK' ? 'bg-green-100 text-green-800' :
-                          'bg-gray-100 text-gray-800'}`}
-                      >
-                      {schedule.order_channel}-{schedule.id}
-                      </span>
-                    </div>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-xs ${
-                    darkMode ? 'bg-blue-900 text-blue-200' : 'bg-blue-100 text-blue-800'
-                  }`}>
-                    {schedule.total_pax} pax
-                  </div>
-                </div>
-                <div className="mt-2 pt-2 border-t border-dashed flex justify-between items-center">
-                  <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    <span>
-                      Crews:
-                      <span className="ml-1">
-                      {schedule.crews.map((data,index) => (
-                        <>
-                          {data.name}{data.is_ijen === '1' ? ' (Ijen)' : ''}
-                          {(index+1)!==schedule.crews.length ? ', ' : ''}
-                        </>
-                      ))}  
-                      </span>
-                    </span> 
-                    <span className="font-medium ml-1"></span>
-                  </div>
-                  <Link href={`/bookings/details/${schedule.id}`} className={`text-sm ${darkMode ? 'text-blue-400' : 'text-blue-600'} font-medium`}>
-                    View Details
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+  
+  // Format date
+  const formatDate = (dateString) => {
+    const options = { day: 'numeric', month: 'short', year: 'numeric' };
+    return new Date(dateString).toLocaleDateString('en-GB', options);
   };
-
-  // Top Packages Component
-  const TopPackagesSection = () => {
-    return (
-      <div className={`rounded-xl shadow-lg overflow-hidden ${darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white'}`}>
-        <div className={`px-6 py-4 ${darkMode ? 'bg-gradient-to-r from-gray-800 to-gray-700' : 'bg-gradient-to-r from-blue-50 to-indigo-50'}`}>
-          <h3 className={`text-lg font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-            Top Selling Packages
-          </h3>
-          <p className={`text-sm ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-            Best performers this month
-          </p>
-        </div>
-        
-        <div className="p-4">
-          <div className="space-y-4 max-h-80 overflow-y-auto">
-            {topPackages.map((pkg, index) => (
-              <div 
-                key={pkg.id} 
-                className={`p-4 rounded-lg border ${
-                  darkMode ? 'bg-gray-700 border-gray-600' : 'bg-white border-gray-200'
-                } transition-all hover:shadow-md`}
-              >
-                <div className="flex items-center">
-                  <div className={`flex items-center justify-center w-10 h-10 mr-4 rounded-full ${
-                    index === 0 
-                      ? 'bg-yellow-100 text-yellow-600' 
-                      : index === 1 
-                        ? 'bg-gray-100 text-gray-600' 
-                        : 'bg-amber-100 text-amber-600'
-                  }`}>
-                    {index + 1}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-medium">{pkg.name}</h4>
-                    <div className="flex items-center">
-                      <div className="flex items-center">
-                        <Star className="w-4 h-4 text-yellow-400" fill="currentColor" />
-                        <span className="ml-1 text-sm">{pkg.rating}</span>
-                      </div>
-                      <span className="mx-2 w-1 h-1 rounded-full bg-gray-400"></span>
-                      <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{pkg.sales} sold</span>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className={`font-medium ${darkMode ? 'text-green-400' : 'text-green-600'}`}>
-                      {new Intl.NumberFormat('id-ID', {
-                        style: 'currency',
-                        currency: 'IDR',
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                      }).format(pkg.revenue)}
-                    </div>
-                    <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Revenue
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 text-center">
-            <button 
-              className={`px-4 py-2 rounded-lg font-medium transition-all hover:shadow-md ${
-                darkMode 
-                  ? 'bg-gray-700 text-gray-200 hover:bg-gray-600'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              View All Packages
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Quick Stats Component
-  const QuickStatsSection = () => {
-    const stats = [
-      {
-        title: 'Total Bookings',
-        value: '1,358',
-        icon: <BarChart4 className="w-5 h-5" />,
-        change: '+12%',
-        positive: true
-      },
-      {
-        title: 'Monthly Revenue',
-        value: 'Rp 875.4M',
-        icon: <TrendingUp className="w-5 h-5" />,
-        change: '+8%',
-        positive: true
-      },
-      {
-        title: 'Active Tours',
-        value: '42',
-        icon: <MapPin className="w-5 h-5" />,
-        change: '-5%',
-        positive: false
-      },
-      // {
-      //   title: 'Issues',
-      //   value: alertStats.total,
-      //   icon: <Star className="w-5 h-5" fill="currentColor" />,
-      //   change: '+0.2',
-      //   positive: true
-      // }
-    ];
-
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
-          <div 
-            key={index}
-            className={`p-4 rounded-xl shadow-md ${
-              darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white'
-            }`}
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>{stat.title}</p>
-                <h3 className={`text-2xl font-bold mt-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{stat.value}</h3>
-              </div>
-              <div className={`p-3 rounded-full ${
-                darkMode ? 'bg-gray-700 text-blue-400' : 'bg-blue-50 text-blue-500'
-              }`}>
-                {stat.icon}
-              </div>
-            </div>
-            <div className={`mt-2 flex items-center text-sm ${
-              stat.positive ? 'text-green-500' : 'text-red-500'
-            }`}>
-              {stat.positive ? <ArrowUp className="w-3 h-3 mr-1" /> : <ArrowDown className="w-3 h-3 mr-1" />}
-              <span>{stat.change} vs last month</span>
-            </div>
-          </div>
-        ))}
-          <div 
-            className={`p-4 rounded-xl shadow-md ${
-              darkMode ? 'bg-gray-800 border border-gray-700' : 'bg-white'
-            }`}
-          >
-            <div className="flex justify-between items-start">
-              <div>
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Current Issues</p>
-                <h3 className={`text-2xl font-bold mt-1 ${darkMode ? 'text-white' : 'text-gray-800'}`}>{alertStats.total}</h3>
-              </div>
-              <div className={`p-3 rounded-full ${
-                darkMode ? 'bg-gray-700 text-red-400' : 'bg-red-50 text-red-500'
-              }`}>
-                <TriangleAlert/>
-              </div>
-            </div>
-            <div className={`mt-2 flex items-center text-sm text-red-500`}>
-              <ShieldAlert className="w-3 h-3 mr-1"/>              
-              <span> Need to fix</span>
-            </div>
-          </div>
-      </div>
-    );
-  };
-
+  
   return (
     <Main>
-      <div className={`transition-colors duration-300 ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-gray-900'}`}>
-        {/* Header - Added back */}
-        <header className={`py-4 px-6 flex justify-between items-center shadow-md ${
-          darkMode 
-            ? 'bg-gray-800 border-b border-gray-700' 
-            : 'bg-white border-b border-gray-100'
-        }`}>
-          <div className="flex items-center">
-            <h1 className="text-xl font-bold">Dashboard</h1>
+      <div className="p-4 sm:p-6 space-y-6">
+        {/* Dashboard Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Booking Dashboard
+          </h1>
+          <div>
+            <select name="" id="" className="border border-gray-300 dark:border-gray-700 rounded-lg py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+                <option value="">April 2025</option>
+            </select>
           </div>
-        </header>
+        </div>
+        
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+            <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Total Bookings</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{summary.total_booking} Trips ({summary.total_booking_pax} Pax)</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">All JVTO, KLOOK & TWT bookings this month</p>
+            </div>
+            <div className="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-full">
+                <Package className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+            </div>
+            </div>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+            <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Completed</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{summary.complete_booking}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Trips that have been completed</p>
+            </div>
+            <div className="bg-emerald-100 dark:bg-emerald-900/50 p-3 rounded-full">
+                <CheckCircle className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            </div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+            <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400 flex items-center">
+                Active Bookings
+                <span className="ml-2 relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
+                </p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{summary.active_booking}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Trips currently in progress</p>
+            </div>
+            <div className="bg-green-100 dark:bg-green-900/50 p-3 rounded-full">
+                <Users className="h-6 w-6 text-green-600 dark:text-green-400" />
+            </div>
+            </div>
+        </div>
+        
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+            <div>
+                <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Upcoming</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">{summary.upcoming_booking}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Future trips scheduled this month</p>
+            </div>
+            <div className="bg-purple-100 dark:bg-purple-900/50 p-3 rounded-full">
+                <Clock className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+            </div>
+            </div>
+        </div>
+        </div>        
+        {/* Order Channel Stats */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-4 border border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Booking by Order Channel</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="flex items-center p-4 bg-blue-100 dark:bg-blue-900/20 rounded-lg relative">
+                <div className="bg-blue-200 dark:bg-blue-800 p-2 rounded-full mr-4">
+                    <img src="https://javavolcano-touroperator.com/assets/img/download.png" className="h-10" alt="" srcset="" />
+                </div>
+                <div>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">JVTO</p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-white">{summaryOrderChannel.jvto} Trips ({summaryOrderChannel.jvto_pax} Pax)</p>
+                </div>
+                <Link href={dashboardData.orderChannelLinks.jvto} className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-700 p-2 rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+                    <ChevronRight className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </Link>
+                </div>
+                
+                <div className="flex items-center p-4 bg-green-100 dark:bg-green-900/20 rounded-lg relative">
+                <div className="bg-green-200 dark:bg-green-800 p-2 rounded-full mr-4">
+                    <img src="https://play-lh.googleusercontent.com/M4QPJdAObEXZu15ZOS4wfn_MZD4N2kWggqCwQERwwN6cHZ6ROrp1LNwol07KssZ_rg" className="h-10 rounded-full" alt="" srcset="" />
+                </div>
+                <div>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">KLOOK</p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-white">{summaryOrderChannel.klook} Trips ({summaryOrderChannel.klook_pax} Pax)</p>
+                </div>
+                <Link href={dashboardData.orderChannelLinks.klook} className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-700 p-2 rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-400">
+                    <ChevronRight className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </Link>
+                </div>
+                
+                <div className="flex items-center p-4 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg relative">
+                <div className="bg-yellow-200 dark:bg-yellow-800 p-2 rounded-full mr-4">
+                    <img src="https://static.wixstatic.com/media/096aa7_9a15b0951a7441caa3d8323cc6b8da8b~mv2.png/v1/fit/w_2500,h_1330,al_c/096aa7_9a15b0951a7441caa3d8323cc6b8da8b~mv2.png" className="h-10 w-10 object-cover rounded-full" alt="" srcset="" />
+                </div>
+                <div>
+                    <p className="text-sm font-medium text-gray-500 dark:text-gray-400">TWT</p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-white">{summaryOrderChannel.twt} Trips ({summaryOrderChannel.twt_pax} Pax)</p>
+                </div>
+                <Link href={dashboardData.orderChannelLinks.twt} className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white dark:bg-gray-700 p-2 rounded-full shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-yellow-500 dark:focus:ring-yellow-400">
+                    <ChevronRight className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+                </Link>
+                </div>
+            </div>
+        </div>        
+        {/* Two Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Upcoming Bookings - Takes 2/3 of the space */}
+          <div className="lg:col-span-2 bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Trip Schedule</h2>
+                <button 
+                onClick={() => setUpcomingExpanded(!upcomingExpanded)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                >
+                {upcomingExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                </button>
+            </div>
+            
+            {upcomingExpanded && (
+                <>
+                {/* Tabs */}
+                <div className="flex border-b border-gray-200 dark:border-gray-700">
+                    <button 
+                    onClick={() => setActiveTab('active')}
+                    className={`px-4 py-2 text-sm font-medium ${
+                        activeTab === 'active' 
+                        ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400' 
+                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                    }`}
+                    >
+                    Active Trips <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                        {upcoming.filter(booking => booking.is_active).length}
+                    </span>
+                    </button>
+                    <button 
+                    onClick={() => setActiveTab('upcoming')}
+                    className={`px-4 py-2 text-sm font-medium ${
+                        activeTab === 'upcoming' 
+                        ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400 dark:border-blue-400' 
+                        : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+                    }`}
+                    >
+                    Upcoming Trips <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                        {upcoming.filter(booking => !booking.is_active).length}
+                    </span>
+                    </button>
+                </div>
 
-        {/* Main Content */}
-        <main className="px-4 py-6">
-          {/* Quick Stats Section */}
-          <div className="mb-6">
-            <QuickStatsSection />
-          </div>
+                {/* Table Content */}
+                <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+                    <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-900/50">
+                        <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Guest & PAx</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">CHANNEL</th>
+                        {activeTab == 'active' ? (
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Itinerary Today</th>
+                        ) : (
+                            <>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Balance</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Payment Method</th>
+                            </>
+                        )}
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Crew</th>
+                        </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        {upcoming
+                        .filter(booking => activeTab === 'active' ? booking.is_active : !booking.is_active)
+                        .map((booking) => {
+                            const isToday = new Date(booking.date).toDateString() === new Date().toDateString();
+                            return (
+                            <tr onClick={() => {
+                                router.visit(`/bookings/details/${booking.id}`, {
+                                    method: 'get',
+                                    data: { booking_id: booking.id },
+                                    preserveState: true,
+                                    preserveScroll: true,
+                                });
+                            }} key={booking.id} className={`cursor-pointer transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/50`}>
+                                <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                                <div className="flex flex-col">
+                                    <span className="font-bold">{booking.date}</span>
+                                    <span>{booking.date_day}</span>
+                                </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex flex-col">
+                                        <span className="font-medium mb-1 text-sm text-gray-900 dark:text-white">{booking.user}</span>
+                                        <span className="text-xs">{booking.package} / <span>{booking.total_pax} PAX</span></span>
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4">
+                                <span className="text-xs mb-2 text-gray-500 dark:text-gray-400">{getChannelBadge(booking.order_channel)}</span>
+                                </td>
+                                {activeTab == 'active' ? (
+                                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 max-w-48">{booking.todayItinerary}</td>
+                                ) : (
+                                    <>
+                                    <td className="px-6 py-4">
+                                        {booking.balance != '-' ? formatCurrency(booking.balance) : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
+                                        {booking.payment_method == 'cc' ? (
+                                            <>
+                                            {booking.outstanding_payment_link && booking.outstanding_payment_link != '-' ? (
+                                                <a href={booking.outstanding_payment_link} target="_blank" rel="noopener noreferrer">
+                                                    <img src="/assets/images/icon/xendit.png" className="w-24" alt="" srcset="" />
+                                                </a>
+                                            ) : (
+                                                <img src="/assets/images/icon/xendit.png" className="w-24" alt="" srcset="" />
+                                            )}
+                                            </>
+                                        ) : booking.payment_method == 'wise' ? (
+                                            <img src="/assets/images/icon/wise.png" className="w-24" alt="" srcset="" />
+                                        ) : booking.payment_method == 'cash' ? (
+                                            <img src="/assets/images/icon/cash.png" className="w-24" alt="" srcset="" />
+                                        ) : booking.payment_method == 'edc' ? (
+                                            <img src="/assets/images/icon/edc.png" className="w-24" alt="" srcset="" />
+                                        ) : booking.payment_method}
+                                    </td>
+                                    </>
+                                )}
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                {booking.crews.length > 0 ? (
+                                    <div className="flex gap-1 whitespace-nowrap">
+                                    {booking.crews.map((crew, index) => (
+                                        <div className="text-center" key={index}>
+                                            <div className='rounded-full'>
+                                                <img src={crew.photo} className="h-10 rounded-full bg-gray-100 w-10 object-cover" alt="" srcset="" />
+                                            </div>
+                                            <span className="text-xs font-medium text-gray-900 dark:text-white">{crew.name}</span>
+                                        </div>
+                                    ))}
+                                    </div>
+                                ) : (
+                                    <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200">
+                                    No crew
+                                    </span>
+                                )}
+                                </td>
+                            </tr>
+                            );
+                        })}
+                    </tbody>
+                    </table>
+                    
+                    {/* Empty state */}
+                    {upcoming.filter(booking => activeTab === 'active' ? booking.is_active : !booking.is_active).length === 0 && (
+                    <div className="p-8 text-center">
+                        <p className="text-gray-500 dark:text-gray-400">
+                        {activeTab === 'active' ? 'No active trips at the moment.' : 'No upcoming trips in the next 7 days.'}
+                        </p>
+                    </div>
+                    )}
+                </div>
+                </>
+            )}
+        </div>          
+          {/* Recent Payments - Takes 1/3 of the space */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Payments</h2>
+                <button 
+                onClick={() => setPaymentExpanded(!paymentExpanded)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                >
+                {paymentExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                </button>
+            </div>
+            
+            <div className="overflow-hidden max-h-[500px] overflow-y-auto">
+                <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+                {paymentHistory.slice(0, paymentExpanded ? paymentHistory.length : 5).map((payment) => {
+                    // Add state to track expanded state for this payment
+                    const isExpanded = expandedPayments.includes(payment.id);
+                    
+                    return (
+                    <li key={payment.id} className="transition-colors">
+                        <div 
+                        className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                        onClick={() => togglePaymentDetail(payment.id)}
+                        >
+                        <div className="flex justify-between items-start mb-1">
+                            <span className="font-medium text-gray-900 dark:text-white">{payment.user}</span>
+                            {payment.payment_method_id == 3 ? (
+                            <img src="/assets/images/icon/xendit.png" className="w-18" alt="" srcSet="" />
+                            ) : payment.payment_method_id == 5 ? (
+                            <img src="/assets/images/icon/wise.png" className="w-18" alt="" srcSet="" />
+                            ) : payment.payment_method_id == 1 ? (
+                            <img src="/assets/images/icon/cash.png" className="w-18" alt="" srcSet="" />
+                            ) : payment.payment_method_id == 4 ? (
+                            <img src="/assets/images/icon/edc.png" className="w-18" alt="" srcSet="" />
+                            ) : payment.payment_method_id == 6 ? (
+                            <img src="/assets/images/icon/bank-transfer.png" className="w-20" alt="" srcSet="" />
+                            ) : payment.payment_method}
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-sm text-gray-700 dark:text-gray-300">{payment.created_at}</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">{formatCurrency(payment.nominal)}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">{payment.description}</span>
+                            <ChevronDown className={`h-4 w-4 ml-2 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                            </div>
+                            {payment.reference && payment.reference != '' ? (
+                            <a href={payment.reference} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline dark:text-blue-400">
+                                {payment.reference.substr(0,30)}{payment.reference.length > 30 && '...'}
+                            </a>
+                            ) : '-'}
+                        </div>
+                        </div>
+                        
+                        {/* Collapsible detail section */}
+                        {isExpanded && (
+                        <div className="px-4 py-4 bg-gray-50 dark:bg-gray-700/30 border-t border-gray-100 dark:border-gray-700">
+                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div>
+                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Booking ID</p>
+                                    <Link href={`/bookings/details/${payment.booking_id}`} className="text-blue-900 hover:underline dark:text-white">#{payment.booking_id}</Link>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Receipt No</p>
+                                    <button onClick={() => {
+                                        window.open("https://javavolcano-touroperator.com/backoffice/invoice/view-receipt/"+payment.booking_id+"/partial/"+payment.id,'_blank')
+                                    }} className="text-blue-900 hover:underline dark:text-white">{payment.receipt}</button>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Invoice No</p>
+                                    <button onClick={() => {
+                                        window.open('https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/'+payment.booking_id,'_blank')
+                                        if(payment.is_add_on){
+                                            window.open('https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/'+payment.booking_id+"?addon=true",'_blank')
+                                        }
+                                    }} className="text-blue-900 hover:underline dark:text-white">{payment.booking_code}</button>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Trip Date</p>
+                                    <p className="text-gray-900 dark:text-white">{formatDate(payment.trip_date)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Participant</p>
+                                    <p className="text-gray-900 dark:text-white">{payment.pax} PAX</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Grand Total</p>
+                                    <p className="text-gray-900 dark:text-white">{formatCurrency(payment.grand_total)}</p>
+                                </div>
+                            </div>
+                            <div className="mt-3">
+                                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Package</p>
+                                {
+                                    payment.package_url ? (
+                                        <a href={payment.package_url} target="_blank" className="text-blue-900 hover:underline text-sm dark:text-white">{payment.package}</a>
+                                    ) : (
+                                        <p className="text-gray-900 text-sm dark:text-white">{payment.package}</p>
+                                    )
+                                }
+                            </div>
 
-          {/* Booking Chart Section */}
-          <div className="mb-6">
-            <BookingChartSection />
+                        </div>
+                        )}
+                    </li>
+                    );
+                })}
+                </ul>
+                
+                {!paymentExpanded && paymentHistory.length > 5 && (
+                <div className="p-3 text-center border-t border-gray-200 dark:border-gray-700">
+                    <button 
+                    onClick={() => setPaymentExpanded(true)}
+                    className="text-blue-600 dark:text-blue-400 text-sm font-medium hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                    >
+                    View all payments
+                    </button>
+                </div>
+                )}
+            </div>
+        </div>
+        </div>
+        
+        {/* Alerts Section */}
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
+              Alerts & Warnings
+            </h2>
           </div>
           
-          {/* Two Column Layout for Alerts, Schedule, and Top Packages */}
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <div className="lg:col-span-3 space-y-6">
-              <UnifiedAlertDashboard />
+          <div className="grid grid-cols-1 md:grid-cols-8 divide-y md:divide-y-0 md:divide-x divide-gray-200 dark:divide-gray-700">
+            <div className="md:col-span-2 p-4">
+              <nav className="flex flex-col space-y-1">
+                {Object.entries(alert).map(([key, items]) => {
+                  const alertCount = items.length;
+                  const isActive = selectedAlert === key;
+                  
+                  // Map alert types to icons
+                  const alertIcons = {
+                    no_pickup: <MapPin className="h-4 w-4" />,
+                    no_drop: <MapPin className="h-4 w-4" />,
+                    no_car: <Car className="h-4 w-4" />,
+                    no_crew: <UserCheck className="h-4 w-4" />,
+                    no_payment_method: <CardIcon className="h-4 w-4" />,
+                    no_hotel: <Hotel className="h-4 w-4" />,
+                    no_tshirt: <Shirt className="h-4 w-4" />,
+                    no_trip_media: <Camera className="h-4 w-4" />
+                  };
+                  
+                  // Format alert name
+                  const formatAlertName = (name) => {
+                    return name.replace('no_', '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                  };
+                  
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedAlert(key)}
+                      className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm ${
+                        isActive 
+                          ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-medium' 
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <span className={`mr-3 ${isActive ? 'text-blue-500 dark:text-blue-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                          {alertIcons[key]}
+                        </span>
+                        <span>{formatAlertName(key)}</span>
+                      </div>
+                      {alertCount > 0 && (
+                        <span className={`px-2 py-1 rounded-full text-xs ${
+                          isActive 
+                            ? 'bg-blue-200 text-blue-800 dark:bg-blue-800 dark:text-blue-200' 
+                            : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                        }`}>
+                          {alertCount}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </nav>
             </div>
-            <div className="lg:col-span-2 space-y-6">
-              <UpcomingScheduleSection />
-              <TopPackagesSection />
+            
+            <div className="md:col-span-6 p-4">
+              <h3 className="text-md font-medium text-gray-900 dark:text-white mb-4">
+                {selectedAlert && alert[selectedAlert].length > 0 
+                  ? `${alert[selectedAlert].length} bookings with missing ${selectedAlert.replace('no_', '').replace(/_/g, ' ')}`
+                  : `No issues with ${selectedAlert.replace('no_', '').replace(/_/g, ' ')}`}
+              </h3>
+              
+              {alert[selectedAlert].length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead className="bg-gray-50 dark:bg-gray-900/50">
+                      <tr>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">ID</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Guest</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Package</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                        <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Pax</th>
+                        <th scope="col" className="px-3 py-2 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                      {alert[selectedAlert].map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                          <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">#{item.id}</td>
+                          <td className="px-3 py-2 text-sm font-medium text-gray-900 dark:text-white">{item.name}</td>
+                          <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">{item.package_duration}D {item.package_duration-1}N</td>
+                          <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">{formatDate(item.travel_date_start)}</td>
+                          <td className="px-3 py-2 text-sm text-gray-700 dark:text-gray-300">{item.total_pax}</td>
+                          <td className="px-3 py-2 text-center">
+                            <button className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                              <ChevronRight className="h-5 w-5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+                  <p className="text-gray-600 dark:text-gray-400 text-center">
+                    All bookings have the required {selectedAlert.replace('no_', '').replace(/_/g, ' ')} information.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
-        </main>
+        </div>
       </div>
     </Main>
   );
-};
-
-export default TravelDashboard;
+}

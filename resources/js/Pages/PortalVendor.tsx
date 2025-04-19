@@ -161,6 +161,30 @@ export default function PortalVendor(props) {
                                 </div>
                             </div>
                         </div>
+
+                        {/* Portal Kesehatan */}
+                        <div className="col-span-1 bg-orange-100 rounded-lg shadow-md border border-orange-200 overflow-hidden">
+                            <div className="p-6">
+                                <div className="flex items-center space-x-4">
+                                    <div className="bg-white p-2 rounded-full">
+                                        <ShoppingBag className="h-8 w-8 text-orange-600" />
+                                    </div>
+                                    <h2 className="text-xl font-semibold text-orange-800">Portal Medical Check Up</h2>
+                                </div>
+                                <p className="mt-3 text-orange-700">
+                                    Jadwal dan Rekap Pemeriksaan Kesehatan di Masing Masing Hotel 
+                                </p>
+                                <div className="mt-4 text-right">
+                                    <a
+                                        target="_blank" 
+                                        href="https://partner.javavolcano-touroperator.com/health-screening"
+                                        className="inline-block px-3 py-1 rounded-full bg-white text-orange-800 text-sm font-medium"
+                                    >
+                                        Kunjungi
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

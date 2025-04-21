@@ -1,16 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin from '@fullcalendar/interaction';
+import timeGridPlugin from '@fullcalendar/timegrid';
 import Main from '@/Layouts/Main';
 import { 
   Users, Calendar, CheckCircle, Clock, AlertTriangle, CreditCard, 
   Filter, Search, Package, DollarSign, TrendingUp, List, MoreHorizontal,
   Layers, MapPin, Car, UserCheck, CreditCard as CardIcon, Hotel, Shirt, Camera,
-  ChevronDown, ChevronUp, ChevronRight
+  ChevronDown, ChevronUp, ChevronRight,
+  X, Calendar as CalendarIcon
 } from 'lucide-react';
 import {Link,router} from '@inertiajs/react';
 
 export default function Dashboard({ dashboardData }) {
-  const { summaryOrderChannel, summary, paymentHistory, upcoming, alert } = dashboardData;
+  const { summaryOrderChannel, summary, paymentHistory, trips, alert } = dashboardData;
   const [activeTab, setActiveTab] = useState('active');
+  const [hoveredCrew, setHoveredCrew] = useState(null);
   // To track which payment details are expanded
     const [expandedPayments, setExpandedPayments] = useState([]);
 
@@ -82,6 +88,379 @@ export default function Dashboard({ dashboardData }) {
     const options = { day: 'numeric', month: 'short', year: 'numeric' };
     return new Date(dateString).toLocaleDateString('en-GB', options);
   };
+  const TripCalendar = ({ trips }) => {
+    const [selectedTrip, setSelectedTrip] = useState(null);
+    const [hoveredCrew, setHoveredCrew] = useState(null);
+    const calendarRef = useRef(null);
+    
+    // Channel-specific colors
+    const channelColors = {
+      'JVTO': {
+        background: '#DBEAFE', // blue-100
+        textColor: '#1E40AF', // blue-800
+        borderColor: '#93C5FD', // blue-300
+        darkBackground: 'rgba(30, 64, 175, 0.2)', // blue-800 with opacity
+        darkTextColor: '#BFDBFE' // blue-200
+      },
+      'KLOOK': {
+        background: '#DCFCE7', // green-100
+        textColor: '#166534', // green-800
+        borderColor: '#86EFAC', // green-300
+        darkBackground: 'rgba(22, 101, 52, 0.2)', // green-800 with opacity
+        darkTextColor: '#BBF7D0' // green-200
+      },
+      'TWT': {
+        background: '#FEF9C3', // yellow-100
+        textColor: '#854D0E', // yellow-800
+        borderColor: '#FDE047', // yellow-300
+        darkBackground: 'rgba(133, 77, 14, 0.2)', // yellow-800 with opacity
+        darkTextColor: '#FEF08A' // yellow-200
+      }
+    };
+    
+    // Status colors
+    const statusColors = {
+      'active': 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200',
+      'upcoming': 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200',
+      'complete': 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-200'
+    };
+
+    // Format currency
+    const formatCurrency = (amount) => {
+      return new Intl.NumberFormat('id-ID', {
+        style: 'currency',
+        currency: 'IDR',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(amount);
+    };
+    
+    // Transform trips data for FullCalendar
+    const events = trips.map(trip => {
+      const channel = trip.order_channel;
+      const colors = channelColors[channel];
+      const isActive = trip.status === 'active';
+      
+      // Get crew photos for the event content
+      const crewPhotos = trip.crews.slice(0, 2).map(crew => crew.photo);
+      
+      return {
+        id: trip.id.toString(),
+        title: trip.user,
+        start: trip.start_date,
+        end: new Date(new Date(trip.end_date).setDate(new Date(trip.end_date).getDate() + 1)).toISOString().split('T')[0], // End date is exclusive in FullCalendar
+        backgroundColor: document.documentElement.classList.contains('dark') ? colors.darkBackground : colors.background,
+        textColor: document.documentElement.classList.contains('dark') ? colors.darkTextColor : colors.textColor,
+        borderColor: colors.borderColor,
+        extendedProps: {
+          trip: trip,
+          crewPhotos: crewPhotos,
+          isActive: isActive
+        }
+      };
+    });
+    
+    // Handle dark mode changes
+    useEffect(() => {
+      const observer = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+          if (mutation.attributeName === 'class' && 
+              (document.documentElement.classList.contains('dark') || 
+              !document.documentElement.classList.contains('dark'))) {
+            // Refresh calendar to update colors
+            if (calendarRef.current) {
+              calendarRef.current.getApi().refetchEvents();
+            }
+          }
+        });
+      });
+      
+      observer.observe(document.documentElement, { attributes: true });
+      
+      return () => {
+        observer.disconnect();
+      };
+    }, []);
+    
+    // Custom event render to include crew photos
+    const renderEventContent = (eventInfo) => {
+      const { trip, crewPhotos, isActive } = eventInfo.event.extendedProps;
+      
+      return (
+        <div className="flex flex-col h-full overflow-hidden p-1">
+          <div className="text-xs font-medium truncate">{eventInfo.event.title}</div>
+          <div className="text-xs opacity-80">{trip.package} ({trip.total_pax} pax)</div>
+          {isActive && (
+            <div className="flex items-center mt-1">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse mr-1"></span>
+              <span className="text-xs">Active</span>
+            </div>
+          )}
+          {crewPhotos.length > 0 && (
+            <div className="flex mt-1 -space-x-2">
+              {crewPhotos.map((photo, i) => (
+                <img 
+                  key={i} 
+                  src={photo} 
+                  alt="Crew" 
+                  className="w-5 h-5 rounded-full border border-white dark:border-gray-800 object-cover"
+                />
+              ))}
+              {trip.crews.length > 2 && (
+                <div className="w-5 h-5 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs border border-white dark:border-gray-800">
+                  +{trip.crews.length - 2}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+    
+    // Handle event click
+    const handleEventClick = (info) => {
+      setSelectedTrip(info.event.extendedProps.trip);
+    };
+    
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <CalendarIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Trip Calendar</h2>
+          </div>
+          <div className="flex items-center space-x-3 text-xs">
+            <div className="flex items-center">
+              <div className="w-3 h-3 rounded-full" style={{backgroundColor: channelColors['JVTO'].borderColor}}></div>
+              <span className="ml-1 text-gray-600 dark:text-gray-400">JVTO</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 rounded-full" style={{backgroundColor: channelColors['KLOOK'].borderColor}}></div>
+              <span className="ml-1 text-gray-600 dark:text-gray-400">KLOOK</span>
+            </div>
+            <div className="flex items-center">
+              <div className="w-3 h-3 rounded-full" style={{backgroundColor: channelColors['TWT'].borderColor}}></div>
+              <span className="ml-1 text-gray-600 dark:text-gray-400">TWT</span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="p-4">
+          <FullCalendar
+            ref={calendarRef}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+            initialView="dayGridMonth"
+            events={events}
+            eventContent={renderEventContent}
+            eventClick={handleEventClick}
+            headerToolbar={{
+              left: 'prev,next today',
+              center: 'title',
+              right: 'dayGridMonth,timeGridWeek'
+            }}
+            height="auto"
+            aspectRatio={1.8}
+            dayMaxEvents={3}
+            moreLinkClick="popover"
+            eventTimeFormat={{
+              hour: 'numeric',
+              minute: '2-digit',
+              meridiem: 'short'
+            }}
+            firstDay={1}
+            nowIndicator={true}
+            eventClassNames="overflow-hidden rounded-md shadow-sm"
+            dayHeaderClassNames="text-xs font-medium text-gray-500 dark:text-gray-400"
+            dayHeaderFormat={{ weekday: 'short' }}
+            weekNumberClassNames="text-xs text-gray-400 dark:text-gray-500"
+            moreLinkClassNames="text-xs px-1 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-sm hover:bg-blue-100 dark:hover:bg-blue-800/30"
+          />
+        </div>
+        
+        {/* Trip Detail Modal */}
+        {selectedTrip && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" 
+            onClick={() => setSelectedTrip(null)}
+          >
+            <div 
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto" 
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Trip Details</h3>
+                <button 
+                  onClick={() => setSelectedTrip(null)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="p-4">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-4">
+                  <div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Booking ID</div>
+                    <div className="text-lg font-semibold text-gray-900 dark:text-white">#{selectedTrip.id}</div>
+                  </div>
+                  <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                    selectedTrip.order_channel === 'JVTO'
+                      ? 'bg-blue-200 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200'
+                      : selectedTrip.order_channel === 'KLOOK'
+                        ? 'bg-green-200 text-green-800 dark:bg-green-900/40 dark:text-green-200'
+                        : 'bg-yellow-200 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200'
+                  }`}>
+                    {selectedTrip.order_channel}
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Guest</div>
+                    <div className="text-gray-900 dark:text-white font-medium">{selectedTrip.user}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Package</div>
+                    <div className="text-gray-900 dark:text-white">{selectedTrip.package}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Trip Date</div>
+                    <div className="text-gray-900 dark:text-white">
+                      {selectedTrip.date}
+                      <div className="text-xs text-gray-500 dark:text-gray-400">{selectedTrip.date_day}</div>
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">Participants</div>
+                    <div className="text-gray-900 dark:text-white">{selectedTrip.total_pax} Pax</div>
+                  </div>
+                </div>
+                
+                {selectedTrip.status === 'active' && selectedTrip.todayItinerary && (
+                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Today's Itinerary (Day {selectedTrip.day_now})</div>
+                    <div className="text-gray-900 dark:text-white">{selectedTrip.todayItinerary}</div>
+                  </div>
+                )}
+                
+                {selectedTrip.balance !== '-' && selectedTrip.balance > 0 && (
+                  <div className="mb-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                    <div className="flex justify-between">
+                      <div>
+                        <div className="text-sm font-medium text-gray-700 dark:text-gray-300">Outstanding Balance</div>
+                        <div className="text-gray-900 dark:text-white font-medium">
+                          {formatCurrency(selectedTrip.balance)}
+                        </div>
+                      </div>
+                      {selectedTrip.outstanding_payment_link && selectedTrip.outstanding_payment_link !== '-' && (
+                        <a 
+                          href={selectedTrip.outstanding_payment_link} 
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-block px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors"
+                        >
+                          Payment Link
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                <div className="mb-2">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Crew Members</div>
+                  {selectedTrip.crews && selectedTrip.crews.length > 0 ? (
+                    <div className="flex flex-wrap gap-4">
+                      {selectedTrip.crews.map((crew, index) => (
+                        <div 
+                          key={index} 
+                          className="flex flex-col items-center relative"
+                          onMouseEnter={() => setHoveredCrew(crew)}
+                          onMouseLeave={() => setHoveredCrew(null)}
+                        >
+                          <div className="h-16 w-16 rounded-full overflow-hidden">
+                            <img 
+                              src={crew.photo} 
+                              alt={crew.name}
+                              className="h-full w-full object-cover"
+                            />
+                          </div>
+                          <div className="mt-1 text-center">
+                            <div className="font-medium text-gray-900 dark:text-white text-sm">{crew.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">{crew.type}</div>
+                          </div>
+                          
+                          {/* Hover profile card */}
+                          {hoveredCrew && hoveredCrew.id === crew.id && (
+                            <div className="absolute left-1/2 transform -translate-x-1/2 top-full mt-2 z-10 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3">
+                              <div className="flex items-start gap-3">
+                                <div className="h-16 w-16 rounded-full overflow-hidden flex-shrink-0">
+                                  <img 
+                                    src={crew.photo} 
+                                    alt={crew.name}
+                                    className="h-full w-full object-cover"
+                                  />
+                                </div>
+                                <div>
+                                  <div className="font-medium text-gray-900 dark:text-white">{crew.name}</div>
+                                  <div className="text-xs text-gray-500 dark:text-gray-400 capitalize flex items-center">
+                                    {crew.type}
+                                    {crew.is_ijen === "1" && (
+                                      <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                                        Ijen Specialist
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="mt-1 flex flex-wrap gap-1">
+                                    {crew.tags.split(',').map((tag, i) => (
+                                      <span 
+                                        key={i} 
+                                        className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                      >
+                                        {tag}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="mt-3 grid grid-cols-2 gap-2 text-center">
+                                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                                  <div className="text-xs text-gray-500 dark:text-gray-400">Escort Trips</div>
+                                  <div className="font-medium text-gray-900 dark:text-white">{crew.recap_this_month_escort}</div>
+                                </div>
+                                {crew.type === 'guide' && (
+                                  <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
+                                    <div className="text-xs text-gray-500 dark:text-gray-400">Ijen Trips</div>
+                                    <div className="font-medium text-gray-900 dark:text-white">{crew.recap_this_month_ijen}</div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500 dark:text-gray-400">No crew assigned yet.</div>
+                  )}
+                </div>
+                
+                <div className="mt-4 flex justify-end">
+                  <a 
+                    href={`/bookings/details/${selectedTrip.id}`}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                  >
+                    View Full Details
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   
   return (
     <Main>
@@ -200,7 +579,8 @@ export default function Dashboard({ dashboardData }) {
                 </Link>
                 </div>
             </div>
-        </div>        
+        </div>       
+        {TripCalendar({ trips })}
         {/* Two Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Upcoming Bookings - Takes 2/3 of the space */}
@@ -228,7 +608,7 @@ export default function Dashboard({ dashboardData }) {
                     }`}
                     >
                     Active Trips <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                        {upcoming.filter(booking => booking.is_active).length}
+                        {trips.filter(booking => booking.is_active && booking.status == 'active').length}
                     </span>
                     </button>
                     <button 
@@ -240,7 +620,7 @@ export default function Dashboard({ dashboardData }) {
                     }`}
                     >
                     Upcoming Trips <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                        {upcoming.filter(booking => !booking.is_active).length}
+                        {trips.filter(booking => !booking.is_active && booking.status == 'upcoming').length}
                     </span>
                     </button>
                 </div>
@@ -265,8 +645,8 @@ export default function Dashboard({ dashboardData }) {
                         </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        {upcoming
-                        .filter(booking => activeTab === 'active' ? booking.is_active : !booking.is_active)
+                        {trips
+                        .filter(booking => activeTab === 'active' ? booking.is_active && booking.status == 'active' : !booking.is_active && booking.status == 'upcoming')
                         .map((booking) => {
                             const isToday = new Date(booking.date).toDateString() === new Date().toDateString();
                             return (
@@ -322,22 +702,75 @@ export default function Dashboard({ dashboardData }) {
                                     </>
                                 )}
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                {booking.crews.length > 0 ? (
-                                    <div className="flex gap-1 whitespace-nowrap">
-                                    {booking.crews.map((crew, index) => (
-                                        <div className="text-center" key={index}>
-                                            <div className='rounded-full'>
-                                                <img src={crew.photo} className="h-10 rounded-full bg-gray-100 w-10 object-cover" alt="" srcset="" />
+                                  {booking.crews.length > 0 ? (
+                                    <div className="flex gap-2 whitespace-nowrap">
+                                      {booking.crews.map((crew, index) => (
+                                        <div 
+                                          className="text-center relative" 
+                                          key={index}
+                                          onMouseEnter={() => setHoveredCrew(crew)}
+                                          onMouseLeave={() => setHoveredCrew(null)}
+                                        >
+                                          <div className='rounded-full'>
+                                            <img 
+                                              src={crew.photo} 
+                                              className="h-10 rounded-full bg-gray-100 w-10 object-cover" 
+                                              alt={crew.name} 
+                                            />
+                                          </div>
+                                          <span className="text-xs font-medium text-gray-900 dark:text-white block mt-1">{crew.name}</span>
+                                          
+                                          {/* Crew profile popup on hover */}
+                                          {hoveredCrew && hoveredCrew.id === crew.id && (
+                                            <div className="absolute z-10 right-0  mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3">
+                                              <div className="flex items-start gap-3">
+                                                <div className="h-16 w-16 rounded-full overflow-hidden flex-shrink-0">
+                                                  <img 
+                                                    src={crew.photo} 
+                                                    alt={crew.name}
+                                                    className="h-full w-full object-cover"
+                                                  />
+                                                </div>
+                                                <div>
+                                                  <div className="font-medium text-gray-900 dark:text-white">{crew.name}</div>
+                                                  <div className="text-xs text-gray-500 dark:text-gray-400 capitalize flex items-center">
+                                                    {crew.type}
+                                                  </div>
+                                                  <div className="mt-1 flex flex-wrap gap-1">
+                                                    {crew.tags.split(',').map((tag, i) => (
+                                                      <span 
+                                                        key={i} 
+                                                        className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                                      >
+                                                        {tag}
+                                                      </span>
+                                                    ))}
+                                                  </div>
+                                                </div>
+                                              </div>
+                                              
+                                              <div className={`mt-3 grid ${crew.type == 'guide' ? 'grid-cols-2' : 'grid-cols-1'} gap-2 text-center`}>
+                                                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                                                  <div className="text-xs text-gray-500 dark:text-gray-400">Escort Trips</div>
+                                                  <div className="font-medium text-gray-900 dark:text-white">{crew.recap_this_month_escort}</div>
+                                                </div>
+                                                {crew.type === 'guide' && (
+                                                  <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">Ijen Trips</div>
+                                                    <div className="font-medium text-gray-900 dark:text-white">{crew.recap_this_month_ijen}</div>
+                                                  </div>
+                                                )}
+                                              </div>
                                             </div>
-                                            <span className="text-xs font-medium text-gray-900 dark:text-white">{crew.name}</span>
+                                          )}
                                         </div>
-                                    ))}
+                                      ))}
                                     </div>
-                                ) : (
+                                  ) : (
                                     <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200">
-                                    No crew
+                                      No crew
                                     </span>
-                                )}
+                                  )}
                                 </td>
                             </tr>
                             );
@@ -346,7 +779,7 @@ export default function Dashboard({ dashboardData }) {
                     </table>
                     
                     {/* Empty state */}
-                    {upcoming.filter(booking => activeTab === 'active' ? booking.is_active : !booking.is_active).length === 0 && (
+                    {trips.filter(booking => activeTab === 'active' ? booking.is_active && booking.status == 'active' : !booking.is_active && booking.status == 'upcoming').length === 0 && (
                     <div className="p-8 text-center">
                         <p className="text-gray-500 dark:text-gray-400">
                         {activeTab === 'active' ? 'No active trips at the moment.' : 'No upcoming trips in the next 7 days.'}

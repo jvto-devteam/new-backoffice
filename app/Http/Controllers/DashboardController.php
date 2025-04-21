@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BookGuideDriver;
 use App\Models\Booking;
 use App\Models\BookingItinerary;
 use App\Models\BookingPayment;
@@ -62,7 +63,7 @@ class DashboardController extends Controller
             ->orderBy('travel_date_start','asc')->get(),
         ];
 
-        $upcoming = Booking::select(
+        $trips = Booking::select(
             'bookings.id',
             'package_duration',
             'travel_date_start',
@@ -77,17 +78,13 @@ class DashboardController extends Controller
         )
         ->with('guideDriver.person')
         ->join('users', 'bookings.user_id', 'users.id')
-        ->where(function($query) use ($today, $todayPlus7) {
+        ->where(function($query) {
             // Upcoming trips (starting in the next 7 days)
-            $query->where(function($q) use ($today, $todayPlus7) {
-                $q->where('travel_date_start', '>=', $today)
+            $query->where(function($q) {
+                $q->where('travel_date_start', '>=', date('Y-m-01'))
                   ->where('travel_date_start', '<=', date('Y-m-t'));
-            })
-            // OR active trips (today is between start and end date)
-            ->orWhere(function($q) use ($today) {
-                $q->where('travel_date_start', '<=', $today)
-                  ->where('travel_date_end', '>=', $today);
             });
+            // OR active trips (today is between start and end date)
         })
         ->where('status', 'booked')
         ->orderBy('travel_date_start', 'asc')
@@ -110,7 +107,9 @@ class DashboardController extends Controller
             $isActive = $data->travel_date_start <= $today && $data->travel_date_end >= $today;
             $dayNow = null;
             $todayItinerary = null;
+            $status = "";
             if($isActive) {
+                $status = 'active';
                 $tanggal1 = new DateTime($data->travel_date_start);
                 $tanggal2 = new DateTime($today);
                 
@@ -119,6 +118,13 @@ class DashboardController extends Controller
     
                 $todayItinerary = BookingItinerary::where('booking_id',$data->id)->where('day',$dayNow)->first();
                 $todayItinerary = $todayItinerary?->itinerary; 
+            }
+
+            if($data->travel_date_end < $today){
+                $status = 'complete';
+            }
+            if($data->travel_date_start > $today){
+                $status = 'upcoming';
             }
             
             return [
@@ -137,13 +143,18 @@ class DashboardController extends Controller
                 'outstanding_payment_link' => $data->agent_id == 2 && $data->booking_category_id != 3 ? $data->outstanding_payment_link : '-',
                 'is_active' => $isActive,
                 'day_now' => $dayNow,
+                'status' => $status,
                 'todayItinerary'=> $todayItinerary,
                 'crews' => $data->guideDriver->map(function($crew){
                     return [
+                        'id' => $crew->person->id,
                         'name' => $crew->person->name,
                         'type' => $crew->type,
+                        'tags' => $crew->person->tags,
                         'photo' => $crew->person->photo ? 'https://javavolcano-touroperator.com/assets/img/guide/'.$crew->person->photo : 'https://javavolcano-touroperator.com/assets/img/guide/default.jpg',
                         'is_ijen' => $crew->guide_ijen,
+                        'recap_this_month_escort' => BookGuideDriver::where('guide_id',$crew->person->id)->where('start_date','like','%'.date('Y-m').'%')->where('guide_ijen','0')->count(), // for driver & guide
+                        'recap_this_month_ijen' => BookGuideDriver::where('guide_id',$crew->person->id)->where('start_date','like','%'.date('Y-m').'%')->where('guide_ijen','1')->count(), // for guide only
                     ];
                 })
             ];
@@ -192,7 +203,7 @@ class DashboardController extends Controller
             'summaryOrderChannel' => $summaryOrderChannel,
             'summary' => $summary,
             'paymentHistory' => $paymentHistory,
-            'upcoming' => $upcoming,
+            'trips' => $trips,
             'alert' => $alert,
             'orderChannelLinks' => [
                 'jvto' => '/booking-overview?channel=JVTO&filter_type=month&month='.date('Y-m'),

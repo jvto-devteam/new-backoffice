@@ -223,35 +223,47 @@ const renderEventContent = (eventInfo) => {
     
     return (
       <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <CalendarIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Trip Calendar</h2>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-3 text-xs">
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full" style={{backgroundColor: channelColors['JVTO'].borderColor}}></div>
-                <span className="ml-1 text-gray-600 dark:text-gray-400">JVTO</span>
+        <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+            {/* Title and collapse button */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Trip Calendar</h2>
               </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full" style={{backgroundColor: channelColors['KLOOK'].borderColor}}></div>
-                <span className="ml-1 text-gray-600 dark:text-gray-400">KLOOK</span>
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 rounded-full" style={{backgroundColor: channelColors['TWT'].borderColor}}></div>
-                <span className="ml-1 text-gray-600 dark:text-gray-400">TWT</span>
-              </div>
+              <button 
+                onClick={() => setCalendarExpanded(!calendarExpanded)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 sm:hidden"
+              >
+                {calendarExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </button>
             </div>
-            <button 
-              onClick={() => setCalendarExpanded(!calendarExpanded)}
-              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
-            >
-              {calendarExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-            </button>
+            
+            {/* Filter options and collapse button for larger screens */}
+            <div className="flex items-center justify-between mt-2 sm:mt-0">
+              <div className="flex items-center gap-2 overflow-x-auto py-1 max-w-full">
+                <div className="flex items-center whitespace-nowrap">
+                  <div className="w-3 h-3 rounded-full" style={{backgroundColor: channelColors['JVTO'].borderColor}}></div>
+                  <span className="ml-1 text-xs text-gray-600 dark:text-gray-400">JVTO</span>
+                </div>
+                <div className="flex items-center whitespace-nowrap">
+                  <div className="w-3 h-3 rounded-full" style={{backgroundColor: channelColors['KLOOK'].borderColor}}></div>
+                  <span className="ml-1 text-xs text-gray-600 dark:text-gray-400">KLOOK</span>
+                </div>
+                <div className="flex items-center whitespace-nowrap">
+                  <div className="w-3 h-3 rounded-full" style={{backgroundColor: channelColors['TWT'].borderColor}}></div>
+                  <span className="ml-1 text-xs text-gray-600 dark:text-gray-400">TWT</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setCalendarExpanded(!calendarExpanded)}
+                className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 hidden sm:block ml-2"
+              >
+                {calendarExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+              </button>
+            </div>
           </div>
         </div>
-
         {calendarExpanded && (
           <div className="p-4">
             <FullCalendar
@@ -261,14 +273,10 @@ const renderEventContent = (eventInfo) => {
               events={events}
               eventContent={renderEventContent}
               eventClick={handleEventClick}
-              headerToolbar={{
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek'
-              }}
+              headerToolbar={false}
               height="auto"
-              aspectRatio={1.8}
-              dayMaxEvents={3}
+              aspectRatio={window.innerWidth < 640 ? 0.8 : 1.8}
+              dayMaxEvents={window.innerWidth < 640 ? 2 : 3}
               moreLinkClick="popover"
               eventTimeFormat={{
                 hour: 'numeric',
@@ -279,7 +287,7 @@ const renderEventContent = (eventInfo) => {
               nowIndicator={true}
               eventClassNames="overflow-hidden rounded-md shadow-sm"
               dayHeaderClassNames="text-xs font-medium text-gray-500 dark:text-gray-400"
-              dayHeaderFormat={{ weekday: 'short' }}
+              dayHeaderFormat={{  weekday: window.innerWidth < 640 ? 'narrow' : 'short' }}
               weekNumberClassNames="text-xs text-gray-400 dark:text-gray-500"
               moreLinkClassNames="text-xs px-1 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-sm hover:bg-blue-100 dark:hover:bg-blue-800/30"
             />

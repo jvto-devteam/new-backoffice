@@ -1482,6 +1482,81 @@ class FinanceController extends Controller
         return Inertia::render('Finance/PayableReport');
     }
     
+    function payableReportCreate(Request $request){
+        $data['vendors'] = Vendor::with('vendorCategory')->get()->map(function($query){
+            return [
+                'id' => $query->id,
+                'name' => $query->name,
+                'category_id' => $query->vendorCategory->id,
+                'category' => $query->vendorCategory->name,
+            ];
+        })->groupBy('category');
+        $data['filters']['vendor'] = $request->vendor ? $request->vendor : '';
+        $data['filters']['year'] = $request->year ? $request->year : date('Y');
+        $data['filters']['month'] = $request->month ? $request->month : date('m');
+
+        if($data['filters']['vendor']){
+            $getCategory = Vendor::where('id',$data['filters']['vendor'])->first();
+            if($getCategory->vendor_category_id == 1){
+                $bookHotel = BookHotel::with([
+                    'bookRoom.roomHotel',
+                    'booking.user',
+                    'bookingItinerary',
+                    'hotel'
+                ])
+                ->where('is_debt','1')
+                ->whereHas('hotel', function($query) use($data){
+                    $query->where('vendor_id', $data['filters']['vendor']);
+                })
+                ->whereHas('booking', function($query) use($data){
+                    $query->where('travel_date_start', 'like', "%".$data['filters']['year']."-".$data['filters']['month']."%");
+                })->get()->map(function($query){
+                    $night = $query->bookingItinerary->day - 1;
+                    return [
+                        'id' => $query->id,
+                        'booking_id' => $query->booking_id,
+                        'day'  => $query->bookingItinerary->day,
+                        'customer' => $query->booking->user->name,
+                        'channel'  => $query->booking->agent_id == 1 ? 'TWT' : ($query->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'), 
+                        'pax' => $query->booking->total_pax,
+                        'travel_date_start' => $query->booking->travel_date_start,
+                        'travel_date' => date('d M', strtotime($query->booking->travel_date_start))." - ".date('d M Y', strtotime($query->booking->travel_date_end)),
+                        'duration' => $query->booking->bookingDetail[0]->package ? $query->booking->bookingDetail[0]->package->duration->day."D ".$query->booking->bookingDetail[0]->package->duration->night."N" : $query->booking->package_duration."D ".($query->booking->package_duration == 1 ? 1 : $query->booking->package_duration-1)."N",
+                        'check_in' => date('d M Y', strtotime($query->booking->travel_date_start." +$night days")),
+                        'rooms' => $query->bookRoom->map(function($room){
+                            return [
+                                'room' => $room->roomHotel->room_name,
+                                'quantity' => $room->quantity,
+                                'price' => $room->subtotal/$room->quantity,
+                                'subtotal' => $room->subtotal,
+                            ];
+                        }),
+                        'room_total' => $query->bookRoom->sum('subtotal'),
+                        'meals' => $query->bookHotelMeal->map(function($meals){
+                            return [
+                                'meals' => ucfirst($meals->meals),
+                                'quantity' => $meals->qty,
+                                'price' => $meals->price,
+                                'subtotal' => $meals->subtotal,
+                            ];
+                        }),
+                        'meals_total' => $query->bookHotelMeal->sum('subtotal'),
+                        'total' => $query->bookRoom->sum('subtotal') + $query->bookHotelMeal->sum('subtotal'),
+                    ];
+                });            
+                $bookHotel = $bookHotel->sortBy(function ($item) {
+                    $plusDay = $item['day'] - 1;
+                    $checkIn = date('Y-m-d', strtotime($item['travel_date_start'] . " +$plusDay days"));
+                    return $checkIn;
+                });
+    
+                $data['debts'] = $bookHotel->values();
+            }
+        }
+
+        return Inertia::render('Finance/PayableReportCreate',['data' => $data]);
+    }
+
     function payableReportDetails($id){
         return Inertia::render('Finance/PayableReportDetails');
     }

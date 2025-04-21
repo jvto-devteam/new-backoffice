@@ -105,6 +105,7 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
         Route::get('/', [FinanceController::class, 'index']);
         Route::get('/receivable-income', [FinanceController::class, 'receivableIncome']);
         Route::get('/payable-report', [FinanceController::class, 'payableReport']);
+        Route::get('/payable-report/create', [FinanceController::class, 'payableReportCreate']);
         Route::get('/payable-report/details/{id}', [FinanceController::class, 'payableReportDetails']);
         Route::get('/profitability-report', [FinanceController::class, 'profitabilityReport']);
         Route::get('/transaction-log', [FinanceController::class, 'transactionLog']);

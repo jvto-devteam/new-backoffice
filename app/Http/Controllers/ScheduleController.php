@@ -268,22 +268,31 @@ class ScheduleController extends Controller
                         'payment' =>  $booking->payment,
                         'balance' =>  $booking->balance,
                         'paymentMethod' =>  $booking->outstanding_payment_method,
+                        'paymentMethodLink' =>  $booking->outstanding_payment_link,
                         'invoice' => [
                             'total' => $booking->grand_total+$booking->book_add_on_total,
                             'invoiceLink' => $invoiceLinks,
                         ],
                         'expense' => [
                             'total' => $booking->expense_internal_total,
-                            'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : 'https://new-backoffice.javavolcano-touroperator.com/finance/expense-manager/'.$booking->id.'/edit',
+                            'crew_expense' => $booking->total_expense_paid,
+                            'debt_expense' => $booking->total_expense_debt,
+                            'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : '/finance/expense-manager/'.$booking->id.'/edit',
                             'target' => '_blank'
                         ],
                         'profit' =>  $profit
                     ],
-                    'paymentHistory' => $booking->bookingPayment->map(function($payment){
+                    'paymentHistory' => $booking->bookingPayment->map(function($payment) use($booking){
+                        $countBefore = BookingPayment::where('booking_id',$payment->booking_id)->where('id','<=',$payment->id)->count();
+
                         return [
+                            'id' => $payment->id,
+                            'booking_id' => $payment->booking_id,
                             'nominal' => $payment->nominal,
+                            'paymentMethodId' => $payment->paymentMethod->id,
                             'paymentMethod' => $payment->paymentMethod->name,
                             'description' => $payment->description,
+                            'receipt' => str_replace('JVR','RCP', $booking->booking_code)."/".$countBefore,
                             'reference' => $payment->reference,
                             'date' => date('d M y H:i',strtotime($payment->created_at)),
                         ];
@@ -642,6 +651,8 @@ class ScheduleController extends Controller
                 ],
                 'expense' => [
                     'total' => $booking->expense_internal_total,
+                    'crew_expense' => $booking->total_expense_paid,
+                    'debt_expense' => $booking->total_expense_debt,
                     'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : '/finance/expense-manager/'.$booking->id.'/edit',
                     'target' => '_blank'
                 ],

@@ -42,9 +42,11 @@ class FinanceController extends Controller
             $query->select('id','package_id','booking_id')->with(['package' => function($q){
                 $q->select('id','name','duration_id')->with('duration');
             }]);
-        },'guideDriver.person'])->where('status','booked')->whereLike('travel_date_start','%'.$year.'-'.$month.'%')->orderBy('travel_date_start','asc')->get()->map(function($query){
+            // ->whereLike('travel_date_start','%'.$year.'-'.$month.'%')
+        },'guideDriver.person'])->where('status','booked')->where('travel_date_start','>=','2025-04-01')->orderBy('travel_date_start','asc')->get()->map(function($query){
             $channel = $query->agent_id == 1 ? 'TWT' : ($query->booking_category_id ==3 ? 'KLOOK' : 'JVTO');
             $night = $query->package_duration - 1;
+            $totalDebt = 0;
 
             $bookRoom = BookHotel::select('id','booking_id','hotel_id','b','l','d','is_paid','is_debt')->with(['hotel' => function($q){
                 $q->select('id','name','lunch_rate','dinner_rate');
@@ -54,7 +56,13 @@ class FinanceController extends Controller
                 }]);
             },'bookHotelMeal']);
             $bookRoom = $bookRoom->where('booking_id',$query->id)
-            ->get()->map(function($q){
+            ->get()->map(function($q) use(&$totalDebt) {
+                if($q->is_debt == '1'){
+                    $totalDebt += $q->bookRoom->sum('subtotal');
+                    if($q->bookHotelMeal){
+                        $totalDebt += $q->bookHotelMeal->sum('subtotal');
+                    }
+                }
                 return [
                     'hotel' => $q->hotel->name,
                     'is_debt' => $q->is_debt == '1' ? 'YES' : 'NO',
@@ -85,8 +93,11 @@ class FinanceController extends Controller
         
             $destinations = $destinations->where('booking_id',$query->id)->get()
             ->groupBy(fn($item) => $item->destination->name) // Grouping sebelum mapping
-            ->map(function ($items) {
-                return $items->map(function ($q) {
+            ->map(function ($items) use(&$totalDebt) {
+                return $items->map(function ($q) use(&$totalDebt) {
+                    if($q->is_debt == '1'){
+                        $totalDebt += $q->subtotal;
+                    }
                     return [
                         'item' => $q->destinationActivity->name,
                         'quantity' => $q->qty,
@@ -101,7 +112,10 @@ class FinanceController extends Controller
                 $q->select('id', 'name');
             }]);
             $resources['transport'] = $resources['transport']->where('booking_id', $query->id)
-            ->get()->map(function($q){
+            ->get()->map(function($q) use(&$totalDebt) {
+                if($q->is_debt == '1'){
+                    $totalDebt += $q->subtotal;
+                }
                 return [
                     'item' => $q->car->name,
                     'quantity' => $q->qty,
@@ -116,7 +130,10 @@ class FinanceController extends Controller
             }]);
     
             $resources['crew'] = $resources['crew']->where('booking_id', $query->id)
-            ->get()->map(function($q){
+            ->get()->map(function($q) use(&$totalDebt) {
+                if($q->is_debt == '1'){
+                    $totalDebt += $q->subtotal;
+                }
                 return [
                     'item' => $q->crewRole->role,
                     'quantity' => $q->qty,
@@ -129,7 +146,10 @@ class FinanceController extends Controller
             $others = BookOthersActivity::with('othersActivity')
             ->where('booking_id', $query->id);
             
-            $others = $others->get()->map(function($q){
+            $others = $others->get()->map(function($q) use(&$totalDebt) {
+                if($q->is_debt == '1'){
+                    $totalDebt += $q->subtotal;
+                }
                 return [
                     'item' => $q->othersActivity->name,
                     'quantity' => $q->qty,
@@ -138,8 +158,11 @@ class FinanceController extends Controller
                     'is_debt' => $q->is_debt == '1' ? 'YES' : 'NO',
                 ];
             });
-                
-    
+            
+            // $update = Booking::find($query->id);
+            // $update->expense_crew_total = $query->expense_internal_total-$totalDebt;
+            // $update->total_debt = $totalDebt;
+            // $update->save();
     
             return [
                 'id' => $channel."-".$query->id,
@@ -155,13 +178,14 @@ class FinanceController extends Controller
                 }),
                 'total_invoice' => $query->grand_total + $query->book_add_on_total,
                 'total_expense' => $query->expense_internal_total,
+                'total_crew_expense' => $query->expense_internal_total-$totalDebt,
+                'total_debt' => $totalDebt,
                 'expenses' => [
                     'accommodations' => $bookRoom,
                     'activities' => $destinations,
                     'resources' => $resources,
                     'others' => $others
                 ]
-
             ];
         });
 
@@ -670,7 +694,7 @@ class FinanceController extends Controller
         ]);
     }
     function updateExpense(Request $request){
-        // return  dd($request->all());
+        // return  dd($request->summary);
         $booking = Booking::where('id',$request->booking_id)->first();
         
         // Accommodation updates (unchanged)

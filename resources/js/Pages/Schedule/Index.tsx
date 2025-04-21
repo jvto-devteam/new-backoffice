@@ -738,7 +738,7 @@ const BookingRow = ({
             )}
 
             {viewColumns.includes("financial") && (
-                <td className="py-3 px-4 align-top space-y-1">
+                <td className="py-3 px-4 align-top space-y-1 relative">
                     <div className="text-sm">
                         {booking.financial.invoice.invoiceLink.length ? (
                             <div
@@ -759,69 +759,222 @@ const BookingRow = ({
                             </div>
                         )}
                     </div>
-                    {booking.orderChannel == "JVTO" && (
-                        <>
-                            <div className="text-xs text-gray-600">
-                                <span>
-                                    Deposit:{" "}
-                                    {formatCurrency(booking.financial.payment)}
-                                </span>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                                <span>
-                                    Balance:{" "}
-                                    {formatCurrency(booking.financial.balance)}
-                                </span>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                                <span>
-                                    Payment Method:{" "}
-                                    {booking.financial.paymentMethod
-                                        ? booking.financial.paymentMethod.toUpperCase()
-                                        : "-"}
-                                </span>
-                            </div>
-                        </>
-                    )}
-                    <div className="text-xs text-gray-600">
-                        {booking.financial.expense.expenseLink ? (
-                            booking.financial.expense.target == "_blank" ? (
-                                <div
-                                    onClick={() =>
-                                        window.open(
-                                            booking.financial.expense.expenseLink,
-                                            "_blank",
-                                        )
-                                    }
-                                    className="cursor-pointer underline hover:text-blue-600"
-                                >
-                                    Expenses:{" "}
-                                    {formatCurrency(
-                                        booking.financial.expense.total,
-                                    )}
-                                </div>
-                            ) : (
-                                <Link href={booking.financial.expense.expenseLink}>
-                                    <div className="cursor-pointer underline hover:text-blue-600">
-                                        Expenses:{" "}
-                                        {formatCurrency(
-                                            booking.financial.expense.total,
+                    <div className="text-sm">
+                        <Link
+                            href={booking.financial.expense.expenseLink}
+                            className="text-orange-500 underline cursor-pointer hover:text-orange-700"
+                        >
+                            Expense: {formatCurrency(booking.financial.expense.total)}
+                        </Link>
+                    </div>
+                    <div className="text-sm">
+                        <div
+                            className="text-green-500"
+                        >
+                            Crew: {formatCurrency(booking.financial.expense.crew_expense)}
+                        </div>
+                    </div>
+                    <div className="text-sm">
+                        <div
+                            className="text-red-500"
+                        >
+                            Hutang: {formatCurrency(booking.financial.expense.debt_expense)}
+                        </div>
+                    </div>
+                    
+                    {/* Add Info icon with payment history for JVTO orders */}
+                    {booking.orderChannel === "JVTO" && (
+                        <div className="absolute top-2 right-2 group">
+                            <Info className="h-4 w-4 text-gray-500 hover:text-blue-500 cursor-pointer" />
+                            <div className="absolute z-10 right-0 -mt-2 w-72 p-3 bg-white shadow-lg rounded-md border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                                <div className="mb-2 font-medium text-sm text-gray-700">Payment History</div>
+                                {booking.paymentHistory && booking.paymentHistory.length > 0 ? (
+                                    <div className="max-h-60 overflow-y-auto">
+                                        {booking.paymentHistory.map((payment, idx) => (
+                                            <div key={idx} className="mb-2 pb-2 border-b border-gray-100 last:border-0">
+                                                <div className="flex justify-between items-center mt-1">
+                                                    <div>
+                                                        <div className="text-xs font-medium text-gray-700">{payment.description}</div>
+                                                        <div className="text-xs mt-1 font-semibold text-blue-600">{formatCurrency(payment.nominal)}</div>
+                                                    </div>
+                                                    {payment.paymentMethodId == 3 ? (
+                                                    <img src="/assets/images/icon/xendit.png" className="w-18" alt="" srcSet="" />
+                                                    ) : payment.paymentMethodId == 5 ? (
+                                                    <img src="/assets/images/icon/wise.png" className="w-18" alt="" srcSet="" />
+                                                    ) : payment.paymentMethodId == 1 ? (
+                                                    <img src="/assets/images/icon/cash.png" className="w-18" alt="" srcSet="" />
+                                                    ) : payment.paymentMethodId == 4 ? (
+                                                    <img src="/assets/images/icon/edc.png" className="w-18" alt="" srcSet="" />
+                                                    ) : payment.paymentMethodId == 6 ? (
+                                                    <img src="/assets/images/icon/bank-transfer.png" className="w-20" alt="" srcSet="" />
+                                                    ) : payment.paymentMethod}
+
+                                                </div>
+                                                <div className="flex justify-between items-center mt-1">
+                                                    <span className="text-xs text-gray-500">{payment.date}</span>
+                                                    {payment.reference && (
+                                                        <a 
+                                                            href={payment.reference} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer"
+                                                            className="text-xs text-blue-500 hover:underline"
+                                                        >
+                                                            {payment.reference.substring(0, 20)}...
+                                                        </a>
+                                                    )}
+                                                </div>
+                                                <a 
+                                                    href={"https://javavolcano-touroperator.com/backoffice/invoice/view-receipt/"+payment.booking_id+"/partial/"+payment.id} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="text-xs text-blue-500 hover:underline"
+                                                >
+                                                    {payment.receipt}
+                                                </a>
+                                            </div>
+                                        ))}
+                                        {booking.financial.balance > 0 && (
+                                            <div className="mb-2 pb-2 border-b border-gray-100 last:border-0">
+                                            <div className="flex justify-between items-center mt-1">
+                                                <div>
+                                                    <div className="text-xs font-medium text-gray-700">FULL PAYMENT <span className="bg-orange-100 text-orange-700 px-1 rounded-xl text-xs font-medium">PENDING</span>
+                                                    </div>
+                                                    <div className="text-xs mt-1 font-semibold text-blue-600">{formatCurrency(booking.financial.balance)}</div>
+                                                </div>
+                                                {booking.financial.paymentMethod == 'cc' ? (
+                                                <img src="/assets/images/icon/xendit.png" className="w-18" alt="" srcSet="" />
+                                                ) : booking.financial.paymentMethod == 'wise' ? (
+                                                <img src="/assets/images/icon/wise.png" className="w-18" alt="" srcSet="" />
+                                                ) : booking.financial.paymentMethod == 'cash' ? (
+                                                <img src="/assets/images/icon/cash.png" className="w-18" alt="" srcSet="" />
+                                                ) : booking.financial.paymentMethod == 'edc' ? (
+                                                <img src="/assets/images/icon/edc.png" className="w-18" alt="" srcSet="" />
+                                                ) : booking.financial.paymentMethod == 'bank-transfer' ? (
+                                                <img src="/assets/images/icon/bank-transfer.png" className="w-20" alt="" srcSet="" />
+                                                ) : booking.financial.paymentMethod}
+
+                                            </div>
+                                            <div className="flex justify-between items-center mt-1">
+                                                <span className="text-xs text-gray-500">ARRIVAL DATE</span>
+                                                {booking.financial.paymentMethodLink && (
+                                                    <a 
+                                                        href={booking.financial.paymentMethodLink} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="text-xs text-blue-500 hover:underline"
+                                                    >
+                                                        {booking.financial.paymentMethodLink.substring(0, 20)}...
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
                                         )}
                                     </div>
-                                </Link>
-                            )
-                        ) : (
-                            <span>
-                                Expenses:{" "}
-                                {formatCurrency(booking.financial.expense.total)}
-                            </span>
-                        )}
-                    </div>
-                    <div className="text-xs text-green-600 font-medium">
-                        Profit: {formatCurrency(booking.financial.profit)}
-                    </div>
+                                ) : (
+                                    <div className="text-xs text-gray-500 italic py-2">No payment records found</div>
+                                )}
+                                <div className="mt-2 pt-2 border-t border-gray-200">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-xs font-medium text-gray-700">Total Paid:</span>
+                                        <span className="text-xs font-semibold text-green-600">
+                                            {formatCurrency(booking.financial.payment)}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center mt-1">
+                                        <span className="text-xs font-medium text-gray-700">Balance:</span>
+                                        <span className="text-xs font-semibold text-red-600">
+                                            {booking.financial.balance > 0 ? formatCurrency(booking.financial.balance) : 'PAID IN FULL'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </td>
             )}
+{/* <td className="py-3 px-4 align-top space-y-1">
+    <div className="text-sm">
+        {booking.financial.invoice.invoiceLink.length ? (
+            <div
+                onClick={() => {
+                    booking.financial.invoice.invoiceLink.forEach(
+                        (link) => window.open(link, "_blank"),
+                    );
+                }}
+                className="text-blue-500 underline cursor-pointer hover:text-blue-700"
+            >
+                Invoice:{" "}
+                {formatCurrency(booking.financial.invoice.total)}
+            </div>
+        ) : (
+            <div className="text-blue-500">
+                Invoice:{" "}
+                {formatCurrency(booking.financial.invoice.total)}
+            </div>
+        )}
+    </div>
+    {booking.orderChannel == "JVTO" && (
+        <>
+            <div className="text-xs text-gray-600">
+                <span>
+                    Deposit:{" "}
+                    {formatCurrency(booking.financial.payment)}
+                </span>
+            </div>
+            <div className="text-xs text-gray-600">
+                <span>
+                    Balance:{" "}
+                    {formatCurrency(booking.financial.balance)}
+                </span>
+            </div>
+            <div className="text-xs text-gray-600">
+                <span>
+                    Payment Method:{" "}
+                    {booking.financial.paymentMethod
+                        ? booking.financial.paymentMethod.toUpperCase()
+                        : "-"}
+                </span>
+            </div>
+        </>
+    )}
+    <div className="text-xs text-gray-600">
+        {booking.financial.expense.expenseLink ? (
+            booking.financial.expense.target == "_blank" ? (
+                <div
+                    onClick={() =>
+                        window.open(
+                            booking.financial.expense.expenseLink,
+                            "_blank",
+                        )
+                    }
+                    className="cursor-pointer underline hover:text-blue-600"
+                >
+                    Expenses:{" "}
+                    {formatCurrency(
+                        booking.financial.expense.total,
+                    )}
+                </div>
+            ) : (
+                <Link href={booking.financial.expense.expenseLink}>
+                    <div className="cursor-pointer underline hover:text-blue-600">
+                        Expenses:{" "}
+                        {formatCurrency(
+                            booking.financial.expense.total,
+                        )}
+                    </div>
+                </Link>
+            )
+        ) : (
+            <span>
+                Expenses:{" "}
+                {formatCurrency(booking.financial.expense.total)}
+            </span>
+        )}
+    </div>
+    <div className="text-xs text-green-600 font-medium">
+        Profit: {formatCurrency(booking.financial.profit)}
+    </div>
+</td> */}
 
             {viewColumns.includes("notes") && (
                 <td className="py-3 px-4 align-top min-h-12 relative">

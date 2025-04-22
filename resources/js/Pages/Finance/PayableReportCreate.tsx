@@ -76,6 +76,10 @@ export default function PayableReportCreate({data}) {
     
     // State untuk menampilkan pesan sukses
     const [showSuccess, setShowSuccess] = useState(false);
+
+    const isActivityDebt = (hotel) => {
+        return hotel.hasOwnProperty('activity_date');
+    };
     
     // Hook untuk hitung total pembayaran
     useEffect(() => {
@@ -98,19 +102,31 @@ export default function PayableReportCreate({data}) {
             setBookHotel([]);
         }
     }, [debts]);
-    
+
     // Filter data hutang berdasarkan pencarian
     const filteredHotels = bookHotel.filter(hotel => {
         if (!searchTerm) return true;
         
         const lowerSearchTerm = searchTerm.toLowerCase();
-        return (
-            (hotel.customer && hotel.customer.toLowerCase().includes(lowerSearchTerm)) ||
-            (hotel.check_in && hotel.check_in.toLowerCase().includes(lowerSearchTerm)) ||
-            (hotel.rooms && hotel.rooms.some(room => room.room.toLowerCase().includes(lowerSearchTerm)))
-        );
+        
+        if (isActivityDebt(hotel)) {
+            // Filter untuk data aktivitas
+            return (
+                (hotel.customer && hotel.customer.toLowerCase().includes(lowerSearchTerm)) ||
+                (hotel.activity_date && hotel.activity_date.toLowerCase().includes(lowerSearchTerm)) ||
+                (hotel.item && hotel.item.toLowerCase().includes(lowerSearchTerm))
+            );
+        } else {
+            // Filter untuk data hotel
+            return (
+                (hotel.customer && hotel.customer.toLowerCase().includes(lowerSearchTerm)) ||
+                (hotel.check_in && hotel.check_in.toLowerCase().includes(lowerSearchTerm)) ||
+                (hotel.rooms && hotel.rooms.some(room => room.room.toLowerCase().includes(lowerSearchTerm)))
+            );
+        }
     });
-    
+
+
     // Handle perubahan input form
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -194,11 +210,28 @@ export default function PayableReportCreate({data}) {
     const calculateTotal = (hotelData = bookHotel) => {
         const total = hotelData
             .filter(hotel => hotel.selected)
-            .reduce((sum, hotel) => sum + hotel.total, 0);
+            .reduce((sum, hotel) => {
+                // Gunakan field yang sesuai berdasarkan tipe data
+                let amount = 0;
+                if (isActivityDebt(hotel)) {
+                    // Untuk data aktivitas
+                    amount = hotel.amount ? parseFloat(hotel.amount) : 0;
+                } else {
+                    // Untuk data hotel
+                    amount = hotel.total ? parseFloat(hotel.total) : 0;
+                }
+                
+                // Pastikan amount adalah angka yang valid
+                if (isNaN(amount)) {
+                    console.warn('Nilai tidak valid ditemukan:', hotel);
+                    amount = 0;
+                }
+                
+                return sum + amount;
+            }, 0);
         
         setTotalAmount(total);
     };
-    
     // Format mata uang ke Rupiah
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('id-ID', {
@@ -240,17 +273,21 @@ export default function PayableReportCreate({data}) {
         }
         
         // Hutang yang diseleksi
-        const selectedHotels = bookHotel.filter(hotel => hotel.selected);
+        const selectedItems = bookHotel.filter(item => item.selected);
         
-        if (selectedHotels.length === 0) {
+        if (selectedItems.length === 0) {
             alert('Silakan pilih minimal satu hutang yang akan dibayar');
             return;
         }
         
+        // Cek jenis data yang pertama untuk menentukan jenis pembayaran
+        const isActivity = isActivityDebt(selectedItems[0]);
+        
         // Data yang akan dikirim
         const submitData = {
             ...paymentData,
-            hotels: selectedHotels,
+            data_type: isActivity ? 'activity' : 'hotel',
+            items: selectedItems,
             totalAmount
         };
         
@@ -264,8 +301,7 @@ export default function PayableReportCreate({data}) {
         setTimeout(() => {
             setShowSuccess(false);
         }, 3000);
-    };
-    
+    };    
     // Mendapatkan nama vendor berdasarkan ID
     const getVendorName = (id) => {
         if (!id) return '-';
@@ -648,27 +684,50 @@ export default function PayableReportCreate({data}) {
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Guest
                                     </th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Check In
-                                    </th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Pax
-                                    </th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Rooms
-                                    </th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Room Cost
-                                    </th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Meals
-                                    </th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Meal Cost
-                                    </th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Total
-                                    </th>
+                                    {/* Dinamis header tabel berdasarkan tipe hutang */}
+                                    {bookHotel && bookHotel.length > 0 && isActivityDebt(bookHotel[0]) ? (
+                                        <>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Activity Date
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Item
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Qty
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Rate
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Amount
+                                            </th>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Check In
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Pax
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Rooms
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Room Cost
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Meals
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Meal Cost
+                                            </th>
+                                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Total
+                                            </th>
+                                        </>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
@@ -701,35 +760,59 @@ export default function PayableReportCreate({data}) {
                                                     {hotel.duration} / {hotel.pax} Pax
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {hotel.check_in}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                                                {hotel.pax}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {hotel.rooms && hotel.rooms.map((room, i) => (
-                                                    <div key={i} className="mb-1">
-                                                        {room.room} x {room.quantity}
-                                                    </div>
-                                                ))}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {formatCurrency(hotel.room_total)}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {hotel.meals && hotel.meals.map((meal, i) => (
-                                                    <div key={i} className="mb-1">
-                                                        {meal.meals} x {meal.quantity}
-                                                    </div>
-                                                ))}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {formatCurrency(hotel.meals_total)}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
-                                                {formatCurrency(hotel.total)}
-                                            </td>
+                                            
+                                            {/* Dinamis isi baris tabel berdasarkan tipe hutang */}
+                                            {isActivityDebt(hotel) ? (
+                                                <>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {hotel.activity_date}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {hotel.item}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                                        {hotel.qty}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {formatCurrency(hotel.rate)}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                                        {formatCurrency(hotel.amount)}
+                                                    </td>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {hotel.check_in}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                                        {hotel.pax}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {hotel.rooms && hotel.rooms.map((room, i) => (
+                                                            <div key={i} className="mb-1">
+                                                                {room.room} x {room.quantity}
+                                                            </div>
+                                                        ))}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {formatCurrency(hotel.room_total || 0)}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {hotel.meals && hotel.meals.map((meal, i) => (
+                                                            <div key={i} className="mb-1">
+                                                                {meal.meals} x {meal.quantity}
+                                                            </div>
+                                                        ))}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {formatCurrency(hotel.meals_total || 0)}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                                        {formatCurrency(hotel.total)}
+                                                    </td>
+                                                </>
+                                            )}
                                         </tr>
                                     ))
                                 ) : (
@@ -746,24 +829,39 @@ export default function PayableReportCreate({data}) {
                             </tbody>
                             {bookHotel && bookHotel.length > 0 && (
                                 <tfoot className="bg-gray-50">
-                                    <tr>
-                                        <td colSpan="9" className="px-6 py-3 text-right text-sm font-medium text-gray-700">
-                                            Total Seluruh Hutang:
-                                        </td>
-                                        <td className="px-6 py-3 text-left text-sm font-bold text-gray-900">
-                                            {formatCurrency(bookHotel.reduce((sum, hotel) => sum + hotel.total, 0))}
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td colSpan="9" className="px-6 py-3 text-right text-sm font-medium text-blue-700">
-                                            Total Hutang Dipilih:
-                                        </td>
-                                        <td className="px-6 py-3 text-left text-sm font-bold text-blue-600">
-                                            {formatCurrency(totalAmount)}
-                                        </td>
-                                    </tr>
-                                </tfoot>
-                            )}
+    <tr>
+        <td colSpan={isActivityDebt(bookHotel[0]) ? "7" : "9"} className="px-6 py-3 text-right text-sm font-medium text-gray-700">
+            Total Seluruh Hutang:
+        </td>
+        <td className="px-6 py-3 text-left text-sm font-bold text-gray-900">
+            {formatCurrency(bookHotel.reduce((sum, hotel) => {
+                // Pilih field yang tepat berdasarkan tipe data
+                let amount = 0;
+                if (isActivityDebt(hotel)) {
+                    amount = hotel.amount ? parseFloat(hotel.amount) : 0;
+                } else {
+                    amount = hotel.total ? parseFloat(hotel.total) : 0;
+                }
+                
+                // Pastikan amount adalah angka yang valid
+                if (isNaN(amount)) {
+                    console.warn('Nilai tidak valid ditemukan:', hotel);
+                    amount = 0;
+                }
+                
+                return sum + amount;
+            }, 0))}
+        </td>
+    </tr>
+    <tr>
+        <td colSpan={isActivityDebt(bookHotel[0]) ? "7" : "9"} className="px-6 py-3 text-right text-sm font-medium text-blue-700">
+            Total Hutang Dipilih:
+        </td>
+        <td className="px-6 py-3 text-left text-sm font-bold text-blue-600">
+            {formatCurrency(totalAmount || 0)}
+        </td>
+    </tr>
+</tfoot>                            )}
                         </table>
                     </div>
                 </div>

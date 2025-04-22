@@ -352,7 +352,7 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                                         </li>
                                                         <li>
                                                             <Link
-                                                                href="/finance/expense-recap">
+                                                                href="/finance/payable-report">
                                                                 Payable Report
                                                             </Link>
                                                         </li>

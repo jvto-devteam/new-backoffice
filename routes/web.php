@@ -104,8 +104,9 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
     Route::prefix('finance')->group(function () {
         Route::get('/', [FinanceController::class, 'index']);
         Route::get('/receivable-income', [FinanceController::class, 'receivableIncome']);
-        Route::get('/payable-report', [FinanceController::class, 'payableReport']);
+        Route::get('/payable-report', [FinanceController::class, 'payableReportIndex']);
         Route::get('/payable-report/create', [FinanceController::class, 'payableReportCreate']);
+        Route::post('/payable-report/store', [FinanceController::class, 'payableReportStore']);
         Route::get('/payable-report/details/{id}', [FinanceController::class, 'payableReportDetails']);
         Route::get('/profitability-report', [FinanceController::class, 'profitabilityReport']);
         Route::get('/transaction-log', [FinanceController::class, 'transactionLog']);
@@ -121,6 +122,7 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
         Route::get('/expense-manager/{id}/crew', [FinanceController::class, 'downloadExpense']);
         Route::get('/expense-manager/{id}/internal', [FinanceController::class, 'downloadExpense']);
         Route::get('/expense-manager/{id}/pay-later', [FinanceController::class, 'downloadExpense']);
+        Route::post('/expense-manager/{bookingId}/upload-payment-proof', [FinanceController::class, 'uploadPaymentProofExpense']);
         Route::get('/monthly-settlement', [FinanceController::class, 'settlement']);
         Route::get('/profit-loss-summary', [FinanceController::class, 'profitLoss']);
     });

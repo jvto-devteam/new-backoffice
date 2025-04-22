@@ -16,6 +16,8 @@ use App\Models\BookRoomHotel;
 use App\Models\Car;
 use App\Models\CarConfiguration;
 use App\Models\CrewRole;
+use App\Models\DebtPayment;
+use App\Models\DebtPaymentDetail;
 use App\Models\DestinationActivity;
 use App\Models\Hotel;
 use App\Models\Itinerary;
@@ -25,6 +27,8 @@ use App\Models\Package;
 use App\Models\PaymentMethod;
 use App\Models\Vendor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use PDF;
 use Illuminate\Support\Str;
@@ -369,7 +373,7 @@ class FinanceController extends Controller
         ]);
     }
     function editExpense($id){
-        $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id','booking_date','package_duration','invoice_code_origin','url')->with(['user' => function($query){
+        $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id','booking_date','package_duration','invoice_code_origin','url','payment_proof_expense')->with(['user' => function($query){
             $query->select('id','name');
         },'bookingDetail' => function($query){
             $query->select('id','package_id','booking_id')->with(['package' => function($q){
@@ -384,7 +388,7 @@ class FinanceController extends Controller
         $totalOthers = 0;
         $totalResources = 0;
 
-        $bookRoom = BookHotel::select('id','booking_id','hotel_id','b','l','d','is_paid','is_debt')->with(['hotel' => function($query){
+        $bookRoom = BookHotel::select('id','booking_id','hotel_id','b','l','d','is_paid','is_debt','debt_payment_id')->with(['hotel' => function($query){
             $query->select('id','name','lunch_rate','dinner_rate');
         },'bookRoom' => function($query){
             $query->select('id','book_hotel_id','room_hotel_id','quantity','subtotal')->with(['roomHotel' => function($q){
@@ -545,7 +549,7 @@ class FinanceController extends Controller
                 }
             });
         }
-        $destinations = BookDestinationActivity::select('id','destination_id','destination_activity_id','qty','price','subtotal','status_paid','is_debt')->with(['destination' => function($query){
+        $destinations = BookDestinationActivity::select('id','destination_id','destination_activity_id','qty','price','subtotal','status_paid','is_debt','debt_payment_id')->with(['destination' => function($query){
             $query->select('id','name');
         },'destinationActivity' => function($query){
             $query->select('id','name','unit');
@@ -684,6 +688,7 @@ class FinanceController extends Controller
         $listForNewItems['cars'] = Car::whereIn('id',[1,2,4,5,21])->get();
         $listForNewItems['crews'] = CrewRole::where('order_channel_id',$orderChannelID)->get();
         // return $listForNewItems;
+        // return $bookRoom;
         return Inertia::render('Finance/EditExpenseManager', [
             'booking' => $booking,
             'accommodations' => $bookRoom,
@@ -692,6 +697,7 @@ class FinanceController extends Controller
             'others' => $others,
             'listForNewItems' => $listForNewItems
         ]);
+        
     }
     function updateExpense(Request $request){
         // return  dd($request->summary);
@@ -1481,8 +1487,85 @@ class FinanceController extends Controller
         ];
         return Inertia::render('Finance/PayableReport');
     }
-    
+    function payableReportIndex(Request $request){
+        // Get filter parameters with defaults
+        $month = $request->month ? $request->month : date('m');
+        $year = $request->year ? $request->year : date('Y');
+        $vendorId = $request->vendor ? $request->vendor : null;
+        
+        // Query for debt payments
+        $query = DebtPayment::with(['vendor', 'paymentMethod', 'details'])
+            ->whereMonth('payment_date', $month)
+            ->whereYear('payment_date', $year)
+            ->orderBy('payment_date', 'desc');
+        
+        // Apply vendor filter if provided
+        if ($vendorId) {
+            $query->where('vendor_id', $vendorId);
+        }
+        
+        // Execute query
+        $payments = $query->get();
+        
+        // Map payments data for display
+        $paymentsData = $payments->map(function($payment) {
+            return [
+                'id' => $payment->id,
+                'payment_number' => $payment->payment_number,
+                'payment_date' => $payment->payment_date->format('d M Y'),
+                'vendor_name' => $payment->vendor->name,
+                'vendor_category' => $payment->vendor->vendorCategory->name,
+                'payment_method' => $payment->paymentMethod->name,
+                'total_amount' => $payment->total_amount,
+                'payment_proof' => $payment->payment_proof,
+                'formatted_amount' => 'Rp ' . number_format($payment->total_amount, 0, ',', '.'),
+                'item_count' => $payment->details->count(),
+                'item_type' => $payment->item_type,
+            ];
+        });
+        
+        // Get vendors for filter
+        $vendors = Vendor::with('vendorCategory')->get()->map(function($query){
+            return [
+                'id' => $query->id,
+                'name' => $query->name,
+                'category_id' => $query->vendorCategory->id,
+                'category' => $query->vendorCategory->name,
+            ];
+        })->groupBy('category');
+        
+        // Summary calculations
+        $summary = [
+            'total_payments' => $payments->count(),
+            'total_amount' => $payments->sum('total_amount'),
+            'formatted_total' => 'Rp ' . number_format($payments->sum('total_amount'), 0, ',', '.'),
+            'by_category' => $payments->groupBy('item_type')->map(function($group) {
+                return [
+                    'count' => $group->count(),
+                    'amount' => $group->sum('total_amount'),
+                    'formatted_amount' => 'Rp ' . number_format($group->sum('total_amount'), 0, ',', '.')
+                ];
+            }),
+        ];
+        
+        // Filter data
+        $filters = [
+            'month' => $month,
+            'year' => $year,
+            'vendor' => $vendorId,
+        ];
+
+        return Inertia::render('Finance/PayableReportIndex', [
+            'data' => [
+                'payments' => $paymentsData,
+                'vendors' => $vendors,
+                'filters' => $filters,
+                'summary' => $summary,
+            ]
+        ]);        
+    }
     function payableReportCreate(Request $request){
+        $data['paymentMethods'] = PaymentMethod::whereIn('id',[1,6])->orderBy('name','asc')->get();
         $data['vendors'] = Vendor::with('vendorCategory')->get()->map(function($query){
             return [
                 'id' => $query->id,
@@ -1494,6 +1577,19 @@ class FinanceController extends Controller
         $data['filters']['vendor'] = $request->vendor ? $request->vendor : '';
         $data['filters']['year'] = $request->year ? $request->year : date('Y');
         $data['filters']['month'] = $request->month ? $request->month : date('m');
+        $getNo = DebtPayment::whereLike('payment_date', date('Y-m').'%')->orderBy('id','desc')->first();
+        if(!$getNo){
+            $paymentNo = '0001';
+        }
+        else{
+            $paymentNo = explode('/',$getNo->payment_number);
+            $paymentNo = (int)$paymentNo[4];
+            $paymentNo = (int)$paymentNo + 1;
+            $paymentNo = str_pad($paymentNo, 4, '0', STR_PAD_LEFT);
+        }
+
+        $data['paymentNo'] = "JVR/PAY/".date('m/y').'/'.$paymentNo;
+        
 
         if($data['filters']['vendor']){
             $getCategory = Vendor::where('id',$data['filters']['vendor'])->first();
@@ -1505,6 +1601,7 @@ class FinanceController extends Controller
                     'hotel'
                 ])
                 ->where('is_debt','1')
+                ->whereNull('debt_payment_id')
                 ->whereHas('hotel', function($query) use($data){
                     $query->where('vendor_id', $data['filters']['vendor']);
                 })
@@ -1555,6 +1652,7 @@ class FinanceController extends Controller
             else if($getCategory->vendor_category_id == 2){
                 $bookDestinationActivity = BookDestinationActivity::with(['destinationActivity','booking.bookingDetail.package','booking.user'])
                 ->where('is_debt','1')
+                ->whereNull('debt_payment_id')
                 ->whereHas('destinationActivity', function($query) use($data){
                     $query->where('vendor_id', $data['filters']['vendor']);
                 })
@@ -1683,7 +1781,8 @@ class FinanceController extends Controller
                 ->whereHas('car', function($query) use($data){
                     $query->where('vendor_id',$data['filters']['vendor']);
                 })
-                ->where('is_debt','1')->get();
+                ->where('is_debt','1')
+                ->whereNull('debt_payment_id')->get();
                 $bookCar = $bookCar->map(function($value){
                     return [
                         'id' => $value->id,
@@ -1712,7 +1811,8 @@ class FinanceController extends Controller
                 ->whereHas('othersActivity', function($query) use($data){
                     $query->where('vendor_id',$data['filters']['vendor']);
                 })
-                ->where('is_debt','1')->get();
+                ->where('is_debt','1')
+                ->whereNull('debt_payment_id')->get();
                 $bookOthers = $bookOthers->map(function($value){
                     return [
                         'id' => $value->id,
@@ -1735,9 +1835,243 @@ class FinanceController extends Controller
 
         return Inertia::render('Finance/PayableReportCreate',['data' => $data]);
     }
-
     function payableReportDetails($id){
-        return Inertia::render('Finance/PayableReportDetails');
+        $payment = DebtPayment::with([
+            'vendor', 
+            'paymentMethod', 
+            'details'
+        ])->findOrFail($id);
+        
+        // Format data untuk ditampilkan
+        $paymentData = [
+            'id' => $payment->id,
+            'payment_number' => $payment->payment_number,
+            'vendor' => [
+                'id' => $payment->vendor->id,
+                'name' => $payment->vendor->name,
+                'category' => $payment->vendor->vendorCategory->name ?? 'Tidak Dikategorikan'
+            ],
+            'item_type' => $payment->item_type,
+            'payment_date' => $payment->payment_date->format('d F Y'),
+            'payment_method' => $payment->paymentMethod->name,
+            'payment_proof' => $payment->payment_proof,
+            'note' => $payment->note,
+            'total_amount' => $payment->total_amount,
+            'created_at' => $payment->created_at->format('d F Y H:i'),
+            'updated_at' => $payment->updated_at ? $payment->updated_at->format('d F Y H:i') : null,
+            'details' => $payment->details->map(function($detail) use($payment) {
+                $itemData = json_decode($detail->item_data, true);
+                
+                // Format data detail sesuai dengan jenis item
+                $formattedDetail = [
+                    'id' => $detail->id,
+                    'booking_id' => $detail->booking_id,
+                    'amount' => $detail->amount,
+                    'item_id' => $detail->item_id,
+                    'customer' => $itemData['customer'] ?? 'N/A',
+                    'formatted_amount' => number_format($detail->amount, 0, ',', '.'),
+                    'pax' => $itemData['pax'] ?? 0,
+                    'duration' => $itemData['duration'] ?? 'N/A',
+                    'channel' => $itemData['channel'] ?? 'N/A',
+                ];
+                
+                // Tambahkan data spesifik berdasarkan jenis item
+                switch ($payment->item_type) {
+                    case 'hotel':
+                        $formattedDetail['check_in'] = $itemData['check_in'] ?? 'N/A';
+                        $formattedDetail['rooms'] = $itemData['rooms'] ?? [];
+                        $formattedDetail['room_total'] = $itemData['room_total'] ?? 0; 
+                        $formattedDetail['meals'] = $itemData['meals'] ?? [];
+                        $formattedDetail['meals_total'] = $itemData['meals_total'] ?? 0;
+                        break;
+                    case 'bromo':
+                        $formattedDetail['activity_date'] = $itemData['activity_date'] ?? 'N/A';
+                        $formattedDetail['bromo_ticket'] = $itemData['bromo_ticket'] ?? 0;
+                        $formattedDetail['jeep_unit'] = $itemData['jeep_unit'] ?? 0;
+                        $formattedDetail['bromo_jeep'] = $itemData['bromo_jeep'] ?? 0;
+                        $formattedDetail['hotel_name'] = $itemData['hotel_name'] ?? 'N/A';
+                        break;
+                    case 'car':
+                        $formattedDetail['pickup_date'] = $itemData['pickup_date'] ?? 'N/A';
+                        $formattedDetail['drop_date'] = $itemData['drop_date'] ?? 'N/A';
+                        $formattedDetail['car'] = $itemData['car'] ?? 'N/A';
+                        $formattedDetail['qty'] = $itemData['qty'] ?? 0;
+                        $formattedDetail['rate'] = $itemData['rate'] ?? 0;
+                        break;
+                    case 'activity':
+                        $formattedDetail['activity_date'] = $itemData['activity_date'] ?? 'N/A';
+                        $formattedDetail['item'] = $itemData['item'] ?? 'N/A';
+                        $formattedDetail['qty'] = $itemData['qty'] ?? 0;
+                        $formattedDetail['rate'] = $itemData['rate'] ?? 0;
+                        break;
+                    case 'others':
+                        $formattedDetail['item'] = $itemData['item'] ?? 'N/A';
+                        $formattedDetail['qty'] = $itemData['qty'] ?? 0;
+                        $formattedDetail['rate'] = $itemData['rate'] ?? 0;
+                        break;
+                }
+                
+                return $formattedDetail;
+            })
+        ];
+        
+        return Inertia::render('Finance/PayableReportDetail', [
+            'payment' => $paymentData
+        ]);        
+    }
+    public function payableReportStore(Request $request)
+    {
+        // Validasi request
+        $validated = $request->validate([
+            'paymentNumber' => 'required|string|max:50|unique:debt_payments,payment_number',
+            'vendorId' => 'required|exists:vendors,id',
+            'paymentDate' => 'required|date',
+            'paymentMethodId' => 'required|exists:payment_methods,id',
+            'paymentProofType' => 'required|in:upload,link',
+            'paymentProofFile' => 'nullable|file|max:5120',
+            'paymentProofLink' => 'nullable|url|max:255',
+            'note' => 'nullable|string|max:1000',
+            'items' => 'required|array|min:1',
+            'items.*.id' => 'required|integer',
+            'totalAmount' => 'required|numeric|min:0',
+        ]);
+
+        // Tentukan path file bukti pembayaran
+        $paymentProof = null;
+        if ($request->paymentProofType === 'upload' && $request->hasFile('paymentProofFile')) {
+            $file = $request->file('paymentProofFile');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $path = $file->storeAs('payment_proofs', $fileName, 'public');
+            $paymentProof = Storage::url($path);
+        } elseif ($request->paymentProofType === 'link') {
+            $paymentProof = $request->paymentProofLink;
+        }
+
+        // Tentukan item_type berdasarkan jenis data pertama
+        $firstItem = $request->items[0];
+        $itemType = $this->determineItemType($firstItem);
+
+        try {
+            DB::beginTransaction();
+
+            // Buat record payment
+            $payment = DebtPayment::create([
+                'payment_number' => $request->paymentNumber,
+                'vendor_id' => $request->vendorId,
+                'item_type' => $itemType,
+                'payment_date' => $request->paymentDate,
+                'payment_method_id' => $request->paymentMethodId,
+                'payment_proof' => $paymentProof,
+                'note' => $request->note,
+                'total_amount' => $request->totalAmount,
+            ]);
+
+            // Buat payment details untuk setiap item
+            foreach ($request->items as $item) {
+                $amount = isset($item['amount']) ? $item['amount'] : $item['total'];
+                
+                DebtPaymentDetail::create([
+                    'payment_id' => $payment->id,
+                    'booking_id' => $item['booking_id'],
+                    'item_id' => $item['id'],
+                    'amount' => $amount,
+                    'item_data' => json_encode($item), // Simpan semua data item sebagai JSON
+                ]);
+                
+                // Update status hutang di tabel asli
+                switch ($itemType) {
+                    case 'hotel':
+                        $update = BookHotel::find($item['id']);
+                        $update->debt_payment_id = $payment->id;
+                        $update->save();
+                        break;
+                    case 'bromo':
+                    case 'activity':
+                        $update = BookDestinationActivity::find($item['id']);
+                        $update->debt_payment_id = $payment->id;
+                        $update->save();
+                        break;
+                    case 'car':
+                        $update = BookCarActivity::find($item['id']);
+                        $update->debt_payment_id = $payment->id;
+                        $update->save();
+                        break;
+                    case 'others':
+                        $update = BookOthersActivity::find($item['id']);
+                        $update->debt_payment_id = $payment->id;
+                        $update->save();
+
+                        break;
+                }
+            }
+
+            DB::commit();
+            return back()->with('message', 'Expense saved successfully');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withErrors(['message' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+        }
+    }
+    public function uploadPaymentProofExpense(Request $request, $bookingId)
+    {
+        // Validate the booking exists and belongs to the right user/company
+        $booking = Booking::findOrFail($bookingId);
+        
+        // Validate the request
+        $validated = $request->validate([
+            'payment_proof' => 'required|file|mimes:jpeg,png,jpg,pdf|max:5120', // 5MB max
+        ]);
+        
+        try {
+            // Handle file upload
+            if ($request->hasFile('payment_proof')) {
+                // Delete the old file if it exists
+                if ($booking->payment_proof_expense) {
+                    $oldPath = public_path('storage/' . $booking->payment_proof_expense);
+                    if (file_exists($oldPath)) {
+                        unlink($oldPath);
+                    }
+                }
+                
+                // Store the new file
+                $path = $request->file('payment_proof')->store('payment-proofs', 'public');
+                
+                // Update the booking record
+                $booking->payment_proof_expense = $path;
+                $booking->save();
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Payment proof uploaded successfully',
+                    'path' => $path
+                ]);
+            }
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'No file provided'
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload payment proof: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    private function determineItemType($item)
+    {
+        if (isset($item['check_in'])) {
+            return 'hotel';
+        } elseif (isset($item['bromo_ticket'])) {
+            return 'bromo';
+        } elseif (isset($item['pickup_date'])) {
+            return 'car';
+        } elseif (isset($item['activity_date'])) {
+            return 'activity';
+        } else {
+            return 'others';
+        }
     }
     
     function invoice(){

@@ -1,6 +1,7 @@
 import Main from '@/Layouts/Main';
 import { useState, useEffect } from 'react';
 import { Link,router } from '@inertiajs/react';
+import Swal from '@/utils/swal';
 import { 
   CheckIcon, 
   CalendarIcon, 
@@ -19,7 +20,7 @@ import {
 } from 'lucide-react';
 
 export default function PayableReportCreate({data}) {
-    const { vendors, filters, debts } = data;
+    const { vendors,paymentMethods,paymentNo, filters, debts } = data;
 
     // Data untuk bulan dan tahun
     const months = [
@@ -40,20 +41,12 @@ export default function PayableReportCreate({data}) {
     const currentYear = new Date().getFullYear();
     const years = Array.from({length: 3}, (_, i) => currentYear - 1 + i);
     
-    // Data metode pembayaran
-    const [paymentMethods, setPaymentMethods] = useState([
-        { id: 1, name: 'Transfer Bank' },
-        { id: 2, name: 'Tunai' },
-        { id: 3, name: 'QRIS' },
-        { id: 4, name: 'Kartu Kredit' },
-    ]);
-    
     // State untuk data hutang
     const [bookHotel, setBookHotel] = useState(debts || []);
     
     // State untuk form pembayaran
     const [paymentData, setPaymentData] = useState({
-        paymentNumber: 'PAY-' + new Date().getTime(),
+        paymentNumber: paymentNo,
         vendorId: filters.vendor || '',
         paymentDate: new Date().toISOString().slice(0, 10),
         paymentMethodId: '',
@@ -336,28 +329,73 @@ export default function PayableReportCreate({data}) {
             return;
         }
         
-        // Cek jenis data yang pertama untuk menentukan jenis pembayaran
-        const isActivity = isActivityDebt(selectedItems[0]);
+        // Persiapkan FormData untuk upload file
+        const formData = new FormData();
+        formData.append('paymentNumber', paymentData.paymentNumber);
+        formData.append('vendorId', paymentData.vendorId);
+        formData.append('paymentDate', paymentData.paymentDate);
+        formData.append('paymentMethodId', paymentData.paymentMethodId);
+        formData.append('paymentProofType', paymentData.paymentProofType);
+        formData.append('note', paymentData.note);
+        formData.append('totalAmount', totalAmount);
         
-        // Data yang akan dikirim
-        const submitData = {
-            ...paymentData,
-            data_type: isActivity ? 'activity' : 'hotel',
-            items: selectedItems,
-            totalAmount
-        };
+        // Tambahkan file atau link
+        if (paymentData.paymentProofType === 'upload' && paymentData.paymentProofFile) {
+            formData.append('paymentProofFile', paymentData.paymentProofFile);
+        } else if (paymentData.paymentProofType === 'link') {
+            formData.append('paymentProofLink', paymentData.paymentProofLink);
+        }
         
-        console.log('Submitting payment:', submitData);
-        // Di sini biasanya akan ada API call untuk menyimpan data
+        // Tambahkan items
+        selectedItems.forEach((item, index) => {
+            Object.keys(item).forEach(key => {
+                if (typeof item[key] === 'object' && item[key] !== null) {
+                    formData.append(`items[${index}][${key}]`, JSON.stringify(item[key]));
+                } else {
+                    formData.append(`items[${index}][${key}]`, item[key]);
+                }
+            });
+        });
         
-        // Tampilkan pesan sukses
-        setShowSuccess(true);
-        
-        // Sembunyikan pesan sukses setelah 3 detik
-        setTimeout(() => {
-            setShowSuccess(false);
-        }, 3000);
-    };    
+        // Kirim ke server dengan Inertia
+        router.post('/finance/payable-report/store', formData, {
+            forceFormData: true,
+            onBefore: () => {
+                Swal.fire({
+                  title: 'Processing...',
+                  html: 'Please wait while we process...',
+                  allowOutsideClick: false,
+                  didOpen: () => {
+                    Swal.showLoading();
+                  }
+                });
+            },
+            onSuccess: () => {
+                // Tampilkan pesan sukses
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Pembayaran hutang berhasil',
+                    icon: 'success'
+                  }).then(() => {
+                    router.visit(`/finance/payable-report/`);
+                  });
+          
+                setShowSuccess(true);
+                
+                // Sembunyikan pesan sukses setelah 3 detik
+                setTimeout(() => {
+                    setShowSuccess(false);
+                    // Redirect ke halaman daftar pembayaran
+                    router.visit('/finance/payable-report/create');
+                }, 3000);
+            },
+            onError: (errors) => {
+                console.error('Error:', errors);
+                alert('Terjadi kesalahan saat menyimpan pembayaran: ' + 
+                    (errors.message || Object.values(errors).join(', ')));
+            }
+        });
+    };
     // Mendapatkan nama vendor berdasarkan ID
     const getVendorName = (id) => {
         if (!id) return '-';

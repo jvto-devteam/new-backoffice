@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo,useEffect } from 'react';
 import Swal from '@/utils/swal';
 import { router } from '@inertiajs/react';
 import Authenticated from '@/Layouts/Main';
-import { Download } from 'lucide-react';
+import { Download,BookmarkCheck,Image } from 'lucide-react';
 
 
 const formatCurrency = (value) => {
@@ -28,60 +28,331 @@ const BookingInfo = ({ booking }) => {
     </div>
   );
 };
+const PaymentProofModal = ({ isOpen, onClose, booking }) => {
+  const [file, setFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setFile(null);
+      setPreviewUrl(null);
+      setErrorMessage('');
+      
+      // If there's an existing payment proof, set it as preview
+      if (booking.payment_proof_expense) {
+        setPreviewUrl(`/storage/${booking.payment_proof_expense}`);
+      }
+    }
+  }, [isOpen, booking]);
+  
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    
+    if (!selectedFile) {
+      setFile(null);
+      setPreviewUrl(null);
+      return;
+    }
+    
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+    if (!allowedTypes.includes(selectedFile.type)) {
+      setErrorMessage('Please select an image (JPG, PNG) or PDF file');
+      setFile(null);
+      setPreviewUrl(null);
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      setErrorMessage('File size cannot exceed 5MB');
+      setFile(null);
+      setPreviewUrl(null);
+      return;
+    }
+    
+    setFile(selectedFile);
+    setErrorMessage('');
+    
+    // Create preview for images
+    if (selectedFile.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setPreviewUrl(reader.result);
+      };
+      reader.readAsDataURL(selectedFile);
+    } else if (selectedFile.type === 'application/pdf') {
+      // For PDF, use a placeholder image
+      setPreviewUrl('/images/pdf-placeholder.png');
+    }
+  };
+  
+  const handleSubmit = () => {
+    if (!file && !booking.payment_proof_expense) {
+      setErrorMessage('Please select a file to upload');
+      return;
+    }
+    
+    // If there's no new file and we already have a payment proof, just close the modal
+    if (!file && booking.payment_proof_expense) {
+      onClose();
+      return;
+    }
+    
+    // Create form data for file upload
+    const formData = new FormData();
+    formData.append('payment_proof', file);
+    formData.append('booking_id', booking.id);
+    
+    setIsUploading(true);
+    
+    // Upload the file
+    router.post(`/finance/expense-manager/${booking.id}/upload-payment-proof`, formData, {
+      onSuccess: () => {
+        Swal.fire({
+          title: 'Success!',
+          text: 'Payment proof has been uploaded successfully',
+          icon: 'success'
+        }).then(() => {
+          setIsUploading(false);
+          onClose();
+          // Refresh the page to show the updated payment proof
+          router.visit(`/finance/expense-manager/${booking.id}/edit`);
+        });
+      },
+      onError: (errors) => {
+        setIsUploading(false);
+        setErrorMessage(errors.message || 'Failed to upload payment proof');
+        console.error('Upload errors:', errors);
+      },
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+  };
+  
+  const handleDelete = () => {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: 'This will remove the payment proof. Continue?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Yes, delete it!',
+      cancelButtonText: 'Cancel'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        router.post(`/finance/expense-manager/${booking.id}/delete-payment-proof`, {}, {
+          onSuccess: () => {
+            Swal.fire({
+              title: 'Deleted!',
+              text: 'Payment proof has been removed',
+              icon: 'success'
+            }).then(() => {
+              onClose();
+              // Refresh the page to update the UI
+              router.visit(`/finance/expense-manager/${booking.id}/edit`);
+            });
+          },
+          onError: (errors) => {
+            setErrorMessage(errors.message || 'Failed to delete payment proof');
+          }
+        });
+      }
+    });
+  };
 
-const SummaryCards = ({ booking,totals }) => {
+  if (!isOpen) return null;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-      {/* Total Expenses */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 text-sm">Total Expenses</span>
-          <a href={`/finance/expense-manager/${booking.id}/internal`} className="text-blue-600"><Download/></a>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white p-6 rounded-lg shadow-xl w-full max-w-lg">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">
+            {booking.payment_proof_expense ? 'Payment Proof' : 'Upload Payment Proof'}
+          </h2>
+          <button 
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <div className="text-blue-600 text-2xl font-bold mt-1">
-          {formatCurrency(totals.totalAmount)}
-        </div>
-      </div>
-
-      {/* Net Total */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 text-sm">Net Total</span>
-          <div className="flex gap-1">
-          <a href={`/finance/expense-manager/${booking.id}/crew`} className="text-green-600"><Download/></a>
+        
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded">
+            {errorMessage}
           </div>
+        )}
+        
+        {/* Preview Section */}
+        <div className="mb-4">
+          {previewUrl ? (
+            <div className="flex flex-col items-center">
+              <div className="border rounded p-2 mb-2 bg-gray-50 w-full">
+                <img 
+                  src={previewUrl} 
+                  alt="Payment Proof" 
+                  className="max-h-64 max-w-full mx-auto object-contain"
+                />
+              </div>
+              {!booking.payment_proof_expense && (
+                <p className="text-sm text-gray-500 mb-2">Selected file: {file?.name}</p>
+              )}
+            </div>
+          ) : (
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <p className="text-gray-500">No file selected</p>
+            </div>
+          )}
         </div>
-        <div className="text-green-600 text-2xl font-bold mt-1">
-          {formatCurrency(totals.paidAmount)}
-        </div>
-      </div>
-
-      {/* Pay Later Total */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 text-sm">Pay Later Total ({totals.payLaterItemsCount})</span>
-          <div className="flex gap-1">
-            <a href={`/finance/expense-manager/${booking.id}/pay-later`} className="text-orange-500"><Download/></a>
-          </div>
-        </div>
-        <div className="text-orange-500 text-2xl font-bold mt-1">
-          {formatCurrency(totals.debtAmount)}
-        </div>
-      </div>
-
-      {/* Pay Later Items */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="flex justify-between items-center">
-          <span className="text-gray-500 text-sm">Invoice</span>
-          <div className="flex gap-1">
-            <a href={`https://javavolcano-touroperator.com/bookings/invoice/${booking.url}`} className="text-orange-500"><Download/></a>
-          </div>
-        </div>
-        <div className="text-red-500 text-2xl font-bold mt-1">
-          {formatCurrency(booking.grand_total+booking.book_add_on_total)}
-        </div>
+        
+        {/* File Input */}
+        {booking.payment_proof_expense === null && (
+          <>
+            {!isUploading && (
+              <div className="mb-6">
+                <label className="block text-gray-700 text-sm font-bold mb-2">
+                  {booking.payment_proof_expense ? 'Change payment proof:' : 'Select file:'}
+                </label>
+                <input
+                  type="file"
+                  onChange={handleFileChange}
+                  className="border rounded w-full py-2 px-3 text-gray-700"
+                  accept="image/jpeg,image/png,image/jpg,application/pdf"
+                />
+                <p className="text-xs text-gray-500 mt-1">Allowed formats: JPG, PNG, PDF. Max size: 5MB</p>
+              </div>
+            )}
+            
+            {/* Buttons */}
+            <div className="flex justify-end gap-2">
+              {booking.payment_proof_expense && !file && (
+                <button
+                  onClick={handleDelete}
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                  disabled={isUploading}
+                >
+                  Delete
+                </button>
+              )}
+              
+              <button
+                onClick={onClose}
+                className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 focus:outline-none"
+                disabled={isUploading}
+              >
+                {booking.payment_proof_expense && !file ? 'Close' : 'Cancel'}
+              </button>
+              
+              {(!booking.payment_proof_expense || file) && (
+                <button
+                  onClick={handleSubmit}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Uploading...
+                    </>
+                  ) : (
+                    'Upload'
+                  )}
+                </button>
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
+  );
+};
+
+// Modified SummaryCards component with payment proof button
+const SummaryCards = ({ booking, totals }) => {
+  const [isPaymentProofModalOpen, setIsPaymentProofModalOpen] = useState(false);
+
+  return (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        {/* Total Expenses */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500 text-sm">Total Expenses</span>
+            <a href={`/finance/expense-manager/${booking.id}/internal`} className="text-blue-600"><Download/></a>
+          </div>
+          <div className="text-blue-600 text-2xl font-bold mt-1">
+            {formatCurrency(totals.totalAmount)}
+          </div>
+        </div>
+
+        {/* Net Total */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500 text-sm">Net Total</span>
+            <div className="flex gap-1">
+              <a href={`/finance/expense-manager/${booking.id}/crew`} className="text-green-600"><Download/></a>
+            </div>
+          </div>
+          <div className="flex justify-between items-center">
+            <div className="text-green-600 text-2xl font-bold mt-1">
+              {formatCurrency(totals.paidAmount)}
+            </div>
+            <div className="mt-2">
+              <button 
+                onClick={() => setIsPaymentProofModalOpen(true)} 
+                className="text-white gap-1 flex items-center text-sm bg-green-600 py-1 px-2 rounded-lg font-medium"
+                title="Payment Proof"
+              >
+                  <Image className="h-4 w-4"/> Bukti Bayar
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Pay Later Total */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500 text-sm">Pay Later Total ({totals.payLaterItemsCount})</span>
+            <div className="flex gap-1">
+              <a href={`/finance/expense-manager/${booking.id}/pay-later`} className="text-orange-500"><Download/></a>
+            </div>
+          </div>
+          <div className="text-orange-500 text-2xl font-bold mt-1">
+            {formatCurrency(totals.debtAmount)}
+          </div>
+        </div>
+
+        {/* Pay Later Items */}
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500 text-sm">Invoice</span>
+            <div className="flex gap-1">
+              <a href={`https://javavolcano-touroperator.com/bookings/invoice/${booking.url}`} className="text-orange-500"><Download/></a>
+            </div>
+          </div>
+          <div className="text-red-500 text-2xl font-bold mt-1">
+            {formatCurrency(booking.grand_total+booking.book_add_on_total)}
+          </div>
+        </div>
+      </div>
+
+      {/* Payment Proof Modal */}
+      <PaymentProofModal 
+        isOpen={isPaymentProofModalOpen} 
+        onClose={() => setIsPaymentProofModalOpen(false)} 
+        booking={booking}
+      />
+    </>
   );
 };
 
@@ -136,6 +407,7 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit,onDelete  }) => {
   }, {});
 
   const categoryOrder = ['Accommodation', 'Destination', 'Others', 'Transport', 'Resource'];
+  
 
   let counter = 1;
 
@@ -257,7 +529,7 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit,onDelete  }) => {
                         </td>
                         <td className="px-4 py-3 text-sm text-right">{formatCurrency(item.amount)}</td>
                         <td className="px-4 py-3">
-                          {showToggle && (
+                          {showToggle && !item.debtPaymentId && (
                             <div className="flex justify-center">
                               <label className="relative inline-flex items-center cursor-pointer">
                                 <input
@@ -270,9 +542,12 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit,onDelete  }) => {
                               </label>
                             </div>
                           )}
+                          {item.debtPaymentId && (
+                            <div className="text-sm text-center text-green-600 font-medium flex justify-center items-center gap-1"><BookmarkCheck className="h-5 w-5"/> PAY LATER (PAID)</div>
+                          )}
                         </td>
                         <td className="px-4 py-3">
-                          {item.category !== 'Accommodation' && (
+                          {item.category !== 'Accommodation' && !item.debtPaymentId && (
                             <div className="flex justify-center">
                               <button
                                 onClick={() => onDelete(items.indexOf(item))}
@@ -1067,6 +1342,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
         rate: room.room_hotel.rate,
         amount: room.quantity * room.room_hotel.rate,
         isDebt: hotel.is_debt === '1',
+        debtPaymentId : hotel.debt_payment_id !== null,
         originalData: { 
           type: 'room', 
           hotelId: hotel.id, 
@@ -1135,6 +1411,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
           rate: activity.price,
           amount: activity.qty * activity.price,
           isDebt: activity.is_debt === '1',
+          debtPaymentId : activity.debt_payment_id !== null,
           status: 'unchanged',
           originalData: { 
             type: 'destination', 
@@ -1156,6 +1433,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
         rate: item.price,
         amount: item.qty * item.price,
         isDebt: item.is_debt === '1',
+        debtPaymentId : item.debt_payment_id !== null,
         status: 'unchanged',
         originalData: { 
           type: 'other', 
@@ -1174,6 +1452,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
         rate: car.price,
         amount: car.qty * car.price,
         isDebt: car.is_debt === '1',
+        debtPaymentId : car.debt_payment_id !== null,
         status: 'unchanged',
         originalData: { 
           type: 'transport', 
@@ -1192,6 +1471,7 @@ const EditExpenseManager = ({ booking, accommodations, destinations, others, res
         rate: crew.price,
         amount: crew.qty * crew.price,
         isDebt: crew.is_debt === '1',
+        debtPaymentId : crew.debt_payment_id !== null,
         status: 'unchanged',
         originalData: { 
           type: 'crew',

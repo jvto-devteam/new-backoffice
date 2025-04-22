@@ -309,7 +309,14 @@ const SummaryCards = ({ booking, totals }) => {
             </div>
             <div className="mt-2">
               <button 
-                onClick={() => setIsPaymentProofModalOpen(true)} 
+                onClick={() => {
+                  if(booking.payment_proof_expense === null){
+                    setIsPaymentProofModalOpen(true)                    
+                  }
+                  else{
+                    window.open('/storage/'+booking.payment_proof_expense, '_blank')
+                  }
+                }} 
                 className="text-white gap-1 flex items-center text-sm bg-green-600 py-1 px-2 rounded-lg font-medium"
                 title="Payment Proof"
               >

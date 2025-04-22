@@ -2040,13 +2040,9 @@ class FinanceController extends Controller
                 $booking->payment_proof_expense = $path;
                 $booking->save();
                 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Payment proof uploaded successfully',
-                    'path' => $path
-                ]);
+                return back()->with('message', 'Payment proof uploaded successfully');
             }
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'No file provided'

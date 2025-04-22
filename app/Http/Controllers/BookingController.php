@@ -1333,7 +1333,7 @@ class BookingController extends Controller
         $totalExpenseDebt = $bookDestinationActivityDebt + $bookOthersDebt + $bookCarActivityDebt + $bookCrewActivityDebt;
 
         $booking->expense_internal_total = $totalExpense;
-        $booking->total_expense_paid = $totalExpensePaid;
+        $booking->total_expense_crew = $totalExpensePaid;
         $booking->total_expense_balance = 0;
         $booking->total_expense_debt = $totalExpenseDebt;
 
@@ -1615,7 +1615,7 @@ class BookingController extends Controller
         $totalExpense = $totalAccommodations + $totalDestinations + $totalOthers + $totalResources;
 
         $booking->expense_internal_total = $totalExpense;
-        $booking->total_expense_paid = $totalExpense;
+        $booking->total_expense_crew = $totalExpense;
         $booking->total_expense_balance = 0;
         $booking->total_expense_debt = 0;
 

@@ -288,7 +288,7 @@ class FinanceController extends Controller
         $package = $request->input('package');
         $channel = $request->input('channel');
         $perPage = 10;
-        $query = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','payment','expense_internal_total','total_expense_paid','total_expense_balance','total_expense_debt','booking_category_id','agent_id','package_duration')->with(['user.country','bookingDetail' => function($q){
+        $query = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','payment','expense_internal_total','total_expense_crew','total_expense_balance','total_expense_debt','booking_category_id','agent_id','package_duration')->with(['user.country','bookingDetail' => function($q){
             $q->select('id','package_id','booking_id')->with('package',function($qq){
                 $qq->select('id','name','package_code');
             });
@@ -327,7 +327,7 @@ class FinanceController extends Controller
         $summary = [
             'bookings' => $query->count(),
             'total_expense' => $query->sum('expense_internal_total'),
-            'paid' => $query->sum('total_expense_paid'),
+            'paid' => $query->sum('total_expense_crew'),
             'unpaid' => $query->sum('total_expense_balance'),            
             'debt' => $query->sum('total_expense_debt'),            
         ];
@@ -347,7 +347,7 @@ class FinanceController extends Controller
                     'total_per_pax' => $booking->grand_total/$booking->total_pax,
                     'total' => $booking->grand_total,
                     'expense' => $booking->expense_internal_total,
-                    'expense_paid' => $booking->total_expense_paid,
+                    'expense_paid' => $booking->total_expense_crew,
                     'expense_balance' => $booking->total_expense_balance,
                     'expense_debt' => $booking->total_expense_debt,
                     'total_add_on' => $booking->book_add_on_total,
@@ -951,7 +951,7 @@ class FinanceController extends Controller
         // Update booking summary data (unchanged)
         if(!$booking->expense_file_internal){
             $booking->expense_internal_total = $request->summary['totalAmount'];
-            $booking->total_expense_paid = $request->summary['paidAmount'];
+            $booking->total_expense_crew = $request->summary['paidAmount'];
             $booking->total_expense_balance = 0;
             $booking->total_expense_debt = $request->summary['debtAmount'];
             $booking->save();
@@ -1110,7 +1110,7 @@ class FinanceController extends Controller
 
     //     if(!$booking->expense_file_internal){
     //         $booking->expense_internal_total = $request->summary['totalAmount'];
-    //         $booking->total_expense_paid = $request->summary['paidAmount'];
+    //         $booking->total_expense_crew = $request->summary['paidAmount'];
     //         $booking->total_expense_balance = 0;
     //         $booking->total_expense_debt = $request->summary['debtAmount'];
     //         $booking->save();
@@ -1561,40 +1561,130 @@ class FinanceController extends Controller
                 ->whereHas('booking', function($query) use($data){
                     $query->where('travel_date_start', 'like', "%".$data['filters']['year']."-".$data['filters']['month']."%");
                 })                
-                ->get()->map(function($value){
-                    $bookingId = $value->booking_id;
-                    $destinationId = $value->destination_id;
-                    $getActiviyDate = BookingItinerary::where('booking_id',$bookingId)->whereHas('activityStart',function($query) use($destinationId){
-                        $query->where('destination_id',$destinationId);
-                    })->first();
-                    $activityDate = null;
-                    $activityDateRaw = null;
-                    if($getActiviyDate){
-                        $activityDate = date('d F Y',strtotime($value->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
-                        $activityDateRaw = date('Y-m-d',strtotime($value->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
-                        
-                    }
-                    else{
-                        if($destinationId == 6){
-                            $destinationId = 1;
-    
-                            $getActiviyDate = BookingItinerary::where('booking_id',$bookingId)->whereHas('activityStart',function($query) use($destinationId){
-                                $query->where('destination_id',$destinationId);
-                            })->first();
+                ->get();
+
+                if(count($bookDestinationActivity) > 0 && $bookDestinationActivity[0]->destinationActivity->destination_id == 1){
+                    $bookDestinationActivity = $bookDestinationActivity->groupBy(function($item) {
+                        return $item->booking_id; // grup berdasarkan booking
+                    });
+                    $bookDestinationActivity = $bookDestinationActivity->map(function($value){
+                        $first = $value->first();
+                        $bookingId = $first->booking_id;
+                        $destinationId = $first->destination_id;
+                        $getActiviyDate = BookingItinerary::where('booking_id',$bookingId)->whereHas('activityStart',function($query) use($destinationId){
+                            $query->where('destination_id',$destinationId);
+                        })->first();
+                        $activityDate = null;
+                        $activityDateRaw = null;
+                        if($getActiviyDate){
+                            $activityDate = date('d F Y',strtotime($first->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
+                            $activityDateRaw = date('Y-m-d',strtotime($first->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
+                        }
+
+                        $no_of_pax = $value->where('destination_activity_id', 1)->sum('qty');
+                        $bromo_ticket = $value->where('destination_activity_id', 1)->sum('subtotal');
+                        $bromo_jeep_unit = $value->whereNotIn('destination_activity_id', [1])->sum('qty');
+                        $bromo_jeep = $value->whereNotIn('destination_activity_id', [1])->sum('subtotal');
+                        $total = $value->sum('subtotal');
+                        $hotelName = optional(
+                            $first->booking->bookHotel->firstWhere('hotel.destination_id', 1)
+                        )->hotel->name ?? '';
+            
+        
+                        return [
+                            'id' => $first->id,
+                            'booking_id' => $first->booking_id,
+                            'customer' => $first->booking->user->name,
+                            'channel'  => $first->booking->agent_id == 1 ? 'TWT' : ($first->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'), 
+                            'pax' => $first->booking->total_pax,
+                            'travel_date_start' => $first->booking->travel_date_start,
+                            'travel_date' => date('d M', strtotime($first->booking->travel_date_start))." - ".date('d M Y', strtotime($first->booking->travel_date_end)),
+                            'duration' => $first->booking->bookingDetail[0]->package ? $first->booking->bookingDetail[0]->package->duration->day."D ".$first->booking->bookingDetail[0]->package->duration->night."N" : $first->booking->package_duration."D ".($first->booking->package_duration == 1 ? 1 : $first->booking->package_duration-1)."N",
+                            'guest' => $first->booking->user->name,
+                            'travel_date' => date('d F Y',strtotime($first->booking->travel_date_start)),
+                            'activity_date' => $activityDate,
+                            'activity_date_raw' => $activityDateRaw,
+                            'bromo_ticket' => $bromo_ticket,
+                            'jeep_unit' => $bromo_jeep_unit,
+                            'bromo_jeep' => $bromo_jeep,
+                            'hotel_name' => $hotelName,
+                            'amount' => $total,
+                        ];
+                    });
+                }
+                else{
+                    $bookDestinationActivity = $bookDestinationActivity->map(function($value){
+                        $bookingId = $value->booking_id;
+                        $destinationId = $value->destination_id;
+                        $getActiviyDate = BookingItinerary::where('booking_id',$bookingId)->whereHas('activityStart',function($query) use($destinationId){
+                            $query->where('destination_id',$destinationId);
+                        })->first();
+                        $activityDate = null;
+                        $activityDateRaw = null;
+                        if($getActiviyDate){
                             $activityDate = date('d F Y',strtotime($value->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
                             $activityDateRaw = date('Y-m-d',strtotime($value->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
+                            
                         }
-                        else if($destinationId == 9){
-                            $destinationId = 2;
-    
-                            $getActiviyDate = BookingItinerary::where('booking_id',$bookingId)->whereHas('activityStart',function($query) use($destinationId){
-                                $query->where('destination_id',$destinationId);
-                            })->first();
-                            $activityDate = date('d F Y',strtotime($value->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
-                            $activityDateRaw = date('Y-m-d',strtotime($value->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
+                        else{
+                            if($destinationId == 6){
+                                $destinationId = 1;
+        
+                                $getActiviyDate = BookingItinerary::where('booking_id',$bookingId)->whereHas('activityStart',function($query) use($destinationId){
+                                    $query->where('destination_id',$destinationId);
+                                })->first();
+                                $activityDate = date('d F Y',strtotime($value->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
+                                $activityDateRaw = date('Y-m-d',strtotime($value->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
+                            }
+                            else if($destinationId == 9){
+                                $destinationId = 2;
+        
+                                $getActiviyDate = BookingItinerary::where('booking_id',$bookingId)->whereHas('activityStart',function($query) use($destinationId){
+                                    $query->where('destination_id',$destinationId);
+                                })->first();
+                                $activityDate = date('d F Y',strtotime($value->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
+                                $activityDateRaw = date('Y-m-d',strtotime($value->booking->travel_date_start." +".($getActiviyDate->day-1)." days"));
+                            }
                         }
-                    }
-    
+        
+                        return [
+                            'id' => $value->id,
+                            'booking_id' => $value->booking_id,
+                            'customer' => $value->booking->user->name,
+                            'channel'  => $value->booking->agent_id == 1 ? 'TWT' : ($value->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'), 
+                            'pax' => $value->booking->total_pax,
+                            'travel_date_start' => $value->booking->travel_date_start,
+                            'travel_date' => date('d M', strtotime($value->booking->travel_date_start))." - ".date('d M Y', strtotime($value->booking->travel_date_end)),
+                            'duration' => $value->booking->bookingDetail[0]->package ? $value->booking->bookingDetail[0]->package->duration->day."D ".$value->booking->bookingDetail[0]->package->duration->night."N" : $value->booking->package_duration."D ".($value->booking->package_duration == 1 ? 1 : $value->booking->package_duration-1)."N",
+                            'guest' => $value->booking->user->name,
+                            'travel_date' => date('d F Y',strtotime($value->booking->travel_date_start)),
+                            'item' => $value->destinationActivity->name,
+                            'activity_date' => $activityDate,
+                            'activity_date_raw' => $activityDateRaw,
+                            'qty' => $value->qty,
+                            'rate' => $value->price,
+                            'amount' => $value->subtotal,
+                        ];
+                    });
+                }
+                
+                $bookDestinationActivity = $bookDestinationActivity->filter(function($item) use($data){
+                    return $item['activity_date_raw'] >= $data['filters']['year']."-".$data['filters']['month']."-01" && $item['activity_date_raw'] <= $data['filters']['year']."-".$data['filters']['month']."-31";
+                })
+                ->sortBy('activity_date_raw')->values();
+
+                $data['debts'] = $bookDestinationActivity;
+            }
+            else if($getCategory->vendor_category_id == 3){
+                $bookCar = BookCarActivity::with(['booking.user','booking.bookingDetail.package','car'])
+                ->whereHas('booking', function($query) use($data){
+                    $query->where('travel_date_start', 'like', "%".$data['filters']['year']."-".$data['filters']['month']."%");
+                })                
+                ->whereHas('car', function($query) use($data){
+                    $query->where('vendor_id',$data['filters']['vendor']);
+                })
+                ->where('is_debt','1')->get();
+                $bookCar = $bookCar->map(function($value){
                     return [
                         'id' => $value->id,
                         'booking_id' => $value->booking_id,
@@ -1602,24 +1692,44 @@ class FinanceController extends Controller
                         'channel'  => $value->booking->agent_id == 1 ? 'TWT' : ($value->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'), 
                         'pax' => $value->booking->total_pax,
                         'travel_date_start' => $value->booking->travel_date_start,
-                        'travel_date' => date('d M', strtotime($value->booking->travel_date_start))." - ".date('d M Y', strtotime($value->booking->travel_date_end)),
                         'duration' => $value->booking->bookingDetail[0]->package ? $value->booking->bookingDetail[0]->package->duration->day."D ".$value->booking->bookingDetail[0]->package->duration->night."N" : $value->booking->package_duration."D ".($value->booking->package_duration == 1 ? 1 : $value->booking->package_duration-1)."N",
                         'guest' => $value->booking->user->name,
-                        'travel_date' => date('d F Y',strtotime($value->booking->travel_date_start)),
-                        'item' => $value->destinationActivity->name,
-                        'activity_date' => $activityDate,
-                        'activity_date_raw' => $activityDateRaw,
+                        'pickup_date' => date('d M Y', strtotime($value->booking->travel_date_start)),
+                        'drop_date' => date('d M Y', strtotime($value->booking->travel_date_end.($value->booking->is_shuttle ? ' -1 day' : ''))),
+                        'car' => $value->car->name,
                         'qty' => $value->qty,
                         'rate' => $value->price,
                         'amount' => $value->subtotal,
                     ];
+                })->sortBy('pickup_date')->values();
+                $data['debts'] = $bookCar;
+            }
+            else if($getCategory->vendor_category_id == 4){
+                $bookOthers = BookOthersActivity::with(['booking.user','booking.bookingDetail.package','othersActivity'])
+                ->whereHas('booking', function($query) use($data){
+                    $query->where('travel_date_start', 'like', "%".$data['filters']['year']."-".$data['filters']['month']."%");
+                })                
+                ->whereHas('othersActivity', function($query) use($data){
+                    $query->where('vendor_id',$data['filters']['vendor']);
                 })
-                ->filter(function($item) use($data){
-                    return $item['activity_date_raw'] >= $data['filters']['year']."-".$data['filters']['month']."-01" && $item['activity_date_raw'] <= $data['filters']['year']."-".$data['filters']['month']."-31";
-                })
-                ->sortBy('activity_date_raw')->values();
-
-                $data['debts'] = $bookDestinationActivity;
+                ->where('is_debt','1')->get();
+                $bookOthers = $bookOthers->map(function($value){
+                    return [
+                        'id' => $value->id,
+                        'booking_id' => $value->booking_id,
+                        'customer' => $value->booking->user->name,
+                        'channel'  => $value->booking->agent_id == 1 ? 'TWT' : ($value->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'), 
+                        'pax' => $value->booking->total_pax,
+                        'travel_date_start' => $value->booking->travel_date_start,
+                        'duration' => $value->booking->bookingDetail[0]->package ? $value->booking->bookingDetail[0]->package->duration->day."D ".$value->booking->bookingDetail[0]->package->duration->night."N" : $value->booking->package_duration."D ".($value->booking->package_duration == 1 ? 1 : $value->booking->package_duration-1)."N",
+                        'guest' => $value->booking->user->name,
+                        'item' => $value->othersActivity->name,
+                        'qty' => $value->qty,
+                        'rate' => $value->price,
+                        'amount' => $value->subtotal,
+                    ];
+                })->sortBy('travel_date_start')->values();
+                $data['debts'] = $bookOthers;
             }
         }
 

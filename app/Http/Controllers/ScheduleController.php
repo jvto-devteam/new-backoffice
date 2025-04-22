@@ -275,7 +275,7 @@ class ScheduleController extends Controller
                         ],
                         'expense' => [
                             'total' => $booking->expense_internal_total,
-                            'crew_expense' => $booking->total_expense_paid,
+                            'crew_expense' => $booking->total_expense_crew,
                             'debt_expense' => $booking->total_expense_debt,
                             'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : '/finance/expense-manager/'.$booking->id.'/edit',
                             'target' => '_blank'
@@ -651,7 +651,7 @@ class ScheduleController extends Controller
                 ],
                 'expense' => [
                     'total' => $booking->expense_internal_total,
-                    'crew_expense' => $booking->total_expense_paid,
+                    'crew_expense' => $booking->total_expense_crew,
                     'debt_expense' => $booking->total_expense_debt,
                     'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : '/finance/expense-manager/'.$booking->id.'/edit',
                     'target' => '_blank'

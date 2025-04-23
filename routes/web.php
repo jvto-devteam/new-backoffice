@@ -47,9 +47,9 @@ Route::middleware('guest')->group(function () {
 
 Route::get('generate-inv', [DashboardController::class,'generateInv']);
 Route::get('preview-file', [ScheduleController::class,'previewFile']);
-// Route::middleware('auth')->group(function () {
+Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-    Route::get('/', [DashboardController::class,'index']);
+    Route::get('/', [DashboardController::class,'index'])->name('dashboard');
     Route::get('/portal-vendor', [DashboardController::class,'portalVendor']);
     Route::get('/screening', [DashboardController::class,'screening']);
     Route::get('/booking-overview', [ScheduleController::class,'index']);
@@ -148,6 +148,6 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
 
     Route::resource('articles', ArticleController::class);
 
-// });
+});
 
-// require __DIR__.'/auth.php';
+require __DIR__.'/auth.php';

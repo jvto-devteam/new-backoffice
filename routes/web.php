@@ -51,6 +51,7 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [DashboardController::class,'index']);
     Route::get('/portal-vendor', [DashboardController::class,'portalVendor']);
+    Route::get('/screening', [DashboardController::class,'screening']);
     Route::get('/booking-overview', [ScheduleController::class,'index']);
     Route::post('/plotting', [ScheduleController::class,'plotting']);
     Route::post('/update-booking-note', [ScheduleController::class,'updateBookingNote']);

@@ -217,6 +217,9 @@ class DashboardController extends Controller
     function portalVendor(){
         return Inertia::render('PortalVendor');
     }
+    function screening(){
+        return Inertia::render('Screening');
+    }
     function generateInv(){
         // $new = new BookingPayment;
         // $new->booking_id = 981;

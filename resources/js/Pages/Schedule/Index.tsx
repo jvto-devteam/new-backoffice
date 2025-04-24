@@ -1584,7 +1584,7 @@ export default function Index({ data }) {
             return (
                 plottingData?.car?.map((vehicle) => {
                     // Always enable Hiace (id: 5) and Premio (id: 21)
-                    const alwaysEnabled = [5, 21].includes(vehicle.id);
+                    const alwaysEnabled = [5,21,1,2,4].includes(vehicle.id);
 
                     return {
                         value: vehicle.id,
@@ -1644,18 +1644,18 @@ export default function Index({ data }) {
                     value: guide.id,
                     label: guide.name,
                     disabled:
-                        guide.status === "Tidak Tersedia" ||
-                        !guide.dynamic_roles?.includes("Ijen"),
+                        (guide.id !== 56 && guide.status === "Tidak Tersedia") ||
+                        (!guide.dynamic_roles?.includes("Ijen") && guide.id !== 56),
                     scheduleInfo:
-                        guide.status === "Tidak Tersedia"
+                        guide.status === "Tidak Tersedia" && guide.id !== 56
                             ? guide.schedule_info
-                            : !guide.dynamic_roles?.includes("Ijen")
-                              ? "Hanya tersedia untuk Escort"
-                              : undefined,
+                            : !guide.dynamic_roles?.includes("Ijen") && guide.id !== 56
+                                ? "Hanya tersedia untuk Escort"
+                                : undefined,
                 })) || []
             );
         }, [plottingData?.guide]);
-
+        
         const handleSubmit = (e) => {
             e.preventDefault();
             setIsLoading(true);

@@ -47,11 +47,11 @@ Route::middleware('guest')->group(function () {
 
 Route::get('generate-inv', [DashboardController::class,'generateInv']);
 Route::get('preview-file', [ScheduleController::class,'previewFile']);
+Route::get('/screening', [DashboardController::class,'screening']);
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [DashboardController::class,'index'])->name('dashboard');
     Route::get('/portal-vendor', [DashboardController::class,'portalVendor']);
-    Route::get('/screening', [DashboardController::class,'screening']);
     Route::get('/booking-overview', [ScheduleController::class,'index']);
     Route::post('/plotting', [ScheduleController::class,'plotting']);
     Route::post('/update-booking-note', [ScheduleController::class,'updateBookingNote']);

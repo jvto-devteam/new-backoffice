@@ -369,7 +369,7 @@ const HomeScreen = () => (
                   <MapPin size={18} />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-800">Paltuding Entry Point</h3>
+                  <h3 className="font-medium text-gray-800">Baratha Hotel</h3>
                   <p className="text-xs text-gray-500">15 May 2023 • 2 participants</p>
                 </div>
               </div>
@@ -401,7 +401,7 @@ const HomeScreen = () => (
                   <MapPin size={18} />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-800">Banyuwangi Entry Point</h3>
+                  <h3 className="font-medium text-gray-800">Riverside Homestay</h3>
                   <p className="text-xs text-gray-500">10 May 2023 • 1 participant</p>
                 </div>
               </div>
@@ -555,7 +555,7 @@ const HomeScreen = () => (
                     <MapPin size={18} />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-800">Paltuding Entry Point</h3>
+                    <h3 className="font-medium text-gray-800">Baratha Hotel</h3>
                     <p className="text-xs text-gray-500">15 May 2023 • 2 participants</p>
                   </div>
                 </div>
@@ -585,7 +585,7 @@ const HomeScreen = () => (
                     <MapPin size={18} />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-800">Banyuwangi Entry Point</h3>
+                    <h3 className="font-medium text-gray-800">Riverside Homestay</h3>
                     <p className="text-xs text-gray-500">10 May 2023 • 1 participant</p>
                   </div>
                 </div>
@@ -623,8 +623,8 @@ const HomeScreen = () => (
         const locations = [
         {
             id: 1,
-            name: "Paltuding",
-            coords: [-8.059, 114.2439],
+            name: "Baratha Hotel",
+            coords: [-7.913030, 113.807867],
             description: "Most popular entry point",
             details: "Paltuding is the main starting point for hikers. It has complete facilities including parking area, toilets, and small shops.",
             elevation: "1,850m",
@@ -633,8 +633,8 @@ const HomeScreen = () => (
         },
         {
             id: 2,
-            name: "Banyuwangi",
-            coords: [-8.2191, 114.3691],
+            name: "Riverside Homestay",
+            coords: [-7.932059, 113.824877],
             description: "Eastern entry point",
             details: "Located on the eastern side with less crowded trail. Better for experienced hikers.",
             elevation: "1,720m",
@@ -643,8 +643,8 @@ const HomeScreen = () => (
         },
         {
             id: 3,
-            name: "Bondowoso",
-            coords: [-7.9136, 113.8219],
+            name: "Grand Padis Hotel",
+            coords: [-7.915963, 113.819655],
             description: "Northern entry point",
             details: "Longer route but offers beautiful landscapes. Recommended for nature photography enthusiasts.",
             elevation: "1,950m",
@@ -711,7 +711,7 @@ const HomeScreen = () => (
             {/* Map Container - Full Screen minus header and search */}
             <div className="absolute top-[132px] left-0 right-0 bottom-0 z-0">
             <MapContainer 
-                center={[-8.059, 114.2439]} 
+                center={[-7.913030, 113.807867]} 
                 zoom={10} 
                 style={{ height: "100%", width: "100%" }}
                 zoomControl={false}
@@ -1166,20 +1166,20 @@ const Form1Screen = () => {
     const locations = [
       {
         id: 1,
-        name: "Paltuding",
-        coords: [-8.059, 114.2439],
+        name: "Baratha Hotel",
+        coords: [-7.913030, 113.807867],
         description: "Most popular entry point",
       },
       {
         id: 2,
-        name: "Banyuwangi",
-        coords: [-8.2191, 114.3691],
+        name: "Riverside Homestay",
+        coords: [-7.932059, 113.824877],
         description: "Eastern entry point",
       },
       {
         id: 3,
-        name: "Bondowoso",
-        coords: [-7.9136, 113.8219],
+        name: "Grand Padis Hotel",
+        coords: [-7.915963, 113.819655],
         description: "Northern entry point",
       }
     ];
@@ -1261,7 +1261,7 @@ const Form1Screen = () => {
         {/* Map Container - Full Screen minus header and search */}
         <div className="absolute top-[132px] left-0 right-0 bottom-0 z-0">
           <MapContainer 
-            center={[-8.059, 114.2439]} 
+            center={[-7.913030, 113.807867]} 
             zoom={10} 
             style={{ height: "100%", width: "100%" }}
             zoomControl={false}
@@ -1477,7 +1477,7 @@ const Form1Screen = () => {
           
           <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg mb-3">
             <span className="text-gray-700">Location</span>
-            <span className="font-medium">Paltuding Entry Point</span>
+            <span className="font-medium">Baratha Hotel</span>
           </div>
           
           <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg mb-3">
@@ -1701,7 +1701,7 @@ const Form1Screen = () => {
         <div className="bg-white rounded-xl shadow-sm p-4 mb-6 w-full">
           <div className="flex justify-between items-center mb-2">
             <span className="text-gray-700">Location</span>
-            <span className="font-medium">Paltuding Entry Point</span>
+            <span className="font-medium">Baratha Hotel</span>
           </div>
           
           <div className="flex justify-between items-center mb-2">
@@ -1758,7 +1758,7 @@ const Form1Screen = () => {
                 <MapPin size={20} />
               </div>
               <div>
-                <h3 className="font-medium text-gray-800">Paltuding Entry Point</h3>
+                <h3 className="font-medium text-gray-800">Baratha Hotel</h3>
                 <p className="text-xs text-gray-500">15 May 2023</p>
               </div>
             </div>
@@ -1949,7 +1949,7 @@ const Form1Screen = () => {
           <div className="space-y-3 mb-5">
             <div className="flex justify-between">
               <span className="text-gray-600">Location</span>
-              <span className="font-medium">Paltuding Entry Point</span>
+              <span className="font-medium">Baratha Hotel</span>
             </div>
             
             <div className="flex justify-between">
@@ -2051,7 +2051,7 @@ const Form1Screen = () => {
                 <MapPin size={20} className="text-blue-500 mr-3" />
                 <div>
                   <p className="text-sm text-gray-500">Location</p>
-                  <p className="font-medium">Paltuding Entry Point</p>
+                  <p className="font-medium">Baratha Hotel</p>
                 </div>
               </div>
               

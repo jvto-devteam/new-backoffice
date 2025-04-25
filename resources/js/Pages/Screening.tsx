@@ -369,7 +369,7 @@ const HomeScreen = () => (
                   <MapPin size={18} />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-800">Baratha Hotel</h3>
+                  <h3 className="font-medium text-gray-800">David Setya</h3>
                   <p className="text-xs text-gray-500">15 May 2023 • 2 participants</p>
                 </div>
               </div>
@@ -388,7 +388,7 @@ const HomeScreen = () => (
             </div>
             <button 
               className="w-full flex justify-center items-center py-2 text-blue-500 text-sm font-medium mt-2 hover:bg-blue-50 rounded-lg transition-colors"
-              onClick={() => setCurrentScreen('screening')}
+              onClick={() => setCurrentScreen('details')}
             >
               View Details
             </button>
@@ -401,7 +401,7 @@ const HomeScreen = () => (
                   <MapPin size={18} />
                 </div>
                 <div>
-                  <h3 className="font-medium text-gray-800">Riverside Homestay</h3>
+                  <h3 className="font-medium text-gray-800">Inant Kharisma</h3>
                   <p className="text-xs text-gray-500">10 May 2023 • 1 participant</p>
                 </div>
               </div>
@@ -555,7 +555,7 @@ const HomeScreen = () => (
                     <MapPin size={18} />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-800">Baratha Hotel</h3>
+                    <h3 className="font-medium text-gray-800">David Setya</h3>
                     <p className="text-xs text-gray-500">15 May 2023 • 2 participants</p>
                   </div>
                 </div>
@@ -585,7 +585,7 @@ const HomeScreen = () => (
                     <MapPin size={18} />
                   </div>
                   <div>
-                    <h3 className="font-medium text-gray-800">Riverside Homestay</h3>
+                    <h3 className="font-medium text-gray-800">Inant Kharisma</h3>
                     <p className="text-xs text-gray-500">10 May 2023 • 1 participant</p>
                   </div>
                 </div>
@@ -711,8 +711,8 @@ const HomeScreen = () => (
             {/* Map Container - Full Screen minus header and search */}
             <div className="absolute top-[132px] left-0 right-0 bottom-0 z-0">
             <MapContainer 
-                center={[-7.913030, 113.807867]} 
-                zoom={10} 
+                center={[-7.913030, 113.820867]} 
+                zoom={14} 
                 style={{ height: "100%", width: "100%" }}
                 zoomControl={false}
             >
@@ -1261,8 +1261,8 @@ const Form1Screen = () => {
         {/* Map Container - Full Screen minus header and search */}
         <div className="absolute top-[132px] left-0 right-0 bottom-0 z-0">
           <MapContainer 
-            center={[-7.913030, 113.807867]} 
-            zoom={10} 
+            center={[-7.913030, 113.820867]} 
+            zoom={14} 
             style={{ height: "100%", width: "100%" }}
             zoomControl={false}
           >

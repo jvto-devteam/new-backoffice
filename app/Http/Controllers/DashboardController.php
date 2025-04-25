@@ -220,6 +220,9 @@ class DashboardController extends Controller
     function screening(){
         return Inertia::render('Screening');
     }
+    function screeningStaff(){
+        return Inertia::render('ScreeningStaff');
+    }
     function generateInv(){
         // $new = new BookingPayment;
         // $new->booking_id = 981;

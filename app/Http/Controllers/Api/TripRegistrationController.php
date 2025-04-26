@@ -264,6 +264,7 @@ class TripRegistrationController extends Controller
                 'bookings.status',
             )
             ->join('bookings', 'participants.booking_id', '=', 'bookings.id')
+            ->where('booking_id',$booking->id)
             ->orderBy('participants.created_at', 'desc')
             ->get();
 

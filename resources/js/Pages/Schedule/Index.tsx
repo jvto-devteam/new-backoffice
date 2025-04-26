@@ -819,7 +819,7 @@ const BookingRow = ({
                                                 </div>
                                             </div>
                                             
-                                            <div className={`mt-3 grid ${guide.type === "Ijen" ? 'grid-cols-2' : 'grid-cols-1'} gap-2 text-center`}>
+                                            <div className={`mt-3 grid grid-cols-2 gap-2 text-center`}>
                                                 <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
                                                     <div className="text-xs text-gray-500 dark:text-gray-400">Escort Trips</div>
                                                     <div className="font-medium text-gray-900 dark:text-white">{guide.recap_this_month_escort || 0}</div>

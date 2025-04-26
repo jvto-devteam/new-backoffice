@@ -824,12 +824,10 @@ const BookingRow = ({
                                                     <div className="text-xs text-gray-500 dark:text-gray-400">Escort Trips</div>
                                                     <div className="font-medium text-gray-900 dark:text-white">{guide.recap_this_month_escort || 0}</div>
                                                 </div>
-                                                {guide.type === "Ijen" && (
-                                                    <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
-                                                        <div className="text-xs text-gray-500 dark:text-gray-400">Ijen Trips</div>
-                                                        <div className="font-medium text-gray-900 dark:text-white">{guide.recap_this_month_ijen || 0}</div>
-                                                    </div>
-                                                )}
+                                                <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">Ijen Trips</div>
+                                                    <div className="font-medium text-gray-900 dark:text-white">{guide.recap_this_month_ijen || 0}</div>
+                                                </div>
                                             </div>
                                             
                                             <button 

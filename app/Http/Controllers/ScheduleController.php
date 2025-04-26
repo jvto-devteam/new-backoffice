@@ -73,7 +73,8 @@ class ScheduleController extends Controller
             $orderByBookingOrder = $data['filters']['sort_order'] == 'asc' ? 'asc' : 'desc';
             $data['booking'] = $data['booking']->where('status', $status)->orderBy($orderByBookingColumn,$orderByBookingOrder)->get();
             $data['bookingReal'] = $data['booking'];
-            $data['booking'] = $data['booking']->map(function($booking){
+            $d = $data;
+            $data['booking'] = $data['booking']->map(function($booking) use($request, $d){
                 $orderChannel = $booking->agent_id == 1 ? 'TWT' : ($booking->agent_id == 2 && $booking->booking_category_id == 3 ? 'KLOOK' : 'JVTO');
                 $itinerary = [];
                 $hotels = [];
@@ -171,12 +172,44 @@ class ScheduleController extends Controller
                 if(count($booking->guideDriver) != 0){
                     foreach ($booking->guideDriver as $key => $value) {
                         if($value->type == 'driver'){
-                            array_push($drivers,$value->person->name);
+                            $recapEscort = BookGuideDriver::where('guide_id',$value->person->id)->where('guide_ijen','0');
+                            if(!$request->filter_type || $request->filter_type == 'month'){
+                                $recapEscort = $recapEscort->where('start_date','like',$d['filters']['month']."%")->count();
+                            }
+                            else{
+                                $recapEscort = $recapEscort->whereBetween('start_date', [$d['filters']['startDate'], $d['filters']['endDate']]);
+                            }
+                            $drivers[] = [
+                                'id' => $value->person->id,
+                                'name' => $value->person->name,
+                                'tags' => $value->person->tags,
+                                'photo' => $value->person->photo ? 'https://javavolcano-touroperator.com/assets/img/guide/'.$value->person->photo : 'https://javavolcano-touroperator.com/assets/img/guide/default.jpg',
+                                'recap_this_month_escort' => $recapEscort, // for driver & guide
+                            ];
+
+                            // array_push($drivers,$value->person->name);
                         }
                         else{
+                            
+                            $recapEscort = BookGuideDriver::where('guide_id',$value->person->id)->where('guide_ijen','0');
+                            $recapIjen = BookGuideDriver::where('guide_id',$value->person->id)->where('guide_ijen','1');
+                            if(!$request->filter_type || $request->filter_type == 'month'){
+                                $recapEscort = $recapEscort->where('start_date','like',$d['filters']['month']."%")->count();
+                                $recapIjen = $recapIjen->where('start_date','like',$d['filters']['month']."%")->count();
+                            }
+                            else{
+                                $recapEscort = $recapEscort->whereBetween('start_date', [$d['filters']['startDate'], $d['filters']['endDate']]);
+                                $recapIjen = $recapIjen->whereBetween('start_date', [$d['filters']['startDate'], $d['filters']['endDate']]);
+                            }
                             $guides[] = [
+                                'id' => $value->person->id,
                                 'name' => $value->person->name,
                                 'type' => $value->guide_ijen == '0' ? 'Escort' : 'Ijen',
+                                'tags' => $value->person->tags,
+                                'photo' => $value->person->photo ? 'https://javavolcano-touroperator.com/assets/img/guide/'.$value->person->photo : 'https://javavolcano-touroperator.com/assets/img/guide/default.jpg',
+                                'recap_this_month_escort' => $recapEscort, // for driver & guide
+                                'recap_this_month_ijen' => $recapIjen, // for guide only
+        
                             ];
                         }
                     };

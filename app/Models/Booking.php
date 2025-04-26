@@ -140,4 +140,14 @@ class Booking extends Model
     {
         return $this->belongsTo(NoteCategory::class, 'note_category_id');
     }
+
+    public function bookingReview()
+    {
+        return $this->belongsTo(BookingReview::class, 'booking_id');
+    }
+
+    public function crewReview()
+    {
+        return $this->hasMany(CrewReview::class, 'booking_id');
+    }
 }

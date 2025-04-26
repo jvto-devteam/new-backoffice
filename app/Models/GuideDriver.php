@@ -14,5 +14,13 @@ class GuideDriver extends Model
         'password',
         'device_token',
     ];
+    public function bookGuideDriver()
+    {
+        return $this->hasMany(BookGuideDriver::class, 'guide_id');
+    }
+    public function crewReview()
+    {
+        return $this->hasMany(CrewReview::class, 'crew_id');
+    }
 
 }

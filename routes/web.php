@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/data-master-management/transportation', [TransportationController::class,'index']);
     Route::get('/data-master-management/miscellaneous', [MiscellaneousController::class,'index']);
     Route::get('/data-master-management/crew', [CrewController::class,'index']);
+    Route::get('/data-master-management/crew/{id}', [CrewController::class,'details']);
 
     Route::get('/short-link', [ShortLinkController::class,'index']);
     Route::post('/short-link/store', [ShortLinkController::class,'store']);

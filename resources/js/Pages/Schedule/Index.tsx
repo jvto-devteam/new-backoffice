@@ -338,6 +338,7 @@ const BookingRow = ({
     noteCategories,
     viewColumns
 }) => {
+    const [hoveredCrew, setHoveredCrew] = useState(null);
     const [openDropdownId, setOpenDropdownId] = useState(null);
     const dropdownRef = useRef(null);
 
@@ -702,29 +703,146 @@ const BookingRow = ({
                                 </div>
                             ))
                         ) : (
-                            <div className="flex text-xs items-center text-red-500">
+                            <div className="flex text-sm items-center text-red-500">
                                 <AlertCircle className="w-4 h-4 mr-1" />
                                 No vehicle assigned
                             </div>
                         )}
                     </div>
-                    <div className="text-xs text-gray-600 mt-1">
-                        {booking.drivers && booking.drivers.length > 0 ? (
-                            booking.drivers.map((driver, idx) => (
-                                <div key={idx}>Driver: {driver}</div>
-                            ))
-                        ) : (
-                            <div className="flex items-center text-red-500">
-                                <AlertCircle className="w-4 h-4 mr-1" />
-                                No driver assigned
+                    {booking.drivers && booking.drivers.length > 0 ? (
+                        booking.drivers.map((driver, idx) => (
+                            <div className="space-x-1 relative group flex"
+                                key={idx}
+                                onMouseEnter={() => setHoveredCrew(driver)}
+                                onMouseLeave={() => setHoveredCrew(null)}
+                            >
+                                <span> Driver: </span>
+                                <div className="underline text-blue-600 cursor-pointer">
+                                    {driver.name}
+                                </div>
+                                
+                                {/* Crew profile popup on hover */}
+                                {hoveredCrew && hoveredCrew.id === driver.id && (
+                                    <div className="absolute z-10 left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3">
+                                        <div className="flex items-start gap-3">
+                                            <div className="h-16 w-16 rounded-full overflow-hidden flex-shrink-0">
+                                                <img 
+                                                    src={driver.photo || "https://javavolcano-touroperator.com/assets/img/guide/default.jpg"} 
+                                                    alt={driver.name}
+                                                    className="h-full w-full object-cover"
+                                                />
+                                            </div>
+                                            <div>
+                                                <div className="font-medium text-gray-900 dark:text-white text-left">{driver.name}</div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-400 capitalize flex items-center">
+                                                    Driver
+                                                </div>
+                                                <div className="mt-1 flex flex-wrap gap-1">
+                                                    {driver.tags && driver.tags.split(',').map((tag, i) => (
+                                                        <span 
+                                                            key={i} 
+                                                            className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                                        >
+                                                            {tag}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="mt-3 grid grid-cols-1 gap-2 text-center">
+                                            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                                                <div className="text-xs text-gray-500 dark:text-gray-400">Escort Trips</div>
+                                                <div className="font-medium text-gray-900 dark:text-white">{driver.recap_this_month_escort || 0}</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <button 
+                                            className="mt-3 w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                window.location.href = `/data-master-management/crew/${driver.id}`;
+                                            }}
+                                        >
+                                            View Profile
+                                        </button>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
-                    <div className="text-xs text-gray-600">
+                        ))
+                    ) : (
+                        <div className="flex items-center text-red-500">
+                            <AlertCircle className="w-4 h-4 mr-1" />
+                            No driver assigned
+                        </div>
+                    )}
+
+                    <div className="text-sm text-gray-600">
                         {booking.guides && booking.guides.length > 0 ? (
                             booking.guides.map((guide, idx) => (
-                                <div key={idx}>
-                                    {guide.type}: {guide.name}
+                                <div className="space-x-1 relative group flex"
+                                    key={idx}
+                                    onMouseEnter={() => setHoveredCrew(guide)}
+                                    onMouseLeave={() => setHoveredCrew(null)}
+                                >
+                                    <span>{guide.type}:</span>
+                                    <div className="underline cursor-pointer text-blue-600">
+                                        {guide.name}
+                                    </div>
+                                    
+                                    {/* Crew profile popup on hover */}
+                                    {hoveredCrew && hoveredCrew.id === guide.id && (
+                                        <div className="absolute z-10 left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3">
+                                            <div className="flex items-start gap-3">
+                                                <div className="h-16 w-16 rounded-full overflow-hidden flex-shrink-0">
+                                                    <img 
+                                                        src={guide.photo || "https://javavolcano-touroperator.com/assets/img/guide/default.jpg"} 
+                                                        alt={guide.name}
+                                                        className="h-full w-full object-cover"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <div className="font-medium text-gray-900 dark:text-white text-left">{guide.name}</div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400 capitalize flex items-center">
+                                                        {guide.type} Guide
+                                                    </div>
+                                                    <div className="mt-1 flex flex-wrap gap-1">
+                                                        {guide.tags && guide.tags.split(',').map((tag, i) => (
+                                                            <span 
+                                                                key={i} 
+                                                                className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                                            >
+                                                                {tag}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className={`mt-3 grid ${guide.type === "Ijen" ? 'grid-cols-2' : 'grid-cols-1'} gap-2 text-center`}>
+                                                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">Escort Trips</div>
+                                                    <div className="font-medium text-gray-900 dark:text-white">{guide.recap_this_month_escort || 0}</div>
+                                                </div>
+                                                {guide.type === "Ijen" && (
+                                                    <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400">Ijen Trips</div>
+                                                        <div className="font-medium text-gray-900 dark:text-white">{guide.recap_this_month_ijen || 0}</div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            
+                                            <button 
+                                                className="mt-3 w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    window.location.href = `/data-master-management/crew/${guide.id}`;
+                                                }}
+                                            >
+                                                View Profile
+                                            </button>
+                                        </div>
+                                    )}
                                 </div>
                             ))
                         ) : (
@@ -1212,6 +1330,7 @@ export default function Index({ data }) {
     const [sortOrder, setSortOrder] = useState(data.filters.sort_order); // Get from props or default to asc
     const [isDateSortDropdownOpen, setIsDateSortDropdownOpen] = useState(false); // New state to control dropdown visibility
     const dateSortDropdownRef = useRef(null); // Reference for the dropdown
+    
     
     useEffect(() => {
         const handleClickOutside = (event) => {

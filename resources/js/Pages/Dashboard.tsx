@@ -358,7 +358,8 @@ const renderEventContent = (eventInfo) => {
                   {selectedTrip.crews && selectedTrip.crews.length > 0 ? (
                     <div className="flex flex-wrap gap-4">
                       {selectedTrip.crews.map((crew, index) => (
-                        <div 
+                        <Link
+                          href={`/data-master-management/crew/${crew.id}`} 
                           key={index} 
                           className="flex flex-col items-center relative"
                           onMouseEnter={() => setHoveredCrew(crew)}
@@ -375,7 +376,7 @@ const renderEventContent = (eventInfo) => {
                             <div className="font-medium text-gray-900 dark:text-white text-sm">{crew.name}</div>
                             <div className="text-xs text-gray-500 dark:text-gray-400 capitalize">{crew.type}</div>
                           </div>
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   ) : (
@@ -638,77 +639,88 @@ const renderEventContent = (eventInfo) => {
                                     </td>
                                     </>
                                 )}
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                  {booking.crews.length > 0 ? (
-                                    <div className="flex gap-2 whitespace-nowrap">
-                                      {booking.crews.map((crew, index) => (
-                                        <div 
-                                          className="text-center relative" 
-                                          key={index}
-                                          onMouseEnter={() => setHoveredCrew(crew)}
-                                          onMouseLeave={() => setHoveredCrew(null)}
-                                        >
-                                          <div className='rounded-full'>
-                                            <img 
-                                              src={crew.photo} 
-                                              className="h-10 rounded-full bg-gray-100 w-10 object-cover" 
-                                              alt={crew.name} 
-                                            />
-                                          </div>
-                                          <span className="text-xs font-medium text-gray-900 dark:text-white block mt-1">{crew.name}</span>
-                                          
-                                          {/* Crew profile popup on hover */}
-                                          {hoveredCrew && hoveredCrew.id === crew.id && (
-                                            <div className="absolute z-10 right-0  mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3">
-                                              <div className="flex items-start gap-3">
-                                                <div className="h-16 w-16 rounded-full overflow-hidden flex-shrink-0">
-                                                  <img 
-                                                    src={crew.photo} 
-                                                    alt={crew.name}
-                                                    className="h-full w-full object-cover"
-                                                  />
-                                                </div>
-                                                <div>
-                                                  <div className="font-medium text-gray-900 dark:text-white text-left">{crew.name}</div>
-                                                  <div className="text-xs text-gray-500 dark:text-gray-400 capitalize flex items-center">
-                                                    {crew.type}
-                                                  </div>
-                                                  <div className="mt-1 flex flex-wrap gap-1">
-                                                    {crew.tags.split(',').map((tag, i) => (
-                                                      <span 
-                                                        key={i} 
-                                                        className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-                                                      >
-                                                        {tag}
-                                                      </span>
-                                                    ))}
-                                                  </div>
-                                                </div>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                {booking.crews.length > 0 ? (
+                                  <div className="flex gap-2 whitespace-nowrap">
+                                    {booking.crews.map((crew, index) => (
+                                      <div 
+                                        className="text-center relative" 
+                                        key={index}
+                                        onMouseEnter={() => setHoveredCrew({...crew, bookingId: booking.id})}
+                                        onMouseLeave={() => setHoveredCrew(null)}
+                                      >
+                                        <div className='rounded-full'>
+                                          <img 
+                                            src={crew.photo} 
+                                            className="h-10 rounded-full bg-gray-100 w-10 object-cover" 
+                                            alt={crew.name} 
+                                          />
+                                        </div>
+                                        <span className="text-xs font-medium text-gray-900 dark:text-white block mt-1">{crew.name}</span>
+                                        
+                                        {/* Crew profile popup on hover - check for both crew ID and booking ID match */}
+                                        {hoveredCrew && hoveredCrew.id === crew.id && hoveredCrew.bookingId === booking.id && (
+                                          <div className="absolute z-10 right-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3">
+                                            <div className="flex items-start gap-3">
+                                              <div className="h-16 w-16 rounded-full overflow-hidden flex-shrink-0">
+                                                <img 
+                                                  src={crew.photo} 
+                                                  alt={crew.name}
+                                                  className="h-full w-full object-cover"
+                                                />
                                               </div>
-                                              
-                                              <div className={`mt-3 grid ${crew.type == 'guide' ? 'grid-cols-2' : 'grid-cols-1'} gap-2 text-center`}>
-                                                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
-                                                  <div className="text-xs text-gray-500 dark:text-gray-400">Escort Trips</div>
-                                                  <div className="font-medium text-gray-900 dark:text-white">{crew.recap_this_month_escort}</div>
+                                              <div>
+                                                <div className="font-medium text-gray-900 dark:text-white text-left">{crew.name}</div>
+                                                <div className="text-xs text-gray-500 dark:text-gray-400 capitalize flex items-center">
+                                                  {crew.type}
                                                 </div>
-                                                {crew.type === 'guide' && (
-                                                  <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
-                                                    <div className="text-xs text-gray-500 dark:text-gray-400">Ijen Trips</div>
-                                                    <div className="font-medium text-gray-900 dark:text-white">{crew.recap_this_month_ijen}</div>
-                                                  </div>
-                                                )}
+                                                <div className="mt-1 flex flex-wrap gap-1">
+                                                  {crew.tags.split(',').map((tag, i) => (
+                                                    <span 
+                                                      key={i} 
+                                                      className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                                    >
+                                                      {tag}
+                                                    </span>
+                                                  ))}
+                                                </div>
                                               </div>
                                             </div>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200">
-                                      No crew
-                                    </span>
-                                  )}
-                                </td>
+                                            
+                                            <div className={`mt-3 grid ${crew.type == 'guide' ? 'grid-cols-2' : 'grid-cols-1'} gap-2 text-center`}>
+                                              <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                                                <div className="text-xs text-gray-500 dark:text-gray-400">Escort Trips</div>
+                                                <div className="font-medium text-gray-900 dark:text-white">{crew.recap_this_month_escort}</div>
+                                              </div>
+                                              {crew.type === 'guide' && (
+                                                <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
+                                                  <div className="text-xs text-gray-500 dark:text-gray-400">Ijen Trips</div>
+                                                  <div className="font-medium text-gray-900 dark:text-white">{crew.recap_this_month_ijen}</div>
+                                                </div>
+                                              )}
+                                            </div>
+                                            
+                                            {/* Add View Profile button */}
+                                            <Link 
+                                              href={`/data-master-management/crew/${crew.id}`}
+                                              className="mt-3 w-full block py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                              }}
+                                            >
+                                              View Profile
+                                            </Link>
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <span className="px-2 py-1 rounded text-xs bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-200">
+                                    No crew
+                                  </span>
+                                )}
+                              </td>
                             </tr>
                             );
                         })}

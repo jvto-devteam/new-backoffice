@@ -214,6 +214,9 @@ class DashboardController extends Controller
 
         return Inertia::render('Dashboard',['dashboardData' => $dashboardData]);
     }
+    function screeningSuccess(){
+        return Inertia::render('ScreeningSuccess');
+    }
     function portalVendor(){
         return Inertia::render('PortalVendor');
     }

@@ -49,6 +49,7 @@ Route::get('generate-inv', [DashboardController::class,'generateInv']);
 Route::get('preview-file', [ScheduleController::class,'previewFile']);
 Route::get('/screening', [DashboardController::class,'screening']);
 Route::get('/screening-staff', [DashboardController::class,'screeningStaff']);
+Route::get('/screening-success', [DashboardController::class,'screeningSuccess']);
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [DashboardController::class,'index'])->name('dashboard');

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -14,7 +14,7 @@ import {
 import {Link,router} from '@inertiajs/react';
 
 export default function Dashboard({ dashboardData }) {
-  const { summaryOrderChannel, summary, paymentHistory, trips, alert } = dashboardData;
+  const { summaryOrderChannel, summary, paymentHistory, trips, alert, month } = dashboardData;
   const [activeTab, setActiveTab] = useState('active');
   const [hoveredCrew, setHoveredCrew] = useState(null);
   const [expandedPayments, setExpandedPayments] = useState([]);
@@ -94,6 +94,16 @@ export default function Dashboard({ dashboardData }) {
     const [selectedTrip, setSelectedTrip] = useState(null);
     const [hoveredCrew, setHoveredCrew] = useState(null);
     const calendarRef = useRef(null);
+    const initialDate = useMemo(() => {
+      // If month is provided (e.g., '04' for April), create a date for that month in the current year
+      if (month) {
+          const currentYear = new Date().getFullYear();
+          // Month in JavaScript is 0-indexed, so we subtract 1
+          return new Date(currentYear, parseInt(month) - 1, 1);
+      }
+      // Default to current date if no month is specified
+      return new Date();
+  }, [month]);
     
     // Channel-specific colors
     const channelColors = {
@@ -186,36 +196,36 @@ export default function Dashboard({ dashboardData }) {
     
     // Custom event render to include crew photos
     // Custom event render to include crew photos
-const renderEventContent = (eventInfo) => {
-  const { trip, crewPhotos, isActive } = eventInfo.event.extendedProps;
-  
-  return (
-    <div className="flex justify-between h-full overflow-hidden p-1 cursor-pointer">
-      <div className="flex flex-col overflow-hidden">
-        <div className="text-xs font-medium truncate">{eventInfo.event.title}</div>
-        <div className="text-xs opacity-80 truncate">{trip.package} ({trip.total_pax} pax)</div>
-      </div>
+    const renderEventContent = (eventInfo) => {
+      const { trip, crewPhotos, isActive } = eventInfo.event.extendedProps;
       
-      {crewPhotos.length > 0 && (
-        <div className="flex flex-shrink-0 -space-x-2 items-start">
-          {crewPhotos.map((photo, i) => (
-            <img 
-              key={i} 
-              src={photo} 
-              alt="Crew" 
-              className="w-8 h-8 rounded-full border border-white dark:border-gray-800 object-cover"
-            />
-          ))}
-          {trip.crews.length > 2 && (
-            <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs border border-white dark:border-gray-800">
-              +{trip.crews.length - 2}
+      return (
+        <div className="flex justify-between h-full overflow-hidden p-1 cursor-pointer">
+          <div className="flex flex-col overflow-hidden">
+            <div className="text-xs font-medium truncate">{eventInfo.event.title}</div>
+            <div className="text-xs opacity-80 truncate">{trip.package} ({trip.total_pax} pax)</div>
+          </div>
+          
+          {crewPhotos.length > 0 && (
+            <div className="flex flex-shrink-0 -space-x-2 items-start">
+              {crewPhotos.map((photo, i) => (
+                <img 
+                  key={i} 
+                  src={photo} 
+                  alt="Crew" 
+                  className="w-8 h-8 rounded-full border border-white dark:border-gray-800 object-cover"
+                />
+              ))}
+              {trip.crews.length > 2 && (
+                <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs border border-white dark:border-gray-800">
+                  +{trip.crews.length - 2}
+                </div>
+              )}
             </div>
           )}
         </div>
-      )}
-    </div>
-  );
-};
+      );
+    };
     // Handle event click
     const handleEventClick = (info) => {
       setSelectedTrip(info.event.extendedProps.trip);
@@ -271,6 +281,7 @@ const renderEventContent = (eventInfo) => {
               plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
               initialView="dayGridMonth"
               events={events}
+              initialDate={initialDate}
               eventContent={renderEventContent}
               eventClick={handleEventClick}
               headerToolbar={false}
@@ -410,9 +421,30 @@ const renderEventContent = (eventInfo) => {
             Booking Dashboard
           </h1>
           <div>
-            <select name="" id="" className="border border-gray-300 dark:border-gray-700 rounded-lg py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
-                <option value="">April 2025</option>
+            <select
+            value={month}
+              className="border border-gray-300 dark:border-gray-700 rounded-lg py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value) {
+                  window.location = `/?month=${value}`;
+                }
+              }}
+            >
+              {Array.from({ length: 12 }, (_, i) => {
+                const month = i + 1; // April (4) to December (12)
+                const value = month.toString().padStart(2, '0');
+                const label = new Date(2025, month - 1).toLocaleString('id-ID', {
+                  month: 'long',
+                });
+                return (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                );
+              })}
             </select>
+
           </div>
         </div>
         

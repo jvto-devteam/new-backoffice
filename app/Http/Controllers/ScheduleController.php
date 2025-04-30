@@ -384,7 +384,7 @@ class ScheduleController extends Controller
             $query->with(['itineraryDetail' => function($q){
                 $q->orderBy('no','asc')->with('activity.activityCategory');
             }]);
-        },'bookingPayment'])->where('id',$id)->first();
+        },'bookingPayment','participant'])->where('id',$id)->first();
         $itinerary = BookingItinerary::with('activityStart.destination.activityDestination')
         ->where('booking_id', $id)
         ->get()
@@ -634,6 +634,7 @@ class ScheduleController extends Controller
                 'nationality' => $booking->user->country ? $booking->user->country->long_name : '-',
                 'media_link' => $booking->media_link,
                 'portal' => $channel != 'TWT' ? 'https://javavolcano-touroperator.com/bookings/details/'.$booking->url : null,
+                'participants' => $booking->participant
             ],
             'booking_information' => [
                 'id' => $booking->id,
@@ -659,7 +660,8 @@ class ScheduleController extends Controller
                     'time' => $booking->drop_time ? date('H:i',strtotime($booking->drop_time)) : '-',
                 ],
                 'special_requirements' => $booking->special_requirements,
-                'notes' => $booking->note
+                'notes' => $booking->note,
+                'url' => $booking->url
             ],
             'package_information' => $package_information,
             'itinerary_information' => $itinerary,

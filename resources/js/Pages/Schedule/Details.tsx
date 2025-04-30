@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Copy, ChevronDown, Menu, X, Pencil, Eye, Download } from 'lucide-react';
+import { Copy, ChevronDown, Menu, X, Pencil, Eye, Download,Users } from 'lucide-react';
 import { Link, useForm } from '@inertiajs/react';
 import {Toast} from '@/utils/swal';
 
@@ -492,6 +492,10 @@ const EditTripMediaForm = ({ onClose }) => {
     { id: 'financial', label: 'Financial Data' }
   ];
 
+  if (parseInt(initialData.booking_information.number_of_participants) >= 18) {
+    tabs.splice(1, 0, { id: 'biggroup', label: 'Big Group' });
+  }  
+
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY + 100;
@@ -630,6 +634,40 @@ const EditTripMediaForm = ({ onClose }) => {
 
         {/* Main content */}
         <div className="flex-1">
+        {parseInt(initialData.booking_information.number_of_participants) >= 18 && (
+                <div className="py-3 my-3 px-4 border-l-4 border-pink-500 bg-gradient-to-r from-pink-50 to-white rounded-r-lg shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-shrink-0">
+                      <div className="relative">
+                        <div className="absolute inset-0 bg-pink-500 rounded-full animate-ping opacity-30"></div>
+                        <div className="relative bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-full h-8 w-8 flex items-center justify-center">
+                          <span className="text-sm">!</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-pink-700">Big Group Participants</h3>
+                      <p className="text-sm text-gray-600">This booking has {initialData.booking_information.number_of_participants} participants, which qualifies as a big group.</p>
+                    </div>
+                  </div>
+                  <div className="mt-2 pl-11">
+                    <ul className="text-sm space-y-1 text-gray-700">
+                      <li className="flex items-center gap-2">
+                        <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
+                        <span>May require additional resources</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
+                        <span>Consider assigning more staff</span>
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
+                        <span>Check vehicle capacity requirements</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+        )}          
           {/* Client Information */}
           <div
             ref={el => sectionsRef.current['transaction'] = el}
@@ -716,6 +754,91 @@ const EditTripMediaForm = ({ onClose }) => {
             </div>
           </div>
 
+{/* Add this entire section between the Package Details and Activities sections */}
+{parseInt(initialData.booking_information.number_of_participants) >= 18 && (
+  <div
+    ref={el => sectionsRef.current['biggroup'] = el}
+    className="bg-white rounded-lg shadow-sm mb-6 transition-all duration-200 hover:shadow-md"
+  >
+    <div className="p-6">
+      <div className="flex justify-between">
+        <h2 className="text-xl font-bold mb-6 text-gray-800 flex items-center">
+          <div className="mr-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-full h-8 w-8 flex items-center justify-center">
+            <span className="text-sm text-white">
+              <Users size={20} />
+            </span>
+          </div>
+          Big Group Participants
+        </h2>
+        <div>
+            <button onClick={() => {
+              window.open('https://travelhub.javavolcano-touroperator.com/dashboard/'+initialData.booking_information.url, '_blank');
+            }} className="px-3 py-2 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-md text-sm flex items-center gap-1">
+              <Eye className="h-4 w-4" />
+              View Travel Hub
+            </button>
+        </div>
+      </div>
+      
+      {/* Participants list section */}
+      <div className="mb-8">        
+        <div className="overflow-x-auto h-[500px] overflow-y-auto border border-gray-200 rounded-lg shadow-sm">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Gender</th>
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">T-Shirt Size</th>
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dietary Restriction</th>
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Car/Seat</th>
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {initialData.client_information.participants && initialData.client_information.participants.map((participant, index) => (
+                <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <div className="flex items-center">
+                      <div className="h-8 w-8 rounded-full bg-pink-100 flex items-center justify-center text-pink-700 font-medium text-sm mr-3">
+                        {participant.title ? participant.title.charAt(0) : (participant.gender === 'Male' ? 'M' : 'F')}
+                      </div>
+                      <div className="text-sm font-medium text-gray-900">{participant.title} {participant.full_name}</div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{participant.gender || '-'}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {participant.tshirt_size ? (
+                      <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                        {participant.tshirt_size}
+                      </span>
+                    ) : '-'}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{participant.dietary_restriction || '-'}</td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                    {participant.car_number ? `Car ${participant.car_number}` : ''} 
+                    {participant.car_number && participant.seat_number ? ' / ' : ''}
+                    {participant.seat_number ? `Seat ${participant.seat_number}` : ''}
+                    {!participant.car_number && !participant.seat_number ? '-' : ''}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">{participant.room_number || '-'}</td>
+                </tr>
+              ))}
+              
+              {(!initialData.client_information.participants || initialData.client_information.participants.length === 0) && (
+                <tr>
+                  <td colSpan="6" className="px-4 py-4 text-center text-sm text-gray-500">
+                    No participant details available
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+)}
           {/* Booking Information */}
           <div
             ref={el => sectionsRef.current['booking'] = el}
@@ -762,6 +885,7 @@ const EditTripMediaForm = ({ onClose }) => {
                 label="PARTICIPANTS"
                 value={`${initialData.booking_information.number_of_participants} PAX`}
               />
+              
               <DetailRow
                 label="TRAVEL DATE"
                 value={initialData.booking_information.travel_date}

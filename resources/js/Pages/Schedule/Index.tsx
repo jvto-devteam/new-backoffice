@@ -375,10 +375,24 @@ const BookingRow = ({
     };
 
     return (
-        <tr className={`border-b ${isCompleted ? "bg-green-50" : ""}`}>
+        <tr className={`border-b ${isCompleted ? "bg-green-50" : ""} ${parseInt(booking.total_pax) >= 18 ? "bg-gradient-to-r from-pink-50 via-transparent to-transparent" : ""}`}>
             {/* Row Index */}
-            <td className="py-3 px-2 align-top">{startNumb}</td>
-
+            <td className="py-3 px-2 align-top relative">
+                {parseInt(booking.total_pax) >= 18 ? (
+                    <div className="relative">
+                        <div className="absolute -left-1 -top-1 flex items-center justify-center">
+                            <div className="relative">
+                                <div className="absolute inset-0 bg-pink-500 rounded-full animate-ping opacity-30"></div>
+                                <div className="relative bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-full h-5 w-5 flex items-center justify-center text-xs">
+                                    {startNumb}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    startNumb
+                )}
+            </td>
             {/* Date Column */}
             <td className="py-3 px-4 align-top whitespace-nowrap">
                 <div className="text-blue-600 font-bold">

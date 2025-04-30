@@ -13,10 +13,11 @@ use Inertia\Inertia;
 
 class DashboardController extends Controller
 {
-    function index(){
-        $lastDayMonth = date('Y-m-t');
-        $today = date('Y-m-d');
-        $todayPlus7 = date('Y-m-d',strtotime(date('Y-m-d')." +7 days"));
+    function index(Request $request){
+        $month = $request->month ? $request->month : date('m');
+        $firstDayMonth = date('Y-'.$month.'-01');
+        $lastDayMonth = date('Y-'.$month.'-t');
+        $today = $month != date('m') ? date('Y-'.$month.'-01') : date('Y-m-d');
 
         $alert = [
             'no_pickup' => Booking::select('bookings.id','package_duration','travel_date_start','users.name','total_pax','bookings.agent_id','bookings.booking_category_id')->join('users','bookings.user_id','users.id')->where('travel_date_start', '>=', $today)->where('travel_date_start','<=',$lastDayMonth)
@@ -78,11 +79,10 @@ class DashboardController extends Controller
         )
         ->with('guideDriver.person')
         ->join('users', 'bookings.user_id', 'users.id')
-        ->where(function($query) {
-            // Upcoming trips (starting in the next 7 days)
-            $query->where(function($q) {
-                $q->where('travel_date_start', '>=', date('Y-m-01'))
-                  ->where('travel_date_start', '<=', date('Y-m-t'));
+        ->where(function($query) use($firstDayMonth, $lastDayMonth) {
+            $query->where(function($q) use($firstDayMonth, $lastDayMonth) {
+                $q->where('travel_date_start', '>=', $firstDayMonth)
+                  ->where('travel_date_start', '<=', $lastDayMonth);
             });
             // OR active trips (today is between start and end date)
         })
@@ -160,23 +160,23 @@ class DashboardController extends Controller
             ];
         });   
         $summary = [
-            'total_booking' => Booking::where('travel_date_start','like','%'.date('Y-m').'%')->where('status','booked')->count(),
-            'total_booking_pax' => Booking::where('travel_date_start','like','%'.date('Y-m').'%')->where('status','booked')->sum('total_pax'),
-            'active_booking' => Booking::where('travel_date_start','like','%'.date('Y-m').'%')->where('travel_date_start','<=',date('Y-m-d'))->where('travel_date_end','>=',date('Y-m-d'))->where('status','booked')->count(),
-            'complete_booking' => Booking::where('travel_date_start','like','%'.date('Y-m').'%')->where('travel_date_end','<',date('Y-m-d'))->where('status','booked')->count(),
-            'upcoming_booking' => Booking::where('travel_date_start','like','%'.date('Y-m').'%')->where('travel_date_start','>',date('Y-m-d'))->where('status','booked')->count(),
+            'total_booking' => Booking::where('travel_date_start','like','%'.date('Y-'.$month).'%')->where('status','booked')->count(),
+            'total_booking_pax' => Booking::where('travel_date_start','like','%'.date('Y-'.$month).'%')->where('status','booked')->sum('total_pax'),
+            'active_booking' => Booking::where('travel_date_start','like','%'.date('Y-'.$month).'%')->where('travel_date_start','<=',date('Y-m-d'))->where('travel_date_end','>=',$today)->where('status','booked')->count(),
+            'complete_booking' => Booking::where('travel_date_start','like','%'.date('Y-'.$month).'%')->where('travel_date_end','<',$today)->where('status','booked')->count(),
+            'upcoming_booking' => Booking::where('travel_date_start','like','%'.date('Y-'.$month).'%')->where('travel_date_start','>',$today)->where('status','booked')->count(),
         ];
 
         $summaryOrderChannel = [
-            'jvto' => Booking::where('travel_date_start','like','%'.date('Y-m').'%')->where('status','booked')->where('agent_id',2)->where('booking_category_id','!=',3)->count(),
-            'jvto_pax' => Booking::where('travel_date_start','like','%'.date('Y-m').'%')->where('status','booked')->where('agent_id',2)->where('booking_category_id','!=',3)->sum('total_pax'),
-            'klook' => Booking::where('travel_date_start','like','%'.date('Y-m').'%')->where('status','booked')->where('agent_id',2)->where('booking_category_id',3)->count(),
-            'klook_pax' => Booking::where('travel_date_start','like','%'.date('Y-m').'%')->where('status','booked')->where('agent_id',2)->where('booking_category_id',3)->sum('total_pax'),
-            'twt' => Booking::where('travel_date_start','like','%'.date('Y-m').'%')->where('status','booked')->where('agent_id',1)->count(),
-            'twt_pax' => Booking::where('travel_date_start','like','%'.date('Y-m').'%')->where('status','booked')->where('agent_id',1)->sum('total_pax'),
+            'jvto' => Booking::where('travel_date_start','like','%'.date('Y-'.$month).'%')->where('status','booked')->where('agent_id',2)->where('booking_category_id','!=',3)->count(),
+            'jvto_pax' => Booking::where('travel_date_start','like','%'.date('Y-'.$month).'%')->where('status','booked')->where('agent_id',2)->where('booking_category_id','!=',3)->sum('total_pax'),
+            'klook' => Booking::where('travel_date_start','like','%'.date('Y-'.$month).'%')->where('status','booked')->where('agent_id',2)->where('booking_category_id',3)->count(),
+            'klook_pax' => Booking::where('travel_date_start','like','%'.date('Y-'.$month).'%')->where('status','booked')->where('agent_id',2)->where('booking_category_id',3)->sum('total_pax'),
+            'twt' => Booking::where('travel_date_start','like','%'.date('Y-'.$month).'%')->where('status','booked')->where('agent_id',1)->count(),
+            'twt_pax' => Booking::where('travel_date_start','like','%'.date('Y-'.$month).'%')->where('status','booked')->where('agent_id',1)->sum('total_pax'),
         ];
 
-        $paymentHistory = BookingPayment::with(['booking.user','booking.bookingDetail.package','paymentMethod'])->where('created_at','>=',date('Y-m-01'))->where('created_at','<=',date('Y-m-t'))->orderBy('created_at','desc')->get()->map(function($data){
+        $paymentHistory = BookingPayment::with(['booking.user','booking.bookingDetail.package','paymentMethod'])->where('created_at','>=',$firstDayMonth)->where('created_at','<=',$lastDayMonth)->orderBy('created_at','desc')->get()->map(function($data){
             $countBefore = BookingPayment::where('booking_id',$data->booking_id)->where('id','<=',$data->id)->count();
             return [
                 'id' => $data->id,
@@ -205,10 +205,11 @@ class DashboardController extends Controller
             'paymentHistory' => $paymentHistory,
             'trips' => $trips,
             'alert' => $alert,
+            'month' => $month,
             'orderChannelLinks' => [
-                'jvto' => '/booking-overview?channel=JVTO&filter_type=month&month='.date('Y-m'),
-                'klook' => '/booking-overview?channel=KLOOK&filter_type=month&month='.date('Y-m'),
-                'twt' => '/booking-overview?channel=TWT&filter_type=month&month='.date('Y-m'),
+                'jvto' => '/booking-overview?channel=JVTO&filter_type=month&month='.date('Y-'.$month),
+                'klook' => '/booking-overview?channel=KLOOK&filter_type=month&month='.date('Y-'.$month),
+                'twt' => '/booking-overview?channel=TWT&filter_type=month&month='.date('Y-'.$month),
             ],
         ];
 

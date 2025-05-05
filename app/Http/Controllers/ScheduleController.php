@@ -669,7 +669,9 @@ class ScheduleController extends Controller
                 ],
                 'special_requirements' => $booking->special_requirements,
                 'notes' => $booking->note,
-                'url' => $booking->url
+                'url' => $booking->url,
+                'is_buy_isic'  => $booking->is_buy_isic,
+                'is_buy_isic_complete_form'  => $booking->is_buy_isic_complete_form,
             ],
             'package_information' => $package_information,
             'itinerary_information' => $itinerary,

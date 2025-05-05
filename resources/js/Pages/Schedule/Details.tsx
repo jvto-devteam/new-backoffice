@@ -634,40 +634,69 @@ const EditTripMediaForm = ({ onClose }) => {
 
         {/* Main content */}
         <div className="flex-1">
-        {parseInt(initialData.booking_information.number_of_participants) >= 18 && (
-                <div className="py-3 my-3 px-4 border-l-4 border-pink-500 bg-gradient-to-r from-pink-50 to-white rounded-r-lg shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="flex-shrink-0">
-                      <div className="relative">
-                        <div className="absolute inset-0 bg-pink-500 rounded-full animate-ping opacity-30"></div>
-                        <div className="relative bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-full h-8 w-8 flex items-center justify-center">
-                          <span className="text-sm">!</span>
-                        </div>
-                      </div>
+          {initialData.booking_information.is_buy_isic == '1' && initialData.booking_information.is_buy_isic_complete_form == '0' && (
+            <div className="py-3 my-3 px-4 border-l-4 border-green-500 bg-gradient-to-r from-green-50 to-white rounded-r-lg shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-30"></div>
+                    <div className="relative bg-gradient-to-r from-green-500 to-blue-400 text-white font-bold rounded-full h-8 w-8 flex items-center justify-center">
+                      <span className="text-sm">!</span>
                     </div>
-                    <div>
-                      <h3 className="font-bold text-pink-700">Big Group Participants</h3>
-                      <p className="text-sm text-gray-600">This booking has {initialData.booking_information.number_of_participants} participants, which qualifies as a big group.</p>
-                    </div>
-                  </div>
-                  <div className="mt-2 pl-11">
-                    <ul className="text-sm space-y-1 text-gray-700">
-                      <li className="flex items-center gap-2">
-                        <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
-                        <span>May require additional resources</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
-                        <span>Consider assigning more staff</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
-                        <span>Check vehicle capacity requirements</span>
-                      </li>
-                    </ul>
                   </div>
                 </div>
-        )}          
+                <div className="flex align-center justify-between w-full">
+                  <div>
+                    <h3 className="font-bold text-green-700">Need ISIC Verification</h3>
+                    <p className="text-sm text-gray-600">This booking has {initialData.booking_information.number_of_participants} participants, which order ISIC Card.</p>
+                  </div>
+                  <div>
+                    <button onClick={() => {
+                      window.open('https://crm.isic.co.id/std/issuing/login.php', '_blank');
+                    }} className="px-3 py-2 bg-gradient-to-r from-green-500 to-blue-400 text-white rounded-md text-sm flex items-center gap-1">
+                      <Eye className="h-4 w-4" />
+                      View ISIC Portal
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {parseInt(initialData.booking_information.number_of_participants) >= 18 && (
+            <div className="py-3 my-3 px-4 border-l-4 border-pink-500 bg-gradient-to-r from-pink-50 to-white rounded-r-lg shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0">
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-pink-500 rounded-full animate-ping opacity-30"></div>
+                    <div className="relative bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-full h-8 w-8 flex items-center justify-center">
+                      <span className="text-sm">!</span>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <h3 className="font-bold text-pink-700">Big Group Participants</h3>
+                  <p className="text-sm text-gray-600">This booking has {initialData.booking_information.number_of_participants} participants, which qualifies as a big group.</p>
+                </div>
+              </div>
+              <div className="mt-2 pl-11">
+                <ul className="text-sm space-y-1 text-gray-700">
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
+                    <span>May require additional resources</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
+                    <span>Consider assigning more staff</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="w-2 h-2 bg-pink-500 rounded-full"></span>
+                    <span>Check vehicle capacity requirements</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          )}          
           {/* Client Information */}
           <div
             ref={el => sectionsRef.current['transaction'] = el}

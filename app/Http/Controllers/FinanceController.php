@@ -685,7 +685,7 @@ class FinanceController extends Controller
         $listForNewItems['destinations'] = $listForNewItems['destinations']->get()->groupBy(fn($item) => $item->destination->name);
         $listForNewItems['others'] = OthersActivity::get();
         // return $listForNewItems['others'];
-        $listForNewItems['cars'] = Car::whereIn('id',[1,2,4,5,21,24])->get();
+        $listForNewItems['cars'] = Car::whereIn('id',[1,2,4,5,21,24,7])->get();
         $listForNewItems['crews'] = CrewRole::where('order_channel_id',$orderChannelID)->get();
         // return $listForNewItems;
         // return $bookRoom;

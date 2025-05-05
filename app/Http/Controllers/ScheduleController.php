@@ -606,12 +606,20 @@ class ScheduleController extends Controller
                 ->orderBy('id', 'asc')  // Or use created_at if that's more appropriate
                 ->first();
 
-            // Then sum all payments except the one with that ID
-            $dp = BookingPayment::where('booking_id', $booking->id)
-                ->when($lastPayment, function($query) use ($lastPayment) {
-                    return $query->where('id', '!=', $lastPayment->id);
-                })
-                ->sum('nominal');
+            $count = BookingPayment::where('booking_id', $booking->id)->count();
+
+            if($count == 1){
+                $dp = BookingPayment::where('booking_id', $booking->id)->sum('nominal');
+            }
+            else{
+                // Then sum all payments except the one with that ID
+                $dp = BookingPayment::where('booking_id', $booking->id)
+                    ->when($lastPayment, function($query) use ($lastPayment) {
+                        return $query->where('id', '!=', $lastPayment->id);
+                    })
+                    ->sum('nominal');
+            }
+
         }
         else{
             $dp = $booking->balance;

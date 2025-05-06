@@ -41,7 +41,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Spatie\PdfToText\Pdf;
 
 class BookingController extends Controller
 {
@@ -1628,6 +1630,223 @@ class BookingController extends Controller
             'resources' => $totalResources,
         ];
     }
+    function twtExtractor(Request $request){
+        try {
+            // Pastikan direktori logs ada
+            if (!Storage::disk('local')->exists('logs')) {
+                Storage::disk('local')->makeDirectory('logs');
+            }
+            
+            // Pastikan direktori untuk file ada
+            if (!file_exists(public_path('assets/customer-document'))) {
+                mkdir(public_path('assets/customer-document'), 0755, true);
+            }
+            
+            // Log awal request
+            $logData = "============ " . date('Y-m-d H:i:s') . " ============\n";
+            $logData .= "CONTENT TYPE: " . $request->header('Content-Type') . "\n\n";
+            
+            // Ambil data JSON dari request
+            $jsonData = $request->json()->all();
+            $logData .= "REQUEST DATA RECEIVED\n";
+            
+            // Periksa apakah ada data email
+            if (isset($jsonData['emailData'])) {
+                $logData .= "EMAIL DATA FOUND\n";
+                $emailData = $jsonData['emailData'];
+                // Proses data email sesuai kebutuhan
+                // ...
+            } else {
+                $logData .= "NO EMAIL DATA FOUND\n";
+            }
+            
+            // Periksa apakah ada data file
+            if (isset($jsonData['fileData'])) {
+                $fileData = $jsonData['fileData'];
+                $logData .= "FILE DATA FOUND\n";
+                $logData .= "FILE NAME: " . $fileData['fileName'] . "\n";
+                $logData .= "FILE TYPE: " . $fileData['fileType'] . "\n";
+                $logData .= "FILE SIZE: " . $fileData['fileSize'] . " bytes\n";
+                
+                // Decode base64 file content
+                $fileContent = base64_decode($fileData['fileContent']);
+                
+                // Tentukan nama file
+                $fileName = time() . '.' . pathinfo($fileData['fileName'], PATHINFO_EXTENSION);
+                $filePath = public_path('assets/customer-document/' . $fileName);
+                
+                // Simpan file ke disk
+                file_put_contents($filePath, $fileContent);
+                $logData .= "FILE SAVED AS: " . $fileName . "\n";
+                
+                // Simpan informasi file ke database jika diperlukan
+                // Contoh:
+                // $bookingDocument = new BookingDocument();
+                // $bookingDocument->booking_id = $bookingId;
+                // $bookingDocument->user_id = $userId;
+                // $bookingDocument->attachment_type_id = 7; // Klook Booking Ticket
+                // $bookingDocument->file = $fileName;
+                // $bookingDocument->save();
+                
+                $response = [
+                    'success' => true,
+                    'message' => 'Data dan file berhasil diproses',
+                    'fileName' => $fileName
+                ];
+            } else {
+                $logData .= "NO FILE DATA FOUND\n";
+                $response = [
+                    'success' => true,
+                    'message' => 'Hanya data email yang diterima'
+                ];
+            }
+            
+            // Simpan log
+            $logFileName = 'twt_' . date('Y-m-d_H-i-s') . '.log';
+            Storage::disk('local')->put('logs/' . $logFileName, $logData);
+            
+            // Tambahkan info log ke response
+            $response['log_file'] = $logFileName;
+            
+            return response()->json($response);
+            
+        } catch (\Exception $e) {
+            // Log error
+            $errorLog = "ERROR: " . $e->getMessage() . "\n";
+            $errorLog .= "FILE: " . $e->getFile() . "\n";
+            $errorLog .= "LINE: " . $e->getLine() . "\n";
+            $errorLog .= "TRACE: " . $e->getTraceAsString() . "\n";
+            
+            // Log request data yang menyebabkan error
+            $errorLog .= "\nREQUEST DATA:\n";
+            $errorLog .= json_encode($request->all(), JSON_PRETTY_PRINT);
+            
+            Storage::disk('local')->put(
+                'logs/twt_error_' . date('Y-m-d_H-i-s') . '.log', 
+                $errorLog
+            );
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+    function twtExtractorFileIndex(){
+        return view('pdf-extractor.index');
+    }        
+    function twtExtractorFileProcess(Request $request){
+
+        $request->validate([
+            'pdf_file' => 'required|mimes:pdf|max:10240', // Max 10MB
+        ]);
+        
+        if ($request->hasFile('pdf_file')) {
+            $file = $request->file('pdf_file');
+            
+            // Simpan file ke storage
+            $fileName = time() . '.' . $file->extension();
+            $filePath = $file->storeAs('pdfs', $fileName, 'public');
+            
+            // Path lengkap ke file
+            $fullPath = Storage::disk('public')->path($filePath);
+            
+            try {
+                $getHotel = Hotel::select('id','name')->with(['roomHotel' => function($query){
+                    $query->select('id','hotel_id','room_name');
+                }])->whereIn('id',[59,11,60,12,63,34,56,10])->get();
+                $hotels = json_encode($getHotel);
+                // Ekstrak teks dari PDF menggunakan PDFParser
+                $parser = new \Smalot\PdfParser\Parser();
+                $pdf = $parser->parseFile($fullPath);
+                $pages = $pdf->getPages();
+                $text = $pdf->getText();
+                if (count($pages) > 0) {
+                    $firstPage = $pages[0];
+                    $text = $firstPage->getText();
+
+                    $prompt = "
+                    get Duration (Day), Invoice Number,Invoice Date (Y-m-d format), Customer Name, Traveling Date Start (Y-m-d format), Traveling Date End  (Y-m-d format), No of Pax (number only), Tshirt Size (XSS,XXS,XS,S,M,L,XL,XXL,XXL) (default value 0), pick up location at first day, pick up time at first day (you also can see in flight details in first day, If there are 2 times (start and end), then use end because that is the arrival time. (H:i format), flight details at first day (flight number only), drop location at last day (check in itinerary in last day. Example : Airport), drop time at last day (maybe the name is pick up at last day, but because it's a last day, so pick up is drop), drop time at last day (maybe the name is pick up at last day, but because it's a last day, so pick up is drop), flight details at last day, itineraries (should be array with format like this : 
+                        [
+                            {
+                                'date': '2025-10-01',
+                                'day': 1,
+                                'itinerary': 'Itinerary day 1',
+                                'hotel_id': 'hotel_id',
+                                'hotel': 'hotel name',
+                                'rooms': [
+                                    {
+                                        'id': 1,
+                                        'room': 'Room Name',
+                                        'quantity': 2
+                                    }
+                                ],
+                                'meals': {
+                                    'breakfast': true,
+                                    'lunch': true,
+                                    'dinner': false
+                                }
+                            },
+                            {
+                                'date': '2025-10-02',
+                                'day': 2,
+                                'itinerary': 'Itinerary day 2',
+                                'hotel_id': 'hotel_id',
+                                'hotel': 'hotel name',
+                                'rooms': [
+                                    {
+                                        'id': 10,
+                                        'room': 'Room Name',
+                                        'quantity': 2
+                                    }
+                                ],
+                                'meals': {
+                                    'breakfast': true,
+                                    'lunch': false,
+                                    'dinner': true
+                                }
+                            },
+                            .... etc
+                        ]), make sure the itinerary are not mixed up, according to the day and date. for the hotel and room id you can check in this master data : \n".$hotels.".\n\n                     
+                    Provide me as a json format only, not text intro before. Set the key like this (day,invoice_number,invoice_date,customer_name,travel_date_start,travel_date_end,no_of_pax,xss,xxs,xs,s,m,l,xl,xxl,xxxl,pickup_location,pickup_time,pickup_flight_number,drop_location,drop_time,drop_flight_number,itineraries. if you didn't get the value, just leave it blank. Here is the data :\n" . $text;
+    
+                    $response = Http::timeout(60)->withHeaders([
+                        'Content-Type' => 'application/json',
+                        'Authorization' => 'Bearer ' . env('DEEPSEEK_API_KEY'),
+                    ])->post('https://api.deepseek.com/chat/completions', [
+                        'model' => 'deepseek-chat',
+                        'messages' => [
+                            ['role' => 'system', 'content' => 'You are a helpful assistant.'],
+                            ['role' => 'user', 'content' => $prompt],
+                        ],
+                        'stream' => false,
+                    ]);
+                    $content = $response['choices'][0]['message']['content'];
+    
+                    // Bersihkan backticks dan prefix "json"
+                    $cleaned = trim($content, " \n`");
+                    $cleaned = preg_replace('/^json\s*/', '', $cleaned);
+            
+                    // Decode ke array PHP
+                    $data = json_decode($cleaned, true);
+                    return $data;
+                }
+
+                        
+                return view('pdf-extractor.result', [
+                    'fileName' => $file->getClientOriginalName(),
+                    'extractedText' => $text,
+                    'filePath' => $filePath
+                ]);
+                
+            } catch (\Exception $e) {
+                return back()->with('error', 'Gagal mengekstrak teks: ' . $e->getMessage());
+            }
+        }
+        
+        return back()->with('error', 'Tidak ada file yang diupload');
+
+    }        
     function storePayment(Request $request, $id){
         $booking = Booking::findOrFail($id);
 

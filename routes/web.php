@@ -50,6 +50,10 @@ Route::get('preview-file', [ScheduleController::class,'previewFile']);
 Route::get('/screening', [DashboardController::class,'screening']);
 Route::get('/screening-staff', [DashboardController::class,'screeningStaff']);
 Route::get('/screening-success', [DashboardController::class,'screeningSuccess']);
+Route::post('/twt-extractor', [BookingController::class,'twtExtractor']);
+Route::get('/pdf-extractor', [BookingController::class, 'twtExtractorFileIndex'])->name('pdf-extractor.index');
+Route::post('/pdf-extractor/extract', [BookingController::class, 'twtExtractorFileProcess'])->name('pdf-extractor.extract');
+
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [DashboardController::class,'index'])->name('dashboard');

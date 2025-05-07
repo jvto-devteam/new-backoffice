@@ -1678,21 +1678,278 @@ class BookingController extends Controller
                 // Simpan file ke disk
                 file_put_contents($filePath, $fileContent);
                 $logData .= "FILE SAVED AS: " . $fileName . "\n";
+    
+                // Mulai pemrosesan file PDF seperti pada fungsi twtExtractorFileProcess
+                // Validasi tipe file di sini kalau perlu (misalnya harus PDF)
+                if (pathinfo($fileData['fileName'], PATHINFO_EXTENSION) !== 'pdf') {
+                    throw new \Exception('File harus berupa PDF');
+                }
                 
-                // Simpan informasi file ke database jika diperlukan
-                // Contoh:
-                // $bookingDocument = new BookingDocument();
-                // $bookingDocument->booking_id = $bookingId;
-                // $bookingDocument->user_id = $userId;
-                // $bookingDocument->attachment_type_id = 7; // Klook Booking Ticket
-                // $bookingDocument->file = $fileName;
-                // $bookingDocument->save();
+                // Path lengkap ke file
+                $fullPath = $filePath;
                 
-                $response = [
-                    'success' => true,
-                    'message' => 'Data dan file berhasil diproses',
-                    'fileName' => $fileName
-                ];
+                try {
+                    $getHotel = Hotel::select('id','name','destination_id')->with(['roomHotel' => function($query){
+                        $query->select('id','hotel_id','room_name');
+                    }])->whereIn('id',[59,11,60,12,63,34,56,10])->get();
+                    $hotels = json_encode($getHotel);
+                    $activityStart = ActivityStart::select('id','name','description')->get();
+                    $activityEnd = ActivityEnd::select('id','name','description')->get();
+                    $activityStart = json_encode($activityStart);
+                    $activityEnd = json_encode($activityEnd);
+                    
+                    // Ekstrak teks dari PDF menggunakan PDFParser
+                    $parser = new \Smalot\PdfParser\Parser();
+                    $pdf = $parser->parseFile($fullPath);
+                    $pages = $pdf->getPages();
+                    $text = $pdf->getText();
+    
+                    $prompt = "
+                    get Trip Duration (always get from count number of itineraries dont get directly from package), Invoice Number,Invoice Date (Y-m-d format), Customer Name, Traveling Date Start (Y-m-d format), Traveling Date End  (Y-m-d format), No of Pax (number only), Tshirt Size (XSS,XXS,XS,S,M,L,XL,XXL,XXL) (default value 0), pick up location at first day, pick up time at first day (you also can see in flight details in first day, If there are 2 times (start and end), then use end because that is the arrival time. (H:i format), flight details at first day (flight number only), drop location at last day (check in itinerary in last day. Example : Airport), drop time at last day (maybe the name is pick up at last day, but because it's a last day, so pick up is drop), drop time at last day (maybe the name is pick up at last day, but because it's a last day, so pick up is drop), flight details at last day, itineraries (should be array with format like this : 
+                        [
+                            {
+                                'date': '2025-10-01',
+                                'day': 1,
+                                'itinerary': 'Itinerary day 1',
+                                'activity_start_id' : 'activity_start_id',
+                                'activity_end_id' : 'activity_end_id',
+                                'activity' : 'activity start name - activity end name',
+                                'hotel_id': 'hotel_id',
+                                'hotel': 'hotel name',
+                                'rooms': [
+                                    {
+                                        'id': 1,
+                                        'room': 'Room Name',
+                                        'quantity': 2
+                                    }
+                                ],
+                                'meals': {
+                                    'breakfast': true,
+                                    'lunch': true,
+                                    'dinner': false
+                                }
+                            },
+                            {
+                                'date': '2025-10-02',
+                                'day': 2,
+                                'itinerary': 'Itinerary day 2',
+                                'activity_start_id' : 'activity_start_id',
+                                'activity_end_id' : 'activity_end_id',
+                                'activity' : 'activity start name - activity end name',
+                                'hotel_id': 'hotel_id',
+                                'hotel': 'hotel name',
+                                'rooms': [
+                                    {
+                                        'id': 10,
+                                        'room': 'Room Name',
+                                        'quantity': 2
+                                    }
+                                ],
+                                'meals': {
+                                    'breakfast': true,
+                                    'lunch': false,
+                                    'dinner': true
+                                }
+                            },
+                            .... etc
+                        ]), make sure the itinerary are not mixed up, according to the day and date Also make sure the itinerary text is neat in terms of writing and spacing. for the activity_start_id, activity_end_id, and activity you can check on this data: \nActivity Start: ".$activityStart."\nActivity End: ".$activityEnd."\n\n\n\n. and get also grand total in the bottom, at ijen (date)(After you get the itinerary date and hotel, do a search for a hotel that has a master destination_id == 2, if you can get it, take the itinerary date + 1 day. Example Date 2025-05-02 Hotel Riverside Homestay, so at ijen is 2025-05-02 + 1 day = 2025-05-03, that is at Ijen),at bromo (date)(After you get the itinerary date and hotel, do a search for a hotel that has a master destination_id == 1, if you can get it, take the itinerary date + 1 day. Example Date 2025-05-03 Hotel Joglo Kecombrang, so at bromo is 2025-05-03 + 1 day = 2025-05-04, that is at bromo). for the hotel and room id you can check in this master data : \n".$hotels.".\n\n\n\n                     
+                    Provide me as a json format only, not text intro before. Set the key like this (day,invoice_number,invoice_date,customer_name,travel_date_start,travel_date_end,no_of_pax,xss,xxs,xs,s,m,l,xl,xxl,xxxl,pickup_location,pickup_time,pickup_flight_number,drop_location,drop_time,drop_flight_number,itineraries,grand_total, at_ijen, at_bromo. if you didn't get the value, just leave it blank. Here is the data :\n" . $text;
+    
+                    $response = Http::timeout(120)->withHeaders([
+                        'Content-Type' => 'application/json',
+                        'Authorization' => 'Bearer ' . env('DEEPSEEK_API_KEY'),
+                    ])->post('https://api.deepseek.com/chat/completions', [
+                        'model' => 'deepseek-chat',
+                        'messages' => [
+                            ['role' => 'system', 'content' => 'You are a helpful assistant.'],
+                            ['role' => 'user', 'content' => $prompt],
+                        ],
+                        'stream' => false,
+                    ]);
+                    $content = $response['choices'][0]['message']['content'];
+    
+                    // Bersihkan backticks dan prefix "json"
+                    $cleaned = trim($content, " \n`");
+                    $cleaned = preg_replace('/^json\s*/', '', $cleaned);
+            
+                    // Decode ke array PHP
+                    $data = json_decode($cleaned, true);
+    
+                    $agent_id = 1;
+                    $booking_category_id = NULL;
+                    $attachment_id = 6;
+    
+                    $user = new User;
+                    $user->name = $data['customer_name'];
+                    $user->avatar = "default.jpg";
+                    $user->password  = Hash::make('password');
+                    $user->save();
+    
+                    $ym = date('Y-m', strtotime($data['travel_date_start']));
+        
+                    $getBooking = Booking::where('agent_id', $agent_id)->where('travel_date_start', 'like', '%' . $ym . '%');
+                    $getBooking = $getBooking->orderBy('booking_numb', 'desc');
+                    $count = $getBooking->count();
+                    if ($count == 0) {
+                        $code = '001';
+                    } else {
+                        $getBooking = $getBooking->first();
+                        $code = (int) $getBooking->booking_numb + 1;
+                        $code = sprintf("%03s", $code);
+                    }
+            
+                    $invoiceCode = [
+                        'year' => date("y", strtotime($data['travel_date_start'])),
+                        'month' => date("m", strtotime($data['travel_date_start'])),
+                        'code' => $code
+                    ];
+            
+                    $invoice_number = "JVR/$invoiceCode[code]/$invoiceCode[month]/$invoiceCode[year]";
+            
+                    $days = count($data['itineraries']);
+                    $nights = count($data['itineraries']) - 1; // Corrected the syntax error
+    
+                    $booking = new Booking;
+                    $booking->booking_code = $invoice_number;
+                    $booking->custom_code = $invoice_number;
+                    $booking->agent_id = $agent_id;
+                    $booking->booking_category_id = $booking_category_id;
+                    $booking->booking_date = $data['invoice_date'];
+                    $booking->invoice_code_origin = $data['invoice_number'];
+                    $booking->booking_numb = $code;
+                    $booking->user_id = $user->id;
+                    $booking->travel_date_start = $data['travel_date_start'];
+                    $booking->travel_date_end = date('Y-m-d', strtotime($booking->travel_date_start . " +$nights days"));
+                    $booking->package_duration = $days;
+                    $booking->total_pax = $data['no_of_pax'];
+                    $booking->meeting_point = 'Others';
+                    $booking->pickup = $data['pickup_location'];
+                    $booking->meeting_point_value = $data['pickup_location'];
+            
+                    $booking->drop_point = 'Others';
+                    $booking->drop = $data['drop_location'];
+                    $booking->drop_point_value = $data['drop_location'];
+            
+                    $booking->dp_no_idr = 0;
+                    $booking->payment = 0;
+    
+                    $booking->grand_total_before_disc = $data['grand_total'];
+                    $booking->add_on_total = 0;
+            
+                    $booking->grand_total = $data['grand_total'];
+                    $booking->dp = 0;
+                    
+                    $booking->at_bondowoso = $data['at_ijen'];
+                    $booking->at_bromo = $data['at_bromo'];
+    
+                    $booking->balance = $booking->grand_total;
+                    $booking->status = 'booked';
+                    $booking->type = 'offline';
+                    $booking->payment_method = 'pay later';
+                    $slug = str_replace(' ', '-', $user->name);
+                    $slug = strtolower($slug);
+                    $booking->url_name = $slug.$user->id;
+                    $booking->url = md5($booking->url_name);
+                    $booking->save();
+
+                    $bookingDocument = new BookingDocument();
+                    $bookingDocument->booking_id = $booking->id;
+                    $bookingDocument->user_id = $booking->user_id;
+                    $bookingDocument->attachment_type_id = $attachment_id; //Klook Booking Ticket
+                    $bookingDocument->file = $fileName;
+                    $bookingDocument->save();
+        
+    
+                    $bookingDetail = new BookingDetail;
+                    $bookingDetail->booking_id = $booking->id;
+                    $bookingDetail->travel_date_start = $booking->travel_date_start;
+                    $bookingDetail->travel_date_end = $booking->travel_date_end;
+                    $bookingDetail->pax = $booking->total_pax;
+                    $bookingDetail->xss = $data['xss'];
+                    $bookingDetail->xxs = $data['xxs'];
+                    $bookingDetail->xs = $data['xs'];
+                    $bookingDetail->s = $data['s'];
+                    $bookingDetail->m = $data['m'];
+                    $bookingDetail->l = $data['l'];
+                    $bookingDetail->xl = $data['xl'];
+                    $bookingDetail->xxl = $data['xxl'];
+                    $bookingDetail->xxxl = $data['xxxl'];
+                    $bookingDetail->total = $data['xss'] + $data['xxs'] + $data['xs'] + $data['s'] + $data['m'] + $data['l'] + $data['xl'] + $data['xxl'] + $data['xxxl'];
+                    $bookingDetail->save();
+                    
+                    for($i=0;$i<$days;$i++){
+                        $day = $i+1;
+                        $itinerary = new BookingItinerary;
+                        $itinerary->booking_id = $booking->id;
+                        $itinerary->day = $day;
+                        $itinerary->itinerary = $data['itineraries'][$i]['activity'];
+                        $itinerary->activity = $data['itineraries'][$i]['itinerary'];
+                        if($data['itineraries'][$i]['activity_start_id']){
+                            $itinerary->activity_start_id = $data['itineraries'][$i]['activity_start_id'];
+                        }
+                        if($data['itineraries'][$i]['activity_end_id']){
+                            $itinerary->activity_end_id = $data['itineraries'][$i]['activity_end_id'];
+                        }
+                        $itinerary->b = $data['itineraries'][$i]['meals']['breakfast'] ? '1' : '0';
+                        $itinerary->l = $data['itineraries'][$i]['meals']['lunch'] ? '1' : '0';
+                        $itinerary->d = $data['itineraries'][$i]['meals']['dinner'] ? '1' : '0';
+                        $itinerary->save();
+    
+                        if($data['itineraries'][$i]['hotel_id'] != ''){
+                            $bookHotel = new BookHotel;
+                            $bookHotel->booking_id = $booking->id;
+                            $bookHotel->booking_itinerary_id = $itinerary->id;
+                            $bookHotel->hotel_id = $data['itineraries'][$i]['hotel_id'];
+                            $bookHotel->b = $data['itineraries'][$i]['meals']['breakfast'] ? '1' : '0';
+                            $bookHotel->l = $data['itineraries'][$i]['meals']['lunch'] ? '1' : '0';
+                            $bookHotel->d = $data['itineraries'][$i]['meals']['dinner'] ? '1' : '0';
+                            $bookHotel->status = NULL;
+                            $bookHotel->save();
+    
+                            if($data['itineraries'][$i]['rooms'] != null){
+                                foreach($data['itineraries'][$i]['rooms'] as $room){
+                                    $getRoomDetails = RoomHotel::find($room['id']);
+    
+                                    if($getRoomDetails){
+                                        $bookRoomHotel = new BookRoomHotel;
+                                        $bookRoomHotel->booking_id = $booking->id;
+                                        $bookRoomHotel->booking_itinerary_id = $itinerary->id;
+                                        $bookRoomHotel->book_hotel_id = $bookHotel->id;
+                                        $bookRoomHotel->room_hotel_id = $room['id'];
+                                        $bookRoomHotel->quantity = $room['quantity'];
+                                        $bookRoomHotel->subtotal = $bookRoomHotel->quantity * $getRoomDetails->rate;
+                                        $bookRoomHotel->save();
+                                    }
+                                }
+                            }
+                        }
+                    }
+    
+                    // Tambahkan informasi hasil pemrosesan ke response
+                    $response = [
+                        'success' => true,
+                        'message' => 'PDF berhasil diproses',
+                        'fileName' => $fileName,
+                        'booking_code' => $booking->booking_code,
+                        'user_name' => $user->name,
+                        'travel_date' => $booking->travel_date_start . ' s/d ' . $booking->travel_date_end,
+                        'total_pax' => $booking->total_pax,
+                        'grand_total' => $booking->grand_total
+                    ];
+                    
+                    $logData .= "PDF PROCESSED SUCCESSFULLY\n";
+                    $logData .= "BOOKING CODE: " . $booking->booking_code . "\n";
+                    $logData .= "CUSTOMER: " . $user->name . "\n";
+                    
+                } catch (\Exception $e) {
+                    $logData .= "PDF PROCESSING ERROR: " . $e->getMessage() . "\n";
+                    $response = [
+                        'success' => false,
+                        'message' => 'Gagal memproses PDF: ' . $e->getMessage(),
+                        'fileName' => $fileName
+                    ];
+                }
+                
             } else {
                 $logData .= "NO FILE DATA FOUND\n";
                 $response = [
@@ -1752,26 +2009,30 @@ class BookingController extends Controller
             $fullPath = Storage::disk('public')->path($filePath);
             
             try {
-                $getHotel = Hotel::select('id','name')->with(['roomHotel' => function($query){
+                $getHotel = Hotel::select('id','name','destination_id')->with(['roomHotel' => function($query){
                     $query->select('id','hotel_id','room_name');
                 }])->whereIn('id',[59,11,60,12,63,34,56,10])->get();
                 $hotels = json_encode($getHotel);
+                $activityStart = ActivityStart::select('id','name','description')->get();
+                $activityEnd = ActivityEnd::select('id','name','description')->get();
+                $activityStart = json_encode($activityStart);
+                $activityEnd = json_encode($activityEnd);
                 // Ekstrak teks dari PDF menggunakan PDFParser
                 $parser = new \Smalot\PdfParser\Parser();
                 $pdf = $parser->parseFile($fullPath);
                 $pages = $pdf->getPages();
                 $text = $pdf->getText();
-                if (count($pages) > 0) {
-                    $firstPage = $pages[0];
-                    $text = $firstPage->getText();
 
                     $prompt = "
-                    get Duration (Day), Invoice Number,Invoice Date (Y-m-d format), Customer Name, Traveling Date Start (Y-m-d format), Traveling Date End  (Y-m-d format), No of Pax (number only), Tshirt Size (XSS,XXS,XS,S,M,L,XL,XXL,XXL) (default value 0), pick up location at first day, pick up time at first day (you also can see in flight details in first day, If there are 2 times (start and end), then use end because that is the arrival time. (H:i format), flight details at first day (flight number only), drop location at last day (check in itinerary in last day. Example : Airport), drop time at last day (maybe the name is pick up at last day, but because it's a last day, so pick up is drop), drop time at last day (maybe the name is pick up at last day, but because it's a last day, so pick up is drop), flight details at last day, itineraries (should be array with format like this : 
+                    get Trip Duration (always get from count number of itineraries dont get directly from package), Invoice Number,Invoice Date (Y-m-d format), Customer Name, Traveling Date Start (Y-m-d format), Traveling Date End  (Y-m-d format), No of Pax (number only), Tshirt Size (XSS,XXS,XS,S,M,L,XL,XXL,XXL) (default value 0), pick up location at first day, pick up time at first day (you also can see in flight details in first day, If there are 2 times (start and end), then use end because that is the arrival time. (H:i format), flight details at first day (flight number only), drop location at last day (check in itinerary in last day. Example : Airport), drop time at last day (maybe the name is pick up at last day, but because it's a last day, so pick up is drop), drop time at last day (maybe the name is pick up at last day, but because it's a last day, so pick up is drop), flight details at last day, itineraries (should be array with format like this : 
                         [
                             {
                                 'date': '2025-10-01',
                                 'day': 1,
                                 'itinerary': 'Itinerary day 1',
+                                'activity_start_id' : 'activity_start_id',
+                                'activity_end_id' : 'activity_end_id',
+                                'activity' : 'activity start name - activity end name',
                                 'hotel_id': 'hotel_id',
                                 'hotel': 'hotel name',
                                 'rooms': [
@@ -1791,6 +2052,9 @@ class BookingController extends Controller
                                 'date': '2025-10-02',
                                 'day': 2,
                                 'itinerary': 'Itinerary day 2',
+                                'activity_start_id' : 'activity_start_id',
+                                'activity_end_id' : 'activity_end_id',
+                                'activity' : 'activity start name - activity end name',
                                 'hotel_id': 'hotel_id',
                                 'hotel': 'hotel name',
                                 'rooms': [
@@ -1807,10 +2071,10 @@ class BookingController extends Controller
                                 }
                             },
                             .... etc
-                        ]), make sure the itinerary are not mixed up, according to the day and date. for the hotel and room id you can check in this master data : \n".$hotels.".\n\n                     
-                    Provide me as a json format only, not text intro before. Set the key like this (day,invoice_number,invoice_date,customer_name,travel_date_start,travel_date_end,no_of_pax,xss,xxs,xs,s,m,l,xl,xxl,xxxl,pickup_location,pickup_time,pickup_flight_number,drop_location,drop_time,drop_flight_number,itineraries. if you didn't get the value, just leave it blank. Here is the data :\n" . $text;
+                        ]), make sure the itinerary are not mixed up, according to the day and date Also make sure the itinerary text is neat in terms of writing and spacing. for the activity_start_id, activity_end_id, and activity you can check on this data: \nActivity Start: ".$activityStart."\nActivity End: ".$activityEnd."\n\n\n\n. and get also grand total in the bottom, at ijen (date)(After you get the itinerary date and hotel, do a search for a hotel that has a master destination_id == 2, if you can get it, take the itinerary date + 1 day. Example Date 2025-05-02 Hotel Riverside Homestay, so at ijen is 2025-05-02 + 1 day = 2025-05-03, that is at Ijen),at bromo (date)(After you get the itinerary date and hotel, do a search for a hotel that has a master destination_id == 1, if you can get it, take the itinerary date + 1 day. Example Date 2025-05-03 Hotel Joglo Kecombrang, so at bromo is 2025-05-03 + 1 day = 2025-05-04, that is at bromo). for the hotel and room id you can check in this master data : \n".$hotels.".\n\n\n\n                     
+                    Provide me as a json format only, not text intro before. Set the key like this (day,invoice_number,invoice_date,customer_name,travel_date_start,travel_date_end,no_of_pax,xss,xxs,xs,s,m,l,xl,xxl,xxxl,pickup_location,pickup_time,pickup_flight_number,drop_location,drop_time,drop_flight_number,itineraries,grand_total, at_ijen, at_bromo. if you didn't get the value, just leave it blank. Here is the data :\n" . $text;
     
-                    $response = Http::timeout(60)->withHeaders([
+                    $response = Http::timeout(120)->withHeaders([
                         'Content-Type' => 'application/json',
                         'Authorization' => 'Bearer ' . env('DEEPSEEK_API_KEY'),
                     ])->post('https://api.deepseek.com/chat/completions', [
@@ -1829,8 +2093,166 @@ class BookingController extends Controller
             
                     // Decode ke array PHP
                     $data = json_decode($cleaned, true);
-                    return $data;
-                }
+
+                    $agent_id = 1;
+                    $booking_category_id = NULL;
+                    $attachment_id = 6;
+
+                    $user = new User;
+                    $user->name = $data['customer_name'];
+                    $user->avatar = "default.jpg";
+                    $user->password  = Hash::make('password');
+                    $user->save();
+
+                    $ym = date('Y-m', strtotime($data['travel_date_start']));
+        
+                    $getBooking = Booking::where('agent_id', $agent_id)->where('travel_date_start', 'like', '%' . $ym . '%');
+                    $getBooking = $getBooking->orderBy('booking_numb', 'desc');
+                    $count = $getBooking->count();
+                    if ($count == 0) {
+                        $code = '001';
+                    } else {
+                        $getBooking = $getBooking->first();
+                        $code = (int) $getBooking->booking_numb + 1;
+                        $code = sprintf("%03s", $code);
+                    }
+            
+                    $invoiceCode = [
+                        'year' => date("y", strtotime($data['travel_date_start'])),
+                        'month' => date("m", strtotime($data['travel_date_start'])),
+                        'code' => $code
+                    ];
+            
+                    $invoice_number = "JVR/$invoiceCode[code]/$invoiceCode[month]/$invoiceCode[year]";
+            
+                    $days = count($data['itineraries']);
+                    $nights = count($data['itineraries'])-1;
+
+                    $booking = new Booking;
+                    $booking->booking_code = $invoice_number;
+                    $booking->custom_code = $invoice_number;
+                    $booking->agent_id = $agent_id;
+                    $booking->booking_category_id = $booking_category_id;
+                    $booking->booking_date = $data['invoice_date'];
+                    $booking->invoice_code_origin = $data['invoice_number'];
+                    $booking->booking_numb = $code;
+                    $booking->user_id = $user->id;
+                    $booking->travel_date_start = $data['travel_date_start'];
+                    $booking->travel_date_end = date('Y-m-d', strtotime($booking->travel_date_start . " +$nights days"));
+                    $booking->package_duration = $days;
+                    $booking->total_pax = $data['no_of_pax'];
+                    $booking->meeting_point = 'Others';
+                    $booking->pickup = $data['pickup_location'];
+                    $booking->meeting_point_value = $data['pickup_location'];
+            
+                    $booking->drop_point = 'Others';
+                    $booking->drop = $data['drop_location'];
+                    $booking->drop_point_value = $data['drop_location'];
+            
+                    $booking->dp_no_idr = 0;
+                    $booking->payment = 0;
+
+                    $booking->grand_total_before_disc = $data['grand_total'];
+                    $booking->add_on_total = 0;
+            
+                    $booking->grand_total = $data['grand_total'];
+                    $booking->dp = 0;
+                    
+                    $booking->at_bondowoso = $data['at_ijen'];
+                    $booking->at_bromo = $data['at_bromo'];
+
+                    $booking->balance = $booking->grand_total;
+                    $booking->status = 'booked';
+                    $booking->type = 'offline';
+                    $booking->payment_method = 'pay later';
+                    $slug = str_replace(' ', '-', $user->name);
+                    $slug = strtolower($slug);
+                    $booking->url_name = $slug.$user->id;
+                    $booking->url = md5($booking->url_name);
+                    $booking->save();
+
+                    $bookingDocument = new BookingDocument();
+                    $bookingDocument->booking_id = $booking->id;
+                    $bookingDocument->user_id = $booking->user_id;
+                    $bookingDocument->attachment_type_id = $attachment_id; //Klook Booking Ticket
+                    $bookingDocument->file = $fileName;
+                    $bookingDocument->save();
+
+
+                    $bookingDetail = new BookingDetail;
+                    $bookingDetail->booking_id = $booking->id;
+                    $bookingDetail->travel_date_start = $booking->travel_date_start;
+                    $bookingDetail->travel_date_end = $booking->travel_date_end;
+                    $bookingDetail->pax = $booking->total_pax;
+                    $bookingDetail->xss = $data['xss'];
+                    $bookingDetail->xxs = $data['xxs'];
+                    $bookingDetail->xs = $data['xs'];
+                    $bookingDetail->s = $data['s'];
+                    $bookingDetail->m = $data['m'];
+                    $bookingDetail->l = $data['l'];
+                    $bookingDetail->xl = $data['xl'];
+                    $bookingDetail->xxl = $data['xxl'];
+                    $bookingDetail->xxxl = $data['xxxl'];
+                    $bookingDetail->total = $data['xss'] + $data['xxs'] + $data['xs'] + $data['s'] + $data['m'] + $data['l'] + $data['xl'] + $data['xxl'] + $data['xxxl'];
+                    $bookingDetail->save();
+                    
+                    for($i=0;$i<$days;$i++){
+                        $day = $i+1;
+                        $itinerary = new BookingItinerary;
+                        $itinerary->booking_id = $booking->id;
+                        $itinerary->day = $day;
+                        $itinerary->itinerary = $data['itineraries'][$i]['activity'];
+                        $itinerary->activity = $data['itineraries'][$i]['itinerary'];
+                        if($data['itineraries'][$i]['activity_start_id']){
+                            $itinerary->activity_start_id = $data['itineraries'][$i]['activity_start_id'];
+                        }
+                        if($data['itineraries'][$i]['activity_end_id']){
+                            $itinerary->activity_end_id = $data['itineraries'][$i]['activity_end_id'];
+                        }
+                        $itinerary->b = $data['itineraries'][$i]['meals']['breakfast'] ? '1' : '0';
+                        $itinerary->l = $data['itineraries'][$i]['meals']['lunch'] ? '1' : '0';
+                        $itinerary->d = $data['itineraries'][$i]['meals']['dinner'] ? '1' : '0';
+                        $itinerary->save();
+
+                        if($data['itineraries'][$i]['hotel_id'] != ''){
+                            $bookHotel = new BookHotel;
+                            $bookHotel->booking_id = $booking->id;
+                            $bookHotel->booking_itinerary_id = $itinerary->id;
+                            $bookHotel->hotel_id = $data['itineraries'][$i]['hotel_id'];
+                            $bookHotel->b = $data['itineraries'][$i]['meals']['breakfast'] ? '1' : '0';
+                            $bookHotel->l = $data['itineraries'][$i]['meals']['lunch'] ? '1' : '0';
+                            $bookHotel->d = $data['itineraries'][$i]['meals']['dinner'] ? '1' : '0';
+                            $bookHotel->status = NULL;
+                            $bookHotel->save();
+
+                            if($data['itineraries'][$i]['rooms'] != null){
+                                foreach($data['itineraries'][$i]['rooms'] as $room){
+                                    $getRoomDetails = RoomHotel::find($room['id']);
+
+                                    if($getRoomDetails){
+                                        $bookRoomHotel = new BookRoomHotel;
+                                        $bookRoomHotel->booking_id = $booking->id;
+                                        $bookRoomHotel->booking_itinerary_id = $itinerary->id;
+                                        $bookRoomHotel->book_hotel_id = $bookHotel->id;
+                                        $bookRoomHotel->room_hotel_id = $room['id'];
+                                        $bookRoomHotel->quantity = $room['quantity'];
+                                        $bookRoomHotel->subtotal = $bookRoomHotel->quantity * $getRoomDetails->rate;
+                                        $bookRoomHotel->save();
+                                    }
+                                }
+                            }
+                        }
+            
+                    }
+
+                return [
+                    'user' => $user,
+                    'booking' => $booking,
+                    'bookingDetail' => $bookingDetail,
+                    'itinerary' => $itinerary,
+                    'bookHotel' => $bookHotel,
+                    'bookRoomHotel' => $bookRoomHotel,                    
+                ];
 
                         
                 return view('pdf-extractor.result', [

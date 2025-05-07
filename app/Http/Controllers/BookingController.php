@@ -343,7 +343,7 @@ class BookingController extends Controller
             $booking->drop_point_value = $dropLocation['customLocation'];
         }
         else{
-            $booking->drop = $dropLocation['location']." ".$booking->drop_point_arrival." ".$booking->meeting_point_value;
+            $booking->drop = $dropLocation['location']." ".$booking->drop_point_arrival." ".$booking->drop_point_value;
         }
 
         $booking->pickup_time = $request->pickupTime && $request->pickupTime != '' && $request->pickupTime != null && $request->pickupTime != 'null' ? $request->pickupTime : null;
@@ -785,7 +785,7 @@ class BookingController extends Controller
             $booking->drop_point_value = $dropLocation['customLocation'];
         }
         else{
-            $booking->drop = $dropLocation['location']." ".$booking->drop_point_arrival." ".$booking->meeting_point_value;
+            $booking->drop = $dropLocation['location']." ".$booking->drop_point_arrival." ".$booking->drop_point_value;
         }
 
         $booking->pickup_time = $request->pickupTime && $request->pickupTime != '' && $request->pickupTime != null && $request->pickupTime != 'null' ? $request->pickupTime : null;

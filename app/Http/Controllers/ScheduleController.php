@@ -11,7 +11,9 @@ use App\Models\BookingCategory;
 use App\Models\BookingDocument;
 use App\Models\BookingItinerary;
 use App\Models\BookingPayment;
+use App\Models\Car;
 use App\Models\Destination;
+use App\Models\GuideDriver;
 use App\Models\Hotel;
 use App\Models\NoteCategory;
 use App\Models\Package;
@@ -21,6 +23,7 @@ use Inertia\Inertia;
 use PDF;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class ScheduleController extends Controller
 {
@@ -1117,7 +1120,476 @@ class ScheduleController extends Controller
 
         return back()->with('message', 'Note updated successfully');
     }
+  // Fungsi getDataPlotting dengan parameter array
+    function getDataPlotting($params)
+    {
+        $bookingId = $params['id'];
+        $orderChannel = $params['order_channel'] != 'all' ? $params['order_channel'] : '';
+        $booking = Booking::findOrFail($bookingId);
+        $start_date = $booking->travel_date_start;
+        $end_date = $booking->is_shuttle == '1'
+            ? Carbon::parse($booking->travel_date_end)->subDay()->toDateString()
+            : $booking->travel_date_end;
+        $at_ijen = $booking->at_bondowoso;
 
+        // Subquery to check availability and get booking info for other bookings
+        $availabilitySubquery = BookGuideDriver::select('guide_id', 'book_guide_drivers.booking_id', 'users.name as user_name', 'book_guide_drivers.start_date', 'book_guide_drivers.end_date')
+            ->join('bookings', 'book_guide_drivers.booking_id', '=', 'bookings.id')
+            ->join('users', 'bookings.user_id', '=', 'users.id')
+            ->where('book_guide_drivers.booking_id', '!=', $bookingId)
+            ->where(function ($query) use ($start_date, $end_date) {
+                $query->whereBetween('book_guide_drivers.start_date', [$start_date, $end_date])
+                    ->orWhereBetween('book_guide_drivers.end_date', [$start_date, $end_date])
+                    ->orWhere(function ($q) use ($start_date, $end_date) {
+                        $q->where('book_guide_drivers.start_date', '<=', $start_date)
+                            ->where('book_guide_drivers.end_date', '>=', $end_date);
+                    });
+            })
+            ->whereColumn('book_guide_drivers.guide_id', 'guide_drivers.id')
+            ->orderBy('book_guide_drivers.start_date')
+            ->limit(1);
+
+        // Subquery to check if guide/driver is plotted for current booking
+        $currentBookingSubquery = BookGuideDriver::select('guide_id', 'guide_ijen')
+            ->where('booking_id', $bookingId)
+            ->whereColumn('guide_id', 'guide_drivers.id');
+
+        // Query for drivers
+        $data['driver'] = GuideDriver::select('id','name','garage_id','tags','new_role')
+            ->selectSub($availabilitySubquery->select('booking_id'), 'conflicting_booking_id')
+            ->selectSub($availabilitySubquery->select('users.name'), 'conflicting_user_name')
+            ->selectSub($availabilitySubquery->select('start_date'), 'conflicting_start_date')
+            ->selectSub($availabilitySubquery->select('end_date'), 'conflicting_end_date')
+            ->selectRaw('CASE
+                WHEN EXISTS (' . $currentBookingSubquery->toSql() . ') THEN "Terplotting"
+                WHEN EXISTS (' . $availabilitySubquery->toSql() . ') THEN "Tidak Tersedia"
+                ELSE "Tersedia"
+            END as status')
+            ->mergeBindings($currentBookingSubquery->getQuery())
+            ->mergeBindings($availabilitySubquery->getQuery())
+            ->where('is_driver', '1')
+            ->where('tags', 'like', "%$orderChannel%")
+            ->get()
+            ->map(function ($driver) use ($bookingId) {
+                if ($driver->status === 'Terplotting') {
+                    $driver->schedule_info = "Terplotting untuk Booking ID: {$bookingId}";
+                } elseif ($driver->status === 'Tidak Tersedia' && $driver->conflicting_booking_id) {
+                    $driver->schedule_info = "({$driver->conflicting_start_date} - {$driver->conflicting_end_date}) " .
+                        "Customer: {$driver->conflicting_user_name}";
+                }
+                unset($driver->conflicting_booking_id, $driver->conflicting_user_name, $driver->conflicting_start_date, $driver->conflicting_end_date);
+                return $driver;
+            });
+
+        // Query untuk guide (sama seperti sebelumnya)
+        $data['guide'] = GuideDriver::select('id','name','tags','new_role')
+            ->selectSub($availabilitySubquery->select('booking_id'), 'conflicting_booking_id')
+            ->selectSub($availabilitySubquery->select('users.name'), 'conflicting_user_name')
+            ->selectSub($availabilitySubquery->select('start_date'), 'conflicting_start_date')
+            ->selectSub($availabilitySubquery->select('end_date'), 'conflicting_end_date')
+            ->selectSub($availabilitySubquery->select('guide_ijen'), 'guide_ijen')
+            ->selectSub(
+                BookGuideDriver::select('guide_ijen')
+                    ->where('booking_id', $bookingId)
+                    ->whereColumn('guide_id', 'guide_drivers.id')
+                    ->limit(1),
+                'current_guide_ijen'
+            )
+            ->selectRaw('CASE
+                WHEN EXISTS (
+                    SELECT 1 FROM book_guide_drivers
+                    WHERE booking_id = ? AND guide_id = guide_drivers.id
+                ) THEN "Terplotting"
+                WHEN EXISTS (' . $availabilitySubquery->toSql() . ') THEN "Tidak Tersedia"
+                ELSE "Tersedia"
+            END as status', [$bookingId])
+            ->mergeBindings($availabilitySubquery->getQuery())
+            ->where('is_driver', '0')
+            ->where('tags', 'like', "%$orderChannel%")
+            ->get()
+            ->map(function ($guide) use ($bookingId, $at_ijen) {
+                $guide->dynamic_roles = ['Escort', 'Ijen'];
+                $checkIjen = BookGuideDriver::whereRaw("'$at_ijen' between start_date and end_date")->where('guide_id', $guide->id)->count();
+                if ($guide->status === 'Terplotting') {
+                    $guideType = $guide->current_guide_ijen == '1' ? 'Ijen Guide' : 'Escort Guide';
+                    $guide->schedule_info = "Terplotting untuk Booking ID: {$bookingId} ({$guideType})";
+                    $guide->guide_ijen = $guide->current_guide_ijen;
+                } elseif ($guide->status === 'Tidak Tersedia' && $guide->conflicting_booking_id) {
+                    // if($guide->guide_ijen == '1' && $guide->conflicting_start_date != $at_ijen){
+                    if (($guide->guide_ijen == '1' && $guide->conflicting_start_date != $at_ijen)) {
+                        $guide->status = 'Tersedia';
+                        $guide->schedule_info = 'Tersedia';
+                        $guide->dynamic_roles = ['Ijen'];
+                    } else if (($guide->guide_ijen == '0' && $at_ijen > $guide->conflicting_end_date)) {
+                        if ($checkIjen == 0) {
+                            $guide->status = 'Tersedia';
+                            $guide->schedule_info = 'Tersedia';
+                            $guide->dynamic_roles = ['Ijen'];
+                        } else {
+                            $guide->schedule_info = "({$guide->conflicting_start_date} - {$guide->conflicting_end_date}) " .
+                                "Customer: {$guide->conflicting_user_name}";
+                        }
+                    } else {
+                        $guide->schedule_info = "({$guide->conflicting_start_date} - {$guide->conflicting_end_date}) " .
+                            "Customer: {$guide->conflicting_user_name}";
+                    }
+                } else {
+                    $guide->schedule_info = "Tersedia";
+                }
+                unset($guide->conflicting_booking_id, $guide->conflicting_user_name,  $guide->current_guide_ijen);
+                return $guide;
+            });
+
+        // Query for cars
+        $carAvailabilitySubquery = BookCar::select('car_id', 'book_cars.booking_id', 'users.name as user_name', 'book_cars.start_date', 'book_cars.end_date')
+            ->join('bookings', 'book_cars.booking_id', '=', 'bookings.id')
+            ->join('users', 'bookings.user_id', '=', 'users.id')
+            ->where('book_cars.booking_id', '!=', $bookingId)
+            ->where(function ($query) use ($start_date, $end_date) {
+                $query->whereBetween('book_cars.start_date', [$start_date, $end_date])
+                    ->orWhereBetween('book_cars.end_date', [$start_date, $end_date])
+                    ->orWhere(function ($q) use ($start_date, $end_date) {
+                        $q->where('book_cars.start_date', '<=', $start_date)
+                            ->where('book_cars.end_date', '>=', $end_date);
+                    });
+            })
+            ->whereColumn('book_cars.car_id', 'cars.id')
+            ->orderBy('book_cars.start_date')
+            ->limit(1);
+
+        $currentCarBookingSubquery = BookCar::select('car_id')
+            ->where('booking_id', $bookingId)
+            ->whereColumn('car_id', 'cars.id');
+
+        $data['car'] = Car::select('id','name','garage_id','start_pax','end_pax')
+            ->selectSub($carAvailabilitySubquery->select('booking_id'), 'conflicting_booking_id')
+            ->selectSub($carAvailabilitySubquery->select('users.name'), 'conflicting_user_name')
+            ->selectSub($carAvailabilitySubquery->select('start_date'), 'conflicting_start_date')
+            ->selectSub($carAvailabilitySubquery->select('end_date'), 'conflicting_end_date')
+            ->selectRaw('CASE
+                WHEN EXISTS (' . $currentCarBookingSubquery->toSql() . ') THEN "Terplotting"
+                WHEN EXISTS (' . $carAvailabilitySubquery->toSql() . ') THEN "Tidak Tersedia"
+                ELSE "Tersedia"
+            END as status')
+            ->mergeBindings($currentCarBookingSubquery->getQuery())
+            ->mergeBindings($carAvailabilitySubquery->getQuery())
+            ->get()
+            ->map(function ($car) use ($bookingId) {
+                if ($car->status === 'Terplotting') {
+                    $car->schedule_info = "Terplotting untuk Booking ID: {$bookingId}";
+                } elseif ($car->status === 'Tidak Tersedia' && $car->conflicting_booking_id) {
+                    $car->schedule_info = "({$car->conflicting_start_date} - {$car->conflicting_end_date}) " .
+                        "Customer: {$car->conflicting_user_name}";
+                }
+                unset($car->conflicting_booking_id, $car->conflicting_user_name, $car->conflicting_start_date, $car->conflicting_end_date);
+                return $car;
+            });
+
+        return $data;
+    }
+
+    // Fungsi autoPlotting yang memanggil getDataPlotting
+    function autoPlotting(Request $request)
+    {
+        $bookingId = $request->booking_id;
+        $orderChannel = strtoupper($request->order_channel);
+        
+        // Ambil data booking
+        $booking = Booking::select('id', 'travel_date_start', 'travel_date_end', 'user_id', 'total_pax')
+            ->with(['user' => function($query){
+                $query->select('id', 'name');
+            }])
+            ->where('id', $bookingId)
+            ->first();
+        
+        // Buat array parameter untuk getDataPlotting
+        $params = [
+            'id' => $bookingId,
+            'order_channel' => $orderChannel != '' ? $orderChannel : 'all'
+        ];
+        
+        // Panggil fungsi getDataPlotting
+        $data = $this->getDataPlotting($params);
+        
+        // Filter driver berdasarkan total_pax
+        $driverOptions = [];
+        if ($booking->total_pax <= 3) {
+            // Untuk <= 3 pax, gunakan Driver cum guide
+            foreach ($data['driver'] as $driver) {
+                if ($driver['new_role'] == 'Driver cum guide' && $driver['status'] == 'Tersedia') {
+                    $driverOptions[] = $driver;
+                }
+            }
+        } else {
+            // Untuk > 3 pax, gunakan driver dengan id 9 (GARAGE)
+            foreach ($data['driver'] as $driver) {
+                if ($driver['id'] == 9) {
+                    // GARAGE driver selalu tersedia bahkan jika statusnya 'Tidak Tersedia'
+                    $driver['status'] = 'Tersedia (Auto-selected for large groups)';
+                    $driverOptions[] = $driver;
+                    break;
+                }
+            }
+        }
+        
+        return [
+            'order_channel' => $orderChannel,
+            'booking' => $booking,
+            'driver_options' => $driverOptions,
+            'data' => $data,
+        ];
+    }
+    // Fungsi untuk melakukan autoplotting secara massal dengan prioritas jenis driver dan pengecekan konflik
+    function massAutoPlotting(Request $request)
+    {
+        // Ambil semua booking bulan Juni 2025 dengan urutan prioritas (tanpa limit)
+        $bookings = Booking::where('travel_date_start', '>=', '2025-06-01')
+                        ->where('travel_date_start', '<', '2025-07-01')
+                        ->where(function($query) {
+                            // Prioritas urutan order channel
+                            $query->where('agent_id', 1) // TWT
+                                    ->orWhere(function($q) {
+                                        $q->where('agent_id', 2)
+                                        ->where('booking_category_id', '!=', 3); // JVTO
+                                    })
+                                    ->orWhere(function($q) {
+                                        $q->where('agent_id', 2)
+                                        ->where('booking_category_id', 3); // KLOOK
+                                    });
+                        })
+                        ->orderByRaw("CASE 
+                                    WHEN agent_id = 1 THEN 1
+                                    WHEN agent_id = 2 AND booking_category_id != 3 THEN 2
+                                    WHEN agent_id = 2 AND booking_category_id = 3 THEN 3
+                                    ELSE 4
+                                    END")
+                        ->orderBy('travel_date_start')
+                        ->with('user')
+                        ->get();
+        
+        $results = [];
+        
+        // Inisialisasi array untuk melacak jumlah trip masing-masing driver beserta nama
+        $driverTrips = [];
+        
+        // Array untuk melacak plotting yang dilakukan dalam proses simulasi ini
+        // Format: ['driver_id' => [['start_date' => '...', 'end_date' => '...'], ...]]
+        $simulatedPlottings = [];
+        
+        foreach ($bookings as $booking) {
+            // Tentukan order channel berdasarkan agent_id dan booking_category_id
+            if ($booking->agent_id == 2 && $booking->booking_category_id == 3) {
+                $orderChannel = 'KLOOK';
+            } elseif ($booking->agent_id == 2) {
+                $orderChannel = 'JVTO';
+            } else {
+                $orderChannel = 'TWT';
+            }
+            
+            // Tentukan tanggal awal dan akhir trip untuk driver
+            $driverStartDate = $booking->travel_date_start;
+            $driverEndDate = $booking->is_shuttle == '1'
+                ? Carbon::parse($booking->travel_date_end)->subDay()->toDateString()
+                : $booking->travel_date_end;
+            
+            // Buat parameter untuk getDataPlotting
+            $params = [
+                'id' => $booking->id,
+                'order_channel' => $orderChannel
+            ];
+            
+            // Panggil fungsi getDataPlotting
+            $data = $this->getDataPlotting($params);
+            
+            // Definisikan prioritas jenis driver
+            $driverRolePriority = [
+                'Driver cum guide' => 1,
+                'Only Driver' => 2,
+                'Outsource' => 3
+            ];
+            
+            // Array untuk menyimpan driver yang tersedia, dikelompokkan berdasarkan role
+            $availableDriversByRole = [
+                'Driver cum guide' => [],
+                'Only Driver' => [],
+                'Outsource' => []
+            ];
+            
+            // Filter driver berdasarkan total_pax, status ketersediaan, dan cek konflik dengan plotting sebelumnya
+            if ($booking->total_pax <= 3) {
+                // Untuk <= 3 pax, cari driver berdasarkan prioritas role
+                foreach ($data['driver'] as $driver) {
+                    $driverId = $driver['id'];
+                    
+                    // Cek apakah driver tersedia menurut data
+                    $isAvailable = $driver['status'] == 'Tersedia';
+                    
+                    // Cek konflik dengan plotting yang telah dilakukan dalam simulasi
+                    $hasConflict = false;
+                    if (isset($simulatedPlottings[$driverId])) {
+                        foreach ($simulatedPlottings[$driverId] as $plot) {
+                            // Cek apakah ada overlap tanggal
+                            $plotStart = $plot['start_date'];
+                            $plotEnd = $plot['end_date'];
+                            
+                            if (
+                                // Booking baru mulai di tengah plotting yang ada
+                                ($driverStartDate >= $plotStart && $driverStartDate <= $plotEnd) ||
+                                // Booking baru berakhir di tengah plotting yang ada
+                                ($driverEndDate >= $plotStart && $driverEndDate <= $plotEnd) ||
+                                // Booking baru melingkupi plotting yang ada
+                                ($driverStartDate <= $plotStart && $driverEndDate >= $plotEnd)
+                            ) {
+                                $hasConflict = true;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Hanya pertimbangkan driver yang tersedia dan tidak memiliki konflik
+                    if ($isAvailable && !$hasConflict) {
+                        $role = $driver['new_role'] ?? 'Unknown'; // Default jika tidak ada role
+                        
+                        // Tambahkan jumlah trip yang sudah dihitung
+                        $driver['trip_count'] = isset($driverTrips[$driverId]['count']) ? $driverTrips[$driverId]['count'] : 0;
+                        
+                        // Kelompokkan driver berdasarkan role
+                        if ($role == 'Driver cum guide') {
+                            $availableDriversByRole['Driver cum guide'][] = $driver;
+                        } elseif ($role == 'Only Driver') {
+                            $availableDriversByRole['Only Driver'][] = $driver;
+                        } elseif ($role == 'Outsource') {
+                            $availableDriversByRole['Outsource'][] = $driver;
+                        }
+                    }
+                }
+            } else {
+                // Untuk > 3 pax, gunakan driver dengan id 9 (GARAGE)
+                foreach ($data['driver'] as $driver) {
+                    if ($driver['id'] == 9) {
+                        $driverId = $driver['id'];
+                        
+                        // GARAGE driver selalu tersedia, tapi tetap cek konflik plotting
+                        $hasConflict = false;
+                        if (isset($simulatedPlottings[$driverId])) {
+                            foreach ($simulatedPlottings[$driverId] as $plot) {
+                                // Cek apakah ada overlap tanggal
+                                $plotStart = $plot['start_date'];
+                                $plotEnd = $plot['end_date'];
+                                
+                                if (
+                                    ($driverStartDate >= $plotStart && $driverStartDate <= $plotEnd) ||
+                                    ($driverEndDate >= $plotStart && $driverEndDate <= $plotEnd) ||
+                                    ($driverStartDate <= $plotStart && $driverEndDate >= $plotEnd)
+                                ) {
+                                    $hasConflict = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (!$hasConflict) {
+                            $driver['status'] = 'Tersedia (Auto-selected for large groups)';
+                            $driver['trip_count'] = isset($driverTrips[$driverId]['count']) ? $driverTrips[$driverId]['count'] : 0;
+                            $availableDriversByRole['Driver cum guide'][] = $driver; // Anggap sebagai prioritas tertinggi
+                        }
+                        break;
+                    }
+                }
+            }
+            
+            // Variabel untuk menyimpan daftar semua driver yang tersedia
+            $allAvailableDrivers = [];
+            
+            // Gabungkan semua driver yang tersedia untuk ditampilkan di hasil
+            foreach ($availableDriversByRole as $role => $drivers) {
+                foreach ($drivers as $driver) {
+                    $allAvailableDrivers[] = $driver;
+                }
+            }
+            
+            // Pilih driver berdasarkan prioritas role dan jumlah trip
+            $selectedDriver = null;
+            
+            // Cek setiap role sesuai prioritas
+            foreach (['Driver cum guide', 'Only Driver', 'Outsource'] as $role) {
+                if (!empty($availableDriversByRole[$role])) {
+                    // Jika ada driver dengan role ini, urutkan berdasarkan jumlah trip
+                    usort($availableDriversByRole[$role], function($a, $b) {
+                        return $a['trip_count'] - $b['trip_count'];
+                    });
+                    
+                    // Pilih driver dengan jumlah trip terkecil dari role ini
+                    $selectedDriver = $availableDriversByRole[$role][0];
+                    break; // Keluar dari loop setelah menemukan driver
+                }
+            }
+            
+            // Jika driver terpilih, update jumlah trip dan catat plotting
+            if ($selectedDriver) {
+                $driverId = $selectedDriver['id'];
+                
+                // Update jumlah trip
+                if (!isset($driverTrips[$driverId])) {
+                    $driverTrips[$driverId] = [
+                        'name' => $selectedDriver['name'],
+                        'role' => $selectedDriver['new_role'] ?? 'Unknown',
+                        'count' => 0
+                    ];
+                }
+                $driverTrips[$driverId]['count']++;
+                
+                // Update trip_count di selectedDriver
+                $selectedDriver['trip_count'] = $driverTrips[$driverId]['count'];
+                
+                // Catat plotting untuk pengecekan konflik selanjutnya
+                if (!isset($simulatedPlottings[$driverId])) {
+                    $simulatedPlottings[$driverId] = [];
+                }
+                $simulatedPlottings[$driverId][] = [
+                    'booking_id' => $booking->id,
+                    'start_date' => $driverStartDate,
+                    'end_date' => $driverEndDate
+                ];
+            }
+            
+            // Tambahkan ke hasil
+            $results[] = [
+                'booking_id' => $booking->id,
+                'customer_name' => $booking->user->name,
+                'travel_dates' => $booking->travel_date_start . ' s/d ' . $booking->travel_date_end,
+                'driver_dates' => $driverStartDate . ' s/d ' . $driverEndDate,
+                'is_shuttle' => $booking->is_shuttle == '1' ? 'Ya' : 'Tidak',
+                'total_pax' => $booking->total_pax,
+                'agent_id' => $booking->agent_id,
+                'booking_category_id' => $booking->booking_category_id,
+                'order_channel' => $orderChannel,
+                'selected_driver' => $selectedDriver,
+                'available_drivers' => count($allAvailableDrivers),
+                'driver_options' => array_map(function($driver) {
+                    return [
+                        'id' => $driver['id'],
+                        'name' => $driver['name'],
+                        'new_role' => $driver['new_role'] ?? 'Unknown',
+                        'trip_count' => $driver['trip_count']
+                    ];
+                }, $allAvailableDrivers),
+                'current_driver_trips' => $driverTrips
+            ];
+        }
+        
+        // Urutkan driver trips berdasarkan jumlah trip untuk laporan
+        uasort($driverTrips, function($a, $b) {
+            return $b['count'] - $a['count']; // Urutan dari terbanyak ke tersedikit
+        });
+        
+        return [
+            'total_processed' => count($results),
+            'final_driver_trips' => $driverTrips,
+            'simulation_plottings' => $simulatedPlottings,
+            'results' => $results
+        ];
+    }
     public function plotting(Request $request)
     {
         try {

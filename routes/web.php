@@ -54,6 +54,7 @@ Route::post('/twt-extractor', [BookingController::class,'twtExtractor']);
 Route::get('/pdf-extractor', [BookingController::class, 'twtExtractorFileIndex'])->name('pdf-extractor.index');
 Route::post('/pdf-extractor/extract', [BookingController::class, 'twtExtractorFileProcess'])->name('pdf-extractor.extract');
 
+Route::get('/auto-plotting', [ScheduleController::class,'massAutoPlotting']);
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [DashboardController::class,'index'])->name('dashboard');

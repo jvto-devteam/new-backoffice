@@ -1339,75 +1339,76 @@ class ScheduleController extends Controller
             'data' => $data,
         ];
     }
-    // Fungsi untuk melakukan autoplotting secara massal dengan prioritas jenis driver dan pengecekan konflik
-    function massAutoPlotting(Request $request)
-    {
-        // Ambil semua booking bulan Juni 2025 dengan urutan prioritas (tanpa limit)
-        $bookings = Booking::where('travel_date_start', '>=', '2025-06-01')
-                        ->where('travel_date_start', '<', '2025-07-01')
-                        ->where(function($query) {
-                            // Prioritas urutan order channel
-                            $query->where('agent_id', 1) // TWT
-                                    ->orWhere(function($q) {
-                                        $q->where('agent_id', 2)
-                                        ->where('booking_category_id', '!=', 3); // JVTO
-                                    })
-                                    ->orWhere(function($q) {
-                                        $q->where('agent_id', 2)
-                                        ->where('booking_category_id', 3); // KLOOK
-                                    });
-                        })
-                        ->orderByRaw("CASE 
-                                    WHEN agent_id = 1 THEN 1
-                                    WHEN agent_id = 2 AND booking_category_id != 3 THEN 2
-                                    WHEN agent_id = 2 AND booking_category_id = 3 THEN 3
-                                    ELSE 4
-                                    END")
-                        ->orderBy('travel_date_start')
-                        ->with('user')
-                        ->get();
+// Fungsi untuk melakukan autoplotting secara massal dengan prioritas driver dan guide
+function massAutoPlotting(Request $request)
+{
+    // Ambil semua booking bulan Juni 2025 dengan urutan prioritas (tanpa limit)
+    $bookings = Booking::where('travel_date_start', '>=', '2025-06-01')
+                      ->where('travel_date_start', '<', '2025-07-01')
+                      ->where(function($query) {
+                          // Prioritas urutan order channel
+                          $query->where('agent_id', 1) // TWT
+                                ->orWhere(function($q) {
+                                    $q->where('agent_id', 2)
+                                      ->where('booking_category_id', '!=', 3); // JVTO
+                                })
+                                ->orWhere(function($q) {
+                                    $q->where('agent_id', 2)
+                                      ->where('booking_category_id', 3); // KLOOK
+                                });
+                      })
+                      ->orderByRaw("CASE 
+                                   WHEN agent_id = 1 THEN 1
+                                   WHEN agent_id = 2 AND booking_category_id != 3 THEN 2
+                                   WHEN agent_id = 2 AND booking_category_id = 3 THEN 3
+                                   ELSE 4
+                                   END")
+                      ->orderBy('travel_date_start')
+                      ->with('user')
+                      ->get();
+    
+    $results = [];
+    
+    // Inisialisasi array untuk melacak jumlah trip masing-masing crew beserta nama
+    $driverTrips = [];
+    $guideTrips = [];
+    
+    // Array untuk melacak plotting yang dilakukan dalam proses simulasi ini
+    $simulatedDriverPlottings = [];
+    $simulatedGuidePlottings = [];
+    
+    foreach ($bookings as $booking) {
+        // Tentukan order channel berdasarkan agent_id dan booking_category_id
+        if ($booking->agent_id == 2 && $booking->booking_category_id == 3) {
+            $orderChannel = 'KLOOK';
+        } elseif ($booking->agent_id == 2) {
+            $orderChannel = 'JVTO';
+        } else {
+            $orderChannel = 'TWT';
+        }
         
-        $results = [];
+        // Tentukan tanggal awal dan akhir trip untuk driver
+        $tripStartDate = $booking->travel_date_start;
+        $tripEndDate = $booking->is_shuttle == '1'
+            ? Carbon::parse($booking->travel_date_end)->subDay()->toDateString()
+            : $booking->travel_date_end;
         
-        // Inisialisasi array untuk melacak jumlah trip masing-masing driver beserta nama
-        $driverTrips = [];
+        // Buat parameter untuk getDataPlotting
+        $params = [
+            'id' => $booking->id,
+            'order_channel' => $orderChannel
+        ];
         
-        // Array untuk melacak plotting yang dilakukan dalam proses simulasi ini
-        // Format: ['driver_id' => [['start_date' => '...', 'end_date' => '...'], ...]]
-        $simulatedPlottings = [];
+        // Panggil fungsi getDataPlotting
+        $data = $this->getDataPlotting($params);
         
-        foreach ($bookings as $booking) {
-            // Tentukan order channel berdasarkan agent_id dan booking_category_id
-            if ($booking->agent_id == 2 && $booking->booking_category_id == 3) {
-                $orderChannel = 'KLOOK';
-            } elseif ($booking->agent_id == 2) {
-                $orderChannel = 'JVTO';
-            } else {
-                $orderChannel = 'TWT';
-            }
-            
-            // Tentukan tanggal awal dan akhir trip untuk driver
-            $driverStartDate = $booking->travel_date_start;
-            $driverEndDate = $booking->is_shuttle == '1'
-                ? Carbon::parse($booking->travel_date_end)->subDay()->toDateString()
-                : $booking->travel_date_end;
-            
-            // Buat parameter untuk getDataPlotting
-            $params = [
-                'id' => $booking->id,
-                'order_channel' => $orderChannel
-            ];
-            
-            // Panggil fungsi getDataPlotting
-            $data = $this->getDataPlotting($params);
-            
-            // Definisikan prioritas jenis driver
-            $driverRolePriority = [
-                'Driver cum guide' => 1,
-                'Only Driver' => 2,
-                'Outsource' => 3
-            ];
-            
+        // ===== PLOTTING DRIVER =====
+        $selectedDriver = null;
+        $allAvailableDrivers = [];
+        $driverConflictInfo = null;
+        
+        // Logika berbeda berdasarkan jumlah penumpang
+        if ($booking->total_pax <= 3) {
             // Array untuk menyimpan driver yang tersedia, dikelompokkan berdasarkan role
             $availableDriversByRole = [
                 'Driver cum guide' => [],
@@ -1415,102 +1416,57 @@ class ScheduleController extends Controller
                 'Outsource' => []
             ];
             
-            // Filter driver berdasarkan total_pax, status ketersediaan, dan cek konflik dengan plotting sebelumnya
-            if ($booking->total_pax <= 3) {
-                // Untuk <= 3 pax, cari driver berdasarkan prioritas role
-                foreach ($data['driver'] as $driver) {
-                    $driverId = $driver['id'];
-                    
-                    // Cek apakah driver tersedia menurut data
-                    $isAvailable = $driver['status'] == 'Tersedia';
-                    
-                    // Cek konflik dengan plotting yang telah dilakukan dalam simulasi
-                    $hasConflict = false;
-                    if (isset($simulatedPlottings[$driverId])) {
-                        foreach ($simulatedPlottings[$driverId] as $plot) {
-                            // Cek apakah ada overlap tanggal
-                            $plotStart = $plot['start_date'];
-                            $plotEnd = $plot['end_date'];
-                            
-                            if (
-                                // Booking baru mulai di tengah plotting yang ada
-                                ($driverStartDate >= $plotStart && $driverStartDate <= $plotEnd) ||
-                                // Booking baru berakhir di tengah plotting yang ada
-                                ($driverEndDate >= $plotStart && $driverEndDate <= $plotEnd) ||
-                                // Booking baru melingkupi plotting yang ada
-                                ($driverStartDate <= $plotStart && $driverEndDate >= $plotEnd)
-                            ) {
-                                $hasConflict = true;
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // Hanya pertimbangkan driver yang tersedia dan tidak memiliki konflik
-                    if ($isAvailable && !$hasConflict) {
-                        $role = $driver['new_role'] ?? 'Unknown'; // Default jika tidak ada role
+            // Untuk <= 3 pax, cari driver berdasarkan prioritas role
+            foreach ($data['driver'] as $driver) {
+                $driverId = $driver['id'];
+                
+                // Cek apakah driver tersedia menurut data
+                $isAvailable = $driver['status'] == 'Tersedia';
+                
+                // Cek konflik dengan plotting yang telah dilakukan dalam simulasi
+                $hasConflict = false;
+                if (isset($simulatedDriverPlottings[$driverId])) {
+                    foreach ($simulatedDriverPlottings[$driverId] as $plot) {
+                        // Cek apakah ada overlap tanggal
+                        $plotStart = $plot['start_date'];
+                        $plotEnd = $plot['end_date'];
                         
-                        // Tambahkan jumlah trip yang sudah dihitung
-                        $driver['trip_count'] = isset($driverTrips[$driverId]['count']) ? $driverTrips[$driverId]['count'] : 0;
-                        
-                        // Kelompokkan driver berdasarkan role
-                        if ($role == 'Driver cum guide') {
-                            $availableDriversByRole['Driver cum guide'][] = $driver;
-                        } elseif ($role == 'Only Driver') {
-                            $availableDriversByRole['Only Driver'][] = $driver;
-                        } elseif ($role == 'Outsource') {
-                            $availableDriversByRole['Outsource'][] = $driver;
+                        if (
+                            // Booking baru mulai di tengah plotting yang ada
+                            ($tripStartDate >= $plotStart && $tripStartDate <= $plotEnd) ||
+                            // Booking baru berakhir di tengah plotting yang ada
+                            ($tripEndDate >= $plotStart && $tripEndDate <= $plotEnd) ||
+                            // Booking baru melingkupi plotting yang ada
+                            ($tripStartDate <= $plotStart && $tripEndDate >= $plotEnd)
+                        ) {
+                            $hasConflict = true;
+                            break;
                         }
                     }
                 }
-            } else {
-                // Untuk > 3 pax, gunakan driver dengan id 9 (GARAGE)
-                foreach ($data['driver'] as $driver) {
-                    if ($driver['id'] == 9) {
-                        $driverId = $driver['id'];
-                        
-                        // GARAGE driver selalu tersedia, tapi tetap cek konflik plotting
-                        $hasConflict = false;
-                        if (isset($simulatedPlottings[$driverId])) {
-                            foreach ($simulatedPlottings[$driverId] as $plot) {
-                                // Cek apakah ada overlap tanggal
-                                $plotStart = $plot['start_date'];
-                                $plotEnd = $plot['end_date'];
-                                
-                                if (
-                                    ($driverStartDate >= $plotStart && $driverStartDate <= $plotEnd) ||
-                                    ($driverEndDate >= $plotStart && $driverEndDate <= $plotEnd) ||
-                                    ($driverStartDate <= $plotStart && $driverEndDate >= $plotEnd)
-                                ) {
-                                    $hasConflict = true;
-                                    break;
-                                }
-                            }
-                        }
-                        
-                        if (!$hasConflict) {
-                            $driver['status'] = 'Tersedia (Auto-selected for large groups)';
-                            $driver['trip_count'] = isset($driverTrips[$driverId]['count']) ? $driverTrips[$driverId]['count'] : 0;
-                            $availableDriversByRole['Driver cum guide'][] = $driver; // Anggap sebagai prioritas tertinggi
-                        }
-                        break;
+                
+                // Hanya pertimbangkan driver yang tersedia dan tidak memiliki konflik
+                if ($isAvailable && !$hasConflict) {
+                    $role = $driver['new_role'] ?? 'Unknown'; // Default jika tidak ada role
+                    
+                    // Tambahkan jumlah trip yang sudah dihitung
+                    $driver['trip_count'] = isset($driverTrips[$driverId]['count']) ? $driverTrips[$driverId]['count'] : 0;
+                    
+                    // Kelompokkan driver berdasarkan role
+                    if ($role == 'Driver cum guide') {
+                        $availableDriversByRole['Driver cum guide'][] = $driver;
+                    } elseif ($role == 'Only Driver') {
+                        $availableDriversByRole['Only Driver'][] = $driver;
+                    } elseif ($role == 'Outsource') {
+                        $availableDriversByRole['Outsource'][] = $driver;
                     }
-                }
-            }
-            
-            // Variabel untuk menyimpan daftar semua driver yang tersedia
-            $allAvailableDrivers = [];
-            
-            // Gabungkan semua driver yang tersedia untuk ditampilkan di hasil
-            foreach ($availableDriversByRole as $role => $drivers) {
-                foreach ($drivers as $driver) {
+                    
+                    // Tambahkan ke daftar semua driver tersedia
                     $allAvailableDrivers[] = $driver;
                 }
             }
             
             // Pilih driver berdasarkan prioritas role dan jumlah trip
-            $selectedDriver = null;
-            
             // Cek setiap role sesuai prioritas
             foreach (['Driver cum guide', 'Only Driver', 'Outsource'] as $role) {
                 if (!empty($availableDriversByRole[$role])) {
@@ -1524,72 +1480,376 @@ class ScheduleController extends Controller
                     break; // Keluar dari loop setelah menemukan driver
                 }
             }
+        } else {
+            // Untuk > 3 pax, SELALU gunakan driver dengan id 9 (GARAGE) meskipun ada konflik
+            foreach ($data['driver'] as $driver) {
+                if ($driver['id'] == 9) {
+                    $driverId = $driver['id'];
+                    
+                    // Cek konflik untuk informasi saja, bukan untuk menentukan ketersediaan
+                    $hasConflict = false;
+                    if (isset($simulatedDriverPlottings[$driverId])) {
+                        foreach ($simulatedDriverPlottings[$driverId] as $plot) {
+                            // Cek apakah ada overlap tanggal
+                            $plotStart = $plot['start_date'];
+                            $plotEnd = $plot['end_date'];
+                            
+                            if (
+                                ($tripStartDate >= $plotStart && $tripStartDate <= $plotEnd) ||
+                                ($tripEndDate >= $plotStart && $tripEndDate <= $plotEnd) ||
+                                ($tripStartDate <= $plotStart && $tripEndDate >= $plotEnd)
+                            ) {
+                                $hasConflict = true;
+                                $driverConflictInfo = [
+                                    'booking_id' => $plot['booking_id'],
+                                    'start_date' => $plotStart,
+                                    'end_date' => $plotEnd
+                                ];
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // GARAGE driver selalu tersedia bahkan jika ada konflik
+                    $driver['status'] = $hasConflict 
+                        ? 'Tersedia (Konflik, tapi tetap digunakan untuk > 3 pax)' 
+                        : 'Tersedia (Auto-selected for large groups)';
+                    
+                    $driver['trip_count'] = isset($driverTrips[$driverId]['count']) ? $driverTrips[$driverId]['count'] : 0;
+                    $selectedDriver = $driver;
+                    $allAvailableDrivers[] = $driver;
+                    
+                    // Tambahkan informasi konflik jika ada
+                    if ($hasConflict) {
+                        $selectedDriver['conflict_info'] = $driverConflictInfo;
+                    }
+                    
+                    break; // Keluar dari loop setelah menemukan GARAGE
+                }
+            }
+        }
+        
+        // Jika driver terpilih, update jumlah trip dan catat plotting
+        if ($selectedDriver) {
+            $driverId = $selectedDriver['id'];
             
-            // Jika driver terpilih, update jumlah trip dan catat plotting
-            if ($selectedDriver) {
-                $driverId = $selectedDriver['id'];
-                
-                // Update jumlah trip
-                if (!isset($driverTrips[$driverId])) {
-                    $driverTrips[$driverId] = [
-                        'name' => $selectedDriver['name'],
-                        'role' => $selectedDriver['new_role'] ?? 'Unknown',
-                        'count' => 0
-                    ];
-                }
-                $driverTrips[$driverId]['count']++;
-                
-                // Update trip_count di selectedDriver
-                $selectedDriver['trip_count'] = $driverTrips[$driverId]['count'];
-                
-                // Catat plotting untuk pengecekan konflik selanjutnya
-                if (!isset($simulatedPlottings[$driverId])) {
-                    $simulatedPlottings[$driverId] = [];
-                }
-                $simulatedPlottings[$driverId][] = [
-                    'booking_id' => $booking->id,
-                    'start_date' => $driverStartDate,
-                    'end_date' => $driverEndDate
+            // Update jumlah trip
+            if (!isset($driverTrips[$driverId])) {
+                $driverTrips[$driverId] = [
+                    'name' => $selectedDriver['name'],
+                    'role' => $selectedDriver['new_role'] ?? 'Unknown',
+                    'count' => 0
                 ];
             }
+            $driverTrips[$driverId]['count']++;
             
-            // Tambahkan ke hasil
-            $results[] = [
+            // Update trip_count di selectedDriver
+            $selectedDriver['trip_count'] = $driverTrips[$driverId]['count'];
+            
+            // Catat plotting untuk pengecekan konflik selanjutnya
+            if (!isset($simulatedDriverPlottings[$driverId])) {
+                $simulatedDriverPlottings[$driverId] = [];
+            }
+            $simulatedDriverPlottings[$driverId][] = [
                 'booking_id' => $booking->id,
-                'customer_name' => $booking->user->name,
-                'travel_dates' => $booking->travel_date_start . ' s/d ' . $booking->travel_date_end,
-                'driver_dates' => $driverStartDate . ' s/d ' . $driverEndDate,
-                'is_shuttle' => $booking->is_shuttle == '1' ? 'Ya' : 'Tidak',
-                'total_pax' => $booking->total_pax,
-                'agent_id' => $booking->agent_id,
-                'booking_category_id' => $booking->booking_category_id,
-                'order_channel' => $orderChannel,
-                'selected_driver' => $selectedDriver,
-                'available_drivers' => count($allAvailableDrivers),
-                'driver_options' => array_map(function($driver) {
-                    return [
-                        'id' => $driver['id'],
-                        'name' => $driver['name'],
-                        'new_role' => $driver['new_role'] ?? 'Unknown',
-                        'trip_count' => $driver['trip_count']
-                    ];
-                }, $allAvailableDrivers),
-                'current_driver_trips' => $driverTrips
+                'start_date' => $tripStartDate,
+                'end_date' => $tripEndDate
             ];
         }
         
-        // Urutkan driver trips berdasarkan jumlah trip untuk laporan
-        uasort($driverTrips, function($a, $b) {
-            return $b['count'] - $a['count']; // Urutan dari terbanyak ke tersedikit
-        });
+        // ===== PLOTTING GUIDE =====
+        $selectedEscortGuide = null;
+        $selectedIjenGuide = null;
+        $allAvailableGuides = [];
         
-        return [
-            'total_processed' => count($results),
-            'final_driver_trips' => $driverTrips,
-            'simulation_plottings' => $simulatedPlottings,
-            'results' => $results
+        // Menentukan apakah perlu escort guide berdasarkan pax dan driver yang dipilih
+        $needEscortGuide = false;
+        if ($booking->total_pax > 3) {
+            // Selalu perlu escort guide untuk > 3 pax
+            $needEscortGuide = true;
+        } else if ($selectedDriver && ($selectedDriver['new_role'] == 'Only Driver' || $selectedDriver['new_role'] == 'Outsource')) {
+            // Perlu escort guide jika driver adalah Only Driver atau Outsource meskipun pax <= 3
+            $needEscortGuide = true;
+        }
+        
+        // Cek apakah perlu guide ijen berdasarkan keberadaan nilai di at_bondowoso
+        $needIjenGuide = false;
+        $ijenDate = null;
+        if (!empty($booking->at_bondowoso)) {
+            $needIjenGuide = true;
+            $ijenDate = $booking->at_bondowoso;
+        }
+        
+        // Jika perlu escort guide, cari berdasarkan prioritas
+        if ($needEscortGuide) {
+            // Array untuk menyimpan guide yang tersedia, dikelompokkan berdasarkan role
+            $availableGuidesByRole = [
+                'Escort Guide (Senior)' => [],
+                'Escort Guide (Junior)' => []
+            ];
+            
+            foreach ($data['guide'] as $guide) {
+                $guideId = $guide['id'];
+                
+                // Cek apakah guide tersedia dan bisa menjadi escort guide
+                $isAvailable = $guide['status'] == 'Tersedia';
+                $isEscortGuide = false;
+                
+                if (isset($guide['dynamic_roles']) && in_array('Escort', $guide['dynamic_roles'])) {
+                    $isEscortGuide = true;
+                }
+                
+                // Cek konflik dengan plotting yang telah dilakukan dalam simulasi
+                $hasConflict = false;
+                if (isset($simulatedGuidePlottings[$guideId])) {
+                    foreach ($simulatedGuidePlottings[$guideId] as $plot) {
+                        // Cek tipe plotting
+                        if ($plot['type'] == 'Escort') {
+                            // Cek apakah ada overlap tanggal
+                            $plotStart = $plot['start_date'];
+                            $plotEnd = $plot['end_date'];
+                            
+                            if (
+                                ($tripStartDate >= $plotStart && $tripStartDate <= $plotEnd) ||
+                                ($tripEndDate >= $plotStart && $tripEndDate <= $plotEnd) ||
+                                ($tripStartDate <= $plotStart && $tripEndDate >= $plotEnd)
+                            ) {
+                                $hasConflict = true;
+                                break;
+                            }
+                        } else if ($plot['type'] == 'Ijen') {
+                            // Jika guide sudah dijadwalkan sebagai ijen guide pada tanggal dalam rentang trip ini
+                            $plotIjenDate = $plot['ijen_date'];
+                            if ($plotIjenDate >= $tripStartDate && $plotIjenDate <= $tripEndDate) {
+                                $hasConflict = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // Hanya pertimbangkan guide yang tersedia, bisa menjadi escort, dan tidak memiliki konflik
+                if ($isAvailable && $isEscortGuide && !$hasConflict) {
+                    $role = $guide['new_role'] ?? 'Unknown'; // Default jika tidak ada role
+                    
+                    // Tambahkan jumlah trip yang sudah dihitung
+                    $guide['trip_count'] = isset($guideTrips[$guideId]['count']) ? $guideTrips[$guideId]['count'] : 0;
+                    
+                    // Kelompokkan guide berdasarkan role
+                    if (strpos($role, 'Senior') !== false) {
+                        $availableGuidesByRole['Escort Guide (Senior)'][] = $guide;
+                    } elseif (strpos($role, 'Junior') !== false) {
+                        $availableGuidesByRole['Escort Guide (Junior)'][] = $guide;
+                    }
+                    
+                    // Tambahkan ke daftar semua guide tersedia
+                    $allAvailableGuides[] = $guide;
+                }
+            }
+            
+            // Pilih guide berdasarkan prioritas role dan jumlah trip
+            foreach (['Escort Guide (Senior)', 'Escort Guide (Junior)'] as $role) {
+                if (!empty($availableGuidesByRole[$role])) {
+                    // Jika ada guide dengan role ini, urutkan berdasarkan jumlah trip
+                    usort($availableGuidesByRole[$role], function($a, $b) {
+                        return $a['trip_count'] - $b['trip_count'];
+                    });
+                    
+                    // Pilih guide dengan jumlah trip terkecil dari role ini
+                    $selectedEscortGuide = $availableGuidesByRole[$role][0];
+                    break; // Keluar dari loop setelah menemukan guide
+                }
+            }
+        }
+        
+        // Jika perlu guide ijen, cari berdasarkan prioritas
+        if ($needIjenGuide) {
+            // Array untuk menyimpan guide yang tersedia untuk Ijen
+            $availableIjenGuides = [];
+            $localIjenGuide = null;
+            
+            foreach ($data['guide'] as $guide) {
+                $guideId = $guide['id'];
+                
+                // Cek apakah guide tersedia dan bisa menjadi ijen guide
+                $isAvailable = $guide['status'] == 'Tersedia';
+                $isIjenGuide = false;
+                $isLocalGuide = false;
+                
+                if (isset($guide['dynamic_roles']) && in_array('Ijen', $guide['dynamic_roles'])) {
+                    $isIjenGuide = true;
+                }
+                
+                // Cek apakah ini adalah Local Ijen Guide
+                if ($guide['name'] == 'Local Ijen') {
+                    $isLocalGuide = true;
+                }
+                
+                // Cek konflik dengan plotting yang telah dilakukan dalam simulasi
+                $hasConflict = false;
+                if (!$isLocalGuide && isset($simulatedGuidePlottings[$guideId])) {
+                    foreach ($simulatedGuidePlottings[$guideId] as $plot) {
+                        // Untuk Ijen Guide, kita hanya memeriksa konflik pada tanggal Ijen spesifik
+                        if ($plot['type'] == 'Ijen' && $plot['ijen_date'] == $ijenDate) {
+                            $hasConflict = true;
+                            break;
+                        }
+                        // Untuk Escort Guide, kita memeriksa apakah tanggal Ijen berada dalam rentang tanggal escort
+                        else if ($plot['type'] == 'Escort') {
+                            $plotStart = $plot['start_date'];
+                            $plotEnd = $plot['end_date'];
+                            
+                            if ($ijenDate >= $plotStart && $ijenDate <= $plotEnd) {
+                                $hasConflict = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                // Untuk Local Ijen Guide, selalu tersedia meskipun ada konflik
+                if ($isLocalGuide) {
+                    $guide['trip_count'] = isset($guideTrips[$guideId]['count']) ? $guideTrips[$guideId]['count'] : 0;
+                    $localIjenGuide = $guide;
+                }
+                // Untuk guide lain, hanya pertimbangkan yang tersedia, bisa menjadi ijen guide, dan tidak memiliki konflik
+                else if ($isAvailable && $isIjenGuide && !$hasConflict) {
+                    $guide['trip_count'] = isset($guideTrips[$guideId]['count']) ? $guideTrips[$guideId]['count'] : 0;
+                    $availableIjenGuides[] = $guide;
+                }
+            }
+            
+            // Jika ada guide Ijen yang tersedia, pilih berdasarkan jumlah trip
+            if (!empty($availableIjenGuides)) {
+                // Urutkan berdasarkan jumlah trip
+                usort($availableIjenGuides, function($a, $b) {
+                    return $a['trip_count'] - $b['trip_count'];
+                });
+                
+                // Pilih guide dengan jumlah trip terkecil
+                $selectedIjenGuide = $availableIjenGuides[0];
+            } 
+            // Jika tidak ada yang tersedia, gunakan Local Ijen Guide
+            else if ($localIjenGuide) {
+                $selectedIjenGuide = $localIjenGuide;
+            }
+        }
+        
+        // Jika escort guide terpilih, update jumlah trip dan catat plotting
+        if ($selectedEscortGuide) {
+            $guideId = $selectedEscortGuide['id'];
+            
+            // Update jumlah trip
+            if (!isset($guideTrips[$guideId])) {
+                $guideTrips[$guideId] = [
+                    'name' => $selectedEscortGuide['name'],
+                    'role' => $selectedEscortGuide['new_role'] ?? 'Unknown',
+                    'count' => 0
+                ];
+            }
+            $guideTrips[$guideId]['count']++;
+            
+            // Update trip_count di selectedEscortGuide
+            $selectedEscortGuide['trip_count'] = $guideTrips[$guideId]['count'];
+            
+            // Catat plotting untuk pengecekan konflik selanjutnya
+            if (!isset($simulatedGuidePlottings[$guideId])) {
+                $simulatedGuidePlottings[$guideId] = [];
+            }
+            $simulatedGuidePlottings[$guideId][] = [
+                'booking_id' => $booking->id,
+                'start_date' => $tripStartDate,
+                'end_date' => $tripEndDate,
+                'type' => 'Escort'
+            ];
+        }
+        
+        // Jika ijen guide terpilih, update jumlah trip dan catat plotting
+        if ($selectedIjenGuide) {
+            $guideId = $selectedIjenGuide['id'];
+            
+            // Update jumlah trip
+            if (!isset($guideTrips[$guideId])) {
+                $guideTrips[$guideId] = [
+                    'name' => $selectedIjenGuide['name'],
+                    'role' => $selectedIjenGuide['new_role'] ?? 'Unknown',
+                    'count' => 0
+                ];
+            }
+            $guideTrips[$guideId]['count']++;
+            
+            // Update trip_count di selectedIjenGuide
+            $selectedIjenGuide['trip_count'] = $guideTrips[$guideId]['count'];
+            
+            // Catat plotting untuk pengecekan konflik selanjutnya
+            if (!isset($simulatedGuidePlottings[$guideId])) {
+                $simulatedGuidePlottings[$guideId] = [];
+            }
+            $simulatedGuidePlottings[$guideId][] = [
+                'booking_id' => $booking->id,
+                'ijen_date' => $ijenDate,
+                'type' => 'Ijen'
+            ];
+        }
+        
+        // Tambahkan ke hasil
+        $results[] = [
+            'booking_id' => $booking->id,
+            'customer_name' => $booking->user->name,
+            'travel_dates' => $booking->travel_date_start . ' s/d ' . $booking->travel_date_end,
+            'driver_dates' => $tripStartDate . ' s/d ' . $tripEndDate,
+            'ijen_date' => $needIjenGuide ? $ijenDate : null,
+            'is_shuttle' => $booking->is_shuttle == '1' ? 'Ya' : 'Tidak',
+            'total_pax' => $booking->total_pax,
+            'agent_id' => $booking->agent_id,
+            'booking_category_id' => $booking->booking_category_id,
+            'order_channel' => $orderChannel,
+            'need_escort_guide' => $needEscortGuide,
+            'need_ijen_guide' => $needIjenGuide,
+            'selected_driver' => $selectedDriver,
+            'selected_escort_guide' => $selectedEscortGuide,
+            'selected_ijen_guide' => $selectedIjenGuide,
+            'available_drivers' => count($allAvailableDrivers),
+            'driver_options' => array_map(function($driver) {
+                return [
+                    'id' => $driver['id'],
+                    'name' => $driver['name'],
+                    'new_role' => $driver['new_role'] ?? 'Unknown',
+                    'trip_count' => $driver['trip_count'],
+                    'conflict_info' => isset($driver['conflict_info']) ? $driver['conflict_info'] : null
+                ];
+            }, $allAvailableDrivers),
+            'guide_options' => array_map(function($guide) {
+                return [
+                    'id' => $guide['id'],
+                    'name' => $guide['name'],
+                    'new_role' => $guide['new_role'] ?? 'Unknown',
+                    'trip_count' => $guide['trip_count']
+                ];
+            }, $allAvailableGuides),
+            'current_driver_trips' => $driverTrips,
+            'current_guide_trips' => $guideTrips
         ];
     }
+    
+    // Urutkan driver trips dan guide trips berdasarkan jumlah trip untuk laporan
+    uasort($driverTrips, function($a, $b) {
+        return $b['count'] - $a['count']; // Urutan dari terbanyak ke tersedikit
+    });
+    
+    uasort($guideTrips, function($a, $b) {
+        return $b['count'] - $a['count']; // Urutan dari terbanyak ke tersedikit
+    });
+    
+    return [
+        'total_processed' => count($results),
+        'final_driver_trips' => $driverTrips,
+        'final_guide_trips' => $guideTrips,
+        'simulation_driver_plottings' => $simulatedDriverPlottings,
+        'simulation_guide_plottings' => $simulatedGuidePlottings,
+        'results' => $results
+    ];
+}
     public function plotting(Request $request)
     {
         try {

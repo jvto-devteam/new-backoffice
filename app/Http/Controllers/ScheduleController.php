@@ -27,7 +27,8 @@ use Illuminate\Support\Facades\Http;
 
 class ScheduleController extends Controller
 {
-    function index(Request $request) {
+    function index(Request $request)
+    {
         $pageInfo = 'Booking Overview';
         $pageTitle = 'Booking Overview';
         $startEnd = explode("_", $request->date_range);
@@ -43,26 +44,23 @@ class ScheduleController extends Controller
             'sort_column' => $request->sort_column ? $request->sort_column : 'date',
             'sort_order' => $request->sort_order ? $request->sort_order : 'asc',
         ];
-        
+
         $data['note_categories'] = NoteCategory::get();
 
         try {
-            $data['booking'] = Booking::with(['bookingPayment.paymentMethod','bookingCategory', 'user.country','user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area','bookingItinerary.activityStart.destination','bookingDocument']);
-            if(!$request->filter_type || $request->filter_type == 'month'){
-                $data['booking'] = $data['booking']->where('travel_date_start', 'like', $data['filters']['month']."%");
-            }
-            else{
+            $data['booking'] = Booking::with(['bookingPayment.paymentMethod', 'bookingCategory', 'user.country', 'user.discount', 'agent', 'bookingDetail.package.duration', 'bookCar.car.garage', 'guideDriver.person', 'bookingItinerary.bookHotel.hotel', 'bookingItinerary.bookHotel.bookRoom.roomHotel.hotel.area', 'bookingItinerary.activityStart.destination', 'bookingDocument']);
+            if (!$request->filter_type || $request->filter_type == 'month') {
+                $data['booking'] = $data['booking']->where('travel_date_start', 'like', $data['filters']['month'] . "%");
+            } else {
                 $data['booking'] = $data['booking']->whereBetween('travel_date_start', [$data['filters']['startDate'], $data['filters']['endDate']]);
             }
 
             if ($request->channel) {
                 if ($request->channel == 'KLOOK') {
-                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id',3);
-                }
-                else if ($request->channel == 'JVTO') {
-                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id','!=',3);
-                }
-                else if ($request->channel == 'TWT') {
+                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id', 3);
+                } else if ($request->channel == 'JVTO') {
+                    $data['booking'] = $data['booking']->where('agent_id', '2')->where('booking_category_id', '!=', 3);
+                } else if ($request->channel == 'TWT') {
                     $data['booking'] = $data['booking']->where('agent_id', '1');
                 }
             }
@@ -74,50 +72,49 @@ class ScheduleController extends Controller
             $status = "booked";
             $orderByBookingColumn = $data['filters']['sort_column'] == 'date' ? 'travel_date_start' : $data['filters']['sort_column'];
             $orderByBookingOrder = $data['filters']['sort_order'] == 'asc' ? 'asc' : 'desc';
-            $data['booking'] = $data['booking']->where('status', $status)->orderBy($orderByBookingColumn,$orderByBookingOrder)->get();
+            $data['booking'] = $data['booking']->where('status', $status)->orderBy($orderByBookingColumn, $orderByBookingOrder)->get();
             $data['bookingReal'] = $data['booking'];
             $d = $data;
-            $data['booking'] = $data['booking']->map(function($booking) use($request, $d){
+            $data['booking'] = $data['booking']->map(function ($booking) use ($request, $d) {
                 $orderChannel = $booking->agent_id == 1 ? 'TWT' : ($booking->agent_id == 2 && $booking->booking_category_id == 3 ? 'KLOOK' : 'JVTO');
                 $itinerary = [];
                 $hotels = [];
                 foreach ($booking->bookingItinerary as $key => $value) {
                     $activity = $value->activityStart && $value->activityStart->destination ? ($value->activityStart->destination->activityDestination ? $value->activityStart->destination->activityDestination->name : $value->activityStart->destination->name) : null;
 
-                    if($activity){
-                        if($value->activity_start_id == 7){
+                    if ($activity) {
+                        if ($value->activity_start_id == 7) {
                             $activity .= ", Madakaripura Warterfall Tour";
-                        }
-                        else if($value->activity_start_id == 5){
+                        } else if ($value->activity_start_id == 5) {
                             $activity .= ", Papuma Beach Tour";
                         }
                     }
-                
 
-                    $itinerary[]= [
+
+                    $itinerary[] = [
                         'day' => $value->day,
-                        'date' => date('d M Y',strtotime($booking->travel_date_start." +$key days")),
+                        'date' => date('d M Y', strtotime($booking->travel_date_start . " +$key days")),
                         'itinerary' => $value->itinerary,
                         'activity' => $activity,
                         'destination_id' => $value->activityStart->destination ? $value->activityStart->destination->id : null,
                         'destination' => $value->activityStart->destination ? $value->activityStart->destination->name : null,
-    
+
                     ];
-                    if(count($value->bookHotel) != 0){
+                    if (count($value->bookHotel) != 0) {
                         $night = $value->day - 1;
                         $meals = [];
-                        if($value->bookHotel[0]->b == '1'){
-                            array_push($meals,"Breakfast");
+                        if ($value->bookHotel[0]->b == '1') {
+                            array_push($meals, "Breakfast");
                         }
-                        if($value->bookHotel[0]->l == '1'){
-                            array_push($meals,"Lunch");
+                        if ($value->bookHotel[0]->l == '1') {
+                            array_push($meals, "Lunch");
                         }
-                        if($value->bookHotel[0]->d == '1'){
-                            array_push($meals,"Dinner");
+                        if ($value->bookHotel[0]->d == '1') {
+                            array_push($meals, "Dinner");
                         }
-                        $hotels[]= [
+                        $hotels[] = [
                             'day' => $value->day,
-                            'checkIn' => date('d M Y',strtotime($booking->travel_date_start." +$night days")),
+                            'checkIn' => date('d M Y', strtotime($booking->travel_date_start . " +$night days")),
                             'hotelId' => $value->bookHotel[0]->hotel->id,
                             'hotel' => $value->bookHotel[0]->hotel->name,
                             'rooms' => [],
@@ -133,74 +130,71 @@ class ScheduleController extends Controller
                     }
                 }
                 $tshirtSizes = [];
-                if($booking->bookingDetail[0]->xss != 0){
-                    array_push($tshirtSizes, "XSS x ".$booking->bookingDetail[0]->xss);
+                if ($booking->bookingDetail[0]->xss != 0) {
+                    array_push($tshirtSizes, "XSS x " . $booking->bookingDetail[0]->xss);
                 }
-                if($booking->bookingDetail[0]->xxs != 0){
-                    array_push($tshirtSizes, "XXS x ".$booking->bookingDetail[0]->xxs);
+                if ($booking->bookingDetail[0]->xxs != 0) {
+                    array_push($tshirtSizes, "XXS x " . $booking->bookingDetail[0]->xxs);
                 }
-                if($booking->bookingDetail[0]->xs != 0){
-                    array_push($tshirtSizes, "XS x ".$booking->bookingDetail[0]->xs);
+                if ($booking->bookingDetail[0]->xs != 0) {
+                    array_push($tshirtSizes, "XS x " . $booking->bookingDetail[0]->xs);
                 }
-                if($booking->bookingDetail[0]->s != 0){
-                    array_push($tshirtSizes, "S x ".$booking->bookingDetail[0]->s);
+                if ($booking->bookingDetail[0]->s != 0) {
+                    array_push($tshirtSizes, "S x " . $booking->bookingDetail[0]->s);
                 }
-                if($booking->bookingDetail[0]->m != 0){
-                    array_push($tshirtSizes, "M x ".$booking->bookingDetail[0]->m);
+                if ($booking->bookingDetail[0]->m != 0) {
+                    array_push($tshirtSizes, "M x " . $booking->bookingDetail[0]->m);
                 }
-                if($booking->bookingDetail[0]->l != 0){
-                    array_push($tshirtSizes, "L x ".$booking->bookingDetail[0]->l);
+                if ($booking->bookingDetail[0]->l != 0) {
+                    array_push($tshirtSizes, "L x " . $booking->bookingDetail[0]->l);
                 }
-                if($booking->bookingDetail[0]->xl != 0){
-                    array_push($tshirtSizes, "XL x ".$booking->bookingDetail[0]->xl);
+                if ($booking->bookingDetail[0]->xl != 0) {
+                    array_push($tshirtSizes, "XL x " . $booking->bookingDetail[0]->xl);
                 }
-                if($booking->bookingDetail[0]->xxl != 0){
-                    array_push($tshirtSizes, "XXL x ".$booking->bookingDetail[0]->xxl);
+                if ($booking->bookingDetail[0]->xxl != 0) {
+                    array_push($tshirtSizes, "XXL x " . $booking->bookingDetail[0]->xxl);
                 }
-                if($booking->bookingDetail[0]->xxxl != 0){
-                    array_push($tshirtSizes, "XXXL x ".$booking->bookingDetail[0]->xxxl);
+                if ($booking->bookingDetail[0]->xxxl != 0) {
+                    array_push($tshirtSizes, "XXXL x " . $booking->bookingDetail[0]->xxxl);
                 }
-                $tshirtSize = implode(', ',$tshirtSizes);
-                
+                $tshirtSize = implode(', ', $tshirtSizes);
+
                 $vehicles = [];
-                if(count($booking->bookCar)!=0){
+                if (count($booking->bookCar) != 0) {
                     foreach ($booking->bookCar as $key => $value) {
-                        array_push($vehicles,$value->car->name);
+                        array_push($vehicles, $value->car->name);
                     };
                 }
-                
+
                 $drivers = [];
                 $guides = [];
 
-                if(count($booking->guideDriver) != 0){
+                if (count($booking->guideDriver) != 0) {
                     foreach ($booking->guideDriver as $key => $value) {
-                        if($value->type == 'driver'){
-                            $recapEscort = BookGuideDriver::where('guide_id',$value->person->id)->where('guide_ijen','0');
-                            if(!$request->filter_type || $request->filter_type == 'month'){
-                                $recapEscort = $recapEscort->where('start_date','like',$d['filters']['month']."%")->count();
-                            }
-                            else{
+                        if ($value->type == 'driver') {
+                            $recapEscort = BookGuideDriver::where('guide_id', $value->person->id)->where('guide_ijen', '0');
+                            if (!$request->filter_type || $request->filter_type == 'month') {
+                                $recapEscort = $recapEscort->where('start_date', 'like', $d['filters']['month'] . "%")->count();
+                            } else {
                                 $recapEscort = $recapEscort->whereBetween('start_date', [$d['filters']['startDate'], $d['filters']['endDate']]);
                             }
                             $drivers[] = [
                                 'id' => $value->person->id,
                                 'name' => $value->person->name,
                                 'tags' => $value->person->tags,
-                                'photo' => $value->person->photo ? 'https://javavolcano-touroperator.com/assets/img/guide/'.$value->person->photo : 'https://javavolcano-touroperator.com/assets/img/guide/default.jpg',
+                                'photo' => $value->person->photo ? 'https://javavolcano-touroperator.com/assets/img/guide/' . $value->person->photo : 'https://javavolcano-touroperator.com/assets/img/guide/default.jpg',
                                 'recap_this_month_escort' => $recapEscort, // for driver & guide
                             ];
 
                             // array_push($drivers,$value->person->name);
-                        }
-                        else{
-                            
-                            $recapEscort = BookGuideDriver::where('guide_id',$value->person->id)->where('guide_ijen','0');
-                            $recapIjen = BookGuideDriver::where('guide_id',$value->person->id)->where('guide_ijen','1');
-                            if(!$request->filter_type || $request->filter_type == 'month'){
-                                $recapEscort = $recapEscort->where('start_date','like',$d['filters']['month']."%")->count();
-                                $recapIjen = $recapIjen->where('start_date','like',$d['filters']['month']."%")->count();
-                            }
-                            else{
+                        } else {
+
+                            $recapEscort = BookGuideDriver::where('guide_id', $value->person->id)->where('guide_ijen', '0');
+                            $recapIjen = BookGuideDriver::where('guide_id', $value->person->id)->where('guide_ijen', '1');
+                            if (!$request->filter_type || $request->filter_type == 'month') {
+                                $recapEscort = $recapEscort->where('start_date', 'like', $d['filters']['month'] . "%")->count();
+                                $recapIjen = $recapIjen->where('start_date', 'like', $d['filters']['month'] . "%")->count();
+                            } else {
                                 $recapEscort = $recapEscort->whereBetween('start_date', [$d['filters']['startDate'], $d['filters']['endDate']]);
                                 $recapIjen = $recapIjen->whereBetween('start_date', [$d['filters']['startDate'], $d['filters']['endDate']]);
                             }
@@ -209,51 +203,49 @@ class ScheduleController extends Controller
                                 'name' => $value->person->name,
                                 'type' => $value->guide_ijen == '0' ? 'Escort' : 'Ijen',
                                 'tags' => $value->person->tags,
-                                'photo' => $value->person->photo ? 'https://javavolcano-touroperator.com/assets/img/guide/'.$value->person->photo : 'https://javavolcano-touroperator.com/assets/img/guide/default.jpg',
+                                'photo' => $value->person->photo ? 'https://javavolcano-touroperator.com/assets/img/guide/' . $value->person->photo : 'https://javavolcano-touroperator.com/assets/img/guide/default.jpg',
                                 'recap_this_month_escort' => $recapEscort, // for driver & guide
                                 'recap_this_month_ijen' => $recapIjen, // for guide only
-        
+
                             ];
                         }
                     };
                 }
                 $invoiceLinks = [];
-                if($orderChannel == 'JVTO'){
-                    array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/".$booking->id);
-                    if($booking->book_add_on_total != 0){
-                        array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/".$booking->id."?addon=true");
+                if ($orderChannel == 'JVTO') {
+                    array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/" . $booking->id);
+                    if ($booking->book_add_on_total != 0) {
+                        array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/" . $booking->id . "?addon=true");
                     }
-                }
-                else{
+                } else {
                     $attachmentType = $orderChannel == 'TWT' ? 6 : 7;
-                    $bookingDocument = BookingDocument::where('booking_id',$booking->id)->where('attachment_type_id',$attachmentType)->first();
-                    if($bookingDocument){
+                    $bookingDocument = BookingDocument::where('booking_id', $booking->id)->where('attachment_type_id', $attachmentType)->first();
+                    if ($bookingDocument) {
                         $invoiceLinks = [
-                            'https://new-backoffice.javavolcano-touroperator.com/preview-file?title=Invoice '.$booking->user->name.'&url=https://new-backoffice.javavolcano-touroperator.com/assets/customer-document/'.$bookingDocument->file,
+                            'https://new-backoffice.javavolcano-touroperator.com/preview-file?title=Invoice ' . $booking->user->name . '&url=https://new-backoffice.javavolcano-touroperator.com/assets/customer-document/' . $bookingDocument->file,
                         ];
                     }
                 }
 
-                if($booking->balance == 0){
+                if ($booking->balance == 0) {
                     $lastPayment = BookingPayment::where('booking_id', $booking->id)
                         ->orderBy('id', 'asc')  // Or use created_at if that's more appropriate
                         ->first();
 
                     // Then sum all payments except the one with that ID
                     $dp = BookingPayment::where('booking_id', $booking->id)
-                        ->when($lastPayment, function($query) use ($lastPayment) {
+                        ->when($lastPayment, function ($query) use ($lastPayment) {
                             return $query->where('id', '!=', $lastPayment->id);
                         })
                         ->sum('nominal');
-                }
-                else{
+                } else {
                     $dp = $booking->balance;
                 }
                 $profit = $dp - $booking->expense_internal_total;
 
                 return [
                     'booking_id' => $booking->id,
-                    'id' => $orderChannel."-".$booking->id,
+                    'id' => $orderChannel . "-" . $booking->id,
                     'orderChannel' => $orderChannel,
                     'guest_id' => $booking->user_id,
                     'guest' => $booking->user->name,
@@ -267,29 +259,29 @@ class ScheduleController extends Controller
                         'trip_media' => $booking->media_link,
                     ],
                     'total_pax' => $booking->total_pax,
-                    'duration' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->duration->day."D ".$booking->bookingDetail[0]->package->duration->night."N" : $booking->package_duration."D ".($booking->package_duration-1)."N",
+                    'duration' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->duration->day . "D " . $booking->bookingDetail[0]->package->duration->night . "N" : $booking->package_duration . "D " . ($booking->package_duration - 1) . "N",
                     'package_id' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package_id : null,
-                    'package' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->name : $booking->package_duration."D ".($booking->package_duration-1)."N Package",
-                    'booking_date' => date('d M Y',strtotime($booking->booking_date)),
+                    'package' => $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->name : $booking->package_duration . "D " . ($booking->package_duration - 1) . "N Package",
+                    'booking_date' => date('d M Y', strtotime($booking->booking_date)),
                     'date' => [
                         'start_ymd' => $booking->travel_date_start,
                         'end_ymd' => $booking->travel_date_end,
-                        'start' => date('d M y',strtotime($booking->travel_date_start)),
-                        'end' => date('d M y',strtotime($booking->travel_date_end)),
-                        'days' => date('D',strtotime($booking->travel_date_start))." - ".date('D',strtotime($booking->travel_date_end)),
+                        'start' => date('d M y', strtotime($booking->travel_date_start)),
+                        'end' => date('d M y', strtotime($booking->travel_date_end)),
+                        'days' => date('D', strtotime($booking->travel_date_start)) . " - " . date('D', strtotime($booking->travel_date_end)),
                     ],
                     'pickup' => [
                         'meeting_point' => $booking->meeting_point,
                         'meeting_point_arrival' => $booking->meeting_point_arrival,
                         'meeting_point_value' => $booking->meeting_point_value,
-                        'pickup_time' => date("H:i",strtotime($booking->pickup_time)),
+                        'pickup_time' => date("H:i", strtotime($booking->pickup_time)),
                         'text' => $booking->pickup
                     ],
                     'dropoff' => [
                         'drop_point' => $booking->drop_point,
                         'drop_point_arrival' => $booking->drop_point_arrival,
                         'drop_point_value' => $booking->drop_point_value,
-                        'drop_time' => date("H:i",strtotime($booking->drop_time)),
+                        'drop_time' => date("H:i", strtotime($booking->drop_time)),
                         'text' => $booking->drop
                     ],
                     'itinerary' => $itinerary,
@@ -298,28 +290,28 @@ class ScheduleController extends Controller
                     'vehicles' => $vehicles,
                     'drivers' => $drivers,
                     'guides' => $guides,
-                    'is_shuttle' => $booking->is_shuttle == '1' ? 'YES' : 'NO', 
-                    'at_ijen' => $booking->at_bondowoso ? date('d M y',strtotime($booking->at_bondowoso)) : null,
+                    'is_shuttle' => $booking->is_shuttle == '1' ? 'YES' : 'NO',
+                    'at_ijen' => $booking->at_bondowoso ? date('d M y', strtotime($booking->at_bondowoso)) : null,
                     'financial' => [
                         'payment' =>  $booking->payment,
                         'balance' =>  $booking->balance,
                         'paymentMethod' =>  $booking->outstanding_payment_method,
                         'paymentMethodLink' =>  $booking->outstanding_payment_link,
                         'invoice' => [
-                            'total' => $booking->grand_total+$booking->book_add_on_total,
+                            'total' => $booking->grand_total + $booking->book_add_on_total,
                             'invoiceLink' => $invoiceLinks,
                         ],
                         'expense' => [
                             'total' => $booking->expense_internal_total,
                             'crew_expense' => $booking->total_expense_crew,
                             'debt_expense' => $booking->total_expense_debt,
-                            'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : '/finance/expense-manager/'.$booking->id.'/edit',
+                            'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : '/finance/expense-manager/' . $booking->id . '/edit',
                             'target' => '_blank'
                         ],
                         'profit' =>  $profit
                     ],
-                    'paymentHistory' => $booking->bookingPayment->map(function($payment) use($booking){
-                        $countBefore = BookingPayment::where('booking_id',$payment->booking_id)->where('id','<=',$payment->id)->count();
+                    'paymentHistory' => $booking->bookingPayment->map(function ($payment) use ($booking) {
+                        $countBefore = BookingPayment::where('booking_id', $payment->booking_id)->where('id', '<=', $payment->id)->count();
 
                         return [
                             'id' => $payment->id,
@@ -328,9 +320,9 @@ class ScheduleController extends Controller
                             'paymentMethodId' => $payment->paymentMethod->id,
                             'paymentMethod' => $payment->paymentMethod->name,
                             'description' => $payment->description,
-                            'receipt' => str_replace('JVR','RCP', $booking->booking_code)."/".$countBefore,
+                            'receipt' => str_replace('JVR', 'RCP', $booking->booking_code) . "/" . $countBefore,
                             'reference' => $payment->reference,
-                            'date' => date('d M y H:i',strtotime($payment->created_at)),
+                            'date' => date('d M y H:i', strtotime($payment->created_at)),
                         ];
                     }),
                     'notes' => $booking->note,
@@ -339,8 +331,8 @@ class ScheduleController extends Controller
             $data['now'] = date('Y-m-d');
             // return $data;
 
-            if($request->json){
-                if($request->download){
+            if ($request->json) {
+                if ($request->download) {
                     $jsonData = json_encode($data['booking'], JSON_PRETTY_PRINT);
 
                     return response()->streamDownload(function () use ($jsonData) {
@@ -348,21 +340,18 @@ class ScheduleController extends Controller
                     }, 'booking.json', [
                         'Content-Type' => 'application/json',
                     ]);
-                }
-                else{
-                    return $data['booking']; 
+                } else {
+                    return $data['booking'];
                 }
             }
-            $data['package'] = Package::with('duration')->where('is_publish','1')->get();
-
+            $data['package'] = Package::with('duration')->where('is_publish', '1')->get();
         } catch (\Illuminate\Database\QueryException $e) {
             return $e->getMessage();
         }
         // return $data;
-        if($request->export){
+        if ($request->export) {
             return \view('exports.schedule-excel', $data);
-        }
-        else if($request->pdf){
+        } else if ($request->pdf) {
             // return view('exports.pdf-schedule', $data);
             $pdf = PDF::loadView('exports.pdf-schedule', $data)->setPaper('A4', 'landscape')->setOptions([
                 'margin_top' => 5,
@@ -370,102 +359,102 @@ class ScheduleController extends Controller
                 'margin_left' => 5,
                 'margin_right' => 5,
             ]);
-                // Download or display the PDF
-            $name = "_".$data['filters']['startDate']."_".$data['filters']['endDate']."_";
+            // Download or display the PDF
+            $name = "_" . $data['filters']['startDate'] . "_" . $data['filters']['endDate'] . "_";
             $name .= request()->channel ? request()->channel : 'all';
-        
-            $name = 'Schedule'.$name.'.pdf';
+
+            $name = 'Schedule' . $name . '.pdf';
             return $pdf->download($name);
-        }
-        else{
-            return Inertia::render('Schedule/Index',['data' => $data]);
+        } else {
+            return Inertia::render('Schedule/Index', ['data' => $data]);
         }
     }
 
-    function details($id){
-        $booking = Booking::with(['user.country','bookingDetail.package.itinerary' => function($query){
-            $query->with(['itineraryDetail' => function($q){
-                $q->orderBy('no','asc')->with('activity.activityCategory');
+    function details($id)
+    {
+        $booking = Booking::with(['user.country', 'bookingDetail.package.itinerary' => function ($query) {
+            $query->with(['itineraryDetail' => function ($q) {
+                $q->orderBy('no', 'asc')->with('activity.activityCategory');
             }]);
-        },'bookingPayment','participant'])->where('id',$id)->first();
+        }, 'bookingPayment', 'participant'])->where('id', $id)->first();
         $itinerary = BookingItinerary::with('activityStart.destination.activityDestination')
-        ->where('booking_id', $id)
-        ->get()
-        ->map(function($query) use($booking) {
-            $night = $query->day - 1;
-            $todayYMD = date('Y-m-d', strtotime($booking->travel_date_start." +$night days"));
-            $today = date('d F Y', strtotime($booking->travel_date_start." +$night days"));
-            $activity = $query->activityStart && $query->activityStart->destination ? ($query->activityStart->destination->activityDestination ? $query->activityStart->destination->activityDestination->name : $query->activityStart->destination->name) : null;
-    
-            if (!$activity) {
-                $activities = [
+            ->where('booking_id', $id)
+            ->get()
+            ->map(function ($query) use ($booking) {
+                $night = $query->day - 1;
+                $todayYMD = date('Y-m-d', strtotime($booking->travel_date_start . " +$night days"));
+                $today = date('d F Y', strtotime($booking->travel_date_start . " +$night days"));
+                $activity = $query->activityStart && $query->activityStart->destination ? ($query->activityStart->destination->activityDestination ? $query->activityStart->destination->activityDestination->name : $query->activityStart->destination->name) : null;
+
+                if (!$activity) {
+                    $activities = [
+                        'day' => $query->day,
+                        'date' => $today,
+                        'itinerary' => $query->itinerary,
+                        'activity' => $activity,
+                        'activity_start_id' => $query->activity_start_id,
+                        'activity_end_id' => $query->activity_end_id,
+                        'other_booking' => []
+                    ];
+                    return $activities;
+                }
+
+                // Query pertama: mendapatkan booking_itinerary
+                $otherBookings = BookingItinerary::select('id', 'booking_id', 'day')
+                    ->with([
+                        'booking' => function ($q) {
+                            $q->select('id', 'user_id', 'total_pax')
+                                ->with(['user' => function ($qq) {
+                                    $qq->select('id', 'name');
+                                }]);
+                        }
+                    ])
+                    ->where('activity_start_id', $query->activity_start_id)
+                    ->where('booking_id', '!=', $query->booking_id)
+                    ->whereHas('booking', function ($q) use ($todayYMD) {
+                        $q->whereRaw("DATE_ADD(travel_date_start, INTERVAL (booking_itineraries.day - 1) DAY) = ?", [$todayYMD]);
+                    })
+                    ->get();
+
+                // Query kedua: mendapatkan book_hotel untuk setiap booking_itinerary
+                foreach ($otherBookings as $booking) {
+                    if ($booking->booking) {
+                        $hotels = BookHotel::select('id', 'booking_id', 'hotel_id')
+                            ->where('booking_id', $booking->booking_id)
+                            ->with([
+                                'hotel' => function ($q) {
+                                    $q->select('id', 'name');
+                                }
+                            ])
+                            ->whereHas('bookingItinerary', function ($q) use ($booking) {
+                                $q->where('day', $booking->day - 1);
+                            })
+                            ->get();
+
+                        $booking->booking->book_hotel = $hotels;
+                    }
+                }
+
+
+                return [
                     'day' => $query->day,
                     'date' => $today,
                     'itinerary' => $query->itinerary,
                     'activity' => $activity,
                     'activity_start_id' => $query->activity_start_id,
                     'activity_end_id' => $query->activity_end_id,
-                    'other_booking' => []
+                    'other_booking' => $otherBookings
                 ];
-                return $activities;
-            }
-    
-            // Query pertama: mendapatkan booking_itinerary
-            $otherBookings = BookingItinerary::select('id', 'booking_id', 'day')
-                ->with([
-                    'booking' => function ($q) {
-                        $q->select('id', 'user_id', 'total_pax')
-                          ->with(['user' => function ($qq) {
-                              $qq->select('id', 'name');
-                          }]);
-                    }
-                ])
-                ->where('activity_start_id', $query->activity_start_id)
-                ->where('booking_id', '!=', $query->booking_id)
-                ->whereHas('booking', function ($q) use ($todayYMD) {
-                    $q->whereRaw("DATE_ADD(travel_date_start, INTERVAL (booking_itineraries.day - 1) DAY) = ?", [$todayYMD]);
-                })
-                ->get();
-    
-            // Query kedua: mendapatkan book_hotel untuk setiap booking_itinerary
-            foreach($otherBookings as $booking) {
-                if ($booking->booking) {
-                    $hotels = BookHotel::select('id', 'booking_id', 'hotel_id')
-                        ->where('booking_id', $booking->booking_id)
-                        ->with([
-                            'hotel' => function ($q) {
-                                $q->select('id', 'name');
-                            }
-                        ])
-                        ->whereHas('bookingItinerary', function($q) use ($booking) {
-                            $q->where('day', $booking->day - 1);
-                        })
-                        ->get();
-                    
-                    $booking->booking->book_hotel = $hotels;
-                }
-            }
-            
-    
-            return [
-                'day' => $query->day,
-                'date' => $today,
-                'itinerary' => $query->itinerary,
-                'activity' => $activity,
-                'activity_start_id' => $query->activity_start_id,
-                'activity_end_id' => $query->activity_end_id,
-                'other_booking' => $otherBookings
-            ];
-        });
+            });
         // return $itinerary;
-        $bookHotel = BookHotel::with(['bookingItinerary','hotel','bookRoom.roomHotel'])->where('booking_id',$id)->get()->map(function($query) use($booking){
+        $bookHotel = BookHotel::with(['bookingItinerary', 'hotel', 'bookRoom.roomHotel'])->where('booking_id', $id)->get()->map(function ($query) use ($booking) {
             $night = $query->bookingItinerary->day - 1;
             return [
                 'day' => $query->bookingItinerary->day,
                 'hotel_id' => $query->hotel->id,
                 'hotel' => $query->hotel->name,
-                'check_in' => date('d F Y',strtotime($booking->travel_date_start." +$night days")),
-                'rooms' => $query->bookRoom->map(function($q){
+                'check_in' => date('d F Y', strtotime($booking->travel_date_start . " +$night days")),
+                'rooms' => $query->bookRoom->map(function ($q) {
                     return [
                         'room_name' => $q->roomHotel->room_name,
                         'quantity' => $q->quantity,
@@ -477,91 +466,88 @@ class ScheduleController extends Controller
         $drivers = [];
         $escorts = [];
         $ijens = [];
-        $car = BookCar::with('car')->where('booking_id',$id)->get()->map(function($query) use(&$cars){
-            array_push($cars,$query->car->name);
+        $car = BookCar::with('car')->where('booking_id', $id)->get()->map(function ($query) use (&$cars) {
+            array_push($cars, $query->car->name);
             return $query;
         });
 
-        $driver = BookGuideDriver::with('person')->where('booking_id',$id)->where('type','driver')->get()->map(function($query) use(&$drivers){
-            array_push($drivers,$query->person->name);
+        $driver = BookGuideDriver::with('person')->where('booking_id', $id)->where('type', 'driver')->get()->map(function ($query) use (&$drivers) {
+            array_push($drivers, $query->person->name);
             return $query;
         });
 
-        $escort = BookGuideDriver::with('person')->where('booking_id',$id)->where('type','guide')->where('guide_ijen','0')->get()->map(function($query) use(&$escorts){
-            array_push($escorts,$query->person->name);
+        $escort = BookGuideDriver::with('person')->where('booking_id', $id)->where('type', 'guide')->where('guide_ijen', '0')->get()->map(function ($query) use (&$escorts) {
+            array_push($escorts, $query->person->name);
             return $query;
         });
 
-        $ijen = BookGuideDriver::with('person')->where('booking_id',$id)->where('type','guide')->where('guide_ijen','1')->get()->map(function($query) use(&$ijens){
-            array_push($ijens,$query->person->name);
+        $ijen = BookGuideDriver::with('person')->where('booking_id', $id)->where('type', 'guide')->where('guide_ijen', '1')->get()->map(function ($query) use (&$ijens) {
+            array_push($ijens, $query->person->name);
             return $query;
         });
-        
-        if($booking->agent_id == 1){
-           $channel = 'TWT'; 
-        }
-        else if($booking->agent_id == 2 && $booking->booking_category_id != 3){
-           $channel = 'JVTO'; 
-        }
-        else if($booking->agent_id == 2 && $booking->booking_category_id == 3){
-           $channel = 'KLOOK'; 
+
+        if ($booking->agent_id == 1) {
+            $channel = 'TWT';
+        } else if ($booking->agent_id == 2 && $booking->booking_category_id != 3) {
+            $channel = 'JVTO';
+        } else if ($booking->agent_id == 2 && $booking->booking_category_id == 3) {
+            $channel = 'KLOOK';
         }
 
         $invoiceLinks = [];
-        if($channel == 'JVTO'){
-            array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/".$booking->id);
-            if($booking->book_add_on_total != 0){
-                array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/".$booking->id."?addon=true");
+        if ($channel == 'JVTO') {
+            array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/" . $booking->id);
+            if ($booking->book_add_on_total != 0) {
+                array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/" . $booking->id . "?addon=true");
             }
-        }
-        else{
+        } else {
             $attachmentType = $channel == 'TWT' ? 6 : 7;
-            $bookingDocument = BookingDocument::where('booking_id',$booking->id)->where('attachment_type_id',$attachmentType)->first();
-            if($bookingDocument){
+            $bookingDocument = BookingDocument::where('booking_id', $booking->id)->where('attachment_type_id', $attachmentType)->first();
+            if ($bookingDocument) {
                 $invoiceLinks = [
-                    '/preview-file?title=Invoice '.$booking->user->name.'&url=https://new-backoffice.javavolcano-touroperator.com/assets/customer-document/'.$bookingDocument->file,                    
+                    '/preview-file?title=Invoice ' . $booking->user->name . '&url=https://new-backoffice.javavolcano-touroperator.com/assets/customer-document/' . $bookingDocument->file,
                 ];
             }
         }
 
         $tshirt = [];
-        if($booking->bookingDetail[0]->xss){
-            array_push($tshirt,"XSS: ".$booking->bookingDetail[0]->xss);
+        if ($booking->bookingDetail[0]->xss) {
+            array_push($tshirt, "XSS: " . $booking->bookingDetail[0]->xss);
         }
-        if($booking->bookingDetail[0]->xxs){
-            array_push($tshirt,"XXS: ".$booking->bookingDetail[0]->xxs);
+        if ($booking->bookingDetail[0]->xxs) {
+            array_push($tshirt, "XXS: " . $booking->bookingDetail[0]->xxs);
         }
-        if($booking->bookingDetail[0]->xs){
-            array_push($tshirt,"XS: ".$booking->bookingDetail[0]->xs);
+        if ($booking->bookingDetail[0]->xs) {
+            array_push($tshirt, "XS: " . $booking->bookingDetail[0]->xs);
         }
-        if($booking->bookingDetail[0]->s){
-            array_push($tshirt,"S: ".$booking->bookingDetail[0]->s);
+        if ($booking->bookingDetail[0]->s) {
+            array_push($tshirt, "S: " . $booking->bookingDetail[0]->s);
         }
-        if($booking->bookingDetail[0]->m){
-            array_push($tshirt,"M: ".$booking->bookingDetail[0]->m);
+        if ($booking->bookingDetail[0]->m) {
+            array_push($tshirt, "M: " . $booking->bookingDetail[0]->m);
         }
-        if($booking->bookingDetail[0]->l){
-            array_push($tshirt,"L: ".$booking->bookingDetail[0]->l);
+        if ($booking->bookingDetail[0]->l) {
+            array_push($tshirt, "L: " . $booking->bookingDetail[0]->l);
         }
-        if($booking->bookingDetail[0]->xl){
-            array_push($tshirt,"XL: ".$booking->bookingDetail[0]->xl);
+        if ($booking->bookingDetail[0]->xl) {
+            array_push($tshirt, "XL: " . $booking->bookingDetail[0]->xl);
         }
-        if($booking->bookingDetail[0]->xxl){
-            array_push($tshirt,"XXL: ".$booking->bookingDetail[0]->xxl);
+        if ($booking->bookingDetail[0]->xxl) {
+            array_push($tshirt, "XXL: " . $booking->bookingDetail[0]->xxl);
         }
-        if($booking->bookingDetail[0]->xxxl){
-            array_push($tshirt,"XXXL: ".$booking->bookingDetail[0]->xxxl);
+        if ($booking->bookingDetail[0]->xxxl) {
+            array_push($tshirt, "XXXL: " . $booking->bookingDetail[0]->xxxl);
         }
-        $tshirts = implode(", ",$tshirt);
+        $tshirts = implode(", ", $tshirt);
 
         $package_information = [];
-        if($channel != 'TWT' && $booking->bookingDetail[0]->package){
-            $package_information = $booking->bookingDetail[0]->package->itinerary->map(function($query, $index) use ($booking) {
+        if ($channel != 'TWT' && $booking->bookingDetail[0]->package) {
+            $package_information = $booking->bookingDetail[0]->package->itinerary->map(function ($query, $index) use ($booking) {
                 // Get total days to identify first and last day
                 $totalDays = $booking->bookingDetail[0]->package->itinerary->count();
-                
+
                 // Get the details for the current day
-                $details = $query->itineraryDetail->map(function($q) {
+                $details = $query->itineraryDetail->map(function ($q) {
                     return [
                         'time' => $q->time ? date('H:i', strtotime($q->time)) : null,
                         'activity' => $q->activity ? $q->activity->name : null,
@@ -571,7 +557,7 @@ class ScheduleController extends Controller
                         'activity_notes' => $q->activity ? $q->activity->notes : null,
                     ];
                 })->toArray();
-            
+
                 // Add pickup record for first day
                 if ($query->day === 1) {
                     array_unshift($details, [
@@ -583,7 +569,7 @@ class ScheduleController extends Controller
                         'activity_notes' => null
                     ]);
                 }
-            
+
                 // Add drop record for last day
                 if ($query->day === $totalDays) {
                     $details[] = [
@@ -595,43 +581,40 @@ class ScheduleController extends Controller
                         'activity_notes' => null
                     ];
                 }
-            
+
                 return [
                     'day' => $query->day,
                     'details' => $details
                 ];
-            });            
+            });
         }
-        $cekAddOnPaid = BookingPayment::where('booking_id',$id)->where('is_add_on','1')->count();
+        $cekAddOnPaid = BookingPayment::where('booking_id', $id)->where('is_add_on', '1')->count();
 
-        if($booking->balance == 0){
+        if ($booking->balance == 0) {
             $lastPayment = BookingPayment::where('booking_id', $booking->id)
                 ->orderBy('id', 'asc')  // Or use created_at if that's more appropriate
                 ->first();
 
             $count = BookingPayment::where('booking_id', $booking->id)->count();
 
-            if($count == 1){
+            if ($count == 1) {
                 $dp = BookingPayment::where('booking_id', $booking->id)->sum('nominal');
-            }
-            else{
+            } else {
                 // Then sum all payments except the one with that ID
                 $dp = BookingPayment::where('booking_id', $booking->id)
-                    ->when($lastPayment, function($query) use ($lastPayment) {
+                    ->when($lastPayment, function ($query) use ($lastPayment) {
                         return $query->where('id', '!=', $lastPayment->id);
                     })
                     ->sum('nominal');
             }
-
-        }
-        else{
+        } else {
             $dp = $booking->balance;
         }
         $profit = $dp - $booking->expense_internal_total;
 
 
         $details = [
-            'payment_method' => PaymentMethod::get()->map(function($data){
+            'payment_method' => PaymentMethod::get()->map(function ($data) {
                 return [
                     'value' => $data->id,
                     'label' => $data->name,
@@ -644,31 +627,31 @@ class ScheduleController extends Controller
                 'email_address' => $booking->user->email,
                 'nationality' => $booking->user->country ? $booking->user->country->long_name : '-',
                 'media_link' => $booking->media_link,
-                'portal' => $channel != 'TWT' ? 'https://javavolcano-touroperator.com/bookings/details/'.$booking->url : null,
+                'portal' => $channel != 'TWT' ? 'https://javavolcano-touroperator.com/bookings/details/' . $booking->url : null,
                 'participants' => $booking->participant
             ],
             'booking_information' => [
                 'id' => $booking->id,
-                'booking_id' => $channel."-".$booking->id,
+                'booking_id' => $channel . "-" . $booking->id,
                 'booking_reference_id' => $channel == 'JVTO' ? $booking->booking_code : $booking->invoice_code_origin,
                 'order_channel' => $channel,
                 'package_id' => $channel != 'TWT' && $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package_id : '-',
-                'tour_package' => $channel != 'TWT' && $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->package_code." | ".$booking->bookingDetail[0]->package->name : '-',
+                'tour_package' => $channel != 'TWT' && $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->package_code . " | " . $booking->bookingDetail[0]->package->name : '-',
                 'number_of_participants' => $booking->total_pax,
-                'travel_date' => date('d F Y',strtotime($booking->travel_date_start)),
-                'booking_date' => date('d F Y',strtotime($booking->booking_date)),
+                'travel_date' => date('d F Y', strtotime($booking->travel_date_start)),
+                'booking_date' => date('d F Y', strtotime($booking->booking_date)),
                 'tshirt' => $tshirts,
                 'pickup' => [
                     'location' => $booking->meeting_point ? $booking->meeting_point : '-',
                     'arrival' => $booking->meeting_point_arrival ? $booking->meeting_point_arrival : '-',
                     'location_value' => $booking->meeting_point_value ? $booking->meeting_point_value : '-',
-                    'time' => $booking->pickup_time ? date('H:i',strtotime($booking->pickup_time)) : '-',
+                    'time' => $booking->pickup_time ? date('H:i', strtotime($booking->pickup_time)) : '-',
                 ],
                 'drop' => [
                     'location' => $booking->drop_point ? $booking->drop_point : '-',
                     'arrival' => $booking->drop_point_arrival ? $booking->drop_point_arrival : '-',
                     'location_value' => $booking->drop_point_value ? $booking->drop_point_value : '-',
-                    'time' => $booking->drop_time ? date('H:i',strtotime($booking->drop_time)) : '-',
+                    'time' => $booking->drop_time ? date('H:i', strtotime($booking->drop_time)) : '-',
                 ],
                 'special_requirements' => $booking->special_requirements,
                 'notes' => $booking->note,
@@ -694,26 +677,26 @@ class ScheduleController extends Controller
                 'add_on_only' => $cekAddOnPaid == 0 ? $booking->book_add_on_total : 0,
                 'paymentMethod' =>  $booking->outstanding_payment_method ? strtoupper($booking->outstanding_payment_method) : $booking->outstanding_payment_method,
                 'invoice' => [
-                    'total' => $booking->grand_total+$booking->book_add_on_total,
+                    'total' => $booking->grand_total + $booking->book_add_on_total,
                     'invoiceLink' => $invoiceLinks,
                 ],
                 'expense' => [
                     'total' => $booking->expense_internal_total,
                     'crew_expense' => $booking->total_expense_crew,
                     'debt_expense' => $booking->total_expense_debt,
-                    'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : '/finance/expense-manager/'.$booking->id.'/edit',
+                    'expenseLink' => $booking->expense_file_internal ? $booking->expense_file_internal : '/finance/expense-manager/' . $booking->id . '/edit',
                     'target' => '_blank'
                 ],
                 'profit' =>  $profit,
-                'payment_history' => $booking->bookingPayment->map(function($payment) use($booking){
+                'payment_history' => $booking->bookingPayment->map(function ($payment) use ($booking) {
                     return [
                         'id' => $payment->id,
                         'nominal' => $payment->nominal,
                         'paymentMethod' => $payment->paymentMethod->name,
                         'description' => $payment->description,
                         'reference' => $payment->reference,
-                        'receipt' => "https://javavolcano-touroperator.com/backoffice/invoice/view-receipt/".$booking->id."/partial/".$payment->id,
-                        'date' => date('d M y H:i',strtotime($payment->created_at)),
+                        'receipt' => "https://javavolcano-touroperator.com/backoffice/invoice/view-receipt/" . $booking->id . "/partial/" . $payment->id,
+                        'date' => date('d M y H:i', strtotime($payment->created_at)),
                     ];
                 }),
 
@@ -723,11 +706,13 @@ class ScheduleController extends Controller
         return Inertia::render('Schedule/Details', ['initialData' => $details]);
     }
 
-    function bookingList(Request $request){
+    function bookingList(Request $request)
+    {
         return Inertia::render('Schedule/BookingList');
     }
 
-    function bookingAnalist(Request $request){
+    function bookingAnalist(Request $request)
+    {
 
         $data['filter'] = [
             'month' => $request->month ? $request->month : date('m'),
@@ -738,34 +723,30 @@ class ScheduleController extends Controller
             'activeTab' => $request->activeTab ? $request->activeTab : 'all-reports',
         ];
 
-        $data['destination'] = Destination::whereRaw('id in(1,2,7)')->get(['id','name']);
-        $data['hotel'] = Hotel::whereRaw('id in(1,10,11,34)')->get(['id','name']);
-        $last_month_year = date('Y-m',strtotime($data['filter']['year']."-".$data['filter']['month']."-01 -1 month"));
+        $data['destination'] = Destination::whereRaw('id in(1,2,7)')->get(['id', 'name']);
+        $data['hotel'] = Hotel::whereRaw('id in(1,10,11,34)')->get(['id', 'name']);
+        $last_month_year = date('Y-m', strtotime($data['filter']['year'] . "-" . $data['filter']['month'] . "-01 -1 month"));
 
         $data['total_booking_current_month'] = Booking::where('travel_date_start', 'like', "%" . $data['filter']['year'] . "-" . $data['filter']['month'] . "%")->where('status', 'booked');
-        if($data['filter']['channel'] != 'all'){
-            if($data['filter']['channel'] == 'twt'){
-                $data['total_booking_current_month'] = $data['total_booking_current_month']->where('agent_id',1);
-            }
-            else if($data['filter']['channel'] == 'jvto'){
-                $data['total_booking_current_month'] = $data['total_booking_current_month']->where('agent_id',2)->where('booking_category_id','!=',3);
-            }
-            else{
-                $data['total_booking_current_month'] = $data['total_booking_current_month']->where('agent_id',2)->where('booking_category_id',3);
+        if ($data['filter']['channel'] != 'all') {
+            if ($data['filter']['channel'] == 'twt') {
+                $data['total_booking_current_month'] = $data['total_booking_current_month']->where('agent_id', 1);
+            } else if ($data['filter']['channel'] == 'jvto') {
+                $data['total_booking_current_month'] = $data['total_booking_current_month']->where('agent_id', 2)->where('booking_category_id', '!=', 3);
+            } else {
+                $data['total_booking_current_month'] = $data['total_booking_current_month']->where('agent_id', 2)->where('booking_category_id', 3);
             }
         }
         $data['total_booking_current_month'] = $data['total_booking_current_month']->count();
 
         $data['total_booking_last_month'] = Booking::where('travel_date_start', 'like', "%" . $last_month_year . "%")->where('status', 'booked');
-        if($data['filter']['channel'] != 'all'){
-            if($data['filter']['channel'] == 'twt'){
-                $data['total_booking_last_month'] = $data['total_booking_last_month']->where('agent_id',1);
-            }
-            else if($data['filter']['channel'] == 'jvto'){
-                $data['total_booking_last_month'] = $data['total_booking_last_month']->where('agent_id',2)->where('booking_category_id','!=',3);
-            }
-            else{
-                $data['total_booking_last_month'] = $data['total_booking_last_month']->where('agent_id',2)->where('booking_category_id',3);
+        if ($data['filter']['channel'] != 'all') {
+            if ($data['filter']['channel'] == 'twt') {
+                $data['total_booking_last_month'] = $data['total_booking_last_month']->where('agent_id', 1);
+            } else if ($data['filter']['channel'] == 'jvto') {
+                $data['total_booking_last_month'] = $data['total_booking_last_month']->where('agent_id', 2)->where('booking_category_id', '!=', 3);
+            } else {
+                $data['total_booking_last_month'] = $data['total_booking_last_month']->where('agent_id', 2)->where('booking_category_id', 3);
             }
         }
         $data['total_booking_last_month'] = $data['total_booking_last_month']->count();
@@ -777,75 +758,65 @@ class ScheduleController extends Controller
             $data['total_booking_percentage_change'] = 0; // Atau nilai lain sesuai logika bisnis Anda
         }
 
-        if($data['total_booking_percentage_change'] == 0){
+        if ($data['total_booking_percentage_change'] == 0) {
             $data['total_booking_percentage_change'] = "";
             $data['total_booking_percentage_change_trend'] = "same";
-        }
-        else if($data['total_booking_percentage_change'] < 0){
-            $data['total_booking_percentage_change'] = $data['total_booking_percentage_change']."%";
+        } else if ($data['total_booking_percentage_change'] < 0) {
+            $data['total_booking_percentage_change'] = $data['total_booking_percentage_change'] . "%";
             $data['total_booking_percentage_change_trend'] = "down";
-        }
-        else{
-            $data['total_booking_percentage_change'] = "+".$data['total_booking_percentage_change']."%";
+        } else {
+            $data['total_booking_percentage_change'] = "+" . $data['total_booking_percentage_change'] . "%";
             $data['total_booking_percentage_change_trend'] = "up";
         }
 
         $data['total_invoice_current_month'] = Booking::where('travel_date_start', 'like', "%" . $data['filter']['year'] . "-" . $data['filter']['month'] . "%")
-        ->where('status', 'booked');
-        if($data['filter']['channel'] != 'all'){
-            if($data['filter']['channel'] == 'twt'){
-                $data['total_invoice_current_month'] = $data['total_invoice_current_month']->where('agent_id',1);
-            }
-            else if($data['filter']['channel'] == 'jvto'){
-                $data['total_invoice_current_month'] = $data['total_invoice_current_month']->where('agent_id',2)->where('booking_category_id','!=',3);
-            }
-            else{
-                $data['total_invoice_current_month'] = $data['total_invoice_current_month']->where('agent_id',2)->where('booking_category_id',3);
+            ->where('status', 'booked');
+        if ($data['filter']['channel'] != 'all') {
+            if ($data['filter']['channel'] == 'twt') {
+                $data['total_invoice_current_month'] = $data['total_invoice_current_month']->where('agent_id', 1);
+            } else if ($data['filter']['channel'] == 'jvto') {
+                $data['total_invoice_current_month'] = $data['total_invoice_current_month']->where('agent_id', 2)->where('booking_category_id', '!=', 3);
+            } else {
+                $data['total_invoice_current_month'] = $data['total_invoice_current_month']->where('agent_id', 2)->where('booking_category_id', 3);
             }
         }
         $data['total_invoice_current_month'] = $data['total_invoice_current_month']->sum('grand_total');
 
         $data['total_expense_current_month'] = Booking::where('travel_date_start', 'like', "%" . $data['filter']['year'] . "-" . $data['filter']['month'] . "%")
-        ->where('status', 'booked');
-        if($data['filter']['channel'] != 'all'){
-            if($data['filter']['channel'] == 'twt'){
-                $data['total_expense_current_month'] = $data['total_expense_current_month']->where('agent_id',1);
-            }
-            else if($data['filter']['channel'] == 'jvto'){
-                $data['total_expense_current_month'] = $data['total_expense_current_month']->where('agent_id',2)->where('booking_category_id','!=',3);
-            }
-            else{
-                $data['total_expense_current_month'] = $data['total_expense_current_month']->where('agent_id',2)->where('booking_category_id',3);
+            ->where('status', 'booked');
+        if ($data['filter']['channel'] != 'all') {
+            if ($data['filter']['channel'] == 'twt') {
+                $data['total_expense_current_month'] = $data['total_expense_current_month']->where('agent_id', 1);
+            } else if ($data['filter']['channel'] == 'jvto') {
+                $data['total_expense_current_month'] = $data['total_expense_current_month']->where('agent_id', 2)->where('booking_category_id', '!=', 3);
+            } else {
+                $data['total_expense_current_month'] = $data['total_expense_current_month']->where('agent_id', 2)->where('booking_category_id', 3);
             }
         }
         $data['total_expense_current_month'] = $data['total_expense_current_month']->sum('expense_internal_total');
 
         $data['total_invoice_last_month'] = Booking::where('travel_date_start', 'like', "%" . $last_month_year . "%")
-        ->where('status', 'booked');
-        if($data['filter']['channel'] != 'all'){
-            if($data['filter']['channel'] == 'twt'){
-                $data['total_invoice_last_month'] = $data['total_invoice_last_month']->where('agent_id',1);
-            }
-            else if($data['filter']['channel'] == 'jvto'){
-                $data['total_invoice_last_month'] = $data['total_invoice_last_month']->where('agent_id',2)->where('booking_category_id','!=',3);
-            }
-            else{
-                $data['total_invoice_last_month'] = $data['total_invoice_last_month']->where('agent_id',2)->where('booking_category_id',3);
+            ->where('status', 'booked');
+        if ($data['filter']['channel'] != 'all') {
+            if ($data['filter']['channel'] == 'twt') {
+                $data['total_invoice_last_month'] = $data['total_invoice_last_month']->where('agent_id', 1);
+            } else if ($data['filter']['channel'] == 'jvto') {
+                $data['total_invoice_last_month'] = $data['total_invoice_last_month']->where('agent_id', 2)->where('booking_category_id', '!=', 3);
+            } else {
+                $data['total_invoice_last_month'] = $data['total_invoice_last_month']->where('agent_id', 2)->where('booking_category_id', 3);
             }
         }
         $data['total_invoice_last_month'] = $data['total_invoice_last_month']->sum('grand_total');
 
         $data['total_expense_last_month'] = Booking::where('travel_date_start', 'like', "%" . $last_month_year . "%")
-        ->where('status', 'booked');
-        if($data['filter']['channel'] != 'all'){
-            if($data['filter']['channel'] == 'twt'){
-                $data['total_expense_last_month'] = $data['total_expense_last_month']->where('agent_id',1);
-            }
-            else if($data['filter']['channel'] == 'jvto'){
-                $data['total_expense_last_month'] = $data['total_expense_last_month']->where('agent_id',2)->where('booking_category_id','!=',3);
-            }
-            else{
-                $data['total_expense_last_month'] = $data['total_expense_last_month']->where('agent_id',2)->where('booking_category_id',3);
+            ->where('status', 'booked');
+        if ($data['filter']['channel'] != 'all') {
+            if ($data['filter']['channel'] == 'twt') {
+                $data['total_expense_last_month'] = $data['total_expense_last_month']->where('agent_id', 1);
+            } else if ($data['filter']['channel'] == 'jvto') {
+                $data['total_expense_last_month'] = $data['total_expense_last_month']->where('agent_id', 2)->where('booking_category_id', '!=', 3);
+            } else {
+                $data['total_expense_last_month'] = $data['total_expense_last_month']->where('agent_id', 2)->where('booking_category_id', 3);
             }
         }
         $data['total_expense_last_month'] = $data['total_expense_last_month']->sum('expense_internal_total');
@@ -860,19 +831,17 @@ class ScheduleController extends Controller
             $data['total_invoice_percentage_change'] = 0; // Atau nilai lain sesuai logika bisnis Anda
         }
 
-        if($data['total_invoice_percentage_change'] == 0){
+        if ($data['total_invoice_percentage_change'] == 0) {
             $data['total_invoice_percentage_change'] = "";
             $data['total_invoice_percentage_change_trend'] = "same";
-        }
-        else if($data['total_invoice_percentage_change'] < 0){
-            $data['total_invoice_percentage_change'] = $data['total_invoice_percentage_change']."%";
+        } else if ($data['total_invoice_percentage_change'] < 0) {
+            $data['total_invoice_percentage_change'] = $data['total_invoice_percentage_change'] . "%";
             $data['total_invoice_percentage_change_trend'] = "down";
-        }
-        else{
-            $data['total_invoice_percentage_change'] = "+".$data['total_invoice_percentage_change']."%";
+        } else {
+            $data['total_invoice_percentage_change'] = "+" . $data['total_invoice_percentage_change'] . "%";
             $data['total_invoice_percentage_change_trend'] = "up";
         }
-        $data['total_invoice_current_month'] = "IDR ".number_format($data['total_invoice_current_month'],0,',','.');
+        $data['total_invoice_current_month'] = "IDR " . number_format($data['total_invoice_current_month'], 0, ',', '.');
 
         if ($data['total_profit_last_month'] > 0) {
             $data['total_profit_percentage_change'] = round(($data['total_profit_current_month'] - $data['total_profit_last_month']) / $data['total_profit_last_month'] * 100);
@@ -880,19 +849,17 @@ class ScheduleController extends Controller
             $data['total_profit_percentage_change'] = 0; // Atau nilai lain sesuai logika bisnis Anda
         }
 
-        if($data['total_profit_percentage_change'] == 0){
+        if ($data['total_profit_percentage_change'] == 0) {
             $data['total_profit_percentage_change'] = "";
             $data['total_profit_percentage_change_trend'] = "same";
-        }
-        else if($data['total_profit_percentage_change'] < 0){
-            $data['total_profit_percentage_change'] = $data['total_profit_percentage_change']."%";
+        } else if ($data['total_profit_percentage_change'] < 0) {
+            $data['total_profit_percentage_change'] = $data['total_profit_percentage_change'] . "%";
             $data['total_profit_percentage_change_trend'] = "down";
-        }
-        else{
-            $data['total_profit_percentage_change'] = "+".$data['total_profit_percentage_change']."%";
+        } else {
+            $data['total_profit_percentage_change'] = "+" . $data['total_profit_percentage_change'] . "%";
             $data['total_profit_percentage_change_trend'] = "up";
         }
-        $data['total_profit_current_month'] = "IDR ".number_format($data['total_profit_current_month'],0,',','.');
+        $data['total_profit_current_month'] = "IDR " . number_format($data['total_profit_current_month'], 0, ',', '.');
 
         $year = $data['filter']['year'];
         $month = $data['filter']['month'];
@@ -901,7 +868,7 @@ class ScheduleController extends Controller
         $data['report']['data_tshirt'] = [];
         $data['report']['data_activity'] = [];
 
-        if($request->activeTab == 'accommodations'){
+        if ($request->activeTab == 'accommodations') {
             $getBookHotel = BookHotel::with([
                 'bookRoom.roomHotel',
                 'booking.user',
@@ -911,20 +878,18 @@ class ScheduleController extends Controller
                 ->whereHas('booking', function ($query) use ($year, $month) {
                     $query->where('travel_date_start', 'like', "%$year-$month%");
                 });
-            if($data['filter']['channel'] != 'all'){
-                if($data['filter']['channel'] == 'twt'){
-                    $getBookHotel->whereHas('booking', function ($query){
+            if ($data['filter']['channel'] != 'all') {
+                if ($data['filter']['channel'] == 'twt') {
+                    $getBookHotel->whereHas('booking', function ($query) {
                         $query->where('agent_id', 1);
                     });
-                }
-                else if($data['filter']['channel'] == 'jvto'){
-                    $getBookHotel->whereHas('booking', function ($query){
-                        $query->where('agent_id', 2)->where('booking_category_id','!=',3);
+                } else if ($data['filter']['channel'] == 'jvto') {
+                    $getBookHotel->whereHas('booking', function ($query) {
+                        $query->where('agent_id', 2)->where('booking_category_id', '!=', 3);
                     });
-                }
-                else{
-                    $getBookHotel->whereHas('booking', function ($query){
-                        $query->where('agent_id', 2)->where('booking_category_id',3);
+                } else {
+                    $getBookHotel->whereHas('booking', function ($query) {
+                        $query->where('agent_id', 2)->where('booking_category_id', 3);
                     });
                 }
             }
@@ -944,8 +909,7 @@ class ScheduleController extends Controller
         if ($request->activeTab == 'activities') {
             if ($request->activity == '1') {
                 $data['report']['data_activity']['data_bromo'] = $this->getBromoData($year, $month, $data['filter']['channel']);
-            }
-            elseif ($request->activity == '2') {
+            } elseif ($request->activity == '2') {
                 $data['report']['data_activity']['data_ijen'] = $this->getIjenData($year, $month, $data['filter']['channel']);
             } elseif ($request->activity == '7') {
                 $data['report']['data_activity']['data_tumpak_sewu'] = $this->getTumpakSewuData($year, $month, $data['filter']['channel']);
@@ -958,10 +922,11 @@ class ScheduleController extends Controller
 
         // return $data['report']['data_tshirt'];
 
-        return Inertia::render('Schedule/BookingAnalist',['data' => $data, 'total' => 1000]);
+        return Inertia::render('Schedule/BookingAnalist', ['data' => $data, 'total' => 1000]);
     }
 
-    function getTshirt($year, $month, $channel) {
+    function getTshirt($year, $month, $channel)
+    {
 
         $get_tshirt = Booking::select([
             'bookings.id',
@@ -1004,11 +969,9 @@ class ScheduleController extends Controller
         if ($channel != 'all') {
             if ($channel == 'twt') {
                 $get_tshirt->where('bookings.agent_id', 1);
-            }
-            elseif($channel == 'jvto'){
+            } elseif ($channel == 'jvto') {
                 $get_tshirt->where('bookings.agent_id', 2)->where('bookings.booking_category_id', '!=', 3);
-            }
-            else{
+            } else {
                 $get_tshirt->where('bookings.agent_id', 2)->where('bookings.booking_category_id', 3);
             }
         }
@@ -1016,7 +979,8 @@ class ScheduleController extends Controller
         return $get_tshirt->get();
     }
 
-    function getBromoData($year, $month, $channel) {
+    function getBromoData($year, $month, $channel)
+    {
         $getBromoData = Booking::select([
             'bookings.id',
             'users.id AS client_id',
@@ -1112,7 +1076,8 @@ class ScheduleController extends Controller
         return $getTumpakSewuData->get();
     }
 
-    function updateBookingNote(Request $request){
+    function updateBookingNote(Request $request)
+    {
         $booking = Booking::find($request->booking_id);
         $booking->note = $request->note;
         $booking->note_category_id = $request->category_id;
@@ -1120,7 +1085,7 @@ class ScheduleController extends Controller
 
         return back()->with('message', 'Note updated successfully');
     }
-  // Fungsi getDataPlotting dengan parameter array
+    // Fungsi getDataPlotting dengan parameter array
     function getDataPlotting($params)
     {
         $bookingId = $params['id'];
@@ -1155,7 +1120,7 @@ class ScheduleController extends Controller
             ->whereColumn('guide_id', 'guide_drivers.id');
 
         // Query for drivers
-        $data['driver'] = GuideDriver::select('id','name','garage_id','tags','new_role')
+        $data['driver'] = GuideDriver::select('id', 'name', 'garage_id', 'tags', 'new_role')
             ->selectSub($availabilitySubquery->select('booking_id'), 'conflicting_booking_id')
             ->selectSub($availabilitySubquery->select('users.name'), 'conflicting_user_name')
             ->selectSub($availabilitySubquery->select('start_date'), 'conflicting_start_date')
@@ -1182,7 +1147,7 @@ class ScheduleController extends Controller
             });
 
         // Query untuk guide (sama seperti sebelumnya)
-        $data['guide'] = GuideDriver::select('id','name','tags','new_role')
+        $data['guide'] = GuideDriver::select('id', 'name', 'tags', 'new_role')
             ->selectSub($availabilitySubquery->select('booking_id'), 'conflicting_booking_id')
             ->selectSub($availabilitySubquery->select('users.name'), 'conflicting_user_name')
             ->selectSub($availabilitySubquery->select('start_date'), 'conflicting_start_date')
@@ -1261,7 +1226,7 @@ class ScheduleController extends Controller
             ->where('booking_id', $bookingId)
             ->whereColumn('car_id', 'cars.id');
 
-        $data['car'] = Car::select('id','name','garage_id','start_pax','end_pax')
+        $data['car'] = Car::select('id', 'name', 'garage_id', 'start_pax', 'end_pax')
             ->selectSub($carAvailabilitySubquery->select('booking_id'), 'conflicting_booking_id')
             ->selectSub($carAvailabilitySubquery->select('users.name'), 'conflicting_user_name')
             ->selectSub($carAvailabilitySubquery->select('start_date'), 'conflicting_start_date')
@@ -1293,24 +1258,24 @@ class ScheduleController extends Controller
     {
         $bookingId = $request->booking_id;
         $orderChannel = strtoupper($request->order_channel);
-        
+
         // Ambil data booking
         $booking = Booking::select('id', 'travel_date_start', 'travel_date_end', 'user_id', 'total_pax')
-            ->with(['user' => function($query){
+            ->with(['user' => function ($query) {
                 $query->select('id', 'name');
             }])
             ->where('id', $bookingId)
             ->first();
-        
+
         // Buat array parameter untuk getDataPlotting
         $params = [
             'id' => $bookingId,
             'order_channel' => $orderChannel != '' ? $orderChannel : 'all'
         ];
-        
+
         // Panggil fungsi getDataPlotting
         $data = $this->getDataPlotting($params);
-        
+
         // Filter driver berdasarkan total_pax
         $driverOptions = [];
         if ($booking->total_pax <= 3) {
@@ -1331,7 +1296,7 @@ class ScheduleController extends Controller
                 }
             }
         }
-        
+
         return [
             'order_channel' => $orderChannel,
             'booking' => $booking,
@@ -1339,538 +1304,678 @@ class ScheduleController extends Controller
             'data' => $data,
         ];
     }
-// Fungsi untuk melakukan autoplotting secara massal dengan prioritas driver dan guide
-function massAutoPlotting(Request $request)
-{
-    // Ambil semua booking bulan Juni 2025 dengan urutan prioritas (tanpa limit)
-    $bookings = Booking::where('travel_date_start', '>=', '2025-06-01')
-                      ->where('travel_date_start', '<', '2025-07-01')
-                      ->where(function($query) {
-                          // Prioritas urutan order channel
-                          $query->where('agent_id', 1) // TWT
-                                ->orWhere(function($q) {
-                                    $q->where('agent_id', 2)
-                                      ->where('booking_category_id', '!=', 3); // JVTO
-                                })
-                                ->orWhere(function($q) {
-                                    $q->where('agent_id', 2)
-                                      ->where('booking_category_id', 3); // KLOOK
-                                });
-                      })
-                      ->orderByRaw("CASE 
+    // Fungsi untuk melakukan autoplotting secara massal dengan prioritas driver dan guide
+    function massAutoPlotting(Request $request)
+    {
+        // Ambil semua booking bulan Juni 2025 dengan urutan prioritas (tanpa limit)
+        $bookings = Booking::where('travel_date_start', '>=', '2025-06-01')
+            ->where('travel_date_start', '<', '2025-07-01')
+            ->where(function ($query) {
+                // Prioritas urutan order channel
+                $query->where('agent_id', 1) // TWT
+                    ->orWhere(function ($q) {
+                        $q->where('agent_id', 2)
+                            ->where('booking_category_id', '!=', 3); // JVTO
+                    })
+                    ->orWhere(function ($q) {
+                        $q->where('agent_id', 2)
+                            ->where('booking_category_id', 3); // KLOOK
+                    });
+            })
+            ->orderByRaw("CASE 
                                    WHEN agent_id = 1 THEN 1
                                    WHEN agent_id = 2 AND booking_category_id != 3 THEN 2
                                    WHEN agent_id = 2 AND booking_category_id = 3 THEN 3
                                    ELSE 4
                                    END")
-                      ->orderBy('travel_date_start')
-                      ->with('user')
-                      ->get();
-    
-    $results = [];
-    
-    // Inisialisasi array untuk melacak jumlah trip masing-masing crew beserta nama
-    $driverTrips = [];
-    $guideTrips = [];
-    
-    // Array untuk melacak plotting yang dilakukan dalam proses simulasi ini
-    $simulatedDriverPlottings = [];
-    $simulatedGuidePlottings = [];
-    
-    foreach ($bookings as $booking) {
-        // Tentukan order channel berdasarkan agent_id dan booking_category_id
-        if ($booking->agent_id == 2 && $booking->booking_category_id == 3) {
-            $orderChannel = 'KLOOK';
-        } elseif ($booking->agent_id == 2) {
-            $orderChannel = 'JVTO';
-        } else {
-            $orderChannel = 'TWT';
-        }
-        
-        // Tentukan tanggal awal dan akhir trip untuk driver
-        $tripStartDate = $booking->travel_date_start;
-        $tripEndDate = $booking->is_shuttle == '1'
-            ? Carbon::parse($booking->travel_date_end)->subDay()->toDateString()
-            : $booking->travel_date_end;
-        
-        // Buat parameter untuk getDataPlotting
-        $params = [
-            'id' => $booking->id,
-            'order_channel' => $orderChannel
-        ];
-        
-        // Panggil fungsi getDataPlotting
-        $data = $this->getDataPlotting($params);
-        
-        // ===== PLOTTING DRIVER =====
-        $selectedDriver = null;
-        $allAvailableDrivers = [];
-        $driverConflictInfo = null;
-        
-        // Logika berbeda berdasarkan jumlah penumpang
-        if ($booking->total_pax <= 3) {
-            // Array untuk menyimpan driver yang tersedia, dikelompokkan berdasarkan role
-            $availableDriversByRole = [
-                'Driver cum guide' => [],
-                'Only Driver' => [],
-                'Outsource' => []
+            ->orderBy('travel_date_start')
+            ->with('user')
+            ->get();
+
+        $results = [];
+
+        // Inisialisasi array untuk melacak jumlah trip masing-masing crew beserta nama
+        $driverTrips = [];
+        $guideTrips = [];
+
+        // Array untuk melacak plotting yang dilakukan dalam proses simulasi ini
+        $simulatedDriverPlottings = [];
+        $simulatedGuidePlottings = [];
+
+        foreach ($bookings as $booking) {
+            // Tentukan order channel berdasarkan agent_id dan booking_category_id
+            if ($booking->agent_id == 2 && $booking->booking_category_id == 3) {
+                $orderChannel = 'KLOOK';
+            } elseif ($booking->agent_id == 2) {
+                $orderChannel = 'JVTO';
+            } else {
+                $orderChannel = 'TWT';
+            }
+
+            // Tentukan tanggal awal dan akhir trip untuk driver
+            $tripStartDate = $booking->travel_date_start;
+            $tripEndDate = $booking->is_shuttle == '1'
+                ? Carbon::parse($booking->travel_date_end)->subDay()->toDateString()
+                : $booking->travel_date_end;
+
+            // Buat parameter untuk getDataPlotting
+            $params = [
+                'id' => $booking->id,
+                'order_channel' => $orderChannel
             ];
-            
-            // Untuk <= 3 pax, cari driver berdasarkan prioritas role
-            foreach ($data['driver'] as $driver) {
-                $driverId = $driver['id'];
-                
-                // Cek apakah driver tersedia menurut data
-                $isAvailable = $driver['status'] == 'Tersedia';
-                
-                // Cek konflik dengan plotting yang telah dilakukan dalam simulasi
-                $hasConflict = false;
-                if (isset($simulatedDriverPlottings[$driverId])) {
-                    foreach ($simulatedDriverPlottings[$driverId] as $plot) {
-                        // Cek apakah ada overlap tanggal
-                        $plotStart = $plot['start_date'];
-                        $plotEnd = $plot['end_date'];
-                        
-                        if (
-                            // Booking baru mulai di tengah plotting yang ada
-                            ($tripStartDate >= $plotStart && $tripStartDate <= $plotEnd) ||
-                            // Booking baru berakhir di tengah plotting yang ada
-                            ($tripEndDate >= $plotStart && $tripEndDate <= $plotEnd) ||
-                            // Booking baru melingkupi plotting yang ada
-                            ($tripStartDate <= $plotStart && $tripEndDate >= $plotEnd)
-                        ) {
-                            $hasConflict = true;
-                            break;
-                        }
-                    }
-                }
-                
-                // Hanya pertimbangkan driver yang tersedia dan tidak memiliki konflik
-                if ($isAvailable && !$hasConflict) {
-                    $role = $driver['new_role'] ?? 'Unknown'; // Default jika tidak ada role
-                    
-                    // Tambahkan jumlah trip yang sudah dihitung
-                    $driver['trip_count'] = isset($driverTrips[$driverId]['count']) ? $driverTrips[$driverId]['count'] : 0;
-                    
-                    // Kelompokkan driver berdasarkan role
-                    if ($role == 'Driver cum guide') {
-                        $availableDriversByRole['Driver cum guide'][] = $driver;
-                    } elseif ($role == 'Only Driver') {
-                        $availableDriversByRole['Only Driver'][] = $driver;
-                    } elseif ($role == 'Outsource') {
-                        $availableDriversByRole['Outsource'][] = $driver;
-                    }
-                    
-                    // Tambahkan ke daftar semua driver tersedia
-                    $allAvailableDrivers[] = $driver;
-                }
-            }
-            
-            // Pilih driver berdasarkan prioritas role dan jumlah trip
-            // Cek setiap role sesuai prioritas
-            foreach (['Driver cum guide', 'Only Driver', 'Outsource'] as $role) {
-                if (!empty($availableDriversByRole[$role])) {
-                    // Jika ada driver dengan role ini, urutkan berdasarkan jumlah trip
-                    usort($availableDriversByRole[$role], function($a, $b) {
-                        return $a['trip_count'] - $b['trip_count'];
-                    });
-                    
-                    // Pilih driver dengan jumlah trip terkecil dari role ini
-                    $selectedDriver = $availableDriversByRole[$role][0];
-                    break; // Keluar dari loop setelah menemukan driver
-                }
-            }
-        } else {
-            // Untuk > 3 pax, SELALU gunakan driver dengan id 9 (GARAGE) meskipun ada konflik
-            foreach ($data['driver'] as $driver) {
-                if ($driver['id'] == 9) {
+
+            // Panggil fungsi getDataPlotting
+            $data = $this->getDataPlotting($params);
+
+            // ===== PLOTTING DRIVER =====
+            $selectedDriver = null;
+            $allAvailableDrivers = [];
+            $driverConflictInfo = null;
+
+            // Logika berbeda berdasarkan jumlah penumpang
+            if ($booking->total_pax <= 3) {
+                // Array untuk menyimpan driver yang tersedia, dikelompokkan berdasarkan role
+                $availableDriversByRole = [
+                    'Driver cum guide' => [],
+                    'Only Driver' => [],
+                    'Outsource' => []
+                ];
+
+                // Untuk <= 3 pax, cari driver berdasarkan prioritas role
+                foreach ($data['driver'] as $driver) {
                     $driverId = $driver['id'];
-                    
-                    // Cek konflik untuk informasi saja, bukan untuk menentukan ketersediaan
+
+                    // Cek apakah driver tersedia menurut data
+                    $isAvailable = $driver['status'] == 'Tersedia';
+
+                    // Cek konflik dengan plotting yang telah dilakukan dalam simulasi
                     $hasConflict = false;
                     if (isset($simulatedDriverPlottings[$driverId])) {
                         foreach ($simulatedDriverPlottings[$driverId] as $plot) {
                             // Cek apakah ada overlap tanggal
                             $plotStart = $plot['start_date'];
                             $plotEnd = $plot['end_date'];
-                            
+
                             if (
+                                // Booking baru mulai di tengah plotting yang ada
                                 ($tripStartDate >= $plotStart && $tripStartDate <= $plotEnd) ||
+                                // Booking baru berakhir di tengah plotting yang ada
                                 ($tripEndDate >= $plotStart && $tripEndDate <= $plotEnd) ||
+                                // Booking baru melingkupi plotting yang ada
                                 ($tripStartDate <= $plotStart && $tripEndDate >= $plotEnd)
                             ) {
                                 $hasConflict = true;
-                                $driverConflictInfo = [
-                                    'booking_id' => $plot['booking_id'],
-                                    'start_date' => $plotStart,
-                                    'end_date' => $plotEnd
-                                ];
                                 break;
                             }
                         }
                     }
-                    
-                    // GARAGE driver selalu tersedia bahkan jika ada konflik
-                    $driver['status'] = $hasConflict 
-                        ? 'Tersedia (Konflik, tapi tetap digunakan untuk > 3 pax)' 
-                        : 'Tersedia (Auto-selected for large groups)';
-                    
-                    $driver['trip_count'] = isset($driverTrips[$driverId]['count']) ? $driverTrips[$driverId]['count'] : 0;
-                    $selectedDriver = $driver;
-                    $allAvailableDrivers[] = $driver;
-                    
-                    // Tambahkan informasi konflik jika ada
-                    if ($hasConflict) {
-                        $selectedDriver['conflict_info'] = $driverConflictInfo;
+
+                    // Hanya pertimbangkan driver yang tersedia dan tidak memiliki konflik
+                    if ($isAvailable && !$hasConflict) {
+                        $role = $driver['new_role'] ?? 'Unknown'; // Default jika tidak ada role
+
+                        // Tambahkan jumlah trip yang sudah dihitung
+                        $driver['trip_count'] = isset($driverTrips[$driverId]['count']) ? $driverTrips[$driverId]['count'] : 0;
+
+                        // Kelompokkan driver berdasarkan role
+                        if ($role == 'Driver cum guide') {
+                            $availableDriversByRole['Driver cum guide'][] = $driver;
+                        } elseif ($role == 'Only Driver') {
+                            $availableDriversByRole['Only Driver'][] = $driver;
+                        } elseif ($role == 'Outsource') {
+                            $availableDriversByRole['Outsource'][] = $driver;
+                        }
+
+                        // Tambahkan ke daftar semua driver tersedia
+                        $allAvailableDrivers[] = $driver;
                     }
-                    
-                    break; // Keluar dari loop setelah menemukan GARAGE
+                }
+
+                // Pilih driver berdasarkan prioritas role dan jumlah trip
+                // Cek setiap role sesuai prioritas
+                foreach (['Driver cum guide', 'Only Driver', 'Outsource'] as $role) {
+                    if (!empty($availableDriversByRole[$role])) {
+                        // Jika ada driver dengan role ini, urutkan berdasarkan jumlah trip
+                        usort($availableDriversByRole[$role], function ($a, $b) {
+                            return $a['trip_count'] - $b['trip_count'];
+                        });
+
+                        // Pilih driver dengan jumlah trip terkecil dari role ini
+                        $selectedDriver = $availableDriversByRole[$role][0];
+                        break; // Keluar dari loop setelah menemukan driver
+                    }
+                }
+            } else {
+                // Untuk > 3 pax, SELALU gunakan driver dengan id 9 (GARAGE) meskipun ada konflik
+                foreach ($data['driver'] as $driver) {
+                    if ($driver['id'] == 9) {
+                        $driverId = $driver['id'];
+
+                        // Cek konflik untuk informasi saja, bukan untuk menentukan ketersediaan
+                        $hasConflict = false;
+                        if (isset($simulatedDriverPlottings[$driverId])) {
+                            foreach ($simulatedDriverPlottings[$driverId] as $plot) {
+                                // Cek apakah ada overlap tanggal
+                                $plotStart = $plot['start_date'];
+                                $plotEnd = $plot['end_date'];
+
+                                if (
+                                    ($tripStartDate >= $plotStart && $tripStartDate <= $plotEnd) ||
+                                    ($tripEndDate >= $plotStart && $tripEndDate <= $plotEnd) ||
+                                    ($tripStartDate <= $plotStart && $tripEndDate >= $plotEnd)
+                                ) {
+                                    $hasConflict = true;
+                                    $driverConflictInfo = [
+                                        'booking_id' => $plot['booking_id'],
+                                        'start_date' => $plotStart,
+                                        'end_date' => $plotEnd
+                                    ];
+                                    break;
+                                }
+                            }
+                        }
+
+                        // GARAGE driver selalu tersedia bahkan jika ada konflik
+                        $driver['status'] = $hasConflict
+                            ? 'Tersedia (Konflik, tapi tetap digunakan untuk > 3 pax)'
+                            : 'Tersedia (Auto-selected for large groups)';
+
+                        $driver['trip_count'] = isset($driverTrips[$driverId]['count']) ? $driverTrips[$driverId]['count'] : 0;
+                        $selectedDriver = $driver;
+                        $allAvailableDrivers[] = $driver;
+
+                        // Tambahkan informasi konflik jika ada
+                        if ($hasConflict) {
+                            $selectedDriver['conflict_info'] = $driverConflictInfo;
+                        }
+
+                        break; // Keluar dari loop setelah menemukan GARAGE
+                    }
                 }
             }
-        }
-        
-        // Jika driver terpilih, update jumlah trip dan catat plotting
-        if ($selectedDriver) {
-            $driverId = $selectedDriver['id'];
-            
-            // Update jumlah trip
-            if (!isset($driverTrips[$driverId])) {
-                $driverTrips[$driverId] = [
-                    'name' => $selectedDriver['name'],
-                    'role' => $selectedDriver['new_role'] ?? 'Unknown',
-                    'count' => 0
+
+            // Jika driver terpilih, update jumlah trip dan catat plotting
+            if ($selectedDriver) {
+                $driverId = $selectedDriver['id'];
+
+                // Update jumlah trip
+                if (!isset($driverTrips[$driverId])) {
+                    $driverTrips[$driverId] = [
+                        'name' => $selectedDriver['name'],
+                        'role' => $selectedDriver['new_role'] ?? 'Unknown',
+                        'count' => 0
+                    ];
+                }
+                $driverTrips[$driverId]['count']++;
+
+                // Update trip_count di selectedDriver
+                $selectedDriver['trip_count'] = $driverTrips[$driverId]['count'];
+
+                // Catat plotting untuk pengecekan konflik selanjutnya
+                if (!isset($simulatedDriverPlottings[$driverId])) {
+                    $simulatedDriverPlottings[$driverId] = [];
+                }
+                $simulatedDriverPlottings[$driverId][] = [
+                    'booking_id' => $booking->id,
+                    'start_date' => $tripStartDate,
+                    'end_date' => $tripEndDate
                 ];
             }
-            $driverTrips[$driverId]['count']++;
-            
-            // Update trip_count di selectedDriver
-            $selectedDriver['trip_count'] = $driverTrips[$driverId]['count'];
-            
-            // Catat plotting untuk pengecekan konflik selanjutnya
-            if (!isset($simulatedDriverPlottings[$driverId])) {
-                $simulatedDriverPlottings[$driverId] = [];
+
+            // ===== PLOTTING GUIDE =====
+            $selectedEscortGuide = null;
+            $selectedIjenGuide = null;
+            $allAvailableGuides = [];
+
+            // Menentukan apakah perlu escort guide berdasarkan pax dan driver yang dipilih
+            $needEscortGuide = false;
+            if ($booking->total_pax > 3) {
+                // Selalu perlu escort guide untuk > 3 pax
+                $needEscortGuide = true;
+            } else if ($selectedDriver && ($selectedDriver['new_role'] == 'Only Driver' || $selectedDriver['new_role'] == 'Outsource')) {
+                // Perlu escort guide jika driver adalah Only Driver atau Outsource meskipun pax <= 3
+                $needEscortGuide = true;
             }
-            $simulatedDriverPlottings[$driverId][] = [
-                'booking_id' => $booking->id,
-                'start_date' => $tripStartDate,
-                'end_date' => $tripEndDate
-            ];
-        }
-        
-        // ===== PLOTTING GUIDE =====
-        $selectedEscortGuide = null;
-        $selectedIjenGuide = null;
-        $allAvailableGuides = [];
-        
-        // Menentukan apakah perlu escort guide berdasarkan pax dan driver yang dipilih
-        $needEscortGuide = false;
-        if ($booking->total_pax > 3) {
-            // Selalu perlu escort guide untuk > 3 pax
-            $needEscortGuide = true;
-        } else if ($selectedDriver && ($selectedDriver['new_role'] == 'Only Driver' || $selectedDriver['new_role'] == 'Outsource')) {
-            // Perlu escort guide jika driver adalah Only Driver atau Outsource meskipun pax <= 3
-            $needEscortGuide = true;
-        }
-        
-        // Cek apakah perlu guide ijen berdasarkan keberadaan nilai di at_bondowoso
-        $needIjenGuide = false;
-        $ijenDate = null;
-        if (!empty($booking->at_bondowoso)) {
-            $needIjenGuide = true;
-            $ijenDate = $booking->at_bondowoso;
-        }
-        
-        // Jika perlu escort guide, cari berdasarkan prioritas
-        if ($needEscortGuide) {
-            // Array untuk menyimpan guide yang tersedia, dikelompokkan berdasarkan role
-            $availableGuidesByRole = [
-                'Escort Guide (Senior)' => [],
-                'Escort Guide (Junior)' => []
-            ];
-            
-            foreach ($data['guide'] as $guide) {
-                $guideId = $guide['id'];
-                
-                // Cek apakah guide tersedia dan bisa menjadi escort guide
-                $isAvailable = $guide['status'] == 'Tersedia';
-                $isEscortGuide = false;
-                
-                if (isset($guide['dynamic_roles']) && in_array('Escort', $guide['dynamic_roles'])) {
-                    $isEscortGuide = true;
+
+            // Cek apakah perlu guide ijen berdasarkan keberadaan nilai di at_bondowoso dan aturan JVTO & KLOOK
+            $needIjenGuide = false;
+            $ijenDate = null;
+
+            if (!empty($booking->at_bondowoso)) {
+                // Default: perlu guide ijen jika ada nilai at_bondowoso
+                $needIjenGuide = true;
+                $ijenDate = $booking->at_bondowoso;
+
+                // Revisi aturan: untuk jvto & klook jika kurang dari 6 pax
+                if ($orderChannel != 'TWT' && $booking->total_pax < 6) {
+                    // Jika driver adalah 'Driver cum guide', tetap butuh ijen guide
+                    // Jika driver bukan 'Driver cum guide', tidak perlu ijen guide
+                    if ($selectedDriver && $selectedDriver['new_role'] != 'Driver cum guide') {
+                        $needIjenGuide = false;
+                    }
                 }
-                
-                // Cek konflik dengan plotting yang telah dilakukan dalam simulasi
-                $hasConflict = false;
-                if (isset($simulatedGuidePlottings[$guideId])) {
-                    foreach ($simulatedGuidePlottings[$guideId] as $plot) {
-                        // Cek tipe plotting
-                        if ($plot['type'] == 'Escort') {
-                            // Cek apakah ada overlap tanggal
-                            $plotStart = $plot['start_date'];
-                            $plotEnd = $plot['end_date'];
-                            
-                            if (
-                                ($tripStartDate >= $plotStart && $tripStartDate <= $plotEnd) ||
-                                ($tripEndDate >= $plotStart && $tripEndDate <= $plotEnd) ||
-                                ($tripStartDate <= $plotStart && $tripEndDate >= $plotEnd)
-                            ) {
-                                $hasConflict = true;
-                                break;
-                            }
-                        } else if ($plot['type'] == 'Ijen') {
-                            // Jika guide sudah dijadwalkan sebagai ijen guide pada tanggal dalam rentang trip ini
-                            $plotIjenDate = $plot['ijen_date'];
-                            if ($plotIjenDate >= $tripStartDate && $plotIjenDate <= $tripEndDate) {
-                                $hasConflict = true;
-                                break;
+            }
+
+            // Jika perlu escort guide, cari berdasarkan prioritas
+            if ($needEscortGuide) {
+                // Array untuk menyimpan guide yang tersedia, dikelompokkan berdasarkan role
+                $availableGuidesByRole = [
+                    'Escort Guide (Senior)' => [],
+                    'Escort Guide (Junior)' => []
+                ];
+
+                foreach ($data['guide'] as $guide) {
+                    $guideId = $guide['id'];
+
+                    // Cek apakah guide tersedia dan bisa menjadi escort guide
+                    $isAvailable = $guide['status'] == 'Tersedia';
+                    $isEscortGuide = false;
+
+                    if (isset($guide['dynamic_roles']) && in_array('Escort', $guide['dynamic_roles'])) {
+                        $isEscortGuide = true;
+                    }
+
+                    // Cek konflik dengan plotting yang telah dilakukan dalam simulasi
+                    $hasConflict = false;
+                    if (isset($simulatedGuidePlottings[$guideId])) {
+                        foreach ($simulatedGuidePlottings[$guideId] as $plot) {
+                            // Cek tipe plotting
+                            if ($plot['type'] == 'Escort') {
+                                // Cek apakah ada overlap tanggal
+                                $plotStart = $plot['start_date'];
+                                $plotEnd = $plot['end_date'];
+
+                                if (
+                                    ($tripStartDate >= $plotStart && $tripStartDate <= $plotEnd) ||
+                                    ($tripEndDate >= $plotStart && $tripEndDate <= $plotEnd) ||
+                                    ($tripStartDate <= $plotStart && $tripEndDate >= $plotEnd)
+                                ) {
+                                    $hasConflict = true;
+                                    break;
+                                }
+                            } else if ($plot['type'] == 'Ijen') {
+                                // Jika guide sudah dijadwalkan sebagai ijen guide pada tanggal dalam rentang trip ini
+                                $plotIjenDate = $plot['ijen_date'];
+                                if ($plotIjenDate >= $tripStartDate && $plotIjenDate <= $tripEndDate) {
+                                    $hasConflict = true;
+                                    break;
+                                }
                             }
                         }
                     }
-                }
-                
-                // Hanya pertimbangkan guide yang tersedia, bisa menjadi escort, dan tidak memiliki konflik
-                if ($isAvailable && $isEscortGuide && !$hasConflict) {
-                    $role = $guide['new_role'] ?? 'Unknown'; // Default jika tidak ada role
-                    
-                    // Tambahkan jumlah trip yang sudah dihitung
-                    $guide['trip_count'] = isset($guideTrips[$guideId]['count']) ? $guideTrips[$guideId]['count'] : 0;
-                    
-                    // Kelompokkan guide berdasarkan role
-                    if (strpos($role, 'Senior') !== false) {
-                        $availableGuidesByRole['Escort Guide (Senior)'][] = $guide;
-                    } elseif (strpos($role, 'Junior') !== false) {
-                        $availableGuidesByRole['Escort Guide (Junior)'][] = $guide;
+
+                    // Hanya pertimbangkan guide yang tersedia, bisa menjadi escort, dan tidak memiliki konflik
+                    if ($isAvailable && $isEscortGuide && !$hasConflict) {
+                        $role = $guide['new_role'] ?? 'Unknown'; // Default jika tidak ada role
+
+                        // Tambahkan jumlah trip total dan per tipe
+                        if (isset($guideTrips[$guideId])) {
+                            $guide['trip_count'] = $guideTrips[$guideId]['count'];
+                            $guide['escort_count'] = $guideTrips[$guideId]['escort_count'];
+                            $guide['ijen_count'] = $guideTrips[$guideId]['ijen_count'];
+                        } else {
+                            $guide['trip_count'] = 0;
+                            $guide['escort_count'] = 0;
+                            $guide['ijen_count'] = 0;
+                        }
+
+                        // Kelompokkan guide berdasarkan role
+                        if (strpos($role, 'Senior') !== false) {
+                            $availableGuidesByRole['Escort Guide (Senior)'][] = $guide;
+                        } elseif (strpos($role, 'Junior') !== false) {
+                            $availableGuidesByRole['Escort Guide (Junior)'][] = $guide;
+                        }
+
+                        // Tambahkan ke daftar semua guide tersedia
+                        $allAvailableGuides[] = $guide;
                     }
-                    
-                    // Tambahkan ke daftar semua guide tersedia
-                    $allAvailableGuides[] = $guide;
+                }
+
+                // Pilih guide berdasarkan prioritas role dan jumlah trip
+                foreach (['Escort Guide (Senior)', 'Escort Guide (Junior)'] as $role) {
+                    if (!empty($availableGuidesByRole[$role])) {
+                        // Jika ada guide dengan role ini, urutkan berdasarkan jumlah trip escort
+                        usort($availableGuidesByRole[$role], function ($a, $b) {
+                            // Prioritaskan berdasarkan jumlah trip escort
+                            if ($a['escort_count'] != $b['escort_count']) {
+                                return $a['escort_count'] - $b['escort_count'];
+                            }
+                            // Jika sama, pertimbangkan jumlah trip total
+                            return $a['trip_count'] - $b['trip_count'];
+                        });
+
+                        // Pilih guide dengan jumlah trip terkecil dari role ini
+                        $selectedEscortGuide = $availableGuidesByRole[$role][0];
+                        break; // Keluar dari loop setelah menemukan guide
+                    }
                 }
             }
-            
-            // Pilih guide berdasarkan prioritas role dan jumlah trip
-            foreach (['Escort Guide (Senior)', 'Escort Guide (Junior)'] as $role) {
-                if (!empty($availableGuidesByRole[$role])) {
-                    // Jika ada guide dengan role ini, urutkan berdasarkan jumlah trip
-                    usort($availableGuidesByRole[$role], function($a, $b) {
+
+            // Jika perlu guide ijen, cari berdasarkan prioritas
+            if ($needIjenGuide) {
+                // Array untuk menyimpan guide yang tersedia untuk Ijen
+                $availableIjenGuides = [];
+                $localIjenGuide = null;
+
+                foreach ($data['guide'] as $guide) {
+                    $guideId = $guide['id'];
+
+                    // Cek apakah guide tersedia dan bisa menjadi ijen guide
+                    $isAvailable = $guide['status'] == 'Tersedia';
+                    $isIjenGuide = false;
+                    $isLocalGuide = false;
+
+                    if (isset($guide['dynamic_roles']) && in_array('Ijen', $guide['dynamic_roles'])) {
+                        $isIjenGuide = true;
+                    }
+
+                    // Cek apakah ini adalah Local Ijen Guide
+                    if ($guide['name'] == 'Local Ijen') {
+                        $isLocalGuide = true;
+                    }
+
+                    // Cek konflik dengan plotting yang telah dilakukan dalam simulasi
+                    $hasConflict = false;
+                    if (!$isLocalGuide && isset($simulatedGuidePlottings[$guideId])) {
+                        foreach ($simulatedGuidePlottings[$guideId] as $plot) {
+                            // Untuk Ijen Guide, kita hanya memeriksa konflik pada tanggal Ijen spesifik
+                            if ($plot['type'] == 'Ijen' && $plot['ijen_date'] == $ijenDate) {
+                                $hasConflict = true;
+                                break;
+                            }
+                            // Untuk Escort Guide, kita memeriksa apakah tanggal Ijen berada dalam rentang tanggal escort
+                            else if ($plot['type'] == 'Escort') {
+                                $plotStart = $plot['start_date'];
+                                $plotEnd = $plot['end_date'];
+
+                                if ($ijenDate >= $plotStart && $ijenDate <= $plotEnd) {
+                                    $hasConflict = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    // Pastikan escort guide dan ijen guide tidak crew yang sama
+                    if (
+                        $selectedEscortGuide &&
+                        $guideId == $selectedEscortGuide['id']
+                    ) {
+                        $hasConflict = true; // Tandai sebagai konflik jika sama dengan escort guide
+                    }
+
+                    // Tambahkan jumlah trip total dan per tipe
+                    if (isset($guideTrips[$guideId])) {
+                        $guide['trip_count'] = $guideTrips[$guideId]['count'];
+                        $guide['escort_count'] = $guideTrips[$guideId]['escort_count'];
+                        $guide['ijen_count'] = $guideTrips[$guideId]['ijen_count'];
+                    } else {
+                        $guide['trip_count'] = 0;
+                        $guide['escort_count'] = 0;
+                        $guide['ijen_count'] = 0;
+                    }
+
+                    // Untuk Local Ijen Guide, selalu tersedia meskipun ada konflik
+                    if ($isLocalGuide) {
+                        $localIjenGuide = $guide;
+                    }
+                    // Untuk guide lain, hanya pertimbangkan yang tersedia, bisa menjadi ijen guide, dan tidak memiliki konflik
+                    else if ($isAvailable && $isIjenGuide && !$hasConflict) {
+                        $availableIjenGuides[] = $guide;
+                    }
+                }
+
+                // Jika ada guide Ijen yang tersedia, pilih berdasarkan jumlah trip
+                if (!empty($availableIjenGuides)) {
+                    // Urutkan berdasarkan jumlah trip ijen
+                    usort($availableIjenGuides, function ($a, $b) {
+                        // Prioritaskan berdasarkan jumlah trip ijen
+                        if ($a['ijen_count'] != $b['ijen_count']) {
+                            return $a['ijen_count'] - $b['ijen_count'];
+                        }
+                        // Jika sama, pertimbangkan jumlah trip total
                         return $a['trip_count'] - $b['trip_count'];
                     });
-                    
-                    // Pilih guide dengan jumlah trip terkecil dari role ini
-                    $selectedEscortGuide = $availableGuidesByRole[$role][0];
-                    break; // Keluar dari loop setelah menemukan guide
+
+                    // Pilih guide dengan jumlah trip terkecil
+                    $selectedIjenGuide = $availableIjenGuides[0];
+                }
+                // Jika tidak ada yang tersedia, gunakan Local Ijen Guide
+                else if ($localIjenGuide) {
+                    $selectedIjenGuide = $localIjenGuide;
                 }
             }
-        }
-        
-        // Jika perlu guide ijen, cari berdasarkan prioritas
-        if ($needIjenGuide) {
-            // Array untuk menyimpan guide yang tersedia untuk Ijen
-            $availableIjenGuides = [];
-            $localIjenGuide = null;
-            
-            foreach ($data['guide'] as $guide) {
-                $guideId = $guide['id'];
-                
-                // Cek apakah guide tersedia dan bisa menjadi ijen guide
-                $isAvailable = $guide['status'] == 'Tersedia';
-                $isIjenGuide = false;
-                $isLocalGuide = false;
-                
-                if (isset($guide['dynamic_roles']) && in_array('Ijen', $guide['dynamic_roles'])) {
-                    $isIjenGuide = true;
+
+            // Jika escort guide terpilih, update jumlah trip dan catat plotting
+            if ($selectedEscortGuide) {
+                $guideId = $selectedEscortGuide['id'];
+
+                // Update jumlah trip
+                if (!isset($guideTrips[$guideId])) {
+                    $guideTrips[$guideId] = [
+                        'name' => $selectedEscortGuide['name'],
+                        'role' => $selectedEscortGuide['new_role'] ?? 'Unknown',
+                        'count' => 0,
+                        'escort_count' => 0,
+                        'ijen_count' => 0
+                    ];
                 }
-                
-                // Cek apakah ini adalah Local Ijen Guide
-                if ($guide['name'] == 'Local Ijen') {
-                    $isLocalGuide = true;
+                $guideTrips[$guideId]['count']++;
+                $guideTrips[$guideId]['escort_count']++;
+
+                // Update trip_count di selectedEscortGuide
+                $selectedEscortGuide['trip_count'] = $guideTrips[$guideId]['count'];
+                $selectedEscortGuide['escort_count'] = $guideTrips[$guideId]['escort_count'];
+                $selectedEscortGuide['ijen_count'] = $guideTrips[$guideId]['ijen_count'];
+
+                // Catat plotting untuk pengecekan konflik selanjutnya
+                if (!isset($simulatedGuidePlottings[$guideId])) {
+                    $simulatedGuidePlottings[$guideId] = [];
                 }
-                
-                // Cek konflik dengan plotting yang telah dilakukan dalam simulasi
-                $hasConflict = false;
-                if (!$isLocalGuide && isset($simulatedGuidePlottings[$guideId])) {
-                    foreach ($simulatedGuidePlottings[$guideId] as $plot) {
-                        // Untuk Ijen Guide, kita hanya memeriksa konflik pada tanggal Ijen spesifik
-                        if ($plot['type'] == 'Ijen' && $plot['ijen_date'] == $ijenDate) {
-                            $hasConflict = true;
-                            break;
+                $simulatedGuidePlottings[$guideId][] = [
+                    'booking_id' => $booking->id,
+                    'start_date' => $tripStartDate,
+                    'end_date' => $tripEndDate,
+                    'type' => 'Escort'
+                ];
+            }
+
+            // Jika ijen guide terpilih, update jumlah trip dan catat plotting
+            if ($selectedIjenGuide) {
+                $guideId = $selectedIjenGuide['id'];
+
+                // Update jumlah trip
+                if (!isset($guideTrips[$guideId])) {
+                    $guideTrips[$guideId] = [
+                        'name' => $selectedIjenGuide['name'],
+                        'role' => $selectedIjenGuide['new_role'] ?? 'Unknown',
+                        'count' => 0,
+                        'escort_count' => 0,
+                        'ijen_count' => 0
+                    ];
+                }
+                $guideTrips[$guideId]['count']++;
+                $guideTrips[$guideId]['ijen_count']++;
+
+                // Update trip_count di selectedIjenGuide
+                $selectedIjenGuide['trip_count'] = $guideTrips[$guideId]['count'];
+                $selectedIjenGuide['escort_count'] = $guideTrips[$guideId]['escort_count'];
+                $selectedIjenGuide['ijen_count'] = $guideTrips[$guideId]['ijen_count'];
+
+                // Catat plotting untuk pengecekan konflik selanjutnya
+                if (!isset($simulatedGuidePlottings[$guideId])) {
+                    $simulatedGuidePlottings[$guideId] = [];
+                }
+                $simulatedGuidePlottings[$guideId][] = [
+                    'booking_id' => $booking->id,
+                    'ijen_date' => $ijenDate,
+                    'type' => 'Ijen'
+                ];
+            }
+
+            // Tambahkan ke hasil
+            $results[] = [
+                'booking_id' => $booking->id,
+                'customer_name' => $booking->user->name,
+                'travel_dates' => $booking->travel_date_start . ' s/d ' . $booking->travel_date_end,
+                'driver_dates' => $tripStartDate . ' s/d ' . $tripEndDate,
+                'ijen_date' => $needIjenGuide ? $ijenDate : null,
+                'is_shuttle' => $booking->is_shuttle == '1' ? 'Ya' : 'Tidak',
+                'total_pax' => $booking->total_pax,
+                'agent_id' => $booking->agent_id,
+                'booking_category_id' => $booking->booking_category_id,
+                'order_channel' => $orderChannel,
+                'need_escort_guide' => $needEscortGuide,
+                'need_ijen_guide' => $needIjenGuide,
+                'selected_driver' => $selectedDriver,
+                'selected_escort_guide' => $selectedEscortGuide,
+                'selected_ijen_guide' => $selectedIjenGuide,
+                'available_drivers' => count($allAvailableDrivers),
+                'driver_options' => array_map(function ($driver) {
+                    return [
+                        'id' => $driver['id'],
+                        'name' => $driver['name'],
+                        'new_role' => $driver['new_role'] ?? 'Unknown',
+                        'trip_count' => $driver['trip_count'],
+                        'conflict_info' => isset($driver['conflict_info']) ? $driver['conflict_info'] : null
+                    ];
+                }, $allAvailableDrivers),
+                'guide_options' => array_map(function ($guide) {
+                    $availableRoles = [];
+                    if (isset($guide['dynamic_roles'])) {
+                        if (in_array('Escort', $guide['dynamic_roles'])) {
+                            $availableRoles[] = 'Escort Guide';
                         }
-                        // Untuk Escort Guide, kita memeriksa apakah tanggal Ijen berada dalam rentang tanggal escort
-                        else if ($plot['type'] == 'Escort') {
-                            $plotStart = $plot['start_date'];
-                            $plotEnd = $plot['end_date'];
-                            
-                            if ($ijenDate >= $plotStart && $ijenDate <= $plotEnd) {
-                                $hasConflict = true;
-                                break;
-                            }
+                        if (in_array('Ijen', $guide['dynamic_roles'])) {
+                            $availableRoles[] = 'Ijen Guide';
                         }
                     }
-                }
-                
-                // Untuk Local Ijen Guide, selalu tersedia meskipun ada konflik
-                if ($isLocalGuide) {
-                    $guide['trip_count'] = isset($guideTrips[$guideId]['count']) ? $guideTrips[$guideId]['count'] : 0;
-                    $localIjenGuide = $guide;
-                }
-                // Untuk guide lain, hanya pertimbangkan yang tersedia, bisa menjadi ijen guide, dan tidak memiliki konflik
-                else if ($isAvailable && $isIjenGuide && !$hasConflict) {
-                    $guide['trip_count'] = isset($guideTrips[$guideId]['count']) ? $guideTrips[$guideId]['count'] : 0;
-                    $availableIjenGuides[] = $guide;
-                }
-            }
-            
-            // Jika ada guide Ijen yang tersedia, pilih berdasarkan jumlah trip
-            if (!empty($availableIjenGuides)) {
-                // Urutkan berdasarkan jumlah trip
-                usort($availableIjenGuides, function($a, $b) {
-                    return $a['trip_count'] - $b['trip_count'];
-                });
-                
-                // Pilih guide dengan jumlah trip terkecil
-                $selectedIjenGuide = $availableIjenGuides[0];
-            } 
-            // Jika tidak ada yang tersedia, gunakan Local Ijen Guide
-            else if ($localIjenGuide) {
-                $selectedIjenGuide = $localIjenGuide;
-            }
-        }
-        
-        // Jika escort guide terpilih, update jumlah trip dan catat plotting
-        if ($selectedEscortGuide) {
-            $guideId = $selectedEscortGuide['id'];
-            
-            // Update jumlah trip
-            if (!isset($guideTrips[$guideId])) {
-                $guideTrips[$guideId] = [
-                    'name' => $selectedEscortGuide['name'],
-                    'role' => $selectedEscortGuide['new_role'] ?? 'Unknown',
-                    'count' => 0
-                ];
-            }
-            $guideTrips[$guideId]['count']++;
-            
-            // Update trip_count di selectedEscortGuide
-            $selectedEscortGuide['trip_count'] = $guideTrips[$guideId]['count'];
-            
-            // Catat plotting untuk pengecekan konflik selanjutnya
-            if (!isset($simulatedGuidePlottings[$guideId])) {
-                $simulatedGuidePlottings[$guideId] = [];
-            }
-            $simulatedGuidePlottings[$guideId][] = [
-                'booking_id' => $booking->id,
-                'start_date' => $tripStartDate,
-                'end_date' => $tripEndDate,
-                'type' => 'Escort'
+
+                    return [
+                        'id' => $guide['id'],
+                        'name' => $guide['name'],
+                        'new_role' => $guide['new_role'] ?? 'Unknown',
+                        'available_roles' => $availableRoles,
+                        'available_as' => !empty($availableRoles) ? implode(' & ', $availableRoles) : 'Unknown',
+                        'trip_count' => $guide['trip_count'] ?? 0,
+                        'escort_count' => $guide['escort_count'] ?? 0,
+                        'ijen_count' => $guide['ijen_count'] ?? 0,
+                        'trip_details' => sprintf(
+                            'Total: %d (Escort: %d, Ijen: %d)',
+                            $guide['trip_count'] ?? 0,
+                            $guide['escort_count'] ?? 0,
+                            $guide['ijen_count'] ?? 0
+                        )
+                    ];
+                }, $allAvailableGuides),
+                'current_driver_trips' => $driverTrips,
+                'current_guide_trips' => $guideTrips
             ];
         }
-        
-        // Jika ijen guide terpilih, update jumlah trip dan catat plotting
-        if ($selectedIjenGuide) {
-            $guideId = $selectedIjenGuide['id'];
-            
-            // Update jumlah trip
-            if (!isset($guideTrips[$guideId])) {
-                $guideTrips[$guideId] = [
-                    'name' => $selectedIjenGuide['name'],
-                    'role' => $selectedIjenGuide['new_role'] ?? 'Unknown',
-                    'count' => 0
-                ];
+
+        // Modifikasi struktur $guideTrips untuk output
+        foreach ($guideTrips as $guideId => &$guideInfo) {
+            $guideInfo['trip_details'] = sprintf(
+                'Total: %d (Escort: %d, Ijen: %d)',
+                $guideInfo['count'],
+                $guideInfo['escort_count'],
+                $guideInfo['ijen_count']
+            );
+        }
+
+        // Urutkan driver trips dan guide trips berdasarkan jumlah trip untuk laporan
+        uasort($driverTrips, function ($a, $b) {
+            return $b['count'] - $a['count']; // Urutan dari terbanyak ke tersedikit
+        });
+
+        uasort($guideTrips, function ($a, $b) {
+            return $b['count'] - $a['count']; // Urutan dari terbanyak ke tersedikit
+        });
+
+        // Persiapkan data schedule
+        $schedules = [];
+        foreach ($results as $result) {
+            // Tentukan driver yang dipilih
+            $selectedDriver = $result['selected_driver'] ? $result['selected_driver']['name'] : "(No Crew Available)";
+            // Tentukan escort guide yang dipilih
+            $selectedEscortGuide = '-';
+            if ($result['need_escort_guide']) {
+                if ($result['selected_escort_guide']) {
+                    $selectedEscortGuide = $result['selected_escort_guide']['name'];
+                } else {
+                    $selectedEscortGuide = "(No Crew Available)";
+                }
             }
-            $guideTrips[$guideId]['count']++;
-            
-            // Update trip_count di selectedIjenGuide
-            $selectedIjenGuide['trip_count'] = $guideTrips[$guideId]['count'];
-            
-            // Catat plotting untuk pengecekan konflik selanjutnya
-            if (!isset($simulatedGuidePlottings[$guideId])) {
-                $simulatedGuidePlottings[$guideId] = [];
+
+            // Tentukan ijen guide yang dipilih
+            $selectedIjenGuide = '-';
+            if ($result['need_ijen_guide']) {
+                if ($result['selected_ijen_guide']) {
+                    $selectedIjenGuide = $result['selected_ijen_guide']['name'];
+                } else {
+                    $selectedIjenGuide = "(No Crew Available)";
+                }
             }
-            $simulatedGuidePlottings[$guideId][] = [
-                'booking_id' => $booking->id,
-                'ijen_date' => $ijenDate,
-                'type' => 'Ijen'
+
+            // Parse tanggal dari string format
+            $dateRange = explode(' s/d ', $result['travel_dates']);
+            $startDate = trim($dateRange[0]);
+            $endDate = trim($dateRange[1]);
+
+            // Hitung durasi (dalam hari)
+            $duration = Carbon::parse($startDate)->diffInDays(Carbon::parse($endDate)) + 1; // +1 karena termasuk hari terakhir
+
+            $schedules[] = [
+                'booking_id' => $result['booking_id'],
+                'customer' => $result['customer_name'],
+                'num_of_pax' => $result['total_pax'],
+                'duration' => $duration,
+                'start_date' => $startDate,
+                'end_date' => $endDate,
+                'is_shuttle' => $result['is_shuttle'],
+                'driver' => $selectedDriver,
+                'escort_guide' => $selectedEscortGuide,
+                'ijen_guide' => $selectedIjenGuide,
+                'order_channel' => $result['order_channel']
             ];
         }
-        
-        // Tambahkan ke hasil
-        $results[] = [
-            'booking_id' => $booking->id,
-            'customer_name' => $booking->user->name,
-            'travel_dates' => $booking->travel_date_start . ' s/d ' . $booking->travel_date_end,
-            'driver_dates' => $tripStartDate . ' s/d ' . $tripEndDate,
-            'ijen_date' => $needIjenGuide ? $ijenDate : null,
-            'is_shuttle' => $booking->is_shuttle == '1' ? 'Ya' : 'Tidak',
-            'total_pax' => $booking->total_pax,
-            'agent_id' => $booking->agent_id,
-            'booking_category_id' => $booking->booking_category_id,
-            'order_channel' => $orderChannel,
-            'need_escort_guide' => $needEscortGuide,
-            'need_ijen_guide' => $needIjenGuide,
-            'selected_driver' => $selectedDriver,
-            'selected_escort_guide' => $selectedEscortGuide,
-            'selected_ijen_guide' => $selectedIjenGuide,
-            'available_drivers' => count($allAvailableDrivers),
-            'driver_options' => array_map(function($driver) {
-                return [
-                    'id' => $driver['id'],
-                    'name' => $driver['name'],
-                    'new_role' => $driver['new_role'] ?? 'Unknown',
-                    'trip_count' => $driver['trip_count'],
-                    'conflict_info' => isset($driver['conflict_info']) ? $driver['conflict_info'] : null
-                ];
-            }, $allAvailableDrivers),
-            'guide_options' => array_map(function($guide) {
-                return [
-                    'id' => $guide['id'],
-                    'name' => $guide['name'],
-                    'new_role' => $guide['new_role'] ?? 'Unknown',
-                    'trip_count' => $guide['trip_count']
-                ];
-            }, $allAvailableGuides),
-            'current_driver_trips' => $driverTrips,
-            'current_guide_trips' => $guideTrips
+        // Urutkan schedule berdasarkan tanggal awal
+        usort($schedules, function ($a, $b) {
+            return strtotime($a['start_date']) - strtotime($b['start_date']);
+        });
+
+
+        return [
+            'total_processed' => count($results),
+            'final_driver_trips' => $driverTrips,
+            'final_guide_trips' => $guideTrips,
+            'simulation_driver_plottings' => $simulatedDriverPlottings,
+            'simulation_guide_plottings' => $simulatedGuidePlottings,
+            'schedules' => $schedules,
+            'results' => $results
         ];
     }
-    
-    // Urutkan driver trips dan guide trips berdasarkan jumlah trip untuk laporan
-    uasort($driverTrips, function($a, $b) {
-        return $b['count'] - $a['count']; // Urutan dari terbanyak ke tersedikit
-    });
-    
-    uasort($guideTrips, function($a, $b) {
-        return $b['count'] - $a['count']; // Urutan dari terbanyak ke tersedikit
-    });
-    
-    return [
-        'total_processed' => count($results),
-        'final_driver_trips' => $driverTrips,
-        'final_guide_trips' => $guideTrips,
-        'simulation_driver_plottings' => $simulatedDriverPlottings,
-        'simulation_guide_plottings' => $simulatedGuidePlottings,
-        'results' => $results
-    ];
-}
     public function plotting(Request $request)
     {
         try {
             DB::beginTransaction();
-            
+
             $booking = Booking::where('id', $request->booking_id)->first();
-            
+
             if (!$booking) {
                 throw new \Exception('Booking not found');
             }
 
             $dateStart = Carbon::parse($booking->travel_date_start);
             $dateEnd = Carbon::parse($booking->travel_date_end);
-            
+
             $night = $dateStart->diffInDays($dateEnd);
             $day = $night + 1;
-            
+
             // Delete existing records
             BookCar::where('booking_id', $request->booking_id)->delete();
             BookGuideDriver::where('booking_id', $request->booking_id)->delete();
-            
+
             // Save vehicles
             foreach ($request->vehicles as $value) {
                 $bookCar = new BookCar();
@@ -1880,14 +1985,14 @@ function massAutoPlotting(Request $request)
                 $bookCar->start_date = $booking->travel_date_start;
                 if ($booking->is_shuttle == '1') {
                     $bookCar->duration = $night;
-                    $bookCar->end_date = date('Y-m-d', strtotime($booking->travel_date_end." -1 days"));
+                    $bookCar->end_date = date('Y-m-d', strtotime($booking->travel_date_end . " -1 days"));
                 } else {
                     $bookCar->duration = $day;
                     $bookCar->end_date = $booking->travel_date_end;
                 }
                 $bookCar->save();
             }
-            
+
             // Save drivers
             foreach ($request->drivers as $value) {
                 $bookDriver = new BookGuideDriver();
@@ -1897,14 +2002,14 @@ function massAutoPlotting(Request $request)
                 $bookDriver->start_date = $booking->travel_date_start;
                 if ($booking->is_shuttle == '1') {
                     $bookDriver->duration = $night;
-                    $bookDriver->end_date = date('Y-m-d', strtotime($booking->travel_date_end." -1 days"));
+                    $bookDriver->end_date = date('Y-m-d', strtotime($booking->travel_date_end . " -1 days"));
                 } else {
                     $bookDriver->duration = $day;
                     $bookDriver->end_date = $booking->travel_date_end;
                 }
                 $bookDriver->save();
             }
-            
+
             // Save escort guides
             foreach ($request->escortGuides as $value) {
                 $bookDriver = new BookGuideDriver();
@@ -1914,14 +2019,14 @@ function massAutoPlotting(Request $request)
                 $bookDriver->start_date = $booking->travel_date_start;
                 if ($booking->is_shuttle == '1') {
                     $bookDriver->duration = $night;
-                    $bookDriver->end_date = date('Y-m-d', strtotime($booking->travel_date_end." -1 days"));
+                    $bookDriver->end_date = date('Y-m-d', strtotime($booking->travel_date_end . " -1 days"));
                 } else {
                     $bookDriver->duration = $day;
                     $bookDriver->end_date = $booking->travel_date_end;
                 }
                 $bookDriver->save();
             }
-            
+
             // Save ijen guides if applicable
             if ($booking->at_bondowoso) {
                 foreach ($request->ijenGuides as $value) {
@@ -1936,25 +2041,25 @@ function massAutoPlotting(Request $request)
                     $bookDriver->save();
                 }
             }
-            
+
             // Save notes
             $booking->note = $request->notes;
             $booking->save();
 
             DB::commit();
-            
+
             return back()->with('message', 'Plotting saved successfully');
-            
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to save plotting: ' . $e->getMessage()
             ], 500);
         }
     }
-    function previewFile(){
+    function previewFile()
+    {
         return view('preview-file');
     }
 }

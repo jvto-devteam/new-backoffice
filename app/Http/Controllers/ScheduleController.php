@@ -1529,9 +1529,15 @@ class ScheduleController extends Controller
 
             // Menentukan apakah perlu escort guide berdasarkan pax dan driver yang dipilih
             $needEscortGuide = false;
+            $needSecondEscortGuide = false;
             if ($booking->total_pax > 3) {
                 // Selalu perlu escort guide untuk > 3 pax
                 $needEscortGuide = true;
+
+                // Untuk TWT dengan pax >= 12, butuh 2 escort guide
+                if ($orderChannel == 'TWT' && $booking->total_pax >= 12) {
+                    $needSecondEscortGuide = true;
+                }
             } else if ($selectedDriver && ($selectedDriver['new_role'] == 'Only Driver' || $selectedDriver['new_role'] == 'Outsource')) {
                 // Perlu escort guide jika driver adalah Only Driver atau Outsource meskipun pax <= 3
                 $needEscortGuide = true;
@@ -1681,6 +1687,149 @@ class ScheduleController extends Controller
                             $selectedEscortGuide = $lowestJuniorGuide;
                         }
                     }
+                }
+            }
+
+            // Jika perlu escort guide kedua (untuk TWT dengan pax >= 12)
+            $selectedSecondEscortGuide = null;
+            if ($needSecondEscortGuide) {
+                // Jika escort guide pertama adalah Senior Guide, maka escort guide kedua adalah Junior Guide
+                if ($selectedEscortGuide && strpos($selectedEscortGuide['new_role'], 'Senior') !== false) {
+                    // Pilih Junior Guide dengan jumlah trip terendah
+                    if (!empty($juniorGuides)) {
+                        // Filter out the guides that have conflicts
+                        $availableJuniorGuides = [];
+                        foreach ($juniorGuides as $guide) {
+                            $guideId = $guide['id'];
+                            $hasConflict = false;
+
+                            // Cek konflik dengan plotting yang telah dilakukan dalam simulasi
+                            if (isset($simulatedGuidePlottings[$guideId])) {
+                                foreach ($simulatedGuidePlottings[$guideId] as $plot) {
+                                    // Cek tipe plotting
+                                    if ($plot['type'] == 'Escort') {
+                                        // Cek apakah ada overlap tanggal
+                                        $plotStart = $plot['start_date'];
+                                        $plotEnd = $plot['end_date'];
+
+                                        if (
+                                            ($tripStartDate >= $plotStart && $tripStartDate <= $plotEnd) ||
+                                            ($tripEndDate >= $plotStart && $tripEndDate <= $plotEnd) ||
+                                            ($tripStartDate <= $plotStart && $tripEndDate >= $plotEnd)
+                                        ) {
+                                            $hasConflict = true;
+                                            break;
+                                        }
+                                    } else if ($plot['type'] == 'Ijen') {
+                                        // Jika guide sudah dijadwalkan sebagai ijen guide pada tanggal dalam rentang trip ini
+                                        $plotIjenDate = $plot['ijen_date'];
+                                        if ($plotIjenDate >= $tripStartDate && $plotIjenDate <= $tripEndDate) {
+                                            $hasConflict = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (!$hasConflict) {
+                                $availableJuniorGuides[] = $guide;
+                            }
+                        }
+
+                        if (!empty($availableJuniorGuides)) {
+                            usort($availableJuniorGuides, function ($a, $b) {
+                                return $a['escort_count'] - $b['escort_count'];
+                            });
+
+                            $selectedSecondEscortGuide = $availableJuniorGuides[0];
+                        }
+                    }
+                }
+                // Jika escort guide pertama adalah Junior Guide atau tidak ada, maka escort guide kedua adalah Senior Guide
+                else {
+                    // Pilih Senior Guide dengan jumlah trip terendah
+                    if (!empty($seniorGuides)) {
+                        // Filter out the guides that have conflicts
+                        $availableSeniorGuides = [];
+                        foreach ($seniorGuides as $guide) {
+                            $guideId = $guide['id'];
+                            $hasConflict = false;
+
+                            // Cek konflik dengan plotting yang telah dilakukan dalam simulasi
+                            if (isset($simulatedGuidePlottings[$guideId])) {
+                                foreach ($simulatedGuidePlottings[$guideId] as $plot) {
+                                    // Cek tipe plotting
+                                    if ($plot['type'] == 'Escort') {
+                                        // Cek apakah ada overlap tanggal
+                                        $plotStart = $plot['start_date'];
+                                        $plotEnd = $plot['end_date'];
+
+                                        if (
+                                            ($tripStartDate >= $plotStart && $tripStartDate <= $plotEnd) ||
+                                            ($tripEndDate >= $plotStart && $tripEndDate <= $plotEnd) ||
+                                            ($tripStartDate <= $plotStart && $tripEndDate >= $plotEnd)
+                                        ) {
+                                            $hasConflict = true;
+                                            break;
+                                        }
+                                    } else if ($plot['type'] == 'Ijen') {
+                                        // Jika guide sudah dijadwalkan sebagai ijen guide pada tanggal dalam rentang trip ini
+                                        $plotIjenDate = $plot['ijen_date'];
+                                        if ($plotIjenDate >= $tripStartDate && $plotIjenDate <= $tripEndDate) {
+                                            $hasConflict = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+
+                            if (!$hasConflict) {
+                                $availableSeniorGuides[] = $guide;
+                            }
+                        }
+
+                        if (!empty($availableSeniorGuides)) {
+                            usort($availableSeniorGuides, function ($a, $b) {
+                                return $a['escort_count'] - $b['escort_count'];
+                            });
+
+                            $selectedSecondEscortGuide = $availableSeniorGuides[0];
+                        }
+                    }
+                }
+
+                // Update jumlah trip untuk escort guide kedua
+                if ($selectedSecondEscortGuide) {
+                    $guideId = $selectedSecondEscortGuide['id'];
+
+                    // Update jumlah trip
+                    if (!isset($guideTrips[$guideId])) {
+                        $guideTrips[$guideId] = [
+                            'name' => $selectedSecondEscortGuide['name'],
+                            'role' => $selectedSecondEscortGuide['new_role'] ?? 'Unknown',
+                            'count' => 0,
+                            'escort_count' => 0,
+                            'ijen_count' => 0
+                        ];
+                    }
+                    $guideTrips[$guideId]['count']++;
+                    $guideTrips[$guideId]['escort_count']++;
+
+                    // Update trip_count di selectedSecondEscortGuide
+                    $selectedSecondEscortGuide['trip_count'] = $guideTrips[$guideId]['count'];
+                    $selectedSecondEscortGuide['escort_count'] = $guideTrips[$guideId]['escort_count'];
+                    $selectedSecondEscortGuide['ijen_count'] = $guideTrips[$guideId]['ijen_count'];
+
+                    // Catat plotting untuk pengecekan konflik selanjutnya
+                    if (!isset($simulatedGuidePlottings[$guideId])) {
+                        $simulatedGuidePlottings[$guideId] = [];
+                    }
+                    $simulatedGuidePlottings[$guideId][] = [
+                        'booking_id' => $booking->id,
+                        'start_date' => $tripStartDate,
+                        'end_date' => $tripEndDate,
+                        'type' => 'Escort'
+                    ];
                 }
             }
 
@@ -1859,9 +2008,11 @@ class ScheduleController extends Controller
                 'booking_category_id' => $booking->booking_category_id,
                 'order_channel' => $orderChannel,
                 'need_escort_guide' => $needEscortGuide,
+                'need_second_escort_guide' => $needSecondEscortGuide, // Added this field
                 'need_ijen_guide' => $needIjenGuide,
                 'selected_driver' => $selectedDriver,
                 'selected_escort_guide' => $selectedEscortGuide,
+                'selected_second_escort_guide' => $selectedSecondEscortGuide,
                 'selected_ijen_guide' => $selectedIjenGuide,
                 'available_drivers' => count($allAvailableDrivers),
                 'driver_options' => array_map(function ($driver) {
@@ -1940,6 +2091,15 @@ class ScheduleController extends Controller
                 }
             }
 
+            $selectedSecondEscortGuide = '-';
+            if (isset($result['need_second_escort_guide']) && $result['need_second_escort_guide']) {
+                if ($result['selected_second_escort_guide']) {
+                    $selectedSecondEscortGuide = $result['selected_second_escort_guide']['name'];
+                } else {
+                    $selectedSecondEscortGuide = "(No Crew Available)";
+                }
+            }
+
             // Tentukan ijen guide yang dipilih
             $selectedIjenGuide = '-';
             if ($result['need_ijen_guide']) {
@@ -1968,6 +2128,7 @@ class ScheduleController extends Controller
                 'is_shuttle' => $result['is_shuttle'],
                 'driver' => $selectedDriver,
                 'escort_guide' => $selectedEscortGuide,
+                'second_escort_guide' => $selectedSecondEscortGuide,
                 'ijen_guide' => $selectedIjenGuide,
                 'order_channel' => $result['order_channel']
             ];

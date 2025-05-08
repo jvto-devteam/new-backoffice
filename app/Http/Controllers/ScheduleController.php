@@ -1631,22 +1631,55 @@ class ScheduleController extends Controller
                     }
                 }
 
-                // Pilih guide berdasarkan prioritas role dan jumlah trip
-                foreach (['Escort Guide (Senior)', 'Escort Guide (Junior)'] as $role) {
-                    if (!empty($availableGuidesByRole[$role])) {
-                        // Jika ada guide dengan role ini, urutkan berdasarkan jumlah trip escort
-                        usort($availableGuidesByRole[$role], function ($a, $b) {
-                            // Prioritaskan berdasarkan jumlah trip escort
-                            if ($a['escort_count'] != $b['escort_count']) {
-                                return $a['escort_count'] - $b['escort_count'];
-                            }
-                            // Jika sama, pertimbangkan jumlah trip total
-                            return $a['trip_count'] - $b['trip_count'];
-                        });
+                // Pilih escort guide berdasarkan prioritas role dan jumlah trip dengan rasio 2:1
+                if (!empty($availableGuidesByRole['Escort Guide (Senior)']) || !empty($availableGuidesByRole['Escort Guide (Junior)'])) {
+                    $seniorGuides = $availableGuidesByRole['Escort Guide (Senior)'];
+                    $juniorGuides = $availableGuidesByRole['Escort Guide (Junior)'];
 
-                        // Pilih guide dengan jumlah trip terkecil dari role ini
-                        $selectedEscortGuide = $availableGuidesByRole[$role][0];
-                        break; // Keluar dari loop setelah menemukan guide
+                    // Urutkan guide berdasarkan jumlah trip escort
+                    if (!empty($seniorGuides)) {
+                        usort($seniorGuides, function ($a, $b) {
+                            return $a['escort_count'] - $b['escort_count'];
+                        });
+                    }
+
+                    if (!empty($juniorGuides)) {
+                        usort($juniorGuides, function ($a, $b) {
+                            return $a['escort_count'] - $b['escort_count'];
+                        });
+                    }
+
+                    // Tentukan guide dengan jumlah trip terendah di masing-masing kategori
+                    $lowestSeniorGuide = !empty($seniorGuides) ? $seniorGuides[0] : null;
+                    $lowestJuniorGuide = !empty($juniorGuides) ? $juniorGuides[0] : null;
+
+                    // Cek apakah driver adalah Only Driver atau Outsource
+                    $requiresSeniorGuide = $selectedDriver && ($selectedDriver['new_role'] == 'Only Driver' || $selectedDriver['new_role'] == 'Outsource');
+
+                    if ($requiresSeniorGuide && $lowestSeniorGuide) {
+                        // Jika driver adalah Only Driver atau Outsource, selalu gunakan Senior Guide jika tersedia
+                        $selectedEscortGuide = $lowestSeniorGuide;
+                    } else if ($orderChannel != 'TWT') {
+                        // Untuk JVTO dan KLOOK: Gunakan rasio 2:1
+                        // Aturan: gunakan junior guide jika semua senior guide memiliki setidaknya 2x trip dibandingkan junior
+                        if ($lowestSeniorGuide && $lowestJuniorGuide) {
+                            if ($lowestSeniorGuide['escort_count'] >= 2 * $lowestJuniorGuide['escort_count']) {
+                                $selectedEscortGuide = $lowestJuniorGuide;
+                            } else {
+                                $selectedEscortGuide = $lowestSeniorGuide;
+                            }
+                        } else if ($lowestSeniorGuide) {
+                            $selectedEscortGuide = $lowestSeniorGuide;
+                        } else if ($lowestJuniorGuide) {
+                            $selectedEscortGuide = $lowestJuniorGuide;
+                        }
+                    } else {
+                        // Untuk TWT: Selalu prioritaskan Senior Guide dulu
+                        if ($lowestSeniorGuide) {
+                            $selectedEscortGuide = $lowestSeniorGuide;
+                        } else if ($lowestJuniorGuide) {
+                            $selectedEscortGuide = $lowestJuniorGuide;
+                        }
                     }
                 }
             }

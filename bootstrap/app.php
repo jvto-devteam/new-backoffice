@@ -16,7 +16,8 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
             \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::except([
-                '/twt-extractor'
+                '/twt-extractor',
+                '/third-party/webhook/watzap',
             ])            
 
         ]);

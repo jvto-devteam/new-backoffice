@@ -22,6 +22,8 @@ use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\CrewController;
+use App\Http\Controllers\ThirdParty\WatzapController;
+use App\Http\Controllers\WaChatController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -53,7 +55,11 @@ Route::get('/screening-success', [DashboardController::class,'screeningSuccess']
 Route::post('/twt-extractor', [BookingController::class,'twtExtractor']);
 Route::get('/pdf-extractor', [BookingController::class, 'twtExtractorFileIndex'])->name('pdf-extractor.index');
 Route::post('/pdf-extractor/extract', [BookingController::class, 'twtExtractorFileProcess'])->name('pdf-extractor.extract');
-
+Route::prefix('third-party')->group(function () {
+    Route::prefix('webhook')->group(function () {
+        Route::post('/watzap', [WatzapController::class, 'webhook']);
+    });
+});
 Route::get('/auto-plotting', [ScheduleController::class,'massAutoPlotting']);
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -66,6 +72,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/booking-analist', [ScheduleController::class,'bookingAnalist']);
     Route::get('/expense-package', [ExpenseController::class,'expensePackage']);
     Route::get('/expense-item', [ExpenseController::class,'expenseItem']);
+    Route::get('/wa-chat', [WaChatController::class,'index']);
+    Route::get('/wa-chat/{id}', [WaChatController::class,'getChatDetail']);
 
     //data master management
     Route::get('/data-master-management/hotels', [HotelController::class,'index']);

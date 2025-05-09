@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BookCar;
 use App\Models\BookCarActivity;
 use App\Models\BookCrewActivity;
 use App\Models\BookDestinationActivity;
@@ -373,21 +374,32 @@ class FinanceController extends Controller
         ]);
     }
     function editExpense($id){
-        $booking = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','agent_id','booking_category_id','booking_date','package_duration','invoice_code_origin','url','payment_proof_expense')->with(['user' => function($query){
+        $booking = Booking::select('id','user_id','total_pax','travel_date_start','travel_date_end','grand_total','agent_id','booking_category_id','booking_date','package_duration','invoice_code_origin','url','payment_proof_expense')->with(['user' => function($query){
             $query->select('id','name');
         },'bookingDetail' => function($query){
             $query->select('id','package_id','booking_id')->with(['package' => function($q){
                 $q->select('id','name','duration_id')->with('duration');
             }]);
         }])->where('id',$id)->first();
+
+        $booking->trip_date = date('d M', strtotime($booking->travel_date_start))." - ".date('d M Y', strtotime($booking->travel_date_end));
         $pax = $booking->total_pax;
         $day = $booking->bookingDetail[0]->package ? $booking->bookingDetail[0]->package->duration->day : $booking->package_duration;
+        $booking->duration_day = $day;
 
         $totalAccommodations = 0;
         $totalDestinations = 0;
         $totalOthers = 0;
         $totalResources = 0;
 
+        $crew = BookGuideDriver::select('id','guide_id','type','guide_ijen')->with(['person' => function($query){
+            $query->select('id','name');
+        }])->where('booking_id',$id)->get();
+        $car = BookCar::select('id','car_id')->with(['car' => function($query){
+            $query->select('id','name');
+        }])->where('booking_id',$id)->get();
+        $booking->crew = $crew;
+        $booking->car = $car;
         $bookRoom = BookHotel::select('id','booking_id','hotel_id','b','l','d','is_paid','is_debt','debt_payment_id')->with(['hotel' => function($query){
             $query->select('id','name','lunch_rate','dinner_rate');
         },'bookRoom' => function($query){

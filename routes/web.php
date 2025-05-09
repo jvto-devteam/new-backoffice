@@ -58,6 +58,7 @@ Route::post('/pdf-extractor/extract', [BookingController::class, 'twtExtractorFi
 Route::prefix('third-party')->group(function () {
     Route::prefix('webhook')->group(function () {
         Route::post('/watzap', [WatzapController::class, 'webhook']);
+        Route::get('/summary', [WatzapController::class, 'generateDailySummaries']);
     });
 });
 Route::get('/auto-plotting', [ScheduleController::class,'massAutoPlotting']);
@@ -74,7 +75,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/expense-item', [ExpenseController::class,'expenseItem']);
     Route::get('/wa-chat', [WaChatController::class,'index']);
     Route::get('/wa-chat/{id}', [WaChatController::class,'getChatDetail']);
-
+    Route::get('/daily-chat-summary', [WaChatController::class, 'summary'])
+        ->name('daily-chat-summary');
+    Route::get('/daily-chat-summary/user/{userId}/chats', [WaChatController::class, 'viewChats'])
+        ->name('daily-chat-summary.view-chats');
     //data master management
     Route::get('/data-master-management/hotels', [HotelController::class,'index']);
     Route::get('/data-master-management/accommodation', [AccommodationController::class,'index']);

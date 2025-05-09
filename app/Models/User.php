@@ -83,4 +83,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(Package::class, 'user_id');
     }
+    public function waChatSummaries()
+    {
+        return $this->hasMany(WaChatSummary::class);
+    }
 }

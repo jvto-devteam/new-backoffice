@@ -26,24 +26,35 @@ class WaChatController extends Controller
                 'name'      => $lastChat->user->name ?? '(No Name)',
                 'phone'     => $lastChat->user->phone ?? '-',
                 'last_chat' => $lastChat->message,
-                'sent_at'   => $lastChat->created_at->toDateTimeString(),
+                'sent_at'   => $lastChat->created_at,
             ];
         });
         return Inertia::render('WaChat/Index', ['summaries' => $summaries]);
     }
-    public function getChatDetail($user_id)
+    public function getChatDetail($userId)
     {
-        $getUser = User::findOrFail($user_id);
+        try {
+            $getUser = User::findOrFail($userId);
 
-        $chats = WaChat::where('user_id', $user_id)
-            ->orderBy('created_at', 'asc')
-            ->get(['id', 'message', 'is_from_me', 'created_at', 'has_media', 'media_mime']);
-        $user = [
-            'id'    => $getUser->id,
-            'name'  => $getUser->name,
-            'phone' => $getUser->phone,
-        ];
+            $chats = WaChat::where('user_id', $userId)
+                ->orderBy('created_at', 'asc')
+                ->get(['id', 'message', 'is_from_me', 'created_at', 'has_media', 'media_mime']);
+            
+            $user = [
+                'id'    => $getUser->id,
+                'name'  => $getUser->name,
+                'phone' => $getUser->phone,
+            ];
 
-        return Inertia::render('WaChat/Chat', ['user' => $user,'chats' => $chats]);
+            return response()->json([
+                'user' => $user,
+                'chats' => $chats
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error fetching chat details',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

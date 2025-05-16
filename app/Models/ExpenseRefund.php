@@ -11,6 +11,7 @@ class ExpenseRefund extends Model
 
     protected $fillable = [
         'booking_id',
+        'type',
         'item',
         'price',
         'qty',
@@ -23,10 +24,16 @@ class ExpenseRefund extends Model
     const STATUS_APPROVED = 'approved';
     const STATUS_REJECTED = 'rejected';
 
-    // Default status
+    // Define the possible types
+    const TYPE_REFUND = 'refund';
+    const TYPE_PENALTY = 'penalty';
+
+    // Default values
     protected $attributes = [
         'status' => self::STATUS_PENDING,
+        'type' => self::TYPE_REFUND,  // Add default type
     ];
+
 
     // Relation to Booking
     public function booking()

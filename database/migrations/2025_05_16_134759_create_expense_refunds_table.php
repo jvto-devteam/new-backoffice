@@ -16,6 +16,7 @@ class CreateExpenseRefundsTable extends Migration
         Schema::create('expense_refunds', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('booking_id');
+            $table->enum('type', ['refund', 'penalty'])->default('refund');            
             $table->string('item');
             $table->decimal('price', 12, 2);
             $table->integer('qty');

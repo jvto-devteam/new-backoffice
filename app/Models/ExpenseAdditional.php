@@ -21,6 +21,7 @@ class ExpenseAdditional extends Model
         'request_by',
         'submit_date',
         'submit_by',
+        'status',
     ];
 
     // Relasi opsional

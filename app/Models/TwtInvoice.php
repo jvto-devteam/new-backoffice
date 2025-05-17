@@ -21,6 +21,8 @@ class TwtInvoice extends Model
         'total_additionals',
         'total_refunds_penalties',
         'grand_total',
+        'payment',
+        'balance',
         'status',
     ];
 

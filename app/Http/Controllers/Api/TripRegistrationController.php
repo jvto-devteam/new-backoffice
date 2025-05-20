@@ -35,14 +35,14 @@ class TripRegistrationController extends Controller
             $vehicles = [];
             
             // Tentukan kapasitas dan nama berdasarkan tipe kendaraan
-            $capacity = $booking->car_type === 'hiace' ? 9 : 25;
-            $typeName = $booking->car_type === 'hiace' ? 'Toyota Hiace' : 'Medium Bus';
+            $capacity = $booking->car_type == 'hiace' ? 9 : 25;
+            $typeName = $booking->car_type == 'hiace' ? 'Toyota Hiace' : 'Medium Bus';
             
             // Buat kendaraan sebanyak numb_of_car
             for ($i = 1; $i <= $booking->numb_of_car; $i++) {
                 $seats = [];
                 // Buat kursi sesuai kapasitas kendaraan
-                if ($booking->car_type === 'hiace') {
+                if ($booking->car_type == 'hiace') {
                     // Kode untuk Hiace tetap sama
                     $capacity = 9;
                     for ($j = 1; $j <= $capacity; $j++) {
@@ -98,7 +98,7 @@ class TripRegistrationController extends Controller
                         if (isset($vehicles[$vehicleIndex])) {
                             // Cari indeks kursi yang cocok
                             foreach ($vehicles[$vehicleIndex]['seats'] as $seatIndex => $seat) {
-                                if ($seat['number'] === $participant->seat_number) {
+                                if ($seat['number'] == $participant->seat_number) {
                                     // Update status kursi menjadi booked
                                     $vehicles[$vehicleIndex]['seats'][$seatIndex]['status'] = 'booked';
                                     $vehicles[$vehicleIndex]['seats'][$seatIndex]['occupant'] = $participant->full_name;

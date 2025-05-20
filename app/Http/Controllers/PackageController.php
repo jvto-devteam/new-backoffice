@@ -638,21 +638,21 @@ class PackageController extends Controller
                     'dinner' => 0,
                 ];
                 foreach($value['activities'] as $index => $item){
-                    if($item['type_id'] === 2){
+                    if($item['type_id'] == 2){
                         $getDestination = Activity::find($item['activity_id']);
                         array_push($arrDestination[$key], $getDestination->destination_id);
                         if(!in_array($getDestination->destination_id, $allDestinations)){
                             array_push($allDestinations, $getDestination->destination_id);
                         }
                     }
-                    if($item['type_id'] === 4){
-                        if($item['activity_id'] === 9 && $item['include']){
+                    if($item['type_id'] == 4){
+                        if($item['activity_id'] == 9 && $item['include']){
                             $arrMeals[$key]['breakfast'] = 1;
                         }
-                        if($item['activity_id'] === 2 && $item['include']){
+                        if($item['activity_id'] == 2 && $item['include']){
                             $arrMeals[$key]['lunch'] = 1;
                         }
-                        if($item['activity_id'] === 4 && $item['include']){
+                        if($item['activity_id'] == 4 && $item['include']){
                             $arrMeals[$key]['dinner'] = 1;
                         }
                     }
@@ -661,7 +661,7 @@ class PackageController extends Controller
                     $itineraryDetail->itinerary_id = $itinerary->id;
                     $itineraryDetail->no = $no;
                     $itineraryDetail->time = $item['time'];
-                    if($item['type_id'] === 3){
+                    if($item['type_id'] == 3){
                         $itineraryDetail->activity_id = 3;
                         $arrHotels[$key]['hotel_id'] = $item['activity_id'];
                     }
@@ -914,21 +914,21 @@ class PackageController extends Controller
                     'dinner' => 0,
                 ];
                 foreach($value['activities'] as $index => $item){
-                    if($item['type_id'] === 2){
+                    if($item['type_id'] == 2){
                         $getDestination = Activity::find($item['activity_id']);
                         array_push($arrDestination[$key], $getDestination->destination_id);
                         if(!in_array($getDestination->destination_id, $allDestinations)){
                             array_push($allDestinations, $getDestination->destination_id);
                         }
                     }
-                    if($item['type_id'] === 4){
-                        if($item['activity_id'] === 9 && $item['include']){
+                    if($item['type_id'] == 4){
+                        if($item['activity_id'] == 9 && $item['include']){
                             $arrMeals[$key]['breakfast'] = 1;
                         }
-                        if($item['activity_id'] === 2 && $item['include']){
+                        if($item['activity_id'] == 2 && $item['include']){
                             $arrMeals[$key]['lunch'] = 1;
                         }
-                        if($item['activity_id'] === 4 && $item['include']){
+                        if($item['activity_id'] == 4 && $item['include']){
                             $arrMeals[$key]['dinner'] = 1;
                         }
                     }
@@ -937,7 +937,7 @@ class PackageController extends Controller
                     $itineraryDetail->itinerary_id = $itinerary->id;
                     $itineraryDetail->no = $no;
                     $itineraryDetail->time = $item['time'];
-                    if($item['type_id'] === 3){
+                    if($item['type_id'] == 3){
                         $itineraryDetail->activity_id = 3;
                         $arrHotels[$key]['hotel_id'] = $item['activity_id'];
                     }

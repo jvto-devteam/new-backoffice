@@ -91,11 +91,11 @@ class DashboardController extends Controller
         ->get()->map(function($data) use ($today) {
             $night = $data->package_duration - 1;
             
-            if($data->agent_id === 1){
+            if($data->agent_id == 1){
                 $order_channel = 'TWT';
             }
             else{
-                if($data->booking_category_id === 3){
+                if($data->booking_category_id == 3){
                     $order_channel = 'KLOOK';
                 }
                 else{

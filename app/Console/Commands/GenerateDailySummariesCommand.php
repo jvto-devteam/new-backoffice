@@ -47,11 +47,11 @@ class GenerateDailySummariesCommand extends Command
         
         // Output results
         $successCount = count(array_filter($result, function($item) {
-            return isset($item['status']) && $item['status'] === 'success';
+            return isset($item['status']) && $item['status'] == 'success';
         }));
         
         $errorCount = count(array_filter($result, function($item) {
-            return isset($item['status']) && $item['status'] === 'error';
+            return isset($item['status']) && $item['status'] == 'error';
         }));
         
         $this->info("Daily summaries generated: {$successCount} success, {$errorCount} errors");

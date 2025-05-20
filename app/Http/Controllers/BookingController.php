@@ -1299,7 +1299,7 @@ class BookingController extends Controller
             }
 
             $booking->bookRoom->map(function($room) use(&$totalAccommodations) {
-                if ($room->subtotal === null) {
+                if ($room->subtotal == null) {
                     $room->subtotal = $room->roomHotel->rate * $room->quantity;
                     $room->save();
                 }
@@ -1414,7 +1414,7 @@ class BookingController extends Controller
             }
 
             $booking->bookRoom->map(function($room) use(&$totalAccommodations) {
-                if ($room->subtotal === null) {
+                if ($room->subtotal == null) {
                     $room->subtotal = $room->roomHotel->rate * $room->quantity;
                     $room->save();
                 }

@@ -23,7 +23,7 @@ class WatzapController extends Controller
     
         if (
             $payload['type'] !== 'incoming_chat' ||
-            ($payload['data']['name'] ?? '') === 'status' ||
+            ($payload['data']['name'] ?? '') == 'status' ||
             !str_contains($payload['data']['chat_id'] ?? '', '@s.whatsapp.net')
         ) {
             return response()->json(['status' => 'ignored']);

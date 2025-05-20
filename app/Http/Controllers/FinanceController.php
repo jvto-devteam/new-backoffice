@@ -459,7 +459,7 @@ class FinanceController extends Controller
             }
 
             $booking->bookRoom->map(function($room) use(&$totalAccommodations) {
-                if ($room->subtotal === null) {
+                if ($room->subtotal == null) {
                     $room->subtotal = $room->roomHotel->rate * $room->quantity;
                     $room->save();
                 }
@@ -1359,7 +1359,7 @@ class FinanceController extends Controller
                     $customerName = strtolower($item['customer']);
                     $bookingCode = strtolower($item['booking_code']);
                     
-                    if (strpos($customerName, $searchTerm) === false && strpos($bookingCode, $searchTerm) === false) {
+                    if (strpos($customerName, $searchTerm) == false && strpos($bookingCode, $searchTerm) == false) {
                         $keep = false;
                     }
                 }
@@ -1950,12 +1950,12 @@ class FinanceController extends Controller
 
         // Tentukan path file bukti pembayaran
         $paymentProof = null;
-        if ($request->paymentProofType === 'upload' && $request->hasFile('paymentProofFile')) {
+        if ($request->paymentProofType == 'upload' && $request->hasFile('paymentProofFile')) {
             $file = $request->file('paymentProofFile');
             $fileName = time() . '_' . $file->getClientOriginalName();
             $path = $file->storeAs('payment_proofs', $fileName, 'public');
             $paymentProof = Storage::url($path);
-        } elseif ($request->paymentProofType === 'link') {
+        } elseif ($request->paymentProofType == 'link') {
             $paymentProof = $request->paymentProofLink;
         }
 

@@ -559,7 +559,7 @@ class ScheduleController extends Controller
                 })->toArray();
 
                 // Add pickup record for first day
-                if ($query->day === 1) {
+                if ($query->day == 1) {
                     array_unshift($details, [
                         'time' => null,
                         'icon' => "https://res.klook.com/image/upload/v1667274969/UED%20Team%EF%BC%88for%20DE%20only%EF%BC%89/Exp%20vertical/Itinerary/icon_category_location_3x.png",
@@ -571,7 +571,7 @@ class ScheduleController extends Controller
                 }
 
                 // Add drop record for last day
-                if ($query->day === $totalDays) {
+                if ($query->day == $totalDays) {
                     $details[] = [
                         'time' => null,
                         'icon' => "https://res.klook.com/image/upload/v1667274969/UED%20Team%EF%BC%88for%20DE%20only%EF%BC%89/Exp%20vertical/Itinerary/icon_category_location_3x.png",
@@ -1136,9 +1136,9 @@ class ScheduleController extends Controller
             ->where('tags', 'like', "%$orderChannel%")
             ->get()
             ->map(function ($driver) use ($bookingId) {
-                if ($driver->status === 'Terplotting') {
+                if ($driver->status == 'Terplotting') {
                     $driver->schedule_info = "Terplotting untuk Booking ID: {$bookingId}";
-                } elseif ($driver->status === 'Tidak Tersedia' && $driver->conflicting_booking_id) {
+                } elseif ($driver->status == 'Tidak Tersedia' && $driver->conflicting_booking_id) {
                     $driver->schedule_info = "({$driver->conflicting_start_date} - {$driver->conflicting_end_date}) " .
                         "Customer: {$driver->conflicting_user_name}";
                 }
@@ -1175,11 +1175,11 @@ class ScheduleController extends Controller
             ->map(function ($guide) use ($bookingId, $at_ijen) {
                 $guide->dynamic_roles = ['Escort', 'Ijen'];
                 $checkIjen = BookGuideDriver::whereRaw("'$at_ijen' between start_date and end_date")->where('guide_id', $guide->id)->count();
-                if ($guide->status === 'Terplotting') {
+                if ($guide->status == 'Terplotting') {
                     $guideType = $guide->current_guide_ijen == '1' ? 'Ijen Guide' : 'Escort Guide';
                     $guide->schedule_info = "Terplotting untuk Booking ID: {$bookingId} ({$guideType})";
                     $guide->guide_ijen = $guide->current_guide_ijen;
-                } elseif ($guide->status === 'Tidak Tersedia' && $guide->conflicting_booking_id) {
+                } elseif ($guide->status == 'Tidak Tersedia' && $guide->conflicting_booking_id) {
                     // if($guide->guide_ijen == '1' && $guide->conflicting_start_date != $at_ijen){
                     if (($guide->guide_ijen == '1' && $guide->conflicting_start_date != $at_ijen)) {
                         $guide->status = 'Tersedia';
@@ -1240,9 +1240,9 @@ class ScheduleController extends Controller
             ->mergeBindings($carAvailabilitySubquery->getQuery())
             ->get()
             ->map(function ($car) use ($bookingId) {
-                if ($car->status === 'Terplotting') {
+                if ($car->status == 'Terplotting') {
                     $car->schedule_info = "Terplotting untuk Booking ID: {$bookingId}";
-                } elseif ($car->status === 'Tidak Tersedia' && $car->conflicting_booking_id) {
+                } elseif ($car->status == 'Tidak Tersedia' && $car->conflicting_booking_id) {
                     $car->schedule_info = "({$car->conflicting_start_date} - {$car->conflicting_end_date}) " .
                         "Customer: {$car->conflicting_user_name}";
                 }
@@ -1367,7 +1367,7 @@ class ScheduleController extends Controller
             // Panggil fungsi getDataPlotting
             $data = $this->getDataPlotting($params);
 
-            // ===== PLOTTING DRIVER =====
+            // ==== PLOTTING DRIVER ====
             $selectedDriver = null;
             $allAvailableDrivers = [];
             $driverConflictInfo = null;
@@ -1522,7 +1522,7 @@ class ScheduleController extends Controller
                 ];
             }
 
-            // ===== PLOTTING GUIDE =====
+            // ==== PLOTTING GUIDE ====
             $selectedEscortGuide = null;
             $selectedIjenGuide = null;
             $allAvailableGuides = [];

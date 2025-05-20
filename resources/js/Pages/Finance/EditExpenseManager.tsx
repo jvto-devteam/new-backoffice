@@ -513,7 +513,7 @@ const SummaryCards = ({ booking, totals }) => {
                     </div>
                     <div className="text-red-500 text-2xl font-bold mt-1">
                         {formatCurrency(
-                            booking.grand_total + booking.book_add_on_total,
+                            parseInt(booking.grand_total) + parseInt(booking.book_add_on_total),
                         )}
                     </div>
                 </div>

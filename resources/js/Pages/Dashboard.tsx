@@ -18,8 +18,6 @@ export default function Dashboard({ dashboardData }) {
   const [activeTab, setActiveTab] = useState('active');
   const [hoveredCrew, setHoveredCrew] = useState(null);
   const [expandedPayments, setExpandedPayments] = useState([]);
-  console.log(trips.filter(booking => booking.is_active && booking.status == 'active'));
-  
 
   // Function to toggle a payment's expanded state
   const togglePaymentDetail = (paymentId) => {
@@ -643,7 +641,7 @@ export default function Dashboard({ dashboardData }) {
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                <span className="text-xs mb-2 text-gray-500 dark:text-gray-400">{booking.order_channel}{getChannelBadge(booking.order_channel)}</span>
+                                <span className="text-xs mb-2 text-gray-500 dark:text-gray-400">{getChannelBadge(booking.order_channel)}</span>
                                 </td>
                                 {activeTab == 'active' ? (
                                     <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300 max-w-48">{booking.todayItinerary}</td>

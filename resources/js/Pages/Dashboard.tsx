@@ -18,6 +18,8 @@ export default function Dashboard({ dashboardData }) {
   const [activeTab, setActiveTab] = useState('active');
   const [hoveredCrew, setHoveredCrew] = useState(null);
   const [expandedPayments, setExpandedPayments] = useState([]);
+  console.log(trips.filter(booking => booking.is_active && booking.status == 'active').length);
+  
 
   // Function to toggle a payment's expanded state
   const togglePaymentDetail = (paymentId) => {

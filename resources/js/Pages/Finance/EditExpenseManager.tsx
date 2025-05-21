@@ -1811,8 +1811,8 @@ const EditExpenseManager = ({
                 description: room.room_hotel.room_name,
                 unit: "No",
                 qty: room.quantity,
-                rate: room.room_hotel.rate,
-                amount: room.quantity * room.room_hotel.rate,
+                rate: room.subtotal/room.quantity,
+                amount: room.quantity * room.subtotal,
                 isDebt: hotel.is_debt === "1",
                 debtPaymentId: hotel.debt_payment_id !== null,
                 originalData: {

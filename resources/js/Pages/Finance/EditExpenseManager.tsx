@@ -5,6 +5,7 @@ import Authenticated from "@/Layouts/Main";
 import { Download, BookmarkCheck, Image } from "lucide-react";
 
 const formatCurrency = (value) => {
+    value = parseInt(value)
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "IDR",

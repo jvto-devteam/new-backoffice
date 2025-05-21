@@ -2032,9 +2032,9 @@ const EditExpenseManager = ({
     // Calculate summary totals
     const summaryTotals = useMemo(() => {
         const payLaterItems = items.filter((item) => item.isDebt);
-        const totalAmount = items.reduce((sum, item) => sum + item.amount, 0);
+        const totalAmount = items.reduce((sum, item) => sum + parseInt(item.amount), 0);
         const debtAmount = payLaterItems.reduce(
-            (sum, item) => sum + item.amount,
+            (sum, item) => sum + parseInt(item.amount),
             0,
         );
 

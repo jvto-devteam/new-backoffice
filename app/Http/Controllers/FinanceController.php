@@ -1313,7 +1313,7 @@ class FinanceController extends Controller
                 'payment_method' => $query->paymentMethod->name,
                 'reference' => $query->reference,
                 'description' => $query->is_add_on == '1' ? $query->description." (Add On)" : $query->description,
-                'nominal' => $query->nominal,
+                'nominal' => (int)$query->nominal,
                 'status' => 'PAID',
             ];
         });
@@ -1340,7 +1340,7 @@ class FinanceController extends Controller
                 'payment_method' => $query->is_vendor_paid == '1' ? $query->paymentMethodVendor->name : '-',
                 'reference' => $query->is_vendor_paid == '1' ? $query->is_vendor_paid_reference : '-',
                 'description' => $source,
-                'nominal' => $query->grand_total,
+                'nominal' => (int)$query->grand_total,
                 'status' => $query->is_vendor_paid == '1' ? 'PAID' : 'UNPAID',
             ];
         });

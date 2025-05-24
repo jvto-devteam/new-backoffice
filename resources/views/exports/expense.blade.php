@@ -62,6 +62,10 @@
             background: #fef2f2;
             color:#f87575;
         }
+        .row-paid-green,.row-paid-green td{
+            background: #ecfdf2;
+            color:#16a34a;
+        }
     </style>
 </head>
 <body>
@@ -112,6 +116,7 @@
                 $grandTotal = 0;
                 $crewExpense = 0;
                 $payLater = 0;
+                $paid = 0;
             @endphp
             
             <!-- Accommodations -->
@@ -122,15 +127,20 @@
                 
                 <!-- Rooms -->
                 @foreach($accommodation['rooms'] as $room)
-                <tr {{$accommodation['is_debt'] == '1' && $option != 'pay-later' ? "class=row-paid" : ""}}>
+                <tr {{$accommodation['is_debt'] == '1' && $option != 'pay-later' ? "class=row-paid" : ($accommodation['is_paid'] == '1' ? "class=row-paid-green" : "")}}>
                     <td>{{ $no++ }}</td>
                     <td>{{ $accommodation['hotel'] }}</td>
                     <td>{{ $room['room'] }}</td>
                         <td class="text-right">{{ $room['quantity'] }}</td>
                         @if($accommodation['is_debt'] != '1' || $option != 'crew')
-                            <td class="text-right">Rp {{ number_format($room['price'], 0, ',', '.') }}</td>
-                            <td class="text-right">Rp {{ number_format($room['subtotal'], 0, ',', '.') }}</td>
-                            @php $grandTotal += $room['subtotal']; @endphp
+                            @if ($option == 'crew' && $accommodation['is_paid'] == '1')
+                                <td class="text-right">-</td>
+                                <td class="text-right"><b>PAID</b></td>
+                            @else
+                                <td class="text-right">Rp {{ number_format($room['price'], 0, ',', '.') }}</td>
+                                <td class="text-right">Rp {{ number_format($room['subtotal'], 0, ',', '.') }}</td>
+                                @php $grandTotal += $room['subtotal']; @endphp
+                            @endif
                         @else
                             <td class="text-right">-</td>
                             <td class="text-right"><b>PAID</b></td>
@@ -138,7 +148,11 @@
                         @if ($accommodation['is_debt'] == '1')
                             @php $payLater += $room['subtotal']; @endphp
                         @else
-                            @php $crewExpense += $room['subtotal']; @endphp
+                            @if ($accommodation['is_paid'] != '1')
+                                @php $crewExpense += $room['subtotal']; @endphp
+                            @else                                
+                                @php $paid += $room['subtotal']; @endphp
+                            @endif
                         @endif
                     </tr>
                 @endforeach
@@ -147,23 +161,32 @@
                 @if(isset($accommodation['meals']) && count($accommodation['meals']) > 0)
                     @foreach($accommodation['meals'] as $meal)
                         @if($meal['meals'] !== null)
-                        <tr {{$accommodation['is_debt'] == '1' && $option != 'pay-later' ? "class=row-paid" : ""}}>
+                        <tr {{$accommodation['is_debt'] == '1' && $option != 'pay-later' ? "class=row-paid" : ($accommodation['is_paid'] == '1' ? "class=row-paid-green" : "")}}>
                             <td>{{ $no++ }}</td>
                                 <td>{{ $accommodation['hotel'] }}</td>
                                 <td>{{ ucfirst($meal['meals']) }}</td>
                                 <td class="text-right">{{ $meal['quantity'] }}</td>
                                 @if($accommodation['is_debt'] != '1' || $option != 'crew')
-                                    <td class="text-right">Rp {{ number_format($meal['price'], 0, ',', '.') }}</td>
-                                    <td class="text-right">Rp {{ number_format($meal['subtotal'], 0, ',', '.') }}</td>
-                                    @php $grandTotal += $meal['subtotal']; @endphp
+                                    @if ($option == 'crew' && $accommodation['is_paid'] == '1')
+                                        <td class="text-right">-</td>
+                                        <td class="text-right"><b>PAID</b></td>
+                                    @else
+                                        <td class="text-right">Rp {{ number_format($meal['price'], 0, ',', '.') }}</td>
+                                        <td class="text-right">Rp {{ number_format($meal['subtotal'], 0, ',', '.') }}</td>
+                                        @php $grandTotal += $meal['subtotal']; @endphp
+                                    @endif
                                 @else
                                     <td class="text-right">-</td>
                                     <td class="text-right"><b>PAID</b></td>
                                 @endif
                                 @if ($accommodation['is_debt'] == '1')
-                                    @php $payLater += $meal['subtotal']; @endphp
+                                @php $payLater += $meal['subtotal']; @endphp
                                 @else
-                                    @php $crewExpense += $meal['subtotal']; @endphp
+                                    @if ($accommodation['is_paid'] != '1')
+                                        @php $crewExpense += $meal['subtotal']; @endphp
+                                    @else                                
+                                        @php $paid += $meal['subtotal']; @endphp
+                                    @endif
                                 @endif
     
                             </tr>
@@ -178,23 +201,32 @@
             </tr>
             @foreach($destinations as $location => $items)
                 @foreach($items as $item)
-                <tr {{$item['is_debt'] == '1' && $option != 'pay-later' ? "class=row-paid" : ""}}>
+                <tr {{$item['is_debt'] == '1' && $option != 'pay-later' ? "class=row-paid" : ($item['status_paid'] == 'paid' ? "class=row-paid-green" : "")}}>
                     <td>{{ $no++ }}</td>
                     <td>{{ $location }}</td>
                         <td>{{ $item['item'] }}</td>
                         <td class="text-right">{{ $item['quantity'] }}</td>
                         @if($item['is_debt'] != '1' || $option != 'crew')
-                            <td class="text-right">Rp {{ number_format($item['price'], 0, ',', '.') }}</td>
-                            <td class="text-right">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
-                            @php $grandTotal += $item['subtotal']; @endphp
+                            @if($item['status_paid'] == 'paid' && $option == 'crew' )
+                                <td class="text-right">-</td>
+                                <td class="text-right"><b>PAID</b></td>
+                            @else
+                                <td class="text-right">Rp {{ number_format($item['price'], 0, ',', '.') }}</td>
+                                <td class="text-right">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
+                                @php $grandTotal += $item['subtotal']; @endphp
+                            @endif
                         @else
                             <td class="text-right">-</td>
                             <td class="text-right"><b>PAID</b></td>
                         @endif
                         @if ($item['is_debt'] == '1')
-                            @php $payLater += $item['subtotal']; @endphp
+                        @php $payLater += $item['subtotal']; @endphp
                         @else
-                            @php $crewExpense += $item['subtotal']; @endphp
+                            @if ($item['status_paid'] == 'unpaid')
+                                @php $crewExpense += $item['subtotal']; @endphp
+                            @else                                
+                                @php $paid += $item['subtotal']; @endphp
+                            @endif
                         @endif
                     </tr>
                 @endforeach
@@ -204,15 +236,20 @@
                 <td colspan="6">Others</td>
             </tr>
             @foreach($others as $item)
-            <tr {{$item['is_debt'] == '1' && $option != 'pay-later' ? "class=row-paid" : ""}}>
+            <tr {{$item['is_debt'] == '1' && $option != 'pay-later' ? "class=row-paid" : ($item['status_paid'] == 'paid' ? "class=row-paid-green" : "")}}>
                 <td>{{ $no++ }}</td>
                 <td>Additional</td>
                 <td>{{ $item['item'] }}</td>
                     <td class="text-right">{{ $item['quantity'] }}</td>
                     @if($item['is_debt'] != '1' || $option != 'crew')
-                        <td class="text-right">Rp {{ number_format($item['price'], 0, ',', '.') }}</td>
-                        <td class="text-right">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
-                        @php $grandTotal += $item['subtotal']; @endphp
+                        @if($item['status_paid'] == 'paid' && $option == 'crew' )
+                            <td class="text-right">-</td>
+                            <td class="text-right"><b>PAID</b></td>
+                        @else
+                            <td class="text-right">Rp {{ number_format($item['price'], 0, ',', '.') }}</td>
+                            <td class="text-right">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
+                            @php $grandTotal += $item['subtotal']; @endphp
+                        @endif
                     @else
                         <td class="text-right">-</td>
                         <td class="text-right"><b>PAID</b></td>
@@ -220,7 +257,11 @@
                     @if ($item['is_debt'] == '1')
                         @php $payLater += $item['subtotal']; @endphp
                     @else
-                        @php $crewExpense += $item['subtotal']; @endphp
+                        @if ($item['status_paid'] == 'unpaid')
+                            @php $crewExpense += $item['subtotal']; @endphp
+                            @else                                
+                                @php $paid += $item['subtotal']; @endphp
+                        @endif
                     @endif
 
                 </tr>
@@ -230,15 +271,20 @@
                 <td colspan="6">Transport</td>
             </tr>
             @foreach($resources['cars'] as $item)
-            <tr {{$item['is_debt'] == '1' && $option != 'pay-later' ? "class=row-paid" : ""}}>
+            <tr {{$item['is_debt'] == '1' && $option != 'pay-later' ? "class=row-paid" : ($item['status_paid'] == 'paid' ? "class=row-paid-green" : "")}}>
                 <td>{{ $no++ }}</td>
                 <td>Airport Transportation</td>
                     <td>{{ $item['item'] }}</td>
                     <td class="text-right">{{ $item['quantity'] }}</td>
                     @if($item['is_debt'] != '1' || $option != 'crew')
-                        <td class="text-right">Rp {{ number_format($item['price'], 0, ',', '.') }}</td>
-                        <td class="text-right">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
-                        @php $grandTotal += $item['subtotal']; @endphp
+                        @if($item['status_paid'] == 'paid' && $option == 'crew' )
+                            <td class="text-right">-</td>
+                            <td class="text-right"><b>PAID</b></td>
+                        @else
+                            <td class="text-right">Rp {{ number_format($item['price'], 0, ',', '.') }}</td>
+                            <td class="text-right">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
+                            @php $grandTotal += $item['subtotal']; @endphp
+                        @endif
                     @else
                         <td class="text-right">-</td>
                         <td class="text-right"><b>PAID</b></td>
@@ -246,7 +292,11 @@
                     @if ($item['is_debt'] == '1')
                         @php $payLater += $item['subtotal']; @endphp
                     @else
-                        @php $crewExpense += $item['subtotal']; @endphp
+                            @if ($item['status_paid'] == 'unpaid')
+                                @php $crewExpense += $item['subtotal']; @endphp
+                            @else                                
+                                @php $paid += $item['subtotal']; @endphp
+                            @endif
                     @endif
                 </tr>
             @endforeach
@@ -257,15 +307,20 @@
                 <td colspan="6">Resource</td>
             </tr>
             @foreach($resources['crews'] as $item)
-            <tr {{$item['is_debt'] == '1' && $option != 'pay-later' ? "class=row-paid" : ""}}>
+            <tr {{$item['is_debt'] == '1' && $option != 'pay-later' ? "class=row-paid" : ($item['status_paid'] == 'paid' ? "class=row-paid-green" : "")}}>
                 <td>{{ $no++ }}</td>
                 <td>Crew</td>
                     <td>{{ $item['item'] }}</td>
                     <td class="text-right">{{ $item['quantity'] }}</td>
                     @if($item['is_debt'] != '1' || $option != 'crew')
-                        <td class="text-right">Rp {{ number_format($item['price'], 0, ',', '.') }}</td>
-                        <td class="text-right">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
-                        @php $grandTotal += $item['subtotal']; @endphp
+                        @if($item['status_paid'] == 'paid' && $option == 'crew' )
+                            <td class="text-right">-</td>
+                            <td class="text-right"><b>PAID</b></td>
+                        @else
+                            <td class="text-right">Rp {{ number_format($item['price'], 0, ',', '.') }}</td>
+                            <td class="text-right">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
+                            @php $grandTotal += $item['subtotal']; @endphp
+                        @endif
                     @else
                         <td class="text-right">-</td>
                         <td class="text-right"><b>PAID</b></td>
@@ -273,7 +328,11 @@
                     @if ($item['is_debt'] == '1')
                         @php $payLater += $item['subtotal']; @endphp
                     @else
-                        @php $crewExpense += $item['subtotal']; @endphp
+                            @if ($item['status_paid'] == 'unpaid')
+                                @php $crewExpense += $item['subtotal']; @endphp
+                            @else                                
+                                @php $paid += $item['subtotal']; @endphp
+                            @endif
                     @endif
                 </tr>
             @endforeach
@@ -286,7 +345,7 @@
             @if ($option == 'internal')
                 <tr>
                     <td colspan="5" class="text-right"><strong>Total Invoice</strong></td>
-                    <td style="color:#2563eb" class="text-right"><strong>Rp {{ number_format($booking['total_invoice'], 0, ',', '.') }}</strong></td>
+                    <td style="color:#ef474a" class="text-right"><strong>Rp {{ number_format($booking['total_invoice'], 0, ',', '.') }}</strong></td>
                 </tr>
                 <tr>
                     <td colspan="5" class="text-right"><strong>Profit</strong></td>
@@ -298,7 +357,11 @@
                 </tr>
                 <tr>
                     <td colspan="5" class="text-right"><strong>Pay Later</strong></td>
-                    <td style="color:#f04444" class="text-right"><strong>Rp {{ number_format($payLater, 0, ',', '.') }}</strong></td>
+                    <td style="color:#2563eb" class="text-right"><strong>Rp {{ number_format($payLater, 0, ',', '.') }}</strong></td>
+                </tr>
+                <tr>
+                    <td colspan="5" class="text-right"><strong>PAID</strong></td>
+                    <td style="color:#16a34a" class="text-right"><strong>Rp {{ number_format($paid, 0, ',', '.') }}</strong></td>
                 </tr>
             @endif
         </tbody>

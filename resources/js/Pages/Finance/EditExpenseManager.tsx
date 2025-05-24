@@ -2,10 +2,10 @@ import React, { useState, useMemo, useEffect } from "react";
 import Swal from "@/utils/swal";
 import { router } from "@inertiajs/react";
 import Authenticated from "@/Layouts/Main";
-import { Download, BookmarkCheck, Image } from "lucide-react";
+import { Download, BookmarkCheck, Image,Upload } from "lucide-react";
 
 const formatCurrency = (value) => {
-    value = parseInt(value)
+    value = parseInt(value);
     return new Intl.NumberFormat("id-ID", {
         style: "currency",
         currency: "IDR",
@@ -72,13 +72,13 @@ const BookingInfo = ({ booking }) => {
                             ))}
                     </p>
                     <p>
-                      <span className="font-bold">Vehicle: </span>{" "}
-                      {booking.car.map((car, index) => (
-                        <span key={index}>
-                          {car.car.name}
-                          {index < booking.car.length - 1 ? ", " : ""}
-                        </span>
-                      ))}
+                        <span className="font-bold">Vehicle: </span>{" "}
+                        {booking.car.map((car, index) => (
+                            <span key={index}>
+                                {car.car.name}
+                                {index < booking.car.length - 1 ? ", " : ""}
+                            </span>
+                        ))}
                     </p>
                     <p>
                         <span className="font-bold">Guide: </span>{" "}
@@ -411,21 +411,16 @@ const PaymentProofModal = ({ isOpen, onClose, booking }) => {
         </div>
     );
 };
-
-// Modified SummaryCards component with payment proof button
 const SummaryCards = ({ booking, totals }) => {
-    const [isPaymentProofModalOpen, setIsPaymentProofModalOpen] =
-        useState(false);
+    const [isPaymentProofModalOpen, setIsPaymentProofModalOpen] = useState(false);
 
     return (
         <>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
                 {/* Total Expenses */}
                 <div className="bg-white rounded-lg shadow p-4">
                     <div className="flex justify-between items-center">
-                        <span className="text-gray-500 text-sm">
-                            Total Expenses
-                        </span>
+                        <span className="text-gray-500 text-sm">Total Expenses</span>
                         <a
                             href={`/finance/expense-manager/${booking.id}/internal`}
                             className="text-blue-600"
@@ -436,46 +431,75 @@ const SummaryCards = ({ booking, totals }) => {
                     <div className="text-blue-600 text-2xl font-bold mt-1">
                         {formatCurrency(totals.totalAmount)}
                     </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        All expense items
+                    </div>
                 </div>
 
-                {/* Net Total */}
+                {/* ✅ Net Total = Unpaid Items (Need immediate payment) */}
                 <div className="bg-white rounded-lg shadow p-4">
                     <div className="flex justify-between items-center">
-                        <span className="text-gray-500 text-sm">Net Total</span>
+                        <span className="text-gray-500 text-sm">
+                            Net Total ({totals.unpaidItemsCount})
+                        </span>
                         <div className="flex gap-1">
                             <a
+                                href=""
+                                onClick={(e) => {
+                                    e.preventDefault()
+                                    if (booking.payment_proof_expense === null) {
+                                        setIsPaymentProofModalOpen(true);
+                                    } else {
+                                        window.open(
+                                            "/storage/" + booking.payment_proof_expense,
+                                            "_blank",
+                                        );
+                                    }
+                                }}
+                                className="text-orange-600"
+                            >
+                                <Image />
+                            </a>
+
+
+                            <a
                                 href={`/finance/expense-manager/${booking.id}/crew`}
-                                className="text-green-600"
+                                className="text-orange-600"
                             >
                                 <Download />
                             </a>
                         </div>
                     </div>
                     <div className="flex justify-between items-center">
-                        <div className="text-green-600 text-2xl font-bold mt-1">
-                            {formatCurrency(totals.paidAmount)}
+                        <div className="text-orange-600 text-2xl font-bold mt-1">
+                            {formatCurrency(totals.unpaidAmount)}
                         </div>
-                        <div className="mt-2">
-                            <button
-                                onClick={() => {
-                                    if (
-                                        booking.payment_proof_expense === null
-                                    ) {
-                                        setIsPaymentProofModalOpen(true);
-                                    } else {
-                                        window.open(
-                                            "/storage/" +
-                                                booking.payment_proof_expense,
-                                            "_blank",
-                                        );
-                                    }
-                                }}
-                                className="text-white gap-1 flex items-center text-sm bg-green-600 py-1 px-2 rounded-lg font-medium"
-                                title="Payment Proof"
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        Need immediate payment
+                    </div>
+                </div>
+
+                {/* Already Paid Items */}
+                <div className="bg-white rounded-lg shadow p-4">
+                    <div className="flex justify-between items-center">
+                        <span className="text-gray-500 text-sm">
+                            Already Paid ({totals.paidItemsCount})
+                        </span>
+                        <div className="flex gap-1">
+                            <a
+                                href={`/finance/expense-manager/${booking.id}/paid`}
+                                className="text-green-600"
                             >
-                                <Image className="h-4 w-4" /> Bukti Bayar
-                            </button>
+                                <Download />
+                            </a>
                         </div>
+                    </div>
+                    <div className="text-green-600 text-2xl font-bold mt-1">
+                        {formatCurrency(totals.paidAmount)}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        Completed payments
                     </div>
                 </div>
 
@@ -483,30 +507,35 @@ const SummaryCards = ({ booking, totals }) => {
                 <div className="bg-white rounded-lg shadow p-4">
                     <div className="flex justify-between items-center">
                         <span className="text-gray-500 text-sm">
-                            Pay Later Total ({totals.payLaterItemsCount})
+                            Pay Later ({totals.payLaterItemsCount})
                         </span>
                         <div className="flex gap-1">
                             <a
                                 href={`/finance/expense-manager/${booking.id}/pay-later`}
-                                className="text-orange-500"
+                                className="text-blue-600"
                             >
                                 <Download />
                             </a>
                         </div>
                     </div>
-                    <div className="text-orange-500 text-2xl font-bold mt-1">
+                    <div className="text-blue-600 text-2xl font-bold mt-1">
                         {formatCurrency(totals.debtAmount)}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        Deferred payments
                     </div>
                 </div>
 
-                {/* Pay Later Items */}
+                {/* ✅ PRESERVED: Invoice Total */}
                 <div className="bg-white rounded-lg shadow p-4">
                     <div className="flex justify-between items-center">
                         <span className="text-gray-500 text-sm">Invoice</span>
                         <div className="flex gap-1">
                             <a
                                 href={`https://javavolcano-touroperator.com/bookings/invoice/${booking.url}`}
-                                className="text-orange-500"
+                                className="text-red-500"
+                                target="_blank"
+                                rel="noopener noreferrer"
                             >
                                 <Download />
                             </a>
@@ -514,8 +543,11 @@ const SummaryCards = ({ booking, totals }) => {
                     </div>
                     <div className="text-red-500 text-2xl font-bold mt-1">
                         {formatCurrency(
-                            parseInt(booking.grand_total) + parseInt(booking.book_add_on_total),
+                            parseInt(booking.grand_total) + parseInt(booking.book_add_on_total || 0)
                         )}
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                        Customer invoice total
                     </div>
                 </div>
             </div>
@@ -529,9 +561,14 @@ const SummaryCards = ({ booking, totals }) => {
         </>
     );
 };
-
-const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
-    const [editingCell, setEditingCell] = useState(null); // Format: "itemId-field" (e.g. "1-qty")
+const ExpenseTable = ({
+    items,
+    onPayLaterChange,
+    onPaidChange,
+    onEdit,
+    onDelete,
+}) => {
+    const [editingCell, setEditingCell] = useState(null);
     const [editValue, setEditValue] = useState("");
 
     const handleKeyPress = (e, itemId, field, index) => {
@@ -539,7 +576,7 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
             handleSave(itemId, field, index);
         }
     };
-    // Group items berdasarkan hotel untuk accommodation
+
     const hotelGroups = items.reduce((acc, item) => {
         if (item.category === "Accommodation") {
             const hotelId = item.originalData.hotelId;
@@ -547,6 +584,7 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
                 acc[hotelId] = {
                     index: items.indexOf(item),
                     isDebt: item.isDebt,
+                    isPaid: item.isPaid, // ✅ Add isPaid tracking
                 };
             }
         }
@@ -561,20 +599,17 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
     const handleSave = (itemId, field, index) => {
         let newValue = editValue;
 
-        // Convert to appropriate type and validate
         if (field === "qty") {
-            newValue = parseInt(editValue) || 1; // Minimum 1
+            newValue = parseInt(editValue) || 1;
         } else if (field === "rate") {
             newValue = parseInt(editValue.replace(/[^\d]/g, "")) || 0;
         }
 
-        // Update parent state
         onEdit(index, field, newValue);
-
-        // Reset edit state
         setEditingCell(null);
         setEditValue("");
     };
+
     const groupedItems = items.reduce((acc, item) => {
         if (!acc[item.category]) {
             acc[item.category] = [];
@@ -622,10 +657,10 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
                                 AMOUNT
                             </th>
                             <th className="px-4 py-3 text-center text-sm font-bold text-gray-500">
-                                PAY LATER
+                                PAID
                             </th>
                             <th className="px-4 py-3 text-center text-sm font-bold text-gray-500">
-                                PAID
+                                PAY LATER
                             </th>
                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500"></th>
                         </tr>
@@ -637,7 +672,6 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
 
                             return (
                                 <React.Fragment key={category}>
-                                    {/* Category Header Row */}
                                     <tr className="bg-gray-200">
                                         <td
                                             colSpan="10"
@@ -647,7 +681,6 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
                                         </td>
                                     </tr>
 
-                                    {/* Category Items */}
                                     {categoryItems.map((item, itemIndex) => {
                                         const currentNumber = counter++;
                                         const hotelId =
@@ -662,9 +695,11 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
                                             <tr
                                                 key={item.id}
                                                 className={
-                                                    item.isDebt
-                                                        ? "bg-yellow-50"
-                                                        : "bg-white"
+                                                    item.isPaid
+                                                        ? "bg-green-50" // Green for paid items
+                                                        : item.isDebt
+                                                          ? "bg-yellow-50" // Yellow for pay later items
+                                                          : "bg-white" // White for unpaid items
                                                 }
                                             >
                                                 <td className="px-4 py-3 text-sm">
@@ -680,7 +715,7 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
                                                     {item.unit}
                                                 </td>
 
-                                                {/* QTY Cell */}
+                                                {/* QTY Cell - No changes */}
                                                 <td className="px-4 py-3 text-sm text-right">
                                                     {editingCell ===
                                                     `${item.id}-qty` ? (
@@ -766,7 +801,7 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
                                                     )}
                                                 </td>
 
-                                                {/* RATE Cell */}
+                                                {/* RATE Cell - No changes */}
                                                 <td className="px-4 py-3 text-sm text-right">
                                                     {editingCell ===
                                                     `${item.id}-rate` ? (
@@ -860,11 +895,13 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
                                                         </div>
                                                     )}
                                                 </td>
+
                                                 <td className="px-4 py-3 text-sm text-right">
                                                     {formatCurrency(
                                                         item.amount,
                                                     )}
                                                 </td>
+                                                {/* PAID Column - Updated with exclusive logic */}
                                                 <td className="px-4 py-3">
                                                     {showToggle &&
                                                         !item.debtPaymentId && (
@@ -873,33 +910,66 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
                                                                     <input
                                                                         type="checkbox"
                                                                         checked={
-                                                                            item.isDebt
+                                                                            item.isPaid
                                                                         }
+                                                                        disabled={
+                                                                            item.isDebt
+                                                                        } // ✅ Disabled when Pay Later is active
                                                                         onChange={(
                                                                             e,
-                                                                        ) =>
-                                                                            onPayLaterChange(
-                                                                                items.indexOf(
-                                                                                    item,
-                                                                                ),
+                                                                        ) => {
+                                                                            if (
                                                                                 e
                                                                                     .target
-                                                                                    .checked,
-                                                                            )
-                                                                        }
+                                                                                    .checked
+                                                                            ) {
+                                                                                // When marking as paid, automatically turn off pay later
+                                                                                onPaidChange(
+                                                                                    items.indexOf(
+                                                                                        item,
+                                                                                    ),
+                                                                                    true,
+                                                                                );
+                                                                                if (
+                                                                                    item.isDebt
+                                                                                ) {
+                                                                                    onPayLaterChange(
+                                                                                        items.indexOf(
+                                                                                            item,
+                                                                                        ),
+                                                                                        false,
+                                                                                    );
+                                                                                }
+                                                                            } else {
+                                                                                onPaidChange(
+                                                                                    items.indexOf(
+                                                                                        item,
+                                                                                    ),
+                                                                                    false,
+                                                                                );
+                                                                            }
+                                                                        }}
                                                                         className="sr-only peer"
                                                                     />
-                                                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                                                    <div
+                                                                        className={`w-9 h-5 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${
+                                                                            item.isDebt
+                                                                                ? "bg-gray-300 cursor-not-allowed"
+                                                                                : "bg-gray-200 peer-focus:outline-none peer-checked:bg-green-600"
+                                                                        }`}
+                                                                    ></div>
                                                                 </label>
                                                             </div>
                                                         )}
                                                     {item.debtPaymentId && (
                                                         <div className="text-sm text-center text-green-600 font-medium flex justify-center items-center gap-1">
-                                                            <BookmarkCheck className="h-5 w-5" />{" "}
-                                                            PAY LATER (PAID)
+                                                            <BookmarkCheck className="h-5 w-5" />
+                                                            PAID
                                                         </div>
                                                     )}
                                                 </td>
+
+                                                {/* PAY LATER Column - Updated with exclusive logic */}
                                                 <td className="px-4 py-3">
                                                     {showToggle &&
                                                         !item.debtPaymentId && (
@@ -910,27 +980,58 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
                                                                         checked={
                                                                             item.isDebt
                                                                         }
+                                                                        disabled={
+                                                                            item.isPaid
+                                                                        } // ✅ Disabled when Paid is active
                                                                         onChange={(
                                                                             e,
-                                                                        ) =>
-                                                                            onPayLaterChange(
-                                                                                items.indexOf(
-                                                                                    item,
-                                                                                ),
+                                                                        ) => {
+                                                                            if (
                                                                                 e
                                                                                     .target
-                                                                                    .checked,
-                                                                            )
-                                                                        }
+                                                                                    .checked
+                                                                            ) {
+                                                                                // When marking as pay later, automatically turn off paid
+                                                                                onPayLaterChange(
+                                                                                    items.indexOf(
+                                                                                        item,
+                                                                                    ),
+                                                                                    true,
+                                                                                );
+                                                                                if (
+                                                                                    item.isPaid
+                                                                                ) {
+                                                                                    onPaidChange(
+                                                                                        items.indexOf(
+                                                                                            item,
+                                                                                        ),
+                                                                                        false,
+                                                                                    );
+                                                                                }
+                                                                            } else {
+                                                                                onPayLaterChange(
+                                                                                    items.indexOf(
+                                                                                        item,
+                                                                                    ),
+                                                                                    false,
+                                                                                );
+                                                                            }
+                                                                        }}
                                                                         className="sr-only peer"
                                                                     />
-                                                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                                                    <div
+                                                                        className={`w-9 h-5 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all ${
+                                                                            item.isPaid
+                                                                                ? "bg-gray-300 cursor-not-allowed"
+                                                                                : "bg-gray-200 peer-focus:outline-none peer-checked:bg-blue-600"
+                                                                        }`}
+                                                                    ></div>
                                                                 </label>
                                                             </div>
                                                         )}
                                                     {item.debtPaymentId && (
                                                         <div className="text-sm text-center text-green-600 font-medium flex justify-center items-center gap-1">
-                                                            <BookmarkCheck className="h-5 w-5" />{" "}
+                                                            <BookmarkCheck className="h-5 w-5" />
                                                             PAY LATER (PAID)
                                                         </div>
                                                     )}
@@ -979,7 +1080,6 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
         </div>
     );
 };
-
 // Modal-modal tambahan
 const AddDestinationModal = ({
     isOpen,
@@ -1785,22 +1885,18 @@ const EditExpenseManager = ({
         });
     };
 
+    // ✅ CORRECTED: handleAddNewItem function
     const handleAddNewItem = (newItem) => {
         setItems((prevItems) => {
-            // Crear ID para el nuevo item
             const newId = `new_${Date.now()}`;
-
             let processedItem;
 
             if (newItem.destination_id) {
-                // Es una actividad de destino
-                // Necesitamos extraer el nombre del destino del newItem
-                // En AddDestinationModal, debemos incluir esta información
+                // Destination activity
                 processedItem = {
                     id: newId,
                     category: "Destination",
-                    // Obtener subCategory desde el destino en newItem en lugar de selectedDestination
-                    subCategory: newItem.destinationName, // Añadir esta propiedad en AddDestinationModal
+                    subCategory: newItem.destinationName,
                     description:
                         newItem.name || newItem.destination_activity.name,
                     unit: "Pax",
@@ -1808,10 +1904,11 @@ const EditExpenseManager = ({
                     rate: newItem.price,
                     amount: newItem.qty * newItem.price,
                     isDebt: newItem.is_debt === "1",
+                    isPaid: false, // ✅ Default to false for new items
                     status: "new",
                     originalData: {
                         type: "destination",
-                        destName: newItem.destinationName, // Usar la misma información
+                        destName: newItem.destinationName,
                         destination_id: newItem.destination_id,
                         isNewActivity: newItem.isNewActivity,
                         ...(newItem.isNewActivity
@@ -1825,22 +1922,21 @@ const EditExpenseManager = ({
                     },
                 };
             } else {
-                // Procesar otros tipos de items como antes
+                // Other types of items
                 processedItem = {
                     ...newItem,
                     id: newId,
+                    isPaid: false, // ✅ Default to false for new items
                     status: "new",
                 };
             }
 
-            // Agregar el nuevo item y ordenar
             const updatedItems = [...prevItems, processedItem];
             return sortItems(updatedItems);
         });
     };
-    // Initialize items state with all expense items
     const [items, setItems] = useState(() => {
-        // Pertama, kumpulkan semua item accommodation dan kelompokkan berdasarkan hotel
+        // Accommodation items
         const accommodationItems = accommodations.reduce((acc, hotel) => {
             // Room items
             const roomItems = hotel.book_room.map((room) => ({
@@ -1850,9 +1946,10 @@ const EditExpenseManager = ({
                 description: room.room_hotel.room_name,
                 unit: "No",
                 qty: room.quantity,
-                rate: room.subtotal/room.quantity,
+                rate: room.subtotal / room.quantity,
                 amount: room.subtotal,
                 isDebt: hotel.is_debt === "1",
+                isPaid: hotel.is_paid === "1", // ✅ Correct mapping
                 debtPaymentId: hotel.debt_payment_id !== null,
                 originalData: {
                     type: "room",
@@ -1863,7 +1960,7 @@ const EditExpenseManager = ({
             }));
 
             // Meal items
-            const mealItems = hotel.book_hotel_meal.map((meal) => ({
+            const mealItems = (hotel.book_hotel_meal || []).map((meal) => ({
                 id: `meal-${meal.id}`,
                 category: "Accommodation",
                 subCategory: hotel.hotel.name,
@@ -1873,6 +1970,7 @@ const EditExpenseManager = ({
                 rate: meal.price,
                 amount: meal.qty * meal.price,
                 isDebt: hotel.is_debt === "1",
+                isPaid: hotel.is_paid === "1", // ✅ Correct mapping
                 originalData: {
                     type: "meal",
                     hotelId: hotel.id,
@@ -1882,18 +1980,15 @@ const EditExpenseManager = ({
                 },
             }));
 
-            // Gabungkan room dan meal untuk hotel ini
             acc.push(...roomItems, ...mealItems);
             return acc;
         }, []);
 
-        // Sort accommodation items berdasarkan subCategory (nama hotel)
+        // Sort accommodation items
         const sortedAccommodationItems = accommodationItems.sort((a, b) => {
-            // Pertama sort berdasarkan nama hotel
             const hotelCompare = a.subCategory.localeCompare(b.subCategory);
             if (hotelCompare !== 0) return hotelCompare;
 
-            // Jika hotel sama, room ditampilkan dulu baru meal
             if (
                 a.originalData.type === "room" &&
                 b.originalData.type === "meal"
@@ -1905,7 +2000,6 @@ const EditExpenseManager = ({
             )
                 return 1;
 
-            // Jika keduanya meal, sort berdasarkan tipe meal (lunch dulu, dinner kemudian)
             if (
                 a.originalData.type === "meal" &&
                 b.originalData.type === "meal"
@@ -1921,8 +2015,9 @@ const EditExpenseManager = ({
         const initialItems = [
             ...sortedAccommodationItems.map((item) => ({
                 ...item,
-                status: "unchanged", // Add status field
+                status: "unchanged",
             })),
+
             // Destination items
             ...Object.entries(destinations).flatMap(([destName, activities]) =>
                 activities.map((activity) => ({
@@ -1935,6 +2030,7 @@ const EditExpenseManager = ({
                     rate: activity.price,
                     amount: activity.qty * activity.price,
                     isDebt: activity.is_debt === "1",
+                    isPaid: activity.status_paid === "paid", // ✅ Correct mapping
                     debtPaymentId: activity.debt_payment_id !== null,
                     status: "unchanged",
                     originalData: {
@@ -1947,6 +2043,7 @@ const EditExpenseManager = ({
                     },
                 })),
             ),
+
             // Others items
             ...others.map((item) => ({
                 id: item.id,
@@ -1958,6 +2055,7 @@ const EditExpenseManager = ({
                 rate: item.price,
                 amount: item.qty * item.price,
                 isDebt: item.is_debt === "1",
+                isPaid: item.status_paid === "paid", // ✅ Correct mapping
                 debtPaymentId: item.debt_payment_id !== null,
                 status: "unchanged",
                 originalData: {
@@ -1966,6 +2064,7 @@ const EditExpenseManager = ({
                     itemId: item.id,
                 },
             })),
+
             // Transport items
             ...resources.cars.map((car) => ({
                 id: car.id,
@@ -1977,6 +2076,7 @@ const EditExpenseManager = ({
                 rate: car.price,
                 amount: car.qty * car.price,
                 isDebt: car.is_debt === "1",
+                isPaid: car.status_paid === "paid", // ✅ Correct mapping
                 debtPaymentId: car.debt_payment_id !== null,
                 status: "unchanged",
                 originalData: {
@@ -1985,6 +2085,7 @@ const EditExpenseManager = ({
                     carId: car.id,
                 },
             })),
+
             // Crew items
             ...resources.crews.map((crew) => ({
                 id: crew.id,
@@ -1996,6 +2097,7 @@ const EditExpenseManager = ({
                 rate: crew.price,
                 amount: crew.qty * crew.price,
                 isDebt: crew.is_debt === "1",
+                isPaid: crew.status_paid === "paid", // ✅ Correct mapping
                 debtPaymentId: crew.debt_payment_id !== null,
                 status: "unchanged",
                 originalData: {
@@ -2008,7 +2110,46 @@ const EditExpenseManager = ({
 
         return initialItems;
     });
-    // Handle pay later toggle
+    const handlePaidChange = (index, isPaid) => {
+        setItems((prevItems) => {
+            const newItems = [...prevItems];
+            const targetItem = newItems[index];
+
+            // If item is accommodation, update all items from the same hotel
+            if (targetItem.category === "Accommodation") {
+                const hotelId = targetItem.originalData.hotelId;
+                return newItems.map((item) => {
+                    if (
+                        item.category === "Accommodation" &&
+                        item.originalData.hotelId === hotelId
+                    ) {
+                        return {
+                            ...item,
+                            isPaid,
+                            isDebt: isPaid ? false : item.isDebt, // ✅ Turn off pay later when paid is active
+                            status:
+                                item.status === "unchanged"
+                                    ? "modified"
+                                    : item.status,
+                        };
+                    }
+                    return item;
+                });
+            }
+
+            // For non-accommodation items, only update the specific item
+            newItems[index] = {
+                ...newItems[index],
+                isPaid,
+                isDebt: isPaid ? false : newItems[index].isDebt, // ✅ Turn off pay later when paid is active
+                status:
+                    newItems[index].status === "unchanged"
+                        ? "modified"
+                        : newItems[index].status,
+            };
+            return newItems;
+        });
+    };
     const handlePayLaterChange = (index, isDebt) => {
         setItems((prevItems) => {
             const newItems = [...prevItems];
@@ -2025,6 +2166,7 @@ const EditExpenseManager = ({
                         return {
                             ...item,
                             isDebt,
+                            isPaid: isDebt ? false : item.isPaid, // ✅ Turn off paid when pay later is active
                             status:
                                 item.status === "unchanged"
                                     ? "modified"
@@ -2039,6 +2181,7 @@ const EditExpenseManager = ({
             newItems[index] = {
                 ...newItems[index],
                 isDebt,
+                isPaid: isDebt ? false : newItems[index].isPaid, // ✅ Turn off paid when pay later is active
                 status:
                     newItems[index].status === "unchanged"
                         ? "modified"
@@ -2067,22 +2210,43 @@ const EditExpenseManager = ({
             return newItems;
         });
     };
-    // Calculate summary totals
+    // ✅ CORRECTED: Summary calculation with proper Net Total
     const summaryTotals = useMemo(() => {
+        const paidItems = items.filter((item) => item.isPaid);
         const payLaterItems = items.filter((item) => item.isDebt);
-        const totalAmount = items.reduce((sum, item) => sum + parseInt(item.amount), 0);
+        const unpaidItems = items.filter(
+            (item) => !item.isPaid && !item.isDebt,
+        ); // ✅ Items that need immediate payment
+
+        const totalAmount = items.reduce(
+            (sum, item) => sum + parseInt(item.amount),
+            0,
+        );
+        const paidAmount = paidItems.reduce(
+            (sum, item) => sum + parseInt(item.amount),
+            0,
+        );
         const debtAmount = payLaterItems.reduce(
             (sum, item) => sum + parseInt(item.amount),
             0,
         );
+        const unpaidAmount = unpaidItems.reduce(
+            (sum, item) => sum + parseInt(item.amount),
+            0,
+        ); // ✅ Net Total
 
         return {
-            totalAmount,
-            paidAmount: totalAmount - debtAmount,
-            debtAmount,
+            totalAmount, // Total keseluruhan
+            paidAmount, // Yang sudah dibayar
+            debtAmount, // Yang ditunda (Pay Later)
+            unpaidAmount, // ✅ Net Total = Belum dibayar & tidak hutang (perlu bayar sekarang)
             payLaterItemsCount: payLaterItems.length,
+            paidItemsCount: paidItems.length,
+            unpaidItemsCount: unpaidItems.length,
         };
     }, [items]);
+
+    // ✅ CORRECTED: handleSubmit function with proper data structure
     const handleSubmit = () => {
         const formatDecimal = (num) => Number(num).toFixed(2);
 
@@ -2100,7 +2264,7 @@ const EditExpenseManager = ({
             }
         });
 
-        // Pertama, kelompokkan items akomodasi berdasarkan hotel
+        // Group accommodations by hotel
         const groupedAccommodations = items
             .filter(
                 (item) =>
@@ -2114,6 +2278,7 @@ const EditExpenseManager = ({
                         rooms: [],
                         meals: [],
                         isDebt: item.isDebt,
+                        isPaid: item.isPaid, // ✅ Track isPaid separately
                     };
                 }
                 if (item.originalData.type === "room") {
@@ -2124,7 +2289,7 @@ const EditExpenseManager = ({
                 return acc;
             }, {});
 
-        // Kelompokkan destinasi
+        // Group destinations
         const groupedDestinations = {
             modified: itemsByStatus.modified
                 .filter((item) => item.category === "Destination")
@@ -2153,15 +2318,12 @@ const EditExpenseManager = ({
             destinations: deletedItems
                 .filter((item) => item.category === "Destination")
                 .map((item) => item.id),
-
             others: deletedItems
                 .filter((item) => item.category === "Others")
                 .map((item) => item.id),
-
             cars: deletedItems
                 .filter((item) => item.category === "Transport")
                 .map((item) => item.id),
-
             crews: deletedItems
                 .filter((item) => item.category === "Resource")
                 .map((item) => item.id),
@@ -2170,11 +2332,11 @@ const EditExpenseManager = ({
         const submitData = {
             booking_id: booking.id,
 
-            // Transform accommodations - Tidak berubah
+            // ✅ FIXED: Accommodations with separate isPaid field
             accommodations: Object.entries(groupedAccommodations).map(
                 ([hotelId, data]) => ({
                     hotel_id: parseInt(hotelId),
-                    is_paid: !data.isDebt ? "1" : "0",
+                    is_paid: data.isPaid ? "1" : "0", // ✅ Use isPaid directly
                     is_debt: data.isDebt ? "1" : "0",
                     rooms: data.rooms.map((room) => ({
                         id: room.originalData.roomId,
@@ -2190,7 +2352,7 @@ const EditExpenseManager = ({
                 }),
             ),
 
-            // Perbaikan struktur destinations
+            // ✅ FIXED: Destinations with status_paid field
             destinations: {
                 deleted: groupedDeletedItems.destinations,
 
@@ -2204,6 +2366,7 @@ const EditExpenseManager = ({
                             quantity: item.qty,
                             price: parseInt(item.rate),
                             is_debt: item.isDebt ? "1" : "0",
+                            status_paid: item.isPaid ? "paid" : "unpaid", // ✅ Use isPaid
                         })),
                 ),
 
@@ -2225,12 +2388,13 @@ const EditExpenseManager = ({
                                 quantity: item.qty,
                                 price: parseInt(item.rate),
                                 is_debt: item.isDebt ? "1" : "0",
+                                status_paid: item.isPaid ? "paid" : "unpaid", // ✅ Use isPaid
                             };
                         }),
                 ),
             },
 
-            // Perbaikan struktur others
+            // ✅ FIXED: Others with status_paid field
             others: {
                 deleted: groupedDeletedItems.others,
                 modified: itemsByStatus.modified
@@ -2242,6 +2406,7 @@ const EditExpenseManager = ({
                         quantity: item.qty,
                         price: parseInt(item.rate),
                         is_debt: item.isDebt ? "1" : "0",
+                        status_paid: item.isPaid ? "paid" : "unpaid", // ✅ Use isPaid
                     })),
 
                 new: itemsByStatus.new
@@ -2259,10 +2424,12 @@ const EditExpenseManager = ({
                             quantity: item.qty,
                             price: parseInt(item.rate),
                             is_debt: item.isDebt ? "1" : "0",
+                            status_paid: item.isPaid ? "paid" : "unpaid", // ✅ Use isPaid
                         };
                     }),
             },
-            // Perbaikan struktur resources
+
+            // ✅ FIXED: Resources with status_paid field
             resources: {
                 cars: {
                     deleted: groupedDeletedItems.cars,
@@ -2274,6 +2441,7 @@ const EditExpenseManager = ({
                             quantity: item.qty,
                             price: parseInt(item.rate),
                             is_debt: item.isDebt ? "1" : "0",
+                            status_paid: item.isPaid ? "paid" : "unpaid", // ✅ Use isPaid
                         })),
 
                     new: itemsByStatus.new
@@ -2283,6 +2451,7 @@ const EditExpenseManager = ({
                             quantity: item.qty,
                             price: parseInt(item.rate),
                             is_debt: item.isDebt ? "1" : "0",
+                            status_paid: item.isPaid ? "paid" : "unpaid", // ✅ Use isPaid
                         })),
                 },
 
@@ -2296,6 +2465,7 @@ const EditExpenseManager = ({
                             quantity: item.qty,
                             price: parseInt(item.rate),
                             is_debt: item.isDebt ? "1" : "0",
+                            status_paid: item.isPaid ? "paid" : "unpaid", // ✅ Use isPaid
                         })),
 
                     new: itemsByStatus.new
@@ -2305,16 +2475,19 @@ const EditExpenseManager = ({
                             quantity: item.qty,
                             price: parseInt(item.rate),
                             is_debt: item.isDebt ? "1" : "0",
+                            status_paid: item.isPaid ? "paid" : "unpaid", // ✅ Use isPaid
                         })),
                 },
             },
+
             summary: {
-                totalAmount: summaryTotals.totalAmount,
-                paidAmount: summaryTotals.paidAmount,
-                debtAmount: summaryTotals.debtAmount,
-                // Hapus fields yang tidak digunakan
-                // balanceAmount: summaryTotals.balanceAmount,
-                // profit: summaryTotals.profit
+                totalAmount: summaryTotals.totalAmount, // Total keseluruhan
+                paidAmount: summaryTotals.paidAmount, // Yang sudah dibayar
+                unpaidAmount: summaryTotals.unpaidAmount, // ✅ Net Total = Yang perlu dibayar sekarang
+                debtAmount: summaryTotals.debtAmount, // Yang ditunda (Pay Later)
+                paidItemsCount: summaryTotals.paidItemsCount,
+                unpaidItemsCount: summaryTotals.unpaidItemsCount,
+                payLaterItemsCount: summaryTotals.payLaterItemsCount,
             },
         };
 
@@ -2383,6 +2556,7 @@ const EditExpenseManager = ({
                 <ExpenseTable
                     items={items}
                     onPayLaterChange={handlePayLaterChange}
+                    onPaidChange={handlePaidChange}
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                 />

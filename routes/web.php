@@ -141,6 +141,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/expense-manager/{id}/edit', [FinanceController::class, 'editExpense']);
         Route::post('/expense-manager/{id}/update', [FinanceController::class, 'updateExpense']);
         Route::get('/expense-manager/{id}/crew', [FinanceController::class, 'downloadExpense']);
+        Route::get('/expense-manager/{id}/paid', [FinanceController::class, 'downloadExpense']);
         Route::get('/expense-manager/{id}/internal', [FinanceController::class, 'downloadExpense']);
         Route::get('/expense-manager/{id}/pay-later', [FinanceController::class, 'downloadExpense']);
         Route::post('/expense-manager/{bookingId}/upload-payment-proof', [FinanceController::class, 'uploadPaymentProofExpense']);

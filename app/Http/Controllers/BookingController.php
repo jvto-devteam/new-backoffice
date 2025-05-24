@@ -1238,6 +1238,8 @@ class BookingController extends Controller
         $pax = $booking->total_pax;
 
         $totalAccommodations = 0;
+        $totalAccommodationsPaid = 0;
+        $totalAccommodationsDebt = 0;
         $totalDestinations = 0;
         $totalOthers = 0;
         $totalResources = 0;
@@ -1251,7 +1253,7 @@ class BookingController extends Controller
             }]);
         },'bookHotelMeal'])->where('booking_id',$id)
         ->get()
-        ->map(function($booking) use($pax,&$totalAccommodations) {
+        ->map(function($booking) use($pax,&$totalAccommodations,&$totalAccommodationsPaid,&$totalAccommodationsDebt) {
             if($booking->l == '1'){
                 $cekBookHotelMeals = BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','lunch')->first();
                 
@@ -1268,6 +1270,13 @@ class BookingController extends Controller
                 $lunch->subtotal = $pax*$booking->hotel->lunch_rate;
                 $lunch->save();
                 $lunchTotal = $lunch->subtotal;
+                if($booking->is_debt == '1'){
+                    $totalAccommodationsDebt += $lunchTotal;
+                }
+                else if($booking->is_paid == '1'){
+                    $totalAccommodationsPaid += $lunchTotal;
+                }
+
 
                 $totalAccommodations += $lunchTotal;
             }
@@ -1291,6 +1300,13 @@ class BookingController extends Controller
                 $dinner->save();
                 
                 $dinnerTotal = $dinner->subtotal;
+                if($booking->is_debt == '1'){
+                    $totalAccommodationsDebt += $dinnerTotal;
+                }
+                else if($booking->is_paid == '1'){
+                    $totalAccommodationsPaid += $dinnerTotal;
+                }
+
                 $totalAccommodations += $dinnerTotal;
 
             }
@@ -1298,14 +1314,22 @@ class BookingController extends Controller
                 BookHotelMeal::where('book_hotel_id',$booking->id)->where('meals','dinner')->delete();
             }
 
-            $booking->bookRoom->map(function($room) use(&$totalAccommodations) {
+            $booking->bookRoom->map(function($room) use(&$totalAccommodations,&$booking,&$totalAccommodationsPaid,&$totalAccommodationsDebt) {
                 if ($room->subtotal == null) {
                     $room->subtotal = $room->roomHotel->rate * $room->quantity;
                     $room->save();
                 }
                 $totalAccommodations += $room->subtotal;
+                if($booking->is_debt == '1'){
+                    $totalAccommodationsDebt += $room->subtotal;
+                }
+                else if($booking->is_paid == '1'){
+                    $totalAccommodationsPaid += $room->subtotal;
+                }
+
                 return $room;
             });
+
             return $booking;
         });
 
@@ -1314,10 +1338,10 @@ class BookingController extends Controller
         $bookCarActivity = BookCarActivity::where('booking_id',$id)->sum('subtotal');
         $bookCrewActivity = BookCrewActivity::where('booking_id',$id)->sum('subtotal');
         
-        BookDestinationActivity::where('booking_id',$id)->where('is_debt','0')->update(['status_paid' => 'paid']);
-        BookOthersActivity::where('booking_id',$id)->where('is_debt','0')->update(['status_paid' => 'paid']);
-        BookCarActivity::where('booking_id',$id)->where('is_debt','0')->update(['status_paid' => 'paid']);
-        BookCrewActivity::where('booking_id',$id)->where('is_debt','0')->update(['status_paid' => 'paid']);
+        // BookDestinationActivity::where('booking_id',$id)->where('is_debt','0')->update(['status_paid' => 'paid']);
+        // BookOthersActivity::where('booking_id',$id)->where('is_debt','0')->update(['status_paid' => 'paid']);
+        // BookCarActivity::where('booking_id',$id)->where('is_debt','0')->update(['status_paid' => 'paid']);
+        // BookCrewActivity::where('booking_id',$id)->where('is_debt','0')->update(['status_paid' => 'paid']);
         
         $bookDestinationActivityPaid = BookDestinationActivity::where('booking_id',$id)->where('status_paid','paid')->sum('subtotal');
         $bookOthersPaid = BookOthersActivity::where('booking_id',$id)->where('status_paid','paid')->sum('subtotal');
@@ -1331,13 +1355,14 @@ class BookingController extends Controller
 
         $totalExpense = $totalAccommodations + $bookDestinationActivity + $bookOthers + $bookCarActivity + $bookCrewActivity;
 
-        $totalExpensePaid = $totalAccommodations + $bookDestinationActivityPaid + $bookOthersPaid + $bookCarActivityPaid + $bookCrewActivityPaid;
-        $totalExpenseDebt = $bookDestinationActivityDebt + $bookOthersDebt + $bookCarActivityDebt + $bookCrewActivityDebt;
+        $totalExpensePaid = $totalAccommodationsPaid + $bookDestinationActivityPaid + $bookOthersPaid + $bookCarActivityPaid + $bookCrewActivityPaid;
+        $totalExpenseDebt = $totalAccommodationsDebt + $bookDestinationActivityDebt + $bookOthersDebt + $bookCarActivityDebt + $bookCrewActivityDebt;
 
         $booking->expense_internal_total = $totalExpense;
-        $booking->total_expense_crew = $totalExpensePaid;
-        $booking->total_expense_balance = 0;
+        $booking->total_expense_paid = $totalExpensePaid;
         $booking->total_expense_debt = $totalExpenseDebt;
+        $booking->total_expense_crew = $totalExpense - ($totalExpensePaid+$totalExpenseDebt);
+        $booking->total_expense_balance = 0;
 
         $booking->save();
     }

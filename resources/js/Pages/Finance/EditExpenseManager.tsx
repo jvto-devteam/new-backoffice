@@ -624,6 +624,9 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
                             <th className="px-4 py-3 text-center text-sm font-bold text-gray-500">
                                 PAY LATER
                             </th>
+                            <th className="px-4 py-3 text-center text-sm font-bold text-gray-500">
+                                PAID
+                            </th>
                             <th className="px-4 py-3 text-center text-xs font-medium text-gray-500"></th>
                         </tr>
                     </thead>
@@ -637,7 +640,7 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
                                     {/* Category Header Row */}
                                     <tr className="bg-gray-200">
                                         <td
-                                            colSpan="9"
+                                            colSpan="10"
                                             className="px-4 py-2 font-bold"
                                         >
                                             {category}
@@ -860,6 +863,41 @@ const ExpenseTable = ({ items, onPayLaterChange, onEdit, onDelete }) => {
                                                 <td className="px-4 py-3 text-sm text-right">
                                                     {formatCurrency(
                                                         item.amount,
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3">
+                                                    {showToggle &&
+                                                        !item.debtPaymentId && (
+                                                            <div className="flex justify-center">
+                                                                <label className="relative inline-flex items-center cursor-pointer">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={
+                                                                            item.isDebt
+                                                                        }
+                                                                        onChange={(
+                                                                            e,
+                                                                        ) =>
+                                                                            onPayLaterChange(
+                                                                                items.indexOf(
+                                                                                    item,
+                                                                                ),
+                                                                                e
+                                                                                    .target
+                                                                                    .checked,
+                                                                            )
+                                                                        }
+                                                                        className="sr-only peer"
+                                                                    />
+                                                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                                                </label>
+                                                            </div>
+                                                        )}
+                                                    {item.debtPaymentId && (
+                                                        <div className="text-sm text-center text-green-600 font-medium flex justify-center items-center gap-1">
+                                                            <BookmarkCheck className="h-5 w-5" />{" "}
+                                                            PAY LATER (PAID)
+                                                        </div>
                                                     )}
                                                 </td>
                                                 <td className="px-4 py-3">

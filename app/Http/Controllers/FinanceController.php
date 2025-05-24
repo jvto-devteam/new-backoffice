@@ -287,33 +287,18 @@ class FinanceController extends Controller
     }
 
     function expense(Request $request){
-        $search = $request->input('search');
-        $startDate = $request->get('start_date') ? $request->get('start_date') : date('Y-m-01');
-        $endDate = $request->get('end_date') ? $request->get('end_date') : date('Y-m-t');
-        $package = $request->input('package');
+        $yearMonth = $request->get('year_month') ? $request->get('year_month') : date('Y-m-01');
         $channel = $request->input('channel');
-        $perPage = 10;
-        $query = Booking::select('id','user_id','total_pax','travel_date_start','grand_total','payment','expense_internal_total','total_expense_crew','total_expense_balance','total_expense_debt','booking_category_id','agent_id','package_duration')->with(['user.country','bookingDetail' => function($q){
+        $query = Booking::with(['user.country','bookingDetail' => function($q){
             $q->select('id','package_id','booking_id')->with('package',function($qq){
                 $qq->select('id','name','package_code');
             });
-        }])->where('status', 'booked')->where('travel_date_start','like','%2025%')->orderBy('travel_date_start','asc');
-        if ($search) {
-            $query->whereHas('user',function($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%");
-            });
-        }
+        }, 'guideDriver'])->where('status', 'booked')->where('travel_date_start','like','%2025%')->orderBy('travel_date_start','asc');
 
-        if ($startDate && $endDate) {
-            $query->whereBetween('travel_date_start', [$startDate, $endDate]);
+        if ($yearMonth) {
+            $query->where('travel_date_start','like',"%$yearMonth%");
         }
     
-        // Apply package filter
-        if ($package) {
-            $query->whereHas('bookingDetail', function($q) use ($package) {
-                $q->where('package_id', $package);
-            });
-        }
         // Apply channel filter
         if ($channel) {
             if($channel == 'twt'){
@@ -326,51 +311,47 @@ class FinanceController extends Controller
                 $query->where('agent_id',2)->where('booking_category_id','!=',3);
             }
         }
-
-        $bookings = $query->get();
-        // Total Booking, Total Expense, Total Paid, Total Unpaid 
-        $summary = [
-            'bookings' => $query->count(),
-            'total_expense' => $query->sum('expense_internal_total'),
-            'paid' => $query->sum('total_expense_crew'),
-            'unpaid' => $query->sum('total_expense_balance'),            
-            'debt' => $query->sum('total_expense_debt'),            
-        ];
-       
-        $booking = $query->paginate($perPage)
-            ->through(function($booking) {
+        $booking = $query->get()
+            ->map(function($booking) {
                 $night = $booking->package_duration-1;
+                $channel = $booking->agent_id == 1 ? 'TWT' : ($booking->booking_category_id != 3 ? 'JVTO' : 'KLOOK');
                 return [
                     'id' => $booking->id,
+                    'booking_id' => $channel."-".$booking->id,
+                    'channel' => $channel,
                     'user_id' => $booking->user_id,
                     'name' => $booking->user->name,
-                    'channel' => $booking->agent_id == 1 ? 'TWT' : ($booking->booking_category_id != 3 ? 'JVTO' : 'KLOOK'),
-                    'package_code' => $booking->bookingDetail[0]->package_id ? $booking->bookingDetail[0]->package->package_code : '-',
-                    'package' => $booking->bookingDetail[0]->package_id ? $booking->bookingDetail[0]->package->name : $booking->package_duration." Days ".$night." Nights" ,
                     'numb_of_pax' => $booking->total_pax ?? 0,
-                    'trip_date' => $booking->travel_date_start ?? '-',
-                    'total_per_pax' => $booking->grand_total/$booking->total_pax,
-                    'total' => $booking->grand_total,
-                    'expense' => $booking->expense_internal_total,
-                    'expense_paid' => $booking->total_expense_crew,
-                    'expense_balance' => $booking->total_expense_balance,
-                    'expense_debt' => $booking->total_expense_debt,
-                    'total_add_on' => $booking->book_add_on_total,
-                    'grand_total' => $booking->grand_total+$booking->book_add_on_total,
-                    'payment' => $booking->payment,
-                    'balance' => ($booking->grand_total+$booking->book_add_on_total)-$booking->payment,
-                    'payment_status' => $booking->payment == 0 ? 'Unpaid' : (($booking->grand_total+$booking->book_add_on_total)-$booking->payment == 0 ? 'Paid' : 'DP Paid'),
+                    'duration' => $booking->package_duration."D ".$night."N",
+                    'start_date' => $booking->travel_date_start ?? '-',
+                    'end_date' => $booking->travel_date_end ?? '-',
+                    'grand_total' => (int)$booking->grand_total+$booking->book_add_on_total,
+                    'expense' => (int)$booking->expense_internal_total,
+                    'expense_paid' => (int)$booking->total_expense_paid,
+                    'expense_debt' => (int)$booking->total_expense_debt,
+                    'expense_crew' => (int)$booking->total_expense_crew,
+                    'crews' => $booking->guideDriver->map(function($crew){
+                        return [
+                            'id' => $crew->person->id,
+                            'name' => $crew->person->name,
+                        ];
+                    }),
                 ];
             });
-        $packages = Package::where('is_publish','1')->orWhere('package_platform','klook')->orderBy('package_code')->get(['id','package_code','name']);
-        $filters = $request->only(['search','package','channel']);
-        $filters['start_date'] = $startDate;
-        $filters['end_date'] = $endDate;
-        return Inertia::render('Finance/ExpenseManager', [
+
+            return 
+            [
             'booking' => $booking,
-            'summary' => $summary,
-            'packages' => $packages,
-            'filters' => $filters,
+            'filters' => [
+                'year_month' => $yearMonth,
+                'channel' => $channel,
+            ]];
+            return Inertia::render('Finance/ExpenseManager', [
+            'booking' => $booking,
+            'filters' => [
+                'year_month' => $yearMonth,
+                'channel' => $channel,
+            ],
         ]);
     }
     function editExpense($id){
@@ -974,8 +955,7 @@ class FinanceController extends Controller
             $booking->total_expense_debt = $request->summary['debtAmount'];         // Yang ditunda (Pay Later)
             $booking->total_expense_balance = 0; // Deprecated field
             $booking->save();
-        }
-                
+        }                
         return back()->with('message', 'Expense saved successfully');
     }    
     // function updateExpense(Request $request){

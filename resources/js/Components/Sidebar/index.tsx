@@ -346,6 +346,12 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                                     <ul className="mt-4 mb-5.5 flex flex-col gap-2.5 pl-6">
                                                         <li>
                                                             <Link
+                                                                href="/finance/expense-manager">
+                                                                Expense Manager
+                                                            </Link>
+                                                        </li>
+                                                        <li>
+                                                            <Link
                                                                 href="/finance/receivable-income">
                                                                 Receivable Income
                                                             </Link>
@@ -362,12 +368,12 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                                                 Profitability Report
                                                             </Link>
                                                         </li>
-                                                        <li>
+                                                        {/* <li>
                                                             <Link
                                                                 href="/finance/transaction-log">
                                                                 Transaction Log
                                                             </Link>
-                                                        </li>
+                                                        </li> */}
                                                     </ul>
                                                 </div>
                                             </React.Fragment>

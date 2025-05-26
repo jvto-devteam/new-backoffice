@@ -123,7 +123,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('finance')->group(function () {
-        Route::get('/', [FinanceController::class, 'index']);
+        Route::get('/', [FinanceController::class, 'financeManager']);
         Route::get('/receivable-income', [FinanceController::class, 'receivableIncome']);
         Route::get('/payable-report', [FinanceController::class, 'payableReportIndex']);
         Route::get('/payable-report/create', [FinanceController::class, 'payableReportCreate']);

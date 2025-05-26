@@ -286,7 +286,7 @@ class FinanceController extends Controller
         ]);
     }
 
-    function expense(Request $request){
+    function financeManager(Request $request){
         $yearMonth = $request->get('year_month') ? $request->get('year_month') : date('Y-m');
         $query = Booking::with(['user.country','bookingDetail' => function($q){
             $q->select('id','package_id','booking_id')->with('package',function($qq){
@@ -312,7 +312,7 @@ class FinanceController extends Controller
                         })
                         ->sum('nominal');
                 } else {
-                    $dp = $booking->balance;
+                    $dp = $booking->dp;
                 }
 
                 if($booking->status != 'booked'){
@@ -356,7 +356,7 @@ class FinanceController extends Controller
                 ];
             });
 
-            return Inertia::render('Finance/ExpenseManager', [
+            return Inertia::render('Finance/FinanceManager', [
             'booking' => $booking,
             'filters' => [
                 'year_month' => $yearMonth,

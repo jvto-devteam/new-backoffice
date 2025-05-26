@@ -287,45 +287,61 @@ class FinanceController extends Controller
     }
 
     function expense(Request $request){
-        $yearMonth = $request->get('year_month') ? $request->get('year_month') : date('Y-m-01');
-        $channel = $request->input('channel');
+        $yearMonth = $request->get('year_month') ? $request->get('year_month') : date('Y-m');
         $query = Booking::with(['user.country','bookingDetail' => function($q){
             $q->select('id','package_id','booking_id')->with('package',function($qq){
                 $qq->select('id','name','package_code');
             });
-        }, 'guideDriver'])->where('status', 'booked')->where('travel_date_start','like','%2025%')->orderBy('travel_date_start','asc');
+        }, 'guideDriver'])->where('agent_id',2)->where('booking_category_id','!=',3)->where('travel_date_start','like','%'.$yearMonth.'%')->orderBy('travel_date_start','asc');
 
-        if ($yearMonth) {
-            $query->where('travel_date_start','like',"%$yearMonth%");
-        }
-    
-        // Apply channel filter
-        if ($channel) {
-            if($channel == 'twt'){
-                $query->where('agent_id',1);
-            }
-            else if($channel == 'klook'){
-                $query->where('agent_id',2)->where('booking_category_id',3);
-            }
-            else{
-                $query->where('agent_id',2)->where('booking_category_id','!=',3);
-            }
-        }
         $booking = $query->get()
             ->map(function($booking) {
                 $night = $booking->package_duration-1;
-                $channel = $booking->agent_id == 1 ? 'TWT' : ($booking->booking_category_id != 3 ? 'JVTO' : 'KLOOK');
+                $channel = 'JVTO';
+                $paid_date = null;
+                if ($booking->balance == 0) {
+                    $lastPayment = BookingPayment::where('booking_id', $booking->id)
+                        ->orderBy('id', 'desc')  // Or use created_at if that's more appropriate
+                        ->first();
+                    $paid_date = $lastPayment ? $lastPayment->created_at : null;
+
+                    // Then sum all payments except the one with that ID
+                    $dp = BookingPayment::where('booking_id', $booking->id)
+                        ->when($lastPayment, function ($query) use ($lastPayment) {
+                            return $query->where('id', '!=', $lastPayment->id);
+                        })
+                        ->sum('nominal');
+                } else {
+                    $dp = $booking->balance;
+                }
+
+                if($booking->status != 'booked'){
+                    $status = 'pending';
+                }
+                else{
+                    if($booking->balance == 0){
+                        $status = 'paid';
+                    }
+                    else{
+                        $status = 'outstanding';
+                    }
+                }
+                $grand_total = $booking->grand_total+$booking->book_add_on_total;
+                $outstanding = $grand_total-$dp;
                 return [
                     'id' => $booking->id,
                     'booking_id' => $channel."-".$booking->id,
-                    'channel' => $channel,
                     'user_id' => $booking->user_id,
                     'name' => $booking->user->name,
                     'numb_of_pax' => $booking->total_pax ?? 0,
                     'duration' => $booking->package_duration."D ".$night."N",
                     'start_date' => $booking->travel_date_start ?? '-',
                     'end_date' => $booking->travel_date_end ?? '-',
-                    'grand_total' => (int)$booking->grand_total+$booking->book_add_on_total,
+                    'grand_total' => (int)$grand_total,
+                    'deposit' => (int)$dp,
+                    'final_payment' => (int)$outstanding,
+                    'payment_method' => $booking->outstanding_payment_method,
+                    'paid_date' => $paid_date ? date('d M Y', strtotime($paid_date)) : '-',
                     'expense' => (int)$booking->expense_internal_total,
                     'expense_paid' => (int)$booking->total_expense_paid,
                     'expense_debt' => (int)$booking->total_expense_debt,
@@ -336,21 +352,14 @@ class FinanceController extends Controller
                             'name' => $crew->person->name,
                         ];
                     }),
+                    'status' => $status,
                 ];
             });
 
-            return 
-            [
-            'booking' => $booking,
-            'filters' => [
-                'year_month' => $yearMonth,
-                'channel' => $channel,
-            ]];
             return Inertia::render('Finance/ExpenseManager', [
             'booking' => $booking,
             'filters' => [
                 'year_month' => $yearMonth,
-                'channel' => $channel,
             ],
         ]);
     }

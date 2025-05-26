@@ -331,7 +331,7 @@ class FinanceController extends Controller
                 });
             }
             else{
-                
+                $paymentHistory = $paymentHistory->where('booking_payments.created_at', 'like', '%' . $yearMonth . '%');
             }
             $paymentHistory = $paymentHistory->join('bookings', 'bookings.id', '=', 'booking_payments.booking_id')
                 ->orderBy('bookings.travel_date_start', 'asc')

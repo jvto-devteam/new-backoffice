@@ -944,13 +944,13 @@ class FinanceController extends Controller
     // }
     function editExpense($id)
     {
-        $booking = Booking::select('id', 'user_id', 'total_pax', 'travel_date_start', 'travel_date_end', 'grand_total', 'agent_id', 'booking_category_id', 'booking_date', 'package_duration', 'invoice_code_origin', 'url', 'payment_proof_expense')->with(['user' => function ($query) {
+        $booking = Booking::select('id', 'user_id', 'total_pax', 'travel_date_start', 'travel_date_end', 'grand_total', 'agent_id', 'booking_category_id', 'booking_date', 'package_duration', 'invoice_code_origin', 'url', 'payment_proof_expense','note','balance')->with(['user' => function ($query) {
             $query->select('id', 'name');
         }, 'bookingDetail' => function ($query) {
             $query->select('id', 'package_id', 'booking_id')->with(['package' => function ($q) {
-                $q->select('id', 'name', 'duration_id')->with('duration');
+                $q->select('id', 'name', 'duration_id','url')->with('duration');
             }]);
-        }])->where('id', $id)->first();
+        },'bookingPayment'])->where('id', $id)->first();
 
         $booking->trip_date = date('d M', strtotime($booking->travel_date_start)) . " - " . date('d M Y', strtotime($booking->travel_date_end));
         $pax = $booking->total_pax;
@@ -1264,7 +1264,18 @@ class FinanceController extends Controller
             'destinations' => $destinations,
             'resources' => $resources,
             'others' => $others,
-            'listForNewItems' => $listForNewItems
+            'listForNewItems' => $listForNewItems,
+            'paymentHistory' => $booking->bookingPayment->map(function ($payment) use ($booking) {
+                return [
+                    'id' => $payment->id,
+                    'nominal' => $payment->nominal,
+                    'paymentMethod' => $payment->paymentMethod->name,
+                    'description' => $payment->description,
+                    'reference' => $payment->reference,
+                    'receipt' => "https://javavolcano-touroperator.com/backoffice/invoice/view-receipt/" . $booking->id . "/partial/" . $payment->id,
+                    'date' => date('d M y H:i', strtotime($payment->created_at)),
+                ];
+            })
         ]);
     }
     function updateExpense(Request $request)

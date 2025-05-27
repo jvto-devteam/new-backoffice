@@ -15,90 +15,281 @@ const formatCurrency = (value) => {
         .format(value)
         .replace("IDR", "Rp");
 };
+const PriceAndPayment = ({ booking, paymentHistory }) => {
+    // Calculate totals
+    const pricePerPax =
+        parseInt(booking.grand_total) / parseInt(booking.total_pax);
+    const totalPrice =
+        parseInt(booking.grand_total) +
+        parseInt(booking.book_add_on_total || 0);
 
+    // Calculate payment totals
+    const totalPaid = paymentHistory.reduce(
+        (sum, payment) => sum + parseInt(payment.nominal),
+        0,
+    );
+    const remainingBalance = totalPrice - totalPaid;
+    const profitLoss = totalPrice - parseInt(booking.grand_total); // Simplified calculation
+
+    return (
+        <div className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Price Section */}
+            <div className="bg-white rounded-lg shadow">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                        Price
+                    </h2>
+                </div>
+                <div className="p-6">
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center py-2">
+                            <span className="text-sm font-medium text-gray-900">
+                                Price / PAX
+                            </span>
+                            <span className="text-sm text-gray-900">
+                                {formatCurrency(pricePerPax)}
+                            </span>
+                        </div>
+                        <div className="flex justify-between items-center py-2 border-t border-gray-200">
+                            <span className="text-sm font-medium text-gray-900">
+                                Total Price
+                            </span>
+                            <span className="text-sm font-semibold text-gray-900">
+                                {formatCurrency(totalPrice)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Payment Section */}
+            <div className="bg-white rounded-lg shadow">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                        Payment
+                    </h2>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full">
+                        <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Type
+                                </th>
+                                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Amount
+                                </th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Method
+                                </th>
+                                <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Date
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {paymentHistory.length > 0 ? (
+                                paymentHistory.map((payment, index) => (
+                                    <tr key={payment.id}>
+                                        <td className="px-4 py-3 text-sm text-gray-900">
+                                            {payment.description}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-right">
+                                            <span className="text-green-600 font-medium">
+                                                {formatCurrency(
+                                                    payment.nominal,
+                                                )}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-gray-900">
+                                            <div className="flex items-center gap-2">
+                                                {payment.paymentMethod}
+                                                {payment.receipt && (
+                                                    <a
+                                                        href={payment.receipt}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded hover:bg-blue-200"
+                                                    >
+                                                        Receipt
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-gray-500 text-right">
+                                            {payment.date}
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td
+                                        colSpan="4"
+                                        className="px-4 py-8 text-center text-sm text-gray-500"
+                                    >
+                                        No payment history available
+                                    </td>
+                                </tr>
+                            )}
+
+                            {/* Remaining Balance Row */}
+                            <tr className="bg-gray-50">
+                                <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                    Remaining Balance
+                                </td>
+                                <td className="px-4 py-3 text-sm text-right">
+                                    <span
+                                        className={`font-medium ${booking.balance > 0 ? "text-red-600" : "text-green-600"}`}
+                                    >
+                                        {formatCurrency(booking.balance)}
+                                    </span>
+                                </td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+};
 const BookingInfo = ({ booking }) => {
     return (
         <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-4">Tour Expense Details</h1>
-            <div className="flex gap-10">
-                <div className="space-y-1">
-                    <p>
-                        <span className="font-bold"> Order Channel:</span>{" "}
-                        {booking.channel}
-                    </p>
-                    <p>
-                        <span className="font-bold">Reference: </span>{" "}
-                        {booking.reference}
-                    </p>
-                    <p>
-                        <span className="font-bold">Client: </span>{" "}
-                        {booking.user.name}
-                    </p>
-                    <p>
-                        <span className="font-bold">Package: </span>{" "}
-                        {booking.booking_detail[0]?.package?.name ||
-                            `${booking.package_duration}D ${booking.package_duration - 1}N Packages`}
-                    </p>
-                    <p>
-                        <span className="font-bold">Number of Pax: </span>{" "}
-                        {booking.total_pax} PAX
-                    </p>
-                </div>
-                <div className="space-y-1">
-                    <p>
-                        <span className="font-bold">Trip Date: </span>{" "}
-                        {booking.trip_date}
-                    </p>
-                    <p>
-                        <span className="font-bold">Duration: </span>{" "}
-                        {booking.duration_day} Days {booking.duration_day - 1}{" "}
-                        {booking.duration_day - 1 == 1 ? "Night" : "Nights"}
-                    </p>
-                    <p>
-                        <span className="font-bold">Driver: </span>{" "}
-                        {booking.crew
-                            .filter((crew) => crew.type === "driver")
-                            .map((crew, index) => (
-                                <span key={index}>
-                                    {crew.person.name}
-                                    {index <
-                                    booking.crew.filter(
-                                        (crew) => crew.type === "driver",
-                                    ).length -
-                                        1
-                                        ? ", "
-                                        : ""}
-                                </span>
-                            ))}
-                    </p>
-                    <p>
-                        <span className="font-bold">Vehicle: </span>{" "}
-                        {booking.car.map((car, index) => (
-                            <span key={index}>
-                                {car.car.name}
-                                {index < booking.car.length - 1 ? ", " : ""}
-                            </span>
-                        ))}
-                    </p>
-                    <p>
-                        <span className="font-bold">Guide: </span>{" "}
-                        {booking.crew
-                            .filter((crew) => crew.type === "guide")
-                            .map((crew, index) => (
-                                <span key={index}>
-                                    {crew.person.name}{" "}
-                                    {crew.guide_ijen == "1" ? "(IJEN)" : ""}
-                                    {index <
-                                    booking.crew.filter(
-                                        (crew) => crew.type === "guide",
-                                    ).length -
-                                        1
-                                        ? ", "
-                                        : ""}
-                                </span>
-                            ))}
-                    </p>
-                </div>
+            <h1 className="text-2xl font-bold mb-4">Booking Summary</h1>
+
+            {/* Table format untuk booking info */}
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+                <table className="w-full">
+                    <tbody className="divide-y divide-gray-200">
+                        <tr className="bg-gray-50">
+                            <td className="px-6 py-3 text-sm font-medium text-gray-900 w-1/6">
+                                Client Name
+                            </td>
+                            <td className="px-6 py-3 text-sm text-gray-900 w-1/3">
+                                {booking.user.name}
+                            </td>
+                            <td className="px-6 py-3 text-sm font-medium text-gray-900 w-1/6">
+                                Transport
+                            </td>
+                            <td className="px-6 py-3 text-sm text-gray-900 w-1/3">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                                    {booking.car.map((car, index) => (
+                                        <span key={index}>
+                                            {car.car.name}
+                                            {index < booking.car.length - 1
+                                                ? ", "
+                                                : ""}
+                                        </span>
+                                    ))}
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr className="bg-white">
+                            <td className="px-6 py-3 text-sm font-medium text-gray-900">
+                                Booking ID
+                            </td>
+                            <td className="px-6 py-3 text-sm text-gray-900">
+                                {booking.reference}
+                            </td>
+                            <td className="px-6 py-3 text-sm font-medium text-gray-900">
+                                Driver
+                            </td>
+                            <td className="px-6 py-3 text-sm text-gray-900">
+                                {booking.crew
+                                    .filter((crew) => crew.type === "driver")
+                                    .map((crew, index) => (
+                                        <span key={index}>
+                                            {crew.person.name}
+                                            {index <
+                                            booking.crew.filter(
+                                                (crew) =>
+                                                    crew.type === "driver",
+                                            ).length -
+                                                1
+                                                ? ", "
+                                                : ""}
+                                        </span>
+                                    ))}
+                            </td>
+                        </tr>
+
+                        <tr className="bg-gray-50">
+                            <td className="px-6 py-3 text-sm font-medium text-gray-900">
+                                Trip Date
+                            </td>
+                            <td className="px-6 py-3 text-sm text-gray-900">
+                                {booking.trip_date}
+                            </td>
+                            <td className="px-6 py-3 text-sm font-medium text-gray-900">
+                                Guide
+                            </td>
+                            <td className="px-6 py-3 text-sm text-gray-900">
+                                {booking.crew
+                                    .filter((crew) => crew.type === "guide")
+                                    .map((crew, index) => (
+                                        <span key={index}>
+                                            {crew.person.name}
+                                            {crew.guide_ijen == "1"
+                                                ? " (IJEN)"
+                                                : ""}
+                                            {index <
+                                            booking.crew.filter(
+                                                (crew) => crew.type === "guide",
+                                            ).length -
+                                                1
+                                                ? ", "
+                                                : ""}
+                                        </span>
+                                    ))}
+                            </td>
+                        </tr>
+
+                        <tr className="bg-white">
+                            <td className="px-6 py-3 text-sm font-medium text-gray-900">
+                                Package
+                            </td>
+                            <td className="px-6 py-3 text-sm text-blue-600 underline">
+                                {booking.agent_id == 2 &&
+                                booking.booking_category_id != 3 ? (
+                                    <a
+                                        href={`https://javavolcano-touroperator.com/details/${booking.booking_detail[0]?.package.url}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                    >
+                                        {
+                                            booking.booking_detail[0]?.package
+                                                ?.name
+                                        }
+                                    </a>
+                                ) : (
+                                    booking.booking_detail[0]?.package?.name ||
+                                    `${booking.package_duration}D ${booking.package_duration - 1}N Packages`
+                                )}
+                            </td>
+                            <td className="px-6 py-3 text-sm font-medium text-gray-900">
+                                Note
+                            </td>
+                            <td className="px-6 py-3 text-sm text-gray-900">
+                                {booking.note}
+                            </td>
+                        </tr>
+
+                        <tr className="bg-gray-50">
+                            <td className="px-6 py-3 text-sm font-medium text-gray-900">
+                                PAX
+                            </td>
+                            <td className="px-6 py-3 text-sm text-gray-900">
+                                {booking.total_pax}
+                            </td>
+                            <td className="px-6 py-3 text-sm font-medium text-gray-900"></td>
+                            <td className="px-6 py-3 text-sm text-gray-900"></td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     );
@@ -1843,6 +2034,7 @@ const EditExpenseManager = ({
     others,
     resources,
     listForNewItems,
+    paymentHistory    
 }) => {
     const [isDestinationModalOpen, setIsDestinationModalOpen] = useState(false);
     const [isOthersModalOpen, setIsOthersModalOpen] = useState(false);
@@ -2577,6 +2769,7 @@ const EditExpenseManager = ({
         <Authenticated>
             <div className="px-4 sm:px-6 lg:px-8 py-8">
                 <BookingInfo booking={booking} />
+                   <PriceAndPayment booking={booking} paymentHistory={paymentHistory} />
                 <SummaryCards booking={booking} totals={summaryTotals} />
                 <ExpenseTable
                     items={items}

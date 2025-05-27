@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from "react";
 import Swal from "@/utils/swal";
 import { router } from "@inertiajs/react";
 import Authenticated from "@/Layouts/Main";
-import { Download, BookmarkCheck, Image,Upload } from "lucide-react";
+import { Download, BookmarkCheck, Image, Upload } from "lucide-react";
 
 const formatCurrency = (value) => {
     value = parseInt(value);
@@ -412,7 +412,8 @@ const PaymentProofModal = ({ isOpen, onClose, booking }) => {
     );
 };
 const SummaryCards = ({ booking, totals }) => {
-    const [isPaymentProofModalOpen, setIsPaymentProofModalOpen] = useState(false);
+    const [isPaymentProofModalOpen, setIsPaymentProofModalOpen] =
+        useState(false);
 
     return (
         <>
@@ -420,7 +421,9 @@ const SummaryCards = ({ booking, totals }) => {
                 {/* Total Expenses */}
                 <div className="bg-white rounded-lg shadow p-4">
                     <div className="flex justify-between items-center">
-                        <span className="text-gray-500 text-sm">Total Expenses</span>
+                        <span className="text-gray-500 text-sm">
+                            Total Expenses
+                        </span>
                         <a
                             href={`/finance/expense-manager/${booking.id}/internal`}
                             className="text-blue-600"
@@ -446,12 +449,15 @@ const SummaryCards = ({ booking, totals }) => {
                             <a
                                 href=""
                                 onClick={(e) => {
-                                    e.preventDefault()
-                                    if (booking.payment_proof_expense === null) {
+                                    e.preventDefault();
+                                    if (
+                                        booking.payment_proof_expense === null
+                                    ) {
                                         setIsPaymentProofModalOpen(true);
                                     } else {
                                         window.open(
-                                            "/storage/" + booking.payment_proof_expense,
+                                            "/storage/" +
+                                                booking.payment_proof_expense,
                                             "_blank",
                                         );
                                     }
@@ -460,7 +466,6 @@ const SummaryCards = ({ booking, totals }) => {
                             >
                                 <Image />
                             </a>
-
 
                             <a
                                 href={`/finance/expense-manager/${booking.id}/crew`}
@@ -543,7 +548,8 @@ const SummaryCards = ({ booking, totals }) => {
                     </div>
                     <div className="text-red-500 text-2xl font-bold mt-1">
                         {formatCurrency(
-                            parseInt(booking.grand_total) + parseInt(booking.book_add_on_total || 0)
+                            parseInt(booking.grand_total) +
+                                parseInt(booking.book_add_on_total || 0),
                         )}
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
@@ -1936,11 +1942,25 @@ const EditExpenseManager = ({
         });
     };
     const [items, setItems] = useState(() => {
+        const generateUniqueId = (originalId, category, subType = "") => {
+            const prefixes = {
+                Accommodation: "acc",
+                Destination: "dest",
+                Others: "other",
+                Transport: "trans",
+                Resource: "res",
+            };
+
+            return subType
+                ? `${prefixes[category]}_${subType}_${originalId}`
+                : `${prefixes[category]}_${originalId}`;
+        };
         // Accommodation items
         const accommodationItems = accommodations.reduce((acc, hotel) => {
             // Room items
             const roomItems = hotel.book_room.map((room) => ({
-                id: room.id,
+                id: generateUniqueId(room.id, "Accommodation", "room"),
+                originalId: room.id,
                 category: "Accommodation",
                 subCategory: hotel.hotel.name,
                 description: room.room_hotel.room_name,
@@ -1961,7 +1981,8 @@ const EditExpenseManager = ({
 
             // Meal items
             const mealItems = (hotel.book_hotel_meal || []).map((meal) => ({
-                id: `meal-${meal.id}`,
+                id: generateUniqueId(meal.id, "Accommodation", "meal"), // acc_meal_100
+                originalId: meal.id,
                 category: "Accommodation",
                 subCategory: hotel.hotel.name,
                 description: `${meal.meals.charAt(0).toUpperCase() + meal.meals.slice(1)} Meal`,
@@ -2021,7 +2042,8 @@ const EditExpenseManager = ({
             // Destination items
             ...Object.entries(destinations).flatMap(([destName, activities]) =>
                 activities.map((activity) => ({
-                    id: activity.id,
+                    id: generateUniqueId(activity.id, "Destination"),
+                    originalId: activity.id,
                     category: "Destination",
                     subCategory: destName,
                     description: activity.destination_activity.name,
@@ -2046,7 +2068,8 @@ const EditExpenseManager = ({
 
             // Others items
             ...others.map((item) => ({
-                id: item.id,
+                id: generateUniqueId(item.id, "Others"),
+                originalId: item.id,
                 category: "Others",
                 subCategory: "Additional",
                 description: item.others_activity.name,
@@ -2067,7 +2090,8 @@ const EditExpenseManager = ({
 
             // Transport items
             ...resources.cars.map((car) => ({
-                id: car.id,
+                id: generateUniqueId(car.id, "Transport"),
+                originalId: car.id,
                 category: "Transport",
                 subCategory: "Airport Transfer",
                 description: car.car.name,
@@ -2088,7 +2112,8 @@ const EditExpenseManager = ({
 
             // Crew items
             ...resources.crews.map((crew) => ({
-                id: crew.id,
+                id: generateUniqueId(crew.id, "Resource"),
+                originalId: crew.id,
                 category: "Resource",
                 subCategory: "Crew",
                 description: crew.crew_role.role,
@@ -2317,16 +2342,16 @@ const EditExpenseManager = ({
         const groupedDeletedItems = {
             destinations: deletedItems
                 .filter((item) => item.category === "Destination")
-                .map((item) => item.id),
+                .map((item) => item.originalId || item.id),
             others: deletedItems
                 .filter((item) => item.category === "Others")
-                .map((item) => item.id),
+                .map((item) => item.originalId || item.id),
             cars: deletedItems
                 .filter((item) => item.category === "Transport")
-                .map((item) => item.id),
+                .map((item) => item.originalId || item.id),
             crews: deletedItems
                 .filter((item) => item.category === "Resource")
-                .map((item) => item.id),
+                .map((item) => item.originalId || item.id),
         };
 
         const submitData = {
@@ -2359,7 +2384,7 @@ const EditExpenseManager = ({
                 modified: Object.entries(groupedDestinations.modified).flatMap(
                     ([destName, activities]) =>
                         activities.map((item) => ({
-                            id: item.id,
+                            id: item.originalId || item.id,
                             destination_id: item.originalData.destination_id,
                             destination_activity_id:
                                 item.originalData.destination_activity_id,
@@ -2400,7 +2425,7 @@ const EditExpenseManager = ({
                 modified: itemsByStatus.modified
                     .filter((item) => item.category === "Others")
                     .map((item) => ({
-                        id: item.id,
+                        id: item.originalId || item.id,
                         others_activity_id:
                             item.originalData.others_activity_id,
                         quantity: item.qty,
@@ -2436,7 +2461,7 @@ const EditExpenseManager = ({
                     modified: itemsByStatus.modified
                         .filter((item) => item.category === "Transport")
                         .map((item) => ({
-                            id: item.id,
+                            id: item.originalId || item.id,
                             car_id: item.originalData.car_id,
                             quantity: item.qty,
                             price: parseInt(item.rate),
@@ -2460,7 +2485,7 @@ const EditExpenseManager = ({
                     modified: itemsByStatus.modified
                         .filter((item) => item.category === "Resource")
                         .map((item) => ({
-                            id: item.id,
+                            id: item.originalId || item.id,
                             crew_role_id: item.originalData.crew_role_id,
                             quantity: item.qty,
                             price: parseInt(item.rate),

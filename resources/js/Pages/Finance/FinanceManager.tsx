@@ -1,6 +1,22 @@
 import React, { useState } from "react";
 import { router } from "@inertiajs/react";
 import Authenticated from "@/Layouts/Main";
+import {
+    ChevronDown,
+    ChevronRight,
+    Calendar,
+    Plane,
+    CreditCard,
+    Info,
+    Hotel, // Ditambahkan
+    Train, // Ditambahkan
+    MapPin, // Ditambahkan
+    AlertCircle,
+    Clock,
+    Ticket,
+    MoreVertical,
+    X,
+} from "lucide-react";
 
 const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
     const [localFilters, setLocalFilters] = useState({
@@ -284,6 +300,8 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
                     "Date",
                     "Guest & Pax",
                     "Package",
+                    "Pickup",
+                    "Drop",
                     "Grand Total",
                     "Status",
                 ];
@@ -359,7 +377,7 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
         const packageInfo = (
             <div>
                 <div className="font-medium text-sm max-w-xs">
-                    {row.channel === 'JVTO' ? (
+                    {row.channel === "JVTO" ? (
                         <a
                             href={packageLink}
                             className="hover:text-blue-700 text-blue-600 line-clamp-2 underline"
@@ -411,8 +429,166 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
                         <td className="px-4 py-4 whitespace-nowrap">
                             {dateInfo}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">{bookingInfo}</td>
+                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">
+                            {bookingInfo}
+                        </td>
                         <td className="px-4 py-4">{packageInfo}</td>
+                        <td className="px-4 py-4 space-y-1 text-sm">
+                            <div className="flex">
+                                {row.booking.pickup.meeting_point ===
+                                "Surabaya Airport" ? (
+                                    row.booking.pickup.meeting_point_arrival ? (
+                                        <>
+                                            <div>
+                                                <Plane className="inline-block w-4 h-4 mr-1" />
+                                            </div>
+                                            <div>
+                                                {
+                                                    row.booking.pickup
+                                                        .meeting_point_arrival
+                                                }
+                                            </div>
+                                        </>
+                                    ) : (
+                                        "-"
+                                    )
+                                ) : row.booking.pickup.meeting_point ===
+                                  "Surabaya Train Station" ? (
+                                    row.booking.pickup.meeting_point ? (
+                                        <>
+                                            <div>
+                                                <Train className="inline-block w-4 h-4 mr-1" />
+                                            </div>
+                                            <div>
+                                                {
+                                                    row.booking.pickup
+                                                        .meeting_point_arrival
+                                                }
+                                            </div>
+                                        </>
+                                    ) : (
+                                        "-"
+                                    )
+                                ) : (
+                                    ""
+                                )}
+                            </div>
+                            <div className="flex">
+                                {row.booking.pickup.meeting_point ===
+                                "Surabaya Airport" ? (
+                                    <div>
+                                        <Ticket className="inline-block w-4 h-4 mr-1" />
+                                    </div>
+                                ) : row.booking.pickup.meeting_point ===
+                                  "Surabaya Hotel" ? (
+                                    <div>
+                                        <Hotel className="inline-block w-4 h-4 mr-1" />
+                                    </div>
+                                ) : row.booking.pickup.meeting_point ===
+                                  "Surabaya Train Station" ? (
+                                    <div>
+                                        <Ticket className="inline-block w-4 h-4 mr-1" />
+                                    </div>
+                                ) : (
+                                    row.booking.pickup.meeting_point_value && (
+                                        <div>
+                                            <MapPin className="inline-block w-4 h-4 mr-1" />
+                                        </div>
+                                    )
+                                )}
+                                {row.booking.pickup.meeting_point_value || "-"}
+                            </div>
+                            <div>
+                                {row.booking.pickup.pickup_time ? (
+                                    <div className="flex items-center">
+                                        <Clock className="w-4 h-4 mr-1" />
+                                        <span className="text-gray-500">
+                                            {row.booking.pickup.pickup_time}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    "-"
+                                )}
+                            </div>
+                        </td>
+                        <td className="px-4 py-4 space-y-1 text-sm">
+                            <div className="flex">
+                                {row.booking.dropoff.drop_point ===
+                                "Surabaya Airport" ? (
+                                    row.booking.dropoff.drop_point_arrival ? (
+                                        <>
+                                            <div>
+                                                <Plane className="inline-block w-4 h-4 mr-1" />
+                                            </div>
+                                            <div>
+                                                {
+                                                    row.booking.dropoff
+                                                        .drop_point_arrival
+                                                }
+                                            </div>
+                                        </>
+                                    ) : (
+                                        "-"
+                                    )
+                                ) : row.booking.dropoff.drop_point ===
+                                  "Surabaya Train Station" ? (
+                                    row.booking.dropoff.drop_point ? (
+                                        <>
+                                            <div>
+                                                <Train className="inline-block w-4 h-4 mr-1" />
+                                            </div>
+                                            <div>
+                                                {
+                                                    row.booking.dropoff
+                                                        .drop_point_arrival
+                                                }
+                                            </div>
+                                        </>
+                                    ) : (
+                                        "-"
+                                    )
+                                ) : (
+                                    ""
+                                )}
+                            </div>
+                            <div className="flex">
+                                {row.booking.dropoff.drop_point ===
+                                "Surabaya Airport" ? (
+                                    <div>
+                                        <Ticket className="inline-block w-4 h-4 mr-1" />
+                                    </div>
+                                ) : row.booking.dropoff.drop_point ===
+                                  "Surabaya Hotel" ? (
+                                    <div>
+                                        <Hotel className="inline-block w-4 h-4 mr-1" />
+                                    </div>
+                                ) : row.booking.dropoff.drop_point ===
+                                  "Surabaya Train Station" ? (
+                                    <div>
+                                        <Ticket className="inline-block w-4 h-4 mr-1" />
+                                    </div>
+                                ) : (
+                                    row.booking.dropoff.drop_point_value && (
+                                        <div>
+                                            <MapPin className="inline-block w-4 h-4 mr-1" />
+                                        </div>
+                                    )
+                                )}
+                                {row.booking.dropoff.drop_point_value || "-"}
+                            </div>
+                            <div>
+                                {row.booking.dropoff.drop_time ? (
+                                    <div className="flex items-center">
+                                        <Clock className="w-4 h-4 mr-1" />
+                                        <span className="text-gray-500">
+                                            {row.booking.dropoff.drop_time}
+                                        </span>
+                                    </div>
+                                ) : (
+                                    "-"
+                                )}
+                            </div>
+                        </td>
                         <td className="px-4 py-4 text-sm font-semibold whitespace-nowrap md:whitespace-normal">
                             {formatRupiah(grandTotal)}
                         </td>
@@ -433,7 +609,9 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
                         <td className="px-4 py-4 whitespace-nowrap">
                             {dateInfo}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">{bookingInfo}</td>
+                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">
+                            {bookingInfo}
+                        </td>
                         <td className="px-4 py-4">{packageInfo}</td>
                         <td className="px-4 py-4 text-sm font-semibold text-green-600 whitespace-nowrap">
                             {row.channel === "TWT"
@@ -580,8 +758,12 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
                         <td className="px-4 py-4 text-sm text-gray-600">
                             {index + 1}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">{dateInfo}</td>
-                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">{bookingInfo}</td>
+                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">
+                            {dateInfo}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">
+                            {bookingInfo}
+                        </td>
                         <td className="px-4 py-4">{packageInfo}</td>
                         <td className="px-4 py-4 text-sm font-semibold text-orange-600 whitespace-nowrap md:whitespace-normal">
                             {formatRupiah(pendingPayment.nominal || 0)}
@@ -609,8 +791,12 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
                         <td className="px-4 py-4 text-sm text-gray-600">
                             {index + 1}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">{dateInfo}</td>
-                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">{bookingInfo}</td>
+                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">
+                            {dateInfo}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">
+                            {bookingInfo}
+                        </td>
                         <td className="px-4 py-4">{packageInfo}</td>
                         <td className="px-4 py-4 text-sm font-semibold text-red-600 whitespace-nowrap md:whitespace-normal">
                             {formatRupiah(debt)}
@@ -629,8 +815,12 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
                         <td className="px-4 py-4 text-sm text-gray-600">
                             {index + 1}
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">{dateInfo}</td>
-                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">{bookingInfo}</td>
+                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">
+                            {dateInfo}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap md:whitespace-normal">
+                            {bookingInfo}
+                        </td>
                         <td className="px-4 py-4">{packageInfo}</td>
                         <td className="px-4 py-4 text-sm font-semibold whitespace-nowrap md:whitespace-normal">
                             {formatRupiah(grandTotal)}
@@ -780,7 +970,7 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
                         />
                     </div>
 
-                    {currentTab === "paid" && (
+                    {/* {currentTab === "paid" && (
                         <div className="flex md:items-center flex-col md:flex-row gap-2">
                             <label className="text-sm font-medium text-gray-700">
                                 Date Type:
@@ -802,7 +992,7 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
                                 ))}
                             </select>
                         </div>
-                    )}
+                    )} */}
                     <div className="flex-1">
                         <label className="md:hidden mb-1 block text-sm font-medium text-gray-700">
                             Search:

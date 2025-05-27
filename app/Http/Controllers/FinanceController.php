@@ -391,7 +391,7 @@ class FinanceController extends Controller
         $tab = $request->tab ?? 'all';
         $channel = $request->channel ?? 'all';
         $yearMonth = $request->get('year_month') ? $request->get('year_month') : date('Y-m');
-        $dateType = $request->date_type ?? 'trip';
+        $dateType = $request->date_type ?? 'payment';
         $lastYearMonth = date('Y-m', strtotime($yearMonth . "-01 -1 months"));
         $booking = [];
         if ($tab == 'all') {
@@ -429,6 +429,21 @@ class FinanceController extends Controller
                         'travel_date_start'  => $data->travel_date_start,
                         'travel_date_end'  => $data->travel_date_end,
                         'grand_total'  => (int)$data->grand_total,
+                        'pickup' => [
+                            'meeting_point' => $data->meeting_point,
+                            'meeting_point_arrival' => $data->meeting_point_arrival,
+                            'meeting_point_value' => $data->meeting_point_value,
+                            'pickup_time' => date("H:i", strtotime($data->pickup_time)),
+                            'text' => $data->pickup
+                        ],
+                        'dropoff' => [
+                            'drop_point' => $data->drop_point,
+                            'drop_point_arrival' => $data->drop_point_arrival,
+                            'drop_point_value' => $data->drop_point_value,
+                            'drop_time' => date("H:i", strtotime($data->drop_time)),
+                            'text' => $data->drop
+                        ],
+
                     ],
                 ];
             });
@@ -478,6 +493,7 @@ class FinanceController extends Controller
                                 'travel_date_end'  => $data->booking->travel_date_end,
                                 'grand_total'  => (int)$data->booking->grand_total,
                                 'is_add_on' => $data->booking->book_add_on_total > 0 ? true : false,
+                                'paid_at' => $data->created_at,
                             ],
                             'payment' => [
                                 'id' => $data->id,
@@ -491,7 +507,9 @@ class FinanceController extends Controller
                         ];
                     });
             } if ($channel == 'twt' || $channel == 'all') {
-                $twt = TwtInvoiceBooking::with(['booking.user', 'invoice.payments']);
+                $twt = TwtInvoiceBooking::with(['booking.user', 'invoice.payments' => function($query){
+                    $query->orderBy('payment_date', 'asc');
+                }]);
                 if($dateType == 'trip'){
                     $twt = $twt->whereHas('booking', function ($query) use ($yearMonth) {
                         $query->where('travel_date_start', 'like', '%' . $yearMonth . '%');
@@ -532,6 +550,7 @@ class FinanceController extends Controller
                             'travel_date_end'  => $data->booking->travel_date_end,
                             'grand_total'  => (int)$data->booking->grand_total,
                             'is_add_on' => $data->booking->book_add_on_total > 0 ? true : false,
+                            'paid_at' => $data->invoice->payments->first()->payment_date,
                         ],
                         'payment' => $data->invoice->payments->map(function($payment) use($data){
                             $countPayment = TwtInvoicePayment::where('invoice_id', $data->invoice->id)->where('id', '<=', $payment->id)->count();
@@ -579,6 +598,7 @@ class FinanceController extends Controller
                                     'travel_date_end'  => $data->travel_date_end,
                                     'grand_total'  => (int)$data->grand_total,
                                     'is_add_on' => $data->book_add_on_total > 0 ? true : false,
+                                    'paid_at' => $yearMonth . "-05 00:00:00",
                                 ],
                                 'payment' => [
                                     'id' => null,
@@ -587,13 +607,13 @@ class FinanceController extends Controller
                                     'reference' => "-",
                                     'description' => "-",
                                     'receipt' => "-",
-                                    'paid_at' => $yearMonth . "-01 00:00:00",
+                                    'paid_at' => $yearMonth . "-05 00:00:00",
                                 ]
                             ];
                         });
                 }
             }
-            if ($channel == 'jvto' || $channel == 'all') {
+            if ($channel == 'jvto') {
                 $booking = $jvto->merge($twt)->merge($klook);
             } else if ($channel == 'twt') {
                 $booking = $twt->merge($jvto)->merge($klook);
@@ -604,12 +624,15 @@ class FinanceController extends Controller
                     $booking = [];
                 }
             }
+            else {
+                $booking = $klook->merge($jvto)->merge($twt);
+            }
 
             if (count($booking) > 0) {
                 if ($dateType == 'trip') {
                     $booking = $booking->sortBy('booking.travel_date_start')->values();
                 } else {
-                    $booking = $booking->sortBy('payment.paid_at')->values();
+                    $booking = $booking->sortBy('booking.paid_at')->values();
                 }
             }
         } else if ($tab == 'pending') {
@@ -658,7 +681,7 @@ class FinanceController extends Controller
                         ]
                     ];
                 });
-            } else if ($channel == 'twt' || $channel == 'all') {
+            } if ($channel == 'twt' || $channel == 'all') {
                 $twt = Booking::with('user')
                     ->where('travel_date_start', 'like', '%' . $yearMonth . '%')
                     ->where('agent_id', 1)
@@ -697,7 +720,7 @@ class FinanceController extends Controller
                             ]
                         ];
                     });
-            } else if ($channel == 'klook' || $channel == 'all') {
+            } if ($channel == 'klook' || $channel == 'all') {
                 $klook = Booking::with('user')
                     ->where('travel_date_start', 'like', '%' . $yearMonth . '%')
                     ->where('agent_id', 2)
@@ -737,11 +760,11 @@ class FinanceController extends Controller
                         ];
                     });
             }
-            if ($channel == 'jvto' || $channel == 'all') {
+            if ($channel == 'jvto') {
                 $booking = $jvto->merge($twt)->merge($klook);
             } else if ($channel == 'twt') {
                 $booking = $twt->merge($jvto)->merge($klook);
-            } else if ($channel == 'klook') {
+            } else if ($channel == 'klook' || $channel == 'all') {
                 $booking = $klook->merge($jvto)->merge($twt);
             }
 

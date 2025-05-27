@@ -560,7 +560,7 @@ class FinanceController extends Controller
                                 'payment_method' => "TRANSFER",
                                 'reference' => "https://twt.javavolcano-touroperator.com/storage/".$payment->transaction_reference,
                                 'description' => $payment->notes ?? "-",
-                                'receipt' => $data->invoice->invoice_number . "/" . $countPayment,
+                                'receipt' => $data->invoice->invoice_number,
                                 'receipt_url' => "https://twt.javavolcano-touroperator.com/finance/invoices/".$data->invoice->id,
                                 'paid_at' => $payment->payment_date,
                             ];

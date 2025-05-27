@@ -133,20 +133,24 @@ const PriceAndPayment = ({ booking, paymentHistory }) => {
                             )}
 
                             {/* Remaining Balance Row */}
-                            <tr className="bg-gray-50">
-                                <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                                    Remaining Balance
-                                </td>
-                                <td className="px-4 py-3 text-sm text-right">
-                                    <span
-                                        className={`font-medium ${booking.balance > 0 ? "text-red-600" : "text-green-600"}`}
-                                    >
-                                        {formatCurrency(booking.balance)}
-                                    </span>
-                                </td>
-                                <td></td>
-                                <td></td>
-                            </tr>
+                            {booking.agent_id == 2 &&
+                                booking.booking_category_id != 3 && (
+                                    <tr className="bg-gray-50">
+                                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                                            Remaining Balance
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-right">
+                                            <span
+                                                className={`font-medium ${booking.balance > 0 ? "text-red-600" : "text-green-600"}`}
+                                            >
+                                                {formatCurrency(booking.balance)}
+                                            </span>
+                                        </td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+
+                                )}
                         </tbody>
                     </table>
                 </div>

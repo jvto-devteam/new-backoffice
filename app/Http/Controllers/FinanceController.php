@@ -288,6 +288,87 @@ class FinanceController extends Controller
             'filters' => $filters,
         ]);
     }
+    private function getSummaryData($yearMonth, $channel = 'all')
+    {
+        // Get all bookings for summary
+        $allBookingsQuery = Booking::with(['user', 'bookingDetail.package'])
+            ->where('travel_date_start', 'like', '%' . $yearMonth . '%');
+
+        if ($channel == 'jvto') {
+            $allBookingsQuery = $allBookingsQuery->where('agent_id', 2)->where('booking_category_id', '!=', 3);
+        } else if ($channel == 'klook') {
+            $allBookingsQuery = $allBookingsQuery->where('agent_id', 2)->where('booking_category_id', 3);
+        } else if ($channel == 'twt') {
+            $allBookingsQuery = $allBookingsQuery->where('agent_id', 1);
+        }
+
+        $allBookings = $allBookingsQuery->where('status', 'booked')->get();
+
+        // Calculate totals
+        $totalBookings = $allBookings->count();
+
+        // Total Paid - from paid payments
+        $totalPaid = 0;
+        $jvtoPaid = BookingPayment::whereHas('booking', function ($booking) use ($yearMonth, $channel) {
+            $booking->where('travel_date_start', 'like', '%' . $yearMonth . '%');
+            if ($channel == 'jvto') {
+                $booking->where('agent_id', 2)->where('booking_category_id', '!=', 3);
+            }
+        })->sum('nominal');
+
+        $twtPaid = Booking::where('travel_date_start', 'like', '%' . $yearMonth . '%')
+            ->where('agent_id', 1)
+            ->where('is_invoiced_twt', '1')
+            ->whereNotNull('date_paid_invoiced_twt');
+        if ($channel == 'twt') {
+            $twtPaid = $twtPaid->sum('grand_total');
+        } else if ($channel == 'all') {
+            $twtPaid = $twtPaid->sum('grand_total');
+        } else {
+            $twtPaid = 0;
+        }
+
+        $totalPaid = $jvtoPaid + $twtPaid;
+
+        // Total Pending - from bookings with balance > 0
+        $totalPending = 0;
+        if ($channel == 'jvto' || $channel == 'all') {
+            $totalPending += Booking::where('travel_date_start', 'like', '%' . $yearMonth . '%')
+                ->where('agent_id', 2)
+                ->where('booking_category_id', '!=', 3)
+                ->where('status', 'booked')
+                ->where('balance', '>', 0)
+                ->sum('balance');
+        }
+
+        if ($channel == 'twt' || $channel == 'all') {
+            $totalPending += Booking::where('travel_date_start', 'like', '%' . $yearMonth . '%')
+                ->where('agent_id', 1)
+                ->where('is_invoiced_twt', '0')
+                ->sum('grand_total');
+        }
+
+        if ($channel == 'klook' || $channel == 'all') {
+            $totalPending += Booking::where('travel_date_start', 'like', '%' . $yearMonth . '%')
+                ->where('agent_id', 2)
+                ->where('booking_category_id', 3)
+                ->sum('grand_total');
+        }
+
+        // Total Debt
+        $totalDebt = $allBookings->sum('total_expense_debt');
+
+        // Total Expense
+        $totalExpense = $allBookings->sum('expense_internal_total');
+
+        return [
+            'total_bookings' => $totalBookings,
+            'total_paid' => (int)$totalPaid,
+            'total_pending' => (int)$totalPending,
+            'total_debt' => (int)$totalDebt,
+            'total_expense' => (int)$totalExpense,
+        ];
+    }
     function financeManager(Request $request)
     {
         $tab = $request->tab ?? 'all';
@@ -295,24 +376,26 @@ class FinanceController extends Controller
         $yearMonth = $request->get('year_month') ? $request->get('year_month') : date('Y-m');
         $dateType = $request->date_type ?? 'trip';
         $lastYearMonth = date('Y-m', strtotime($yearMonth . "-01 -1 months"));
+        $booking = [];
         if ($tab == 'all') {
             $booking = Booking::with(['user', 'bookingDetail.package'])->where('travel_date_start', 'like', '%' . $yearMonth . '%');
-            if($channel == 'jvto'){
+            if ($channel == 'jvto') {
                 $booking = $booking->where('agent_id', 2)->where('booking_category_id', '!=', 3);
-            }
-            else if($channel == 'klook'){
+            } else if ($channel == 'klook') {
                 $booking = $booking->where('agent_id', 2)->where('booking_category_id', 3);
-            }
-            else if($channel == 'twt'){
+            } else if ($channel == 'twt') {
                 $booking = $booking->where('agent_id', 1);
             }
-            $booking = $booking->where('status', 'booked')->get()->map(function ($data) {
+            $booking = $booking->where('status', 'booked')->orderBy('travel_date_start','asc')->get()->map(function ($data) {
                 $days = $data->package_duration;
                 $nights = $days - 1;
                 $per_pax = $data->grand_total / $data->total_pax;
 
+                $channel = $data->agent_id == 1 ? 'TWT' : ($data->booking_category_id == 3 ? 'KLOOK' : 'JVTO');
+
                 return [
                     'id' => $data->id,
+                    'channel' => $channel,
                     'user' => [
                         'name' => $data->user->name,
                         'pax' => $data->total_pax,
@@ -332,23 +415,20 @@ class FinanceController extends Controller
                     ],
                 ];
             });
-
-            return $booking;
         } else if ($tab == 'paid') {
 
             $jvto = [];
             $twt = [];
             $klook = [];
 
-            if($channel == 'jvto' || $channel == 'all'){
+            if ($channel == 'jvto' || $channel == 'all') {
                 $jvto = BookingPayment::with(['booking.user', 'booking.bookingDetail.package', 'paymentMethod']);
-    
-                if($dateType == 'trip'){
+
+                if ($dateType == 'trip') {
                     $jvto = $jvto->whereHas('booking', function ($booking) use ($yearMonth) {
                         $booking->where('travel_date_start', 'like', '%' . $yearMonth . '%');
                     });
-                }
-                else{
+                } else {
                     $jvto = $jvto->where('booking_payments.created_at', 'like', '%' . $yearMonth . '%');
                 }
                 $jvto = $jvto->join('bookings', 'bookings.id', '=', 'booking_payments.booking_id')
@@ -359,7 +439,7 @@ class FinanceController extends Controller
                         $days = $data->booking->package_duration;
                         $nights = $days - 1;
                         $per_pax = $data->booking->grand_total / $data->booking->total_pax;
-    
+
                         return [
                             'id' => $data->id,
                             'channel' => 'JVTO',
@@ -392,9 +472,8 @@ class FinanceController extends Controller
                             ]
                         ];
                     });
-            }
-            else if($channel == 'twt' || $channel == 'all'){
-                if($dateType == 'trip'){
+            } else if ($channel == 'twt' || $channel == 'all') {
+                if ($dateType == 'trip') {
                     $twt = Booking::with('user')
                         ->where('travel_date_start', 'like', '%' . $yearMonth . '%')
                         ->where('agent_id', 1)
@@ -404,7 +483,7 @@ class FinanceController extends Controller
                             $days = $data->package_duration;
                             $nights = $days - 1;
                             $per_pax = $data->grand_total / $data->total_pax;
-        
+
                             $twtInvoice = TwtInvoiceBooking::with(['invoice.payments'])->where('booking_id', $data->id)->first();
                             $receipt = "-";
                             $reference = "-";
@@ -448,68 +527,66 @@ class FinanceController extends Controller
                                 ]
                             ];
                         });
-                }
-                else{
-                    $twt = TwtInvoiceBooking::with(['booking.user','invoice.payments'])->whereHas('invoice.payments',function($query) use($yearMonth){
+                } else {
+                    $twt = TwtInvoiceBooking::with(['booking.user', 'invoice.payments'])->whereHas('invoice.payments', function ($query) use ($yearMonth) {
                         $query->where('payment_date', 'like', '%' . $yearMonth . '%');
-                    })->whereHas('invoice',function($query){
-                        $query->where('status','!=','unpaid');
+                    })->whereHas('invoice', function ($query) {
+                        $query->where('status', '!=', 'unpaid');
                     })->get()->sortBy(function ($item) {
                         return optional($item->invoice->payments->sortBy('payment_date')->last())->payment_date;
                     })->values()->map(function ($data) {
-                            $days = $data->booking->package_duration;
-                            $nights = $days - 1;
-                            $per_pax = $data->booking->grand_total / $data->booking->total_pax;
-        
-                            $receipt = $data->invoice->invoice_number;
-                            $reference = $data->invoice->payments ? "/storage/" . $data->invoice->payments->last()->transaction_reference : '-';
-                            $description = $data->invoice->payments->last()?->notes ?? "-";
-                            $paid_at = $data->invoice->payments->last()?->created_at ?? "-";
-                            return [
-                                'id' => $data->booking->id,
-                                'channel' => 'TWT',
-                                'user' => [
-                                    'user' => $data->booking->user->name,
-                                    'pax' => $data->booking->total_pax,
-                                ],
-                                'package' => [
-                                    'duration' => $days . "D " . $nights . "N",
-                                    'package_name' => ($data->booking->package_duration > 1 ? $data->booking->package_duration . "D " . ($data->booking->package_duration - 1) . "N Package" : $data->booking->package_duration . "D " . ($data->booking->package_duration) . "N Package"),
-                                    'package_url' => null,
-                                    'price_per_pax'  => (int)$per_pax,
-                                ],
-                                'booking' => [
-                                    'booking_id' => $data->booking->id,
-                                    'booking_date' => $data->booking->booking_date,
-                                    'booking_code' => $data->booking->invoice_code_origin,
-                                    'travel_date_start'  => $data->booking->travel_date_start,
-                                    'travel_date_end'  => $data->booking->travel_date_end,
-                                    'grand_total'  => (int)$data->booking->grand_total,
-                                    'is_add_on' => $data->booking->book_add_on_total > 0 ? true : false,
-                                ],
-                                'payment' => [
-                                    'nominal' => (int)$data->booking->grand_total,
-                                    'payment_method' => "TRANSFER",
-                                    'reference' => $reference,
-                                    'description' => $description,
-                                    'receipt' => $receipt,
-                                    'paid_at' => $paid_at,
-                                ]
-                            ];
-                        });
+                        $days = $data->booking->package_duration;
+                        $nights = $days - 1;
+                        $per_pax = $data->booking->grand_total / $data->booking->total_pax;
+
+                        $receipt = $data->invoice->invoice_number;
+                        $reference = $data->invoice->payments ? "/storage/" . $data->invoice->payments->last()->transaction_reference : '-';
+                        $description = $data->invoice->payments->last()?->notes ?? "-";
+                        $paid_at = $data->invoice->payments->last()?->created_at ?? "-";
+                        return [
+                            'id' => $data->booking->id,
+                            'channel' => 'TWT',
+                            'user' => [
+                                'user' => $data->booking->user->name,
+                                'pax' => $data->booking->total_pax,
+                            ],
+                            'package' => [
+                                'duration' => $days . "D " . $nights . "N",
+                                'package_name' => ($data->booking->package_duration > 1 ? $data->booking->package_duration . "D " . ($data->booking->package_duration - 1) . "N Package" : $data->booking->package_duration . "D " . ($data->booking->package_duration) . "N Package"),
+                                'package_url' => null,
+                                'price_per_pax'  => (int)$per_pax,
+                            ],
+                            'booking' => [
+                                'booking_id' => $data->booking->id,
+                                'booking_date' => $data->booking->booking_date,
+                                'booking_code' => $data->booking->invoice_code_origin,
+                                'travel_date_start'  => $data->booking->travel_date_start,
+                                'travel_date_end'  => $data->booking->travel_date_end,
+                                'grand_total'  => (int)$data->booking->grand_total,
+                                'is_add_on' => $data->booking->book_add_on_total > 0 ? true : false,
+                            ],
+                            'payment' => [
+                                'nominal' => (int)$data->booking->grand_total,
+                                'payment_method' => "TRANSFER",
+                                'reference' => $reference,
+                                'description' => $description,
+                                'receipt' => $receipt,
+                                'paid_at' => $paid_at,
+                            ]
+                        ];
+                    });
                 }
-            }
-            else if($channel == 'klook' || $channel == 'all'){
-                if($dateType == 'payment'){
+            } else if ($channel == 'klook' || $channel == 'all') {
+                if ($dateType == 'payment') {
                     $klook = Booking::with('user')
                         ->where('travel_date_start', 'like', '%' . $lastYearMonth . '%')
                         ->where('agent_id', 2)
-                        ->where('booking_category_id',3)
-                        ->orderBy('travel_date_start', 'asc')->get()->map(function ($data)use($yearMonth) {
+                        ->where('booking_category_id', 3)
+                        ->orderBy('travel_date_start', 'asc')->get()->map(function ($data) use ($yearMonth) {
                             $days = $data->package_duration;
                             $nights = $days - 1;
                             $per_pax = $data->grand_total / $data->total_pax;
-        
+
                             return [
                                 'id' => $data->id,
                                 'channel' => 'KLOOK',
@@ -544,50 +621,252 @@ class FinanceController extends Controller
                         });
                 }
             }
-            if($channel == 'jvto' || $channel == 'all'){
-                $allPayments = $jvto->merge($twt)->merge($klook);
-            }
-            else if($channel == 'twt'){
-                $allPayments = $twt->merge($jvto)->merge($klook);
-            }
-            else if($channel == 'klook'){
-                if($dateType == 'payment') {
-                    $allPayments = $klook->merge($jvto)->merge($twt);
+            if ($channel == 'jvto' || $channel == 'all') {
+                $booking = $jvto->merge($twt)->merge($klook);
+            } else if ($channel == 'twt') {
+                $booking = $twt->merge($jvto)->merge($klook);
+            } else if ($channel == 'klook') {
+                if ($dateType == 'payment') {
+                    $booking = $klook->merge($jvto)->merge($twt);
                 } else {
-                    $allPayments = [];
+                    $booking = [];
                 }
             }
-            
-            if(count($allPayments) > 0){
-                if($dateType == 'trip') {
-                    $allPayments = $allPayments->sortBy('booking.travel_date_start')->values();
+
+            if (count($booking) > 0) {
+                if ($dateType == 'trip') {
+                    $booking = $booking->sortBy('booking.travel_date_start')->values();
                 } else {
-                    $allPayments = $allPayments->sortBy('payment.paid_at')->values();
+                    $booking = $booking->sortBy('payment.paid_at')->values();
                 }
             }
-            return $allPayments;
         } else if ($tab == 'pending') {
-            $booking = Booking::with(['user'])->where('agent_id', 2)->where('booking_category_id', '!=', 3)->where('travel_date_start', 'like', '%' . $yearMonth . '%')->where('balance', '>', 0)->orderBy('travel_date_start', 'asc')->get()->map(function ($data) {
+
+            $jvto = [];
+            $twt = [];
+            $klook = [];
+
+            if ($channel == 'jvto' || $channel == 'all') {
+                $jvto = Booking::with(['user', 'bookingDetail.package'])->where('agent_id', 2)->where('booking_category_id', '!=', 3)
+                    ->where('status', 'booked')
+                    ->where('travel_date_start', 'like', '%' . $yearMonth . '%')
+                    ->where('balance', '>', 0)->orderBy('travel_date_start', 'asc')->get();
+
+                $jvto = $jvto->map(function ($data) {
+                    $days = $data->package_duration;
+                    $nights = $days - 1;
+                    $per_pax = $data->grand_total / $data->total_pax;
+
+                    return [
+                        'id' => $data->id,
+                        'channel' => 'JVTO',
+                        'user' => [
+                            'user' => $data->user->name,
+                            'pax' => $data->total_pax,
+                        ],
+                        'package' => [
+                            'duration' => $days . "D " . $nights . "N",
+                            'package_name' => $data->bookingDetail[0]->package ? $data->bookingDetail[0]->package->name : ($data->package_duration > 1 ? $data->package_duration . "D " . ($data->package_duration - 1) . "N Package" : $data->package_duration . "D " . ($data->package_duration) . "N Package"),
+                            'package_url' => $data->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/packages/details/" . $data->bookingDetail[0]->package->url : null,
+                            'price_per_pax'  => (int)$per_pax,
+                        ],
+                        'booking' => [
+                            'booking_id' => $data->booking_id,
+                            'booking_date' => $data->booking_date,
+                            'booking_code' => $data->booking_code,
+                            'travel_date_start'  => $data->travel_date_start,
+                            'travel_date_end'  => $data->travel_date_end,
+                            'grand_total'  => (int)$data->grand_total,
+                            'is_add_on' => $data->book_add_on_total > 0 ? true : false,
+                        ],
+                        'pending_payment' => [
+                            'nominal' => (int)$data->balance,
+                            'payment_method' => $data->outstanding_payment_method ?? "-",
+                            'payment_method_link' => $data->outstanding_payment_method_link ?? "-",
+                        ]
+                    ];
+                });
+            } else if ($channel == 'twt' || $channel == 'all') {
+                $twt = Booking::with('user')
+                    ->where('travel_date_start', 'like', '%' . $yearMonth . '%')
+                    ->where('agent_id', 1)
+                    ->where('is_invoiced_twt', '0')
+                    ->orderBy('travel_date_start', 'asc')->get()->map(function ($data) {
+                        $days = $data->package_duration;
+                        $nights = $days - 1;
+                        $per_pax = $data->grand_total / $data->total_pax;
+
+                        return [
+                            'id' => $data->id,
+                            'channel' => 'TWT',
+                            'user' => [
+                                'user' => $data->user->name,
+                                'pax' => $data->total_pax,
+                            ],
+                            'package' => [
+                                'duration' => $days . "D " . $nights . "N",
+                                'package_name' => ($data->package_duration > 1 ? $data->package_duration . "D " . ($data->package_duration - 1) . "N Package" : $data->package_duration . "D " . ($data->package_duration) . "N Package"),
+                                'package_url' => null,
+                                'price_per_pax'  => (int)$per_pax,
+                            ],
+                            'booking' => [
+                                'booking_id' => $data->id,
+                                'booking_date' => $data->booking_date,
+                                'booking_code' => $data->invoice_code_origin,
+                                'travel_date_start'  => $data->travel_date_start,
+                                'travel_date_end'  => $data->travel_date_end,
+                                'grand_total'  => (int)$data->grand_total,
+                                'is_add_on' => $data->book_add_on_total > 0 ? true : false,
+                            ],
+                            'pending_payment' => [
+                                'nominal' => (int)$data->grand_total,
+                                'payment_method' => "-",
+                                'payment_method_link' => "-",
+                            ]
+                        ];
+                    });
+            } else if ($channel == 'klook' || $channel == 'all') {
+                $klook = Booking::with('user')
+                    ->where('travel_date_start', 'like', '%' . $yearMonth . '%')
+                    ->where('agent_id', 2)
+                    ->where('booking_category_id', 3)
+                    ->orderBy('travel_date_start', 'asc')->get()->map(function ($data) {
+                        $days = $data->package_duration;
+                        $nights = $days - 1;
+                        $per_pax = $data->grand_total / $data->total_pax;
+
+                        return [
+                            'id' => $data->id,
+                            'channel' => 'KLOOK',
+                            'user' => [
+                                'user' => $data->user->name,
+                                'pax' => $data->total_pax,
+                            ],
+                            'package' => [
+                                'duration' => $days . "D " . $nights . "N",
+                                'package_name' => ($data->package_duration > 1 ? $data->package_duration . "D " . ($data->package_duration - 1) . "N Package" : $data->package_duration . "D " . ($data->package_duration) . "N Package"),
+                                'package_url' => null,
+                                'price_per_pax'  => (int)$per_pax,
+                            ],
+                            'booking' => [
+                                'booking_id' => $data->id,
+                                'booking_date' => $data->booking_date,
+                                'booking_code' => $data->invoice_code_origin,
+                                'travel_date_start'  => $data->travel_date_start,
+                                'travel_date_end'  => $data->travel_date_end,
+                                'grand_total'  => (int)$data->grand_total,
+                                'is_add_on' => $data->book_add_on_total > 0 ? true : false,
+                            ],
+                            'pending_payment' => [
+                                'nominal' => (int)$data->grand_total,
+                                'payment_method' => "-",
+                                'payment_method_link' => "-",
+                            ]
+                        ];
+                    });
+            }
+            if ($channel == 'jvto' || $channel == 'all') {
+                $booking = $jvto->merge($twt)->merge($klook);
+            } else if ($channel == 'twt') {
+                $booking = $twt->merge($jvto)->merge($klook);
+            } else if ($channel == 'klook') {
+                $booking = $klook->merge($jvto)->merge($twt);
+            }
+
+            if (count($booking) > 0) {
+                $booking = $booking->sortBy('booking.travel_date_start')->values();
+            }
+        } else if ($tab == 'debt') {
+            $booking = Booking::with(['user', 'bookingDetail.package'])->where('travel_date_start', 'like', '%' . $yearMonth . '%');
+            if ($channel == 'jvto') {
+                $booking = $booking->where('agent_id', 2)->where('booking_category_id', '!=', 3);
+            } else if ($channel == 'klook') {
+                $booking = $booking->where('agent_id', 2)->where('booking_category_id', 3);
+            } else if ($channel == 'twt') {
+                $booking = $booking->where('agent_id', 1);
+            }
+            $booking = $booking->where('status', 'booked')->get()->map(function ($data) {
                 $days = $data->package_duration;
                 $nights = $days - 1;
+                $per_pax = $data->grand_total / $data->total_pax;
+
+                $channel = $data->agent_id == 1 ? 'TWT' : ($data->booking_category_id == 3 ? 'KLOOK' : 'JVTO');
+
                 return [
                     'id' => $data->id,
-                    'booking_code' => $data->booking_code,
-                    'user' => $data->user->name,
-                    'trip_date'  => $data->travel_date_start,
-                    'pax' => $data->total_pax,
-                    'duration' => $days . "D " . $nights . "N",
-                    'grand_total'  => (int)$data->grand_total,
-                    'balance'  => (int)$data->balance,
-                    'payment_method'  => $data->outstanding_payment_method ? strtoupper($data->outstanding_payment_method) : '-',
-                    'payment_method_link'  => $data->outstanding_payment_method_link,
-                    'is_add_on' => $data->book_add_on_total > 0 ? true : false,
+                    'channel' => $channel,
+                    'user' => [
+                        'name' => $data->user->name,
+                        'pax' => $data->total_pax,
+                    ],
+                    'package' => [
+                        'duration' => $days . "D " . $nights . "N",
+                        'package_name' => $data->bookingDetail[0]->package ? $data->bookingDetail[0]->package->name : ($data->package_duration > 1 ? $data->package_duration . "D " . ($data->package_duration - 1) . "N Package" : $data->package_duration . "D " . ($data->package_duration) . "N Package"),
+                        'package_url' => $data->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/packages/details/" . $data->bookingDetail[0]->package->url : null,
+                        'price_per_pax'  => (int)$per_pax,
+                    ],
+                    'booking' => [
+                        'booking_date'  => $data->booking_date,
+                        'booking_code' => $data->booking_code,
+                        'travel_date_start'  => $data->travel_date_start,
+                        'travel_date_end'  => $data->travel_date_end,
+                        'grand_total'  => (int)$data->grand_total,
+                        'debt'  => (int)$data->total_expense_debt
+                    ],
                 ];
             });
-            return $booking;
-        } else if ($tab == 'debt') {
-            return 1;
+        } else if ($tab == 'expense') {
+            $booking = Booking::with(['user', 'bookingDetail.package'])->where('travel_date_start', 'like', '%' . $yearMonth . '%');
+            if ($channel == 'jvto') {
+                $booking = $booking->where('agent_id', 2)->where('booking_category_id', '!=', 3);
+            } else if ($channel == 'klook') {
+                $booking = $booking->where('agent_id', 2)->where('booking_category_id', 3);
+            } else if ($channel == 'twt') {
+                $booking = $booking->where('agent_id', 1);
+            }
+            $booking = $booking->where('status', 'booked')->get()->map(function ($data) {
+                $days = $data->package_duration;
+                $nights = $days - 1;
+                $per_pax = $data->grand_total / $data->total_pax;
+
+                $channel = $data->agent_id == 1 ? 'TWT' : ($data->booking_category_id == 3 ? 'KLOOK' : 'JVTO');
+
+                return [
+                    'id' => $data->id,
+                    'channel' => $channel,
+                    'user' => [
+                        'name' => $data->user->name,
+                        'pax' => $data->total_pax,
+                    ],
+                    'package' => [
+                        'duration' => $days . "D " . $nights . "N",
+                        'package_name' => $data->bookingDetail[0]->package ? $data->bookingDetail[0]->package->name : ($data->package_duration > 1 ? $data->package_duration . "D " . ($data->package_duration - 1) . "N Package" : $data->package_duration . "D " . ($data->package_duration) . "N Package"),
+                        'package_url' => $data->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/packages/details/" . $data->bookingDetail[0]->package->url : null,
+                        'price_per_pax'  => (int)$per_pax,
+                    ],
+                    'booking' => [
+                        'booking_date'  => $data->booking_date,
+                        'booking_code' => $data->booking_code,
+                        'travel_date_start'  => $data->travel_date_start,
+                        'travel_date_end'  => $data->travel_date_end,
+                        'grand_total'  => (int)$data->grand_total,
+                        'total_expense'  => (int)$data->expense_internal_total,
+                        'crew_expense'  => (int)$data->total_expense_crew,
+                    ],
+                ];
+            });
         }
+         $summary = $this->getSummaryData($yearMonth, $channel);
+        return Inertia::render('Finance/FinanceManager', [
+            'booking' => $booking, // Array hasil dari controller
+            'summary' => $summary, 
+            'filters' => [
+                'tab' => $tab,
+                'channel' => $channel,
+                'year_month' => $yearMonth,
+                'date_type' => $dateType,
+            ],
+        ]);
     }
     // function financeManager(Request $request){
     //     $yearMonth = $request->get('year_month') ? $request->get('year_month') : date('Y-m');

@@ -682,7 +682,7 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
                                                         <li>
                                                             <a
                                                                 href={
-                                                                    pay.reference
+                                                                    pay.receipt_url
                                                                 }
                                                                 target="_blank"
                                                                 className="text-blue-600 underline hover:text-blue-700"
@@ -696,7 +696,7 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
                                             } else {
                                                 return (
                                                     <a
-                                                        href={pay.reference}
+                                                        href={pay.receipt_url}
                                                         target="_blank"
                                                         className="text-blue-600 underline hover:text-blue-700"
                                                     >

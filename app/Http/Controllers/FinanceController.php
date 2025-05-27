@@ -633,7 +633,7 @@ class FinanceController extends Controller
                 if ($dateType == 'trip') {
                     $booking = $booking->sortBy('booking.travel_date_start')->values();
                 } else {
-                    $booking = $booking->sortBy('booking.paid_at')->values();
+                    $booking = $booking->sortByDesc('booking.paid_at')->values();
                 }
             }
         } else if ($tab == 'pending') {

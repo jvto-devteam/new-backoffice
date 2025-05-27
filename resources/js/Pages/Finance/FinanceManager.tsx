@@ -657,8 +657,10 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
                                                       </ul>
                                                   );
                                               } else {
-                                                  return (
-                                                      pay.payment_method || "-"
+                                                  return getPaymentMethodImage(
+                                                      pay.payment_method,
+                                                      pay.reference,
+                                                      true,
                                                   );
                                               }
                                           })

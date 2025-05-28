@@ -121,7 +121,7 @@ class ScheduleController extends Controller
                             'meals' => $meals,
                         ];
                         foreach ($value->bookHotel[0]->bookRoom as $index => $data) {
-                            $hotels[$key]['rooms'] = [
+                            $hotels[$key]['rooms'][] = [
                                 'roomId' => $data->roomHotel->id,
                                 'roomName' => $data->roomHotel->room_name,
                                 'quantity' => $data->quantity,

@@ -329,14 +329,14 @@ const EditableNote = ({ note, bookingId, onNoteUpdate, noteCategories }) => {
     );
 };
 const BookingRow = ({
-    isCompleted=false,
+    isCompleted = false,
     startNumb,
     booking,
     index,
     handleMoreVerticalClick,
     updateBookingNote,
     noteCategories,
-    viewColumns
+    viewColumns,
 }) => {
     const [hoveredCrew, setHoveredCrew] = useState(null);
     const [openDropdownId, setOpenDropdownId] = useState(null);
@@ -375,7 +375,9 @@ const BookingRow = ({
     };
 
     return (
-        <tr className={`border-b ${isCompleted ? "bg-green-50" : ""} ${parseInt(booking.total_pax) >= 18 ? "bg-gradient-to-r from-pink-50 via-transparent to-transparent" : ""}`}>
+        <tr
+            className={`border-b ${isCompleted ? "bg-green-50" : ""} ${parseInt(booking.total_pax) >= 18 ? "bg-gradient-to-r from-pink-50 via-transparent to-transparent" : ""}`}
+        >
             {/* Row Index */}
             <td className="py-3 px-2 align-top relative">
                 {parseInt(booking.total_pax) >= 18 ? (
@@ -403,7 +405,9 @@ const BookingRow = ({
                     {booking.date.days}
                 </div>
                 <div className="text-gray-800 mt-5">
-                    <span className="text-gray-600 text-xs mr-1 block">Booking Date:</span>
+                    <span className="text-gray-600 text-xs mr-1 block">
+                        Booking Date:
+                    </span>
                     <span className="text-xs font-bold tracking-wide">
                         {format(booking.booking_date, "dd MMM yyyy")}
                     </span>
@@ -419,8 +423,8 @@ const BookingRow = ({
                                 booking.orderChannel === "JVTO"
                                     ? "bg-blue-100 text-blue-800"
                                     : booking.orderChannel === "TWT"
-                                        ? "bg-yellow-100 text-yellow-800"
-                                        : booking.orderChannel === "KLOOK"
+                                      ? "bg-yellow-100 text-yellow-800"
+                                      : booking.orderChannel === "KLOOK"
                                         ? "bg-green-100 text-green-800"
                                         : "bg-gray-100 text-gray-800"
                             }`}
@@ -446,230 +450,234 @@ const BookingRow = ({
                 </div>
             </td>
 
-
             {/* Pickup Details */}
             {viewColumns.includes("pickup") && (
-              <td className="py-3 px-4 align-top space-y-2">
-                  <div className="flex">
-                      {booking.pickup.meeting_point === "Surabaya Airport" ? (
-                          booking.pickup.meeting_point_arrival ? (
-                              <>
-                                  <div>
-                                      <Plane className="inline-block w-4 h-4 mr-1" />
-                                  </div>
-                                  <div>
-                                      {booking.pickup.meeting_point_arrival}
-                                  </div>
-                              </>
-                          ) : (
-                              <span className="flex items-center text-red-500">
-                                  <AlertCircle className="w-4 h-4 mr-1" />
-                                  No pickup location
-                              </span>
-                          )
-                      ) : booking.pickup.meeting_point ===
-                        "Surabaya Train Station" ? (
-                          booking.pickup.meeting_point ? (
-                              <>
-                                  <div>
-                                      <Train className="inline-block w-4 h-4 mr-1" />
-                                  </div>
-                                  <div>
-                                      {booking.pickup.meeting_point_arrival}
-                                  </div>
-                              </>
-                          ) : (
-                              <span className="flex items-center text-red-500">
-                                  <AlertCircle className="w-4 h-4 mr-1" />
-                                  No pickup location
-                              </span>
-                          )
-                      ) : (
-                          ""
-                      )}
-                  </div>
-                  <div className="flex">
-                      {booking.pickup.meeting_point === "Surabaya Airport" ? (
-                          <div>
-                              <Ticket className="inline-block w-4 h-4 mr-1" />
-                          </div>
-                      ) : booking.pickup.meeting_point === "Surabaya Hotel" ? (
-                          <div>
-                              <Hotel className="inline-block w-4 h-4 mr-1" />
-                          </div>
-                      ) : booking.pickup.meeting_point ===
-                        "Surabaya Train Station" ? (
-                          <div>
-                              <Ticket className="inline-block w-4 h-4 mr-1" />
-                          </div>
-                      ) : (
-                          booking.pickup.meeting_point_value && (
-                              <div>
-                                  <MapPin className="inline-block w-4 h-4 mr-1" />
-                              </div>
-                          )
-                      )}
-                      {booking.pickup.meeting_point_value || (
-                          <span className="flex items-center text-red-500">
-                              <AlertCircle className="w-4 h-4 mr-1" />
-                              No pickup location
-                          </span>
-                      )}
-                  </div>
-                  <div className="text-xs">
-                      {booking.pickup.pickup_time ? (
-                          <div className="flex">
-                              <Clock className="w-4 h-4 mr-1" />
-                              <span className="text-gray-500">
-                                  {booking.pickup.pickup_time}
-                              </span>
-                          </div>
-                      ) : (
-                          <span className="flex items-center text-red-500">
-                              <AlertCircle className="w-4 h-4 mr-1" />
-                              No pickup time
-                          </span>
-                      )}
-                  </div>
-              </td>
+                <td className="py-3 px-4 align-top space-y-2">
+                    <div className="flex">
+                        {booking.pickup.meeting_point === "Surabaya Airport" ? (
+                            booking.pickup.meeting_point_arrival ? (
+                                <>
+                                    <div>
+                                        <Plane className="inline-block w-4 h-4 mr-1" />
+                                    </div>
+                                    <div>
+                                        {booking.pickup.meeting_point_arrival}
+                                    </div>
+                                </>
+                            ) : (
+                                <span className="flex items-center text-red-500">
+                                    <AlertCircle className="w-4 h-4 mr-1" />
+                                    No pickup location
+                                </span>
+                            )
+                        ) : booking.pickup.meeting_point ===
+                          "Surabaya Train Station" ? (
+                            booking.pickup.meeting_point ? (
+                                <>
+                                    <div>
+                                        <Train className="inline-block w-4 h-4 mr-1" />
+                                    </div>
+                                    <div>
+                                        {booking.pickup.meeting_point_arrival}
+                                    </div>
+                                </>
+                            ) : (
+                                <span className="flex items-center text-red-500">
+                                    <AlertCircle className="w-4 h-4 mr-1" />
+                                    No pickup location
+                                </span>
+                            )
+                        ) : (
+                            ""
+                        )}
+                    </div>
+                    <div className="flex">
+                        {booking.pickup.meeting_point === "Surabaya Airport" ? (
+                            <div>
+                                <Ticket className="inline-block w-4 h-4 mr-1" />
+                            </div>
+                        ) : booking.pickup.meeting_point ===
+                          "Surabaya Hotel" ? (
+                            <div>
+                                <Hotel className="inline-block w-4 h-4 mr-1" />
+                            </div>
+                        ) : booking.pickup.meeting_point ===
+                          "Surabaya Train Station" ? (
+                            <div>
+                                <Ticket className="inline-block w-4 h-4 mr-1" />
+                            </div>
+                        ) : (
+                            booking.pickup.meeting_point_value && (
+                                <div>
+                                    <MapPin className="inline-block w-4 h-4 mr-1" />
+                                </div>
+                            )
+                        )}
+                        {booking.pickup.meeting_point_value || (
+                            <span className="flex items-center text-red-500">
+                                <AlertCircle className="w-4 h-4 mr-1" />
+                                No pickup location
+                            </span>
+                        )}
+                    </div>
+                    <div className="text-xs">
+                        {booking.pickup.pickup_time ? (
+                            <div className="flex">
+                                <Clock className="w-4 h-4 mr-1" />
+                                <span className="text-gray-500">
+                                    {booking.pickup.pickup_time}
+                                </span>
+                            </div>
+                        ) : (
+                            <span className="flex items-center text-red-500">
+                                <AlertCircle className="w-4 h-4 mr-1" />
+                                No pickup time
+                            </span>
+                        )}
+                    </div>
+                </td>
             )}
             {viewColumns.includes("dropoff") && (
-              <td className="py-3 px-4 align-top space-y-2">
-                  <div className="flex">
-                      {booking.dropoff.drop_point === "Surabaya Airport" ? (
-                          booking.dropoff.drop_point_arrival ? (
-                              <>
-                                  <div>
-                                      <Plane className="inline-block w-4 h-4 mr-1" />
-                                  </div>
-                                  <div>{booking.dropoff.drop_point_arrival}</div>
-                              </>
-                          ) : (
-                              <span className="flex items-center text-red-500">
-                                  <AlertCircle className="w-4 h-4 mr-1" />
-                                  No dropoff location
-                              </span>
-                          )
-                      ) : booking.dropoff.drop_point ===
-                        "Surabaya Train Station" ? (
-                          booking.dropoff.drop_point ? (
-                              <>
-                                  <div>
-                                      <Train className="inline-block w-4 h-4 mr-1" />
-                                  </div>
-                                  <div>{booking.dropoff.drop_point_arrival}</div>
-                              </>
-                          ) : (
-                              <span className="flex items-center text-red-500">
-                                  <AlertCircle className="w-4 h-4 mr-1" />
-                                  No dropoff location
-                              </span>
-                          )
-                      ) : (
-                          ""
-                      )}
-                  </div>
-                  <div className="flex">
-                      {booking.dropoff.drop_point === "Surabaya Airport" ? (
-                          <div>
-                              <Ticket className="inline-block w-4 h-4 mr-1" />
-                          </div>
-                      ) : booking.dropoff.drop_point === "Surabaya Hotel" ? (
-                          <div>
-                              <Hotel className="inline-block w-4 h-4 mr-1" />
-                          </div>
-                      ) : booking.dropoff.drop_point ===
-                        "Surabaya Train Station" ? (
-                          <div>
-                              <Ticket className="inline-block w-4 h-4 mr-1" />
-                          </div>
-                      ) : (
-                          booking.dropoff.drop_point_value && (
-                              <div>
-                                  <MapPin className="inline-block w-4 h-4 mr-1" />
-                              </div>
-                          )
-                      )}
-                      {booking.dropoff.drop_point_value || (
-                          <span className="flex items-center text-red-500">
-                              <AlertCircle className="w-4 h-4 mr-1" />
-                              No dropoff location
-                          </span>
-                      )}
-                  </div>
-                  <div className="text-xs">
-                      {booking.dropoff.drop_time ? (
-                          <div className="flex">
-                              <Clock className="w-4 h-4 mr-1" />
-                              <span className="text-gray-500">
-                                  {booking.dropoff.drop_time}
-                              </span>
-                          </div>
-                      ) : (
-                          <span className="flex items-center text-red-500">
-                              <AlertCircle className="w-4 h-4 mr-1" />
-                              No dropoff time
-                          </span>
-                      )}
-                  </div>
-              </td>
+                <td className="py-3 px-4 align-top space-y-2">
+                    <div className="flex">
+                        {booking.dropoff.drop_point === "Surabaya Airport" ? (
+                            booking.dropoff.drop_point_arrival ? (
+                                <>
+                                    <div>
+                                        <Plane className="inline-block w-4 h-4 mr-1" />
+                                    </div>
+                                    <div>
+                                        {booking.dropoff.drop_point_arrival}
+                                    </div>
+                                </>
+                            ) : (
+                                <span className="flex items-center text-red-500">
+                                    <AlertCircle className="w-4 h-4 mr-1" />
+                                    No dropoff location
+                                </span>
+                            )
+                        ) : booking.dropoff.drop_point ===
+                          "Surabaya Train Station" ? (
+                            booking.dropoff.drop_point ? (
+                                <>
+                                    <div>
+                                        <Train className="inline-block w-4 h-4 mr-1" />
+                                    </div>
+                                    <div>
+                                        {booking.dropoff.drop_point_arrival}
+                                    </div>
+                                </>
+                            ) : (
+                                <span className="flex items-center text-red-500">
+                                    <AlertCircle className="w-4 h-4 mr-1" />
+                                    No dropoff location
+                                </span>
+                            )
+                        ) : (
+                            ""
+                        )}
+                    </div>
+                    <div className="flex">
+                        {booking.dropoff.drop_point === "Surabaya Airport" ? (
+                            <div>
+                                <Ticket className="inline-block w-4 h-4 mr-1" />
+                            </div>
+                        ) : booking.dropoff.drop_point === "Surabaya Hotel" ? (
+                            <div>
+                                <Hotel className="inline-block w-4 h-4 mr-1" />
+                            </div>
+                        ) : booking.dropoff.drop_point ===
+                          "Surabaya Train Station" ? (
+                            <div>
+                                <Ticket className="inline-block w-4 h-4 mr-1" />
+                            </div>
+                        ) : (
+                            booking.dropoff.drop_point_value && (
+                                <div>
+                                    <MapPin className="inline-block w-4 h-4 mr-1" />
+                                </div>
+                            )
+                        )}
+                        {booking.dropoff.drop_point_value || (
+                            <span className="flex items-center text-red-500">
+                                <AlertCircle className="w-4 h-4 mr-1" />
+                                No dropoff location
+                            </span>
+                        )}
+                    </div>
+                    <div className="text-xs">
+                        {booking.dropoff.drop_time ? (
+                            <div className="flex">
+                                <Clock className="w-4 h-4 mr-1" />
+                                <span className="text-gray-500">
+                                    {booking.dropoff.drop_time}
+                                </span>
+                            </div>
+                        ) : (
+                            <span className="flex items-center text-red-500">
+                                <AlertCircle className="w-4 h-4 mr-1" />
+                                No dropoff time
+                            </span>
+                        )}
+                    </div>
+                </td>
             )}
 
             {viewColumns.includes("tshirtSize") && (
-              <td className="py-3 px-4 align-top">
-                  <div className="text-sm text-gray-700">
-                      {booking.tshirtSize || "-"}
-                  </div>
-              </td>
+                <td className="py-3 px-4 align-top">
+                    <div className="text-sm text-gray-700">
+                        {booking.tshirtSize || "-"}
+                    </div>
+                </td>
             )}
             {viewColumns.includes("activities") && (
-              <td className="py-3 px-4 align-top">
-                  <div className="max-h-24 overflow-y-auto">
-                      {booking.itinerary && booking.itinerary.length > 0 ? (
-                          <ul className="text-xs text-gray-700 space-y-1">
-                              {booking.itinerary.map((item, idx) => (
-                                  <>
-                                      {item.activity && (
-                                          <li key={idx}>
-                                              <span className="font-semibold">
-                                                  {item.day}
-                                              </span>
-                                              : {item.activity}
-                                          </li>
-                                      )}
-                                  </>
-                              ))}
-                          </ul>
-                      ) : (
-                          <span className="text-xs text-gray-500">
-                              No activity
-                          </span>
-                      )}
-                  </div>
-              </td>
+                <td className="py-3 px-4 align-top">
+                    <div className="max-h-24 overflow-y-auto">
+                        {booking.itinerary && booking.itinerary.length > 0 ? (
+                            <ul className="text-xs text-gray-700 space-y-1">
+                                {booking.itinerary.map((item, idx) => (
+                                    <>
+                                        {item.activity && (
+                                            <li key={idx}>
+                                                <span className="font-semibold">
+                                                    {item.day}
+                                                </span>
+                                                : {item.activity}
+                                            </li>
+                                        )}
+                                    </>
+                                ))}
+                            </ul>
+                        ) : (
+                            <span className="text-xs text-gray-500">
+                                No activity
+                            </span>
+                        )}
+                    </div>
+                </td>
             )}
-            
+
             {viewColumns.includes("itinerary") && (
-              <td className="py-3 px-4 align-top">
-                  <div className="max-h-24 overflow-y-auto">
-                      {booking.itinerary && booking.itinerary.length > 0 ? (
-                          <ul className="text-xs text-gray-700 space-y-1">
-                              {booking.itinerary.map((item, idx) => (
-                                  <li key={idx}>
-                                      <span className="font-semibold">
-                                          {item.day}
-                                      </span>
-                                      : {item.itinerary}
-                                  </li>
-                              ))}
-                          </ul>
-                      ) : (
-                          <span className="text-xs text-gray-500">
-                              No itinerary
-                          </span>
-                      )}
-                  </div>
-              </td>
+                <td className="py-3 px-4 align-top">
+                    <div className="max-h-24 overflow-y-auto">
+                        {booking.itinerary && booking.itinerary.length > 0 ? (
+                            <ul className="text-xs text-gray-700 space-y-1">
+                                {booking.itinerary.map((item, idx) => (
+                                    <li key={idx}>
+                                        <span className="font-semibold">
+                                            {item.day}
+                                        </span>
+                                        : {item.itinerary}
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <span className="text-xs text-gray-500">
+                                No itinerary
+                            </span>
+                        )}
+                    </div>
+                </td>
             )}
 
             {viewColumns.includes("accommodation") && (
@@ -689,10 +697,16 @@ const BookingRow = ({
                                             )}
                                         </span>
                                         : {acc.hotel}
-                                        <span className="text-xs text-gray-500 ml-2">
-                                            ({acc.rooms.roomName} x{" "}
-                                            {acc.rooms.quantity})
-                                        </span>
+                                        {Array.isArray(acc.rooms) &&
+                                            acc.rooms.map((room, rIdx) => (
+                                                <span
+                                                    key={rIdx}
+                                                    className="text-xs text-gray-500 ml-2"
+                                                >
+                                                    ({room.roomName} ×{" "}
+                                                    {room.quantity})
+                                                </span>
+                                            ))}
                                     </li>
                                 ))}
                             </ul>
@@ -725,7 +739,8 @@ const BookingRow = ({
                     </div>
                     {booking.drivers && booking.drivers.length > 0 ? (
                         booking.drivers.map((driver, idx) => (
-                            <div className="space-x-1 relative group flex"
+                            <div
+                                className="space-x-1 relative group flex"
                                 key={idx}
                                 onMouseEnter={() => setHoveredCrew(driver)}
                                 onMouseLeave={() => setHoveredCrew(null)}
@@ -734,54 +749,77 @@ const BookingRow = ({
                                 <div className="underline text-blue-600 cursor-pointer">
                                     {driver.name}
                                 </div>
-                                
+
                                 {/* Crew profile popup on hover */}
-                                {hoveredCrew && hoveredCrew.id === driver.id && (
-                                    <div className="absolute z-10 left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3">
-                                        <div className="flex items-start gap-3">
-                                            <div className="h-16 w-16 rounded-full overflow-hidden flex-shrink-0">
-                                                <img 
-                                                    src={driver.photo || "https://javavolcano-touroperator.com/assets/img/guide/default.jpg"} 
-                                                    alt={driver.name}
-                                                    className="h-full w-full object-cover"
-                                                />
-                                            </div>
-                                            <div>
-                                                <div className="font-medium text-gray-900 dark:text-white text-left">{driver.name}</div>
-                                                <div className="text-xs text-gray-500 dark:text-gray-400 capitalize flex items-center">
-                                                    Driver
+                                {hoveredCrew &&
+                                    hoveredCrew.id === driver.id && (
+                                        <div className="absolute z-10 left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3">
+                                            <div className="flex items-start gap-3">
+                                                <div className="h-16 w-16 rounded-full overflow-hidden flex-shrink-0">
+                                                    <img
+                                                        src={
+                                                            driver.photo ||
+                                                            "https://javavolcano-touroperator.com/assets/img/guide/default.jpg"
+                                                        }
+                                                        alt={driver.name}
+                                                        className="h-full w-full object-cover"
+                                                    />
                                                 </div>
-                                                <div className="mt-1 flex flex-wrap gap-1">
-                                                    {driver.tags && driver.tags.split(',').map((tag, i) => (
-                                                        <span 
-                                                            key={i} 
-                                                            className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-                                                        >
-                                                            {tag}
-                                                        </span>
-                                                    ))}
+                                                <div>
+                                                    <div className="font-medium text-gray-900 dark:text-white text-left">
+                                                        {driver.name}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400 capitalize flex items-center">
+                                                        Driver
+                                                    </div>
+                                                    <div className="mt-1 flex flex-wrap gap-1">
+                                                        {driver.tags &&
+                                                            driver.tags
+                                                                .split(",")
+                                                                .map(
+                                                                    (
+                                                                        tag,
+                                                                        i,
+                                                                    ) => (
+                                                                        <span
+                                                                            key={
+                                                                                i
+                                                                            }
+                                                                            className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                                                        >
+                                                                            {
+                                                                                tag
+                                                                            }
+                                                                        </span>
+                                                                    ),
+                                                                )}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                        
-                                        <div className="mt-3 grid grid-cols-1 gap-2 text-center">
-                                            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
-                                                <div className="text-xs text-gray-500 dark:text-gray-400">Escort Trips</div>
-                                                <div className="font-medium text-gray-900 dark:text-white">{driver.recap_this_month_escort || 0}</div>
+
+                                            <div className="mt-3 grid grid-cols-1 gap-2 text-center">
+                                                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                                                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                        Escort Trips
+                                                    </div>
+                                                    <div className="font-medium text-gray-900 dark:text-white">
+                                                        {driver.recap_this_month_escort ||
+                                                            0}
+                                                    </div>
+                                                </div>
                                             </div>
+
+                                            <button
+                                                className="mt-3 w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    window.location.href = `/data-master-management/crew/${driver.id}`;
+                                                }}
+                                            >
+                                                View Profile
+                                            </button>
                                         </div>
-                                        
-                                        <button 
-                                            className="mt-3 w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                window.location.href = `/data-master-management/crew/${driver.id}`;
-                                            }}
-                                        >
-                                            View Profile
-                                        </button>
-                                    </div>
-                                )}
+                                    )}
                             </div>
                         ))
                     ) : (
@@ -794,7 +832,8 @@ const BookingRow = ({
                     <div className="text-sm text-gray-600">
                         {booking.guides && booking.guides.length > 0 ? (
                             booking.guides.map((guide, idx) => (
-                                <div className="space-x-1 relative group flex"
+                                <div
+                                    className="space-x-1 relative group flex"
                                     key={idx}
                                     onMouseEnter={() => setHoveredCrew(guide)}
                                     onMouseLeave={() => setHoveredCrew(null)}
@@ -803,58 +842,88 @@ const BookingRow = ({
                                     <div className="underline cursor-pointer text-blue-600">
                                         {guide.name}
                                     </div>
-                                    
+
                                     {/* Crew profile popup on hover */}
-                                    {hoveredCrew && hoveredCrew.id === guide.id && (
-                                        <div className="absolute z-10 left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3">
-                                            <div className="flex items-start gap-3">
-                                                <div className="h-16 w-16 rounded-full overflow-hidden flex-shrink-0">
-                                                    <img 
-                                                        src={guide.photo || "https://javavolcano-touroperator.com/assets/img/guide/default.jpg"} 
-                                                        alt={guide.name}
-                                                        className="h-full w-full object-cover"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <div className="font-medium text-gray-900 dark:text-white text-left">{guide.name}</div>
-                                                    <div className="text-xs text-gray-500 dark:text-gray-400 capitalize flex items-center">
-                                                        {guide.type} Guide
+                                    {hoveredCrew &&
+                                        hoveredCrew.id === guide.id && (
+                                            <div className="absolute z-10 left-0 mt-1 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-3">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="h-16 w-16 rounded-full overflow-hidden flex-shrink-0">
+                                                        <img
+                                                            src={
+                                                                guide.photo ||
+                                                                "https://javavolcano-touroperator.com/assets/img/guide/default.jpg"
+                                                            }
+                                                            alt={guide.name}
+                                                            className="h-full w-full object-cover"
+                                                        />
                                                     </div>
-                                                    <div className="mt-1 flex flex-wrap gap-1">
-                                                        {guide.tags && guide.tags.split(',').map((tag, i) => (
-                                                            <span 
-                                                                key={i} 
-                                                                className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
-                                                            >
-                                                                {tag}
-                                                            </span>
-                                                        ))}
+                                                    <div>
+                                                        <div className="font-medium text-gray-900 dark:text-white text-left">
+                                                            {guide.name}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400 capitalize flex items-center">
+                                                            {guide.type} Guide
+                                                        </div>
+                                                        <div className="mt-1 flex flex-wrap gap-1">
+                                                            {guide.tags &&
+                                                                guide.tags
+                                                                    .split(",")
+                                                                    .map(
+                                                                        (
+                                                                            tag,
+                                                                            i,
+                                                                        ) => (
+                                                                            <span
+                                                                                key={
+                                                                                    i
+                                                                                }
+                                                                                className="px-1.5 py-0.5 text-xs rounded bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                                                                            >
+                                                                                {
+                                                                                    tag
+                                                                                }
+                                                                            </span>
+                                                                        ),
+                                                                    )}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                            
-                                            <div className={`mt-3 grid grid-cols-2 gap-2 text-center`}>
-                                                <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
-                                                    <div className="text-xs text-gray-500 dark:text-gray-400">Escort Trips</div>
-                                                    <div className="font-medium text-gray-900 dark:text-white">{guide.recap_this_month_escort || 0}</div>
+
+                                                <div
+                                                    className={`mt-3 grid grid-cols-2 gap-2 text-center`}
+                                                >
+                                                    <div className="p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                            Escort Trips
+                                                        </div>
+                                                        <div className="font-medium text-gray-900 dark:text-white">
+                                                            {guide.recap_this_month_escort ||
+                                                                0}
+                                                        </div>
+                                                    </div>
+                                                    <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
+                                                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                                                            Ijen Trips
+                                                        </div>
+                                                        <div className="font-medium text-gray-900 dark:text-white">
+                                                            {guide.recap_this_month_ijen ||
+                                                                0}
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="p-2 bg-purple-50 dark:bg-purple-900/20 rounded">
-                                                    <div className="text-xs text-gray-500 dark:text-gray-400">Ijen Trips</div>
-                                                    <div className="font-medium text-gray-900 dark:text-white">{guide.recap_this_month_ijen || 0}</div>
-                                                </div>
+
+                                                <button
+                                                    className="mt-3 w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        window.location.href = `/data-master-management/crew/${guide.id}`;
+                                                    }}
+                                                >
+                                                    View Profile
+                                                </button>
                                             </div>
-                                            
-                                            <button 
-                                                className="mt-3 w-full py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    window.location.href = `/data-master-management/crew/${guide.id}`;
-                                                }}
-                                            >
-                                                View Profile
-                                            </button>
-                                        </div>
-                                    )}
+                                        )}
                                 </div>
                             ))
                         ) : (
@@ -880,12 +949,16 @@ const BookingRow = ({
                                 className="text-blue-500 underline cursor-pointer hover:text-blue-700"
                             >
                                 Invoice:{" "}
-                                {formatCurrency(booking.financial.invoice.total)}
+                                {formatCurrency(
+                                    booking.financial.invoice.total,
+                                )}
                             </div>
                         ) : (
                             <div className="text-blue-500">
                                 Invoice:{" "}
-                                {formatCurrency(booking.financial.invoice.total)}
+                                {formatCurrency(
+                                    booking.financial.invoice.total,
+                                )}
                             </div>
                         )}
                     </div>
@@ -894,126 +967,259 @@ const BookingRow = ({
                             href={booking.financial.expense.expenseLink}
                             className="text-orange-500 underline cursor-pointer hover:text-orange-700"
                         >
-                            Expense: {formatCurrency(booking.financial.expense.total)}
+                            Expense:{" "}
+                            {formatCurrency(booking.financial.expense.total)}
                         </Link>
                     </div>
                     <div className="text-sm">
-                        <div
-                            className="text-green-500"
-                        >
-                            Crew: {formatCurrency(booking.financial.expense.crew_expense)}
+                        <div className="text-green-500">
+                            Crew:{" "}
+                            {formatCurrency(
+                                booking.financial.expense.crew_expense,
+                            )}
                         </div>
                     </div>
                     <div className="text-sm">
-                        <div
-                            className="text-red-500"
-                        >
-                            Hutang: {formatCurrency(booking.financial.expense.debt_expense)}
+                        <div className="text-red-500">
+                            Hutang:{" "}
+                            {formatCurrency(
+                                booking.financial.expense.debt_expense,
+                            )}
                         </div>
                     </div>
-                    
+
                     {/* Add Info icon with payment history for JVTO orders */}
                     {booking.orderChannel === "JVTO" && (
                         <div className="absolute top-2 right-2 group">
                             <Info className="h-4 w-4 text-gray-500 hover:text-blue-500 cursor-pointer" />
                             <div className="absolute z-10 right-0 -mt-2 w-72 p-3 bg-white shadow-lg rounded-md border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                                <div className="mb-2 font-medium text-sm text-gray-700">Payment History</div>
-                                {booking.paymentHistory && booking.paymentHistory.length > 0 ? (
+                                <div className="mb-2 font-medium text-sm text-gray-700">
+                                    Payment History
+                                </div>
+                                {booking.paymentHistory &&
+                                booking.paymentHistory.length > 0 ? (
                                     <div className="max-h-60 overflow-y-auto">
-                                        {booking.paymentHistory.map((payment, idx) => (
-                                            <div key={idx} className="mb-2 pb-2 border-b border-gray-100 last:border-0">
-                                                <div className="flex justify-between items-center mt-1">
-                                                    <div>
-                                                        <div className="text-xs font-medium text-gray-700">{payment.description}</div>
-                                                        <div className="text-xs mt-1 font-semibold text-blue-600">{formatCurrency(payment.nominal)}</div>
-                                                    </div>
-                                                    {payment.paymentMethodId == 3 ? (
-                                                    <img src="/assets/images/icon/xendit.png" className="w-18" alt="" srcSet="" />
-                                                    ) : payment.paymentMethodId == 5 ? (
-                                                    <img src="/assets/images/icon/wise.png" className="w-18" alt="" srcSet="" />
-                                                    ) : payment.paymentMethodId == 1 ? (
-                                                    <img src="/assets/images/icon/cash.png" className="w-18" alt="" srcSet="" />
-                                                    ) : payment.paymentMethodId == 4 ? (
-                                                    <img src="/assets/images/icon/edc.png" className="w-18" alt="" srcSet="" />
-                                                    ) : payment.paymentMethodId == 6 ? (
-                                                    <img src="/assets/images/icon/bank-transfer.png" className="w-20" alt="" srcSet="" />
-                                                    ) : payment.paymentMethod}
-
-                                                </div>
-                                                <div className="flex justify-between items-center mt-1">
-                                                    <span className="text-xs text-gray-500">{payment.date}</span>
-                                                    {payment.reference && (
-                                                        <a 
-                                                            href={payment.reference} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer"
-                                                            className="text-xs text-blue-500 hover:underline"
-                                                        >
-                                                            {payment.reference.substring(0, 20)}...
-                                                        </a>
-                                                    )}
-                                                </div>
-                                                <a 
-                                                    href={"https://javavolcano-touroperator.com/backoffice/invoice/view-receipt/"+payment.booking_id+"/partial/"+payment.id} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="text-xs text-blue-500 hover:underline"
+                                        {booking.paymentHistory.map(
+                                            (payment, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    className="mb-2 pb-2 border-b border-gray-100 last:border-0"
                                                 >
-                                                    {payment.receipt}
-                                                </a>
-                                            </div>
-                                        ))}
-                                        {booking.financial.balance > 0 && (
-                                            <div className="mb-2 pb-2 border-b border-gray-100 last:border-0">
-                                            <div className="flex justify-between items-center mt-1">
-                                                <div>
-                                                    <div className="text-xs font-medium text-gray-700">FULL PAYMENT <span className="bg-orange-100 text-orange-700 px-1 rounded-xl text-xs font-medium">PENDING</span>
+                                                    <div className="flex justify-between items-center mt-1">
+                                                        <div>
+                                                            <div className="text-xs font-medium text-gray-700">
+                                                                {
+                                                                    payment.description
+                                                                }
+                                                            </div>
+                                                            <div className="text-xs mt-1 font-semibold text-blue-600">
+                                                                {formatCurrency(
+                                                                    payment.nominal,
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        {payment.paymentMethodId ==
+                                                        3 ? (
+                                                            <img
+                                                                src="/assets/images/icon/xendit.png"
+                                                                className="w-18"
+                                                                alt=""
+                                                                srcSet=""
+                                                            />
+                                                        ) : payment.paymentMethodId ==
+                                                          5 ? (
+                                                            <img
+                                                                src="/assets/images/icon/wise.png"
+                                                                className="w-18"
+                                                                alt=""
+                                                                srcSet=""
+                                                            />
+                                                        ) : payment.paymentMethodId ==
+                                                          1 ? (
+                                                            <img
+                                                                src="/assets/images/icon/cash.png"
+                                                                className="w-18"
+                                                                alt=""
+                                                                srcSet=""
+                                                            />
+                                                        ) : payment.paymentMethodId ==
+                                                          4 ? (
+                                                            <img
+                                                                src="/assets/images/icon/edc.png"
+                                                                className="w-18"
+                                                                alt=""
+                                                                srcSet=""
+                                                            />
+                                                        ) : payment.paymentMethodId ==
+                                                          6 ? (
+                                                            <img
+                                                                src="/assets/images/icon/bank-transfer.png"
+                                                                className="w-20"
+                                                                alt=""
+                                                                srcSet=""
+                                                            />
+                                                        ) : (
+                                                            payment.paymentMethod
+                                                        )}
                                                     </div>
-                                                    <div className="text-xs mt-1 font-semibold text-blue-600">{formatCurrency(booking.financial.balance)}</div>
-                                                </div>
-                                                {booking.financial.paymentMethod == 'cc' ? (
-                                                <img src="/assets/images/icon/xendit.png" className="w-18" alt="" srcSet="" />
-                                                ) : booking.financial.paymentMethod == 'wise' ? (
-                                                <img src="/assets/images/icon/wise.png" className="w-18" alt="" srcSet="" />
-                                                ) : booking.financial.paymentMethod == 'cash' ? (
-                                                <img src="/assets/images/icon/cash.png" className="w-18" alt="" srcSet="" />
-                                                ) : booking.financial.paymentMethod == 'edc' ? (
-                                                <img src="/assets/images/icon/edc.png" className="w-18" alt="" srcSet="" />
-                                                ) : booking.financial.paymentMethod == 'bank-transfer' ? (
-                                                <img src="/assets/images/icon/bank-transfer.png" className="w-20" alt="" srcSet="" />
-                                                ) : booking.financial.paymentMethod}
-
-                                            </div>
-                                            <div className="flex justify-between items-center mt-1">
-                                                <span className="text-xs text-gray-500">ARRIVAL DATE</span>
-                                                {booking.financial.paymentMethodLink && (
-                                                    <a 
-                                                        href={booking.financial.paymentMethodLink} 
-                                                        target="_blank" 
+                                                    <div className="flex justify-between items-center mt-1">
+                                                        <span className="text-xs text-gray-500">
+                                                            {payment.date}
+                                                        </span>
+                                                        {payment.reference && (
+                                                            <a
+                                                                href={
+                                                                    payment.reference
+                                                                }
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-xs text-blue-500 hover:underline"
+                                                            >
+                                                                {payment.reference.substring(
+                                                                    0,
+                                                                    20,
+                                                                )}
+                                                                ...
+                                                            </a>
+                                                        )}
+                                                    </div>
+                                                    <a
+                                                        href={
+                                                            "https://javavolcano-touroperator.com/backoffice/invoice/view-receipt/" +
+                                                            payment.booking_id +
+                                                            "/partial/" +
+                                                            payment.id
+                                                        }
+                                                        target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="text-xs text-blue-500 hover:underline"
                                                     >
-                                                        {booking.financial.paymentMethodLink.substring(0, 20)}...
+                                                        {payment.receipt}
                                                     </a>
-                                                )}
+                                                </div>
+                                            ),
+                                        )}
+                                        {booking.financial.balance > 0 && (
+                                            <div className="mb-2 pb-2 border-b border-gray-100 last:border-0">
+                                                <div className="flex justify-between items-center mt-1">
+                                                    <div>
+                                                        <div className="text-xs font-medium text-gray-700">
+                                                            FULL PAYMENT{" "}
+                                                            <span className="bg-orange-100 text-orange-700 px-1 rounded-xl text-xs font-medium">
+                                                                PENDING
+                                                            </span>
+                                                        </div>
+                                                        <div className="text-xs mt-1 font-semibold text-blue-600">
+                                                            {formatCurrency(
+                                                                booking
+                                                                    .financial
+                                                                    .balance,
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    {booking.financial
+                                                        .paymentMethod ==
+                                                    "cc" ? (
+                                                        <img
+                                                            src="/assets/images/icon/xendit.png"
+                                                            className="w-18"
+                                                            alt=""
+                                                            srcSet=""
+                                                        />
+                                                    ) : booking.financial
+                                                          .paymentMethod ==
+                                                      "wise" ? (
+                                                        <img
+                                                            src="/assets/images/icon/wise.png"
+                                                            className="w-18"
+                                                            alt=""
+                                                            srcSet=""
+                                                        />
+                                                    ) : booking.financial
+                                                          .paymentMethod ==
+                                                      "cash" ? (
+                                                        <img
+                                                            src="/assets/images/icon/cash.png"
+                                                            className="w-18"
+                                                            alt=""
+                                                            srcSet=""
+                                                        />
+                                                    ) : booking.financial
+                                                          .paymentMethod ==
+                                                      "edc" ? (
+                                                        <img
+                                                            src="/assets/images/icon/edc.png"
+                                                            className="w-18"
+                                                            alt=""
+                                                            srcSet=""
+                                                        />
+                                                    ) : booking.financial
+                                                          .paymentMethod ==
+                                                      "bank-transfer" ? (
+                                                        <img
+                                                            src="/assets/images/icon/bank-transfer.png"
+                                                            className="w-20"
+                                                            alt=""
+                                                            srcSet=""
+                                                        />
+                                                    ) : (
+                                                        booking.financial
+                                                            .paymentMethod
+                                                    )}
+                                                </div>
+                                                <div className="flex justify-between items-center mt-1">
+                                                    <span className="text-xs text-gray-500">
+                                                        ARRIVAL DATE
+                                                    </span>
+                                                    {booking.financial
+                                                        .paymentMethodLink && (
+                                                        <a
+                                                            href={
+                                                                booking
+                                                                    .financial
+                                                                    .paymentMethodLink
+                                                            }
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-xs text-blue-500 hover:underline"
+                                                        >
+                                                            {booking.financial.paymentMethodLink.substring(
+                                                                0,
+                                                                20,
+                                                            )}
+                                                            ...
+                                                        </a>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
                                         )}
                                     </div>
                                 ) : (
-                                    <div className="text-xs text-gray-500 italic py-2">No payment records found</div>
+                                    <div className="text-xs text-gray-500 italic py-2">
+                                        No payment records found
+                                    </div>
                                 )}
                                 <div className="mt-2 pt-2 border-t border-gray-200">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-xs font-medium text-gray-700">Total Paid:</span>
+                                        <span className="text-xs font-medium text-gray-700">
+                                            Total Paid:
+                                        </span>
                                         <span className="text-xs font-semibold text-green-600">
-                                            {formatCurrency(booking.financial.payment)}
+                                            {formatCurrency(
+                                                booking.financial.payment,
+                                            )}
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center mt-1">
-                                        <span className="text-xs font-medium text-gray-700">Balance:</span>
+                                        <span className="text-xs font-medium text-gray-700">
+                                            Balance:
+                                        </span>
                                         <span className="text-xs font-semibold text-red-600">
-                                            {booking.financial.balance > 0 ? formatCurrency(booking.financial.balance) : 'PAID IN FULL'}
+                                            {booking.financial.balance > 0
+                                                ? formatCurrency(
+                                                      booking.financial.balance,
+                                                  )
+                                                : "PAID IN FULL"}
                                         </span>
                                     </div>
                                 </div>
@@ -1022,7 +1228,7 @@ const BookingRow = ({
                     )}
                 </td>
             )}
-{/* <td className="py-3 px-4 align-top space-y-1">
+            {/* <td className="py-3 px-4 align-top space-y-1">
     <div className="text-sm">
         {booking.financial.invoice.invoiceLink.length ? (
             <div
@@ -1117,7 +1323,6 @@ const BookingRow = ({
                 </td>
             )}
 
-
             {/* Actions */}
             <td className="py-3 px-4 align-top">
                 <div className="relative" ref={dropdownRef}>
@@ -1163,38 +1368,49 @@ const BookingRow = ({
                             >
                                 Plotting
                             </button>
-                            <Link className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150" href={`bookings/edit-booking/${booking.booking_id}`}>
-                            Edit
+                            <Link
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                                href={`bookings/edit-booking/${booking.booking_id}`}
+                            >
+                                Edit
                             </Link>
-                            <button onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
 
-                                Swal.fire({
-                                    title: 'Are you sure?',
-                                    text: 'This action cannot be undone.',
-                                    icon: 'warning',
-                                    showCancelButton: true,
-                                    confirmButtonColor: '#d33',
-                                    cancelButtonColor: '#3085d6',
-                                    confirmButtonText: 'Yes, delete it!',
-                                  }).then((result) => {
-                                    if (result.isConfirmed) {
-                                        router.delete("/bookings/delete/"+booking.booking_id, {
-                                            onSuccess: (page) => {
-                                                Toast.fire({
-                                                    icon: "success",
-                                                    title: "Booking Deleted Successfully",
-                                                });
-                                                setTimeout(() => {
-                                                    window.location.href = ''; // reload current page
-                                                }, 1500); // delay 1.5 detik (1500 ms)                                            
-                                            },
-                                        });
-                                    }
-                                });                                
-                            }} className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150">
-                            Delete
+                                    Swal.fire({
+                                        title: "Are you sure?",
+                                        text: "This action cannot be undone.",
+                                        icon: "warning",
+                                        showCancelButton: true,
+                                        confirmButtonColor: "#d33",
+                                        cancelButtonColor: "#3085d6",
+                                        confirmButtonText: "Yes, delete it!",
+                                    }).then((result) => {
+                                        if (result.isConfirmed) {
+                                            router.delete(
+                                                "/bookings/delete/" +
+                                                    booking.booking_id,
+                                                {
+                                                    onSuccess: (page) => {
+                                                        Toast.fire({
+                                                            icon: "success",
+                                                            title: "Booking Deleted Successfully",
+                                                        });
+                                                        setTimeout(() => {
+                                                            window.location.href =
+                                                                ""; // reload current page
+                                                        }, 1500); // delay 1.5 detik (1500 ms)
+                                                    },
+                                                },
+                                            );
+                                        }
+                                    });
+                                }}
+                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-150"
+                            >
+                                Delete
                             </button>
                         </div>
                     )}
@@ -1342,26 +1558,27 @@ export default function Index({ data }) {
     const [sortOrder, setSortOrder] = useState(data.filters.sort_order); // Get from props or default to asc
     const [isDateSortDropdownOpen, setIsDateSortDropdownOpen] = useState(false); // New state to control dropdown visibility
     const dateSortDropdownRef = useRef(null); // Reference for the dropdown
-    
-    
+
     useEffect(() => {
         const handleClickOutside = (event) => {
-          if (dateSortDropdownRef.current && !dateSortDropdownRef.current.contains(event.target)) {
-            setIsDateSortDropdownOpen(false);
-          }
+            if (
+                dateSortDropdownRef.current &&
+                !dateSortDropdownRef.current.contains(event.target)
+            ) {
+                setIsDateSortDropdownOpen(false);
+            }
         };
-      
+
         if (isDateSortDropdownOpen) {
-          document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("mousedown", handleClickOutside);
         }
-        
+
         return () => {
-          document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("mousedown", handleClickOutside);
         };
-      }, [isDateSortDropdownOpen]);        
+    }, [isDateSortDropdownOpen]);
 
-    const viewColumns = data.filters.view.split(",")
-
+    const viewColumns = data.filters.view.split(",");
 
     // useEffect(() => {
     //   const handleClickOutside = (event) => {
@@ -1715,7 +1932,7 @@ export default function Index({ data }) {
             return (
                 plottingData?.car?.map((vehicle) => {
                     // Always enable Hiace (id: 5) and Premio (id: 21)
-                    const alwaysEnabled = [5,21,1,2,4].includes(vehicle.id);
+                    const alwaysEnabled = [5, 21, 1, 2, 4].includes(vehicle.id);
 
                     return {
                         value: vehicle.id,
@@ -1775,18 +1992,21 @@ export default function Index({ data }) {
                     value: guide.id,
                     label: guide.name,
                     disabled:
-                        (guide.id !== 56 && guide.status === "Tidak Tersedia") ||
-                        (!guide.dynamic_roles?.includes("Ijen") && guide.id !== 56),
+                        (guide.id !== 56 &&
+                            guide.status === "Tidak Tersedia") ||
+                        (!guide.dynamic_roles?.includes("Ijen") &&
+                            guide.id !== 56),
                     scheduleInfo:
                         guide.status === "Tidak Tersedia" && guide.id !== 56
                             ? guide.schedule_info
-                            : !guide.dynamic_roles?.includes("Ijen") && guide.id !== 56
-                                ? "Hanya tersedia untuk Escort"
-                                : undefined,
+                            : !guide.dynamic_roles?.includes("Ijen") &&
+                                guide.id !== 56
+                              ? "Hanya tersedia untuk Escort"
+                              : undefined,
                 })) || []
             );
         }, [plottingData?.guide]);
-        
+
         const handleSubmit = (e) => {
             e.preventDefault();
             setIsLoading(true);
@@ -2405,7 +2625,9 @@ export default function Index({ data }) {
                                                 <a
                                                     href={`/booking-overview?filter_type=${filterType}&${filterType === "month" ? "month=" + selectedMonth : "date_range=" + startDate + "_" + endDate}&search=${searchTerm}&sort_column=${sortColumn}&sort_order=${sortOrder}&channel=${selectedChannel}&json=true&download=true`}
                                                     className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
-                                                    onClick={() => setIsDownloadOpen(false)}
+                                                    onClick={() =>
+                                                        setIsDownloadOpen(false)
+                                                    }
                                                 >
                                                     <svg
                                                         xmlns="http://www.w3.org/2000/svg"
@@ -2420,7 +2642,7 @@ export default function Index({ data }) {
                                                         />
                                                     </svg>
                                                     JSON
-                                                </a>                                                
+                                                </a>
                                             </div>
                                         )}
                                     </div>
@@ -2437,116 +2659,203 @@ export default function Index({ data }) {
                                 <th className="py-3 px-4">#</th>
                                 <th className="py-3 px-4 min-w-35 relative whitespace-nowrap">
                                     <div className="flex items-center">
-                                        <div className="relative" ref={dateSortDropdownRef}>
-                                        <button 
-                                            className="ml-1 text-gray-600 text-left font-bold hover:text-gray-700"
-                                            onClick={() => setIsDateSortDropdownOpen(!isDateSortDropdownOpen)}
+                                        <div
+                                            className="relative"
+                                            ref={dateSortDropdownRef}
                                         >
-                                            <span className="mr-3">DATE</span>
-                                            {sortColumn === "date" || sortColumn === "booking_date" ? (
-                                            <span>{sortOrder === "asc" ? "↑" : "↓"}</span>
-                                            ) : (
-                                            <ChevronDown className="h-4 w-4" />
+                                            <button
+                                                className="ml-1 text-gray-600 text-left font-bold hover:text-gray-700"
+                                                onClick={() =>
+                                                    setIsDateSortDropdownOpen(
+                                                        !isDateSortDropdownOpen,
+                                                    )
+                                                }
+                                            >
+                                                <span className="mr-3">
+                                                    DATE
+                                                </span>
+                                                {sortColumn === "date" ||
+                                                sortColumn ===
+                                                    "booking_date" ? (
+                                                    <span>
+                                                        {sortOrder === "asc"
+                                                            ? "↑"
+                                                            : "↓"}
+                                                    </span>
+                                                ) : (
+                                                    <ChevronDown className="h-4 w-4" />
+                                                )}
+                                            </button>
+
+                                            {isDateSortDropdownOpen && (
+                                                <div className="absolute left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                                                    <div className="py-1">
+                                                        <button
+                                                            className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                                                                sortColumn ===
+                                                                    "date" &&
+                                                                sortOrder ===
+                                                                    "asc"
+                                                                    ? "bg-blue-50 text-blue-700"
+                                                                    : "text-gray-700"
+                                                            }`}
+                                                            onClick={() => {
+                                                                setIsDateSortDropdownOpen(
+                                                                    false,
+                                                                );
+                                                                router.get(
+                                                                    "/booking-overview",
+                                                                    {
+                                                                        filter_type:
+                                                                            filterType,
+                                                                        month: selectedMonth,
+                                                                        date_range:
+                                                                            startDate +
+                                                                            "_" +
+                                                                            endDate,
+                                                                        search: searchTerm,
+                                                                        channel:
+                                                                            selectedChannel,
+                                                                        view: selectedColumns.join(
+                                                                            ",",
+                                                                        ),
+                                                                        sort_column:
+                                                                            "date",
+                                                                        sort_order:
+                                                                            "asc",
+                                                                    },
+                                                                );
+                                                            }}
+                                                        >
+                                                            Travel Date
+                                                            (Earliest first)
+                                                        </button>
+                                                        <button
+                                                            className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                                                                sortColumn ===
+                                                                    "date" &&
+                                                                sortOrder ===
+                                                                    "desc"
+                                                                    ? "bg-blue-50 text-blue-700"
+                                                                    : "text-gray-700"
+                                                            }`}
+                                                            onClick={() => {
+                                                                setIsDateSortDropdownOpen(
+                                                                    false,
+                                                                );
+                                                                router.get(
+                                                                    "/booking-overview",
+                                                                    {
+                                                                        filter_type:
+                                                                            filterType,
+                                                                        month: selectedMonth,
+                                                                        date_range:
+                                                                            startDate +
+                                                                            "_" +
+                                                                            endDate,
+                                                                        search: searchTerm,
+                                                                        channel:
+                                                                            selectedChannel,
+                                                                        view: selectedColumns.join(
+                                                                            ",",
+                                                                        ),
+                                                                        sort_column:
+                                                                            "date",
+                                                                        sort_order:
+                                                                            "desc",
+                                                                    },
+                                                                );
+                                                            }}
+                                                        >
+                                                            Travel Date (Latest
+                                                            first)
+                                                        </button>
+                                                        <button
+                                                            className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                                                                sortColumn ===
+                                                                    "booking_date" &&
+                                                                sortOrder ===
+                                                                    "asc"
+                                                                    ? "bg-blue-50 text-blue-700"
+                                                                    : "text-gray-700"
+                                                            }`}
+                                                            onClick={() => {
+                                                                setIsDateSortDropdownOpen(
+                                                                    false,
+                                                                );
+                                                                router.get(
+                                                                    "/booking-overview",
+                                                                    {
+                                                                        filter_type:
+                                                                            filterType,
+                                                                        month: selectedMonth,
+                                                                        date_range:
+                                                                            startDate +
+                                                                            "_" +
+                                                                            endDate,
+                                                                        search: searchTerm,
+                                                                        channel:
+                                                                            selectedChannel,
+                                                                        view: selectedColumns.join(
+                                                                            ",",
+                                                                        ),
+                                                                        sort_column:
+                                                                            "booking_date",
+                                                                        sort_order:
+                                                                            "asc",
+                                                                    },
+                                                                );
+                                                            }}
+                                                        >
+                                                            Booking Date
+                                                            (Earliest first)
+                                                        </button>
+                                                        <button
+                                                            className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
+                                                                sortColumn ===
+                                                                    "booking_date" &&
+                                                                sortOrder ===
+                                                                    "desc"
+                                                                    ? "bg-blue-50 text-blue-700"
+                                                                    : "text-gray-700"
+                                                            }`}
+                                                            onClick={() => {
+                                                                setIsDateSortDropdownOpen(
+                                                                    false,
+                                                                );
+                                                                router.get(
+                                                                    "/booking-overview",
+                                                                    {
+                                                                        filter_type:
+                                                                            filterType,
+                                                                        month: selectedMonth,
+                                                                        date_range:
+                                                                            startDate +
+                                                                            "_" +
+                                                                            endDate,
+                                                                        search: searchTerm,
+                                                                        channel:
+                                                                            selectedChannel,
+                                                                        view: selectedColumns.join(
+                                                                            ",",
+                                                                        ),
+                                                                        sort_column:
+                                                                            "booking_date",
+                                                                        sort_order:
+                                                                            "desc",
+                                                                    },
+                                                                );
+                                                            }}
+                                                        >
+                                                            Booking Date (Latest
+                                                            first)
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             )}
-                                        </button>
-                                        
-                                        {isDateSortDropdownOpen && (
-                                            <div className="absolute left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
-                                            <div className="py-1">
-                                                <button 
-                                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                                                    sortColumn === "date" && sortOrder === "asc" 
-                                                    ? "bg-blue-50 text-blue-700" 
-                                                    : "text-gray-700"
-                                                }`}
-                                                onClick={() => {
-                                                    setIsDateSortDropdownOpen(false);
-                                                    router.get("/booking-overview", {
-                                                    filter_type: filterType,
-                                                    month: selectedMonth,
-                                                    date_range: startDate + "_" + endDate,
-                                                    search: searchTerm,
-                                                    channel: selectedChannel,
-                                                    view: selectedColumns.join(","),
-                                                    sort_column: "date",
-                                                    sort_order: "asc"
-                                                    });
-                                                }}
-                                                >
-                                                Travel Date (Earliest first)
-                                                </button>
-                                                <button 
-                                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                                                    sortColumn === "date" && sortOrder === "desc" 
-                                                    ? "bg-blue-50 text-blue-700" 
-                                                    : "text-gray-700"
-                                                }`}
-                                                onClick={() => {
-                                                    setIsDateSortDropdownOpen(false);
-                                                    router.get("/booking-overview", {
-                                                    filter_type: filterType,
-                                                    month: selectedMonth,
-                                                    date_range: startDate + "_" + endDate,
-                                                    search: searchTerm,
-                                                    channel: selectedChannel,
-                                                    view: selectedColumns.join(","),
-                                                    sort_column: "date",
-                                                    sort_order: "desc"
-                                                    });
-                                                }}
-                                                >
-                                                Travel Date (Latest first)
-                                                </button>
-                                                <button 
-                                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                                                    sortColumn === "booking_date" && sortOrder === "asc" 
-                                                    ? "bg-blue-50 text-blue-700" 
-                                                    : "text-gray-700"
-                                                }`}
-                                                onClick={() => {
-                                                    setIsDateSortDropdownOpen(false);
-                                                    router.get("/booking-overview", {
-                                                    filter_type: filterType,
-                                                    month: selectedMonth,
-                                                    date_range: startDate + "_" + endDate,
-                                                    search: searchTerm,
-                                                    channel: selectedChannel,
-                                                    view: selectedColumns.join(","),
-                                                    sort_column: "booking_date",
-                                                    sort_order: "asc"
-                                                    });
-                                                }}
-                                                >
-                                                Booking Date (Earliest first)
-                                                </button>
-                                                <button 
-                                                className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
-                                                    sortColumn === "booking_date" && sortOrder === "desc" 
-                                                    ? "bg-blue-50 text-blue-700" 
-                                                    : "text-gray-700"
-                                                }`}
-                                                onClick={() => {
-                                                    setIsDateSortDropdownOpen(false);
-                                                    router.get("/booking-overview", {
-                                                    filter_type: filterType,
-                                                    month: selectedMonth,
-                                                    date_range: startDate + "_" + endDate,
-                                                    search: searchTerm,
-                                                    channel: selectedChannel,
-                                                    view: selectedColumns.join(","),
-                                                    sort_column: "booking_date",
-                                                    sort_order: "desc"
-                                                    });
-                                                }}
-                                                >
-                                                Booking Date (Latest first)
-                                                </button>
-                                            </div>
-                                            </div>
-                                        )}
                                         </div>
                                     </div>
-                                </th>                                
+                                </th>
                                 <th className="py-3 px-4 min-w-35">
                                     Guest & Pax
                                 </th>
@@ -2601,22 +2910,40 @@ export default function Index({ data }) {
                         <tbody>
                             {/* Completed Trips Collapsible Section */}
                             <tr className="border-b bg-green-50">
-                                <td colSpan={selectedColumns.length + 4} className="py-2 px-4">
-                                    <button 
-                                        onClick={() => setShowCompletedTrips(!showCompletedTrips)}
+                                <td
+                                    colSpan={selectedColumns.length + 4}
+                                    className="py-2 px-4"
+                                >
+                                    <button
+                                        onClick={() =>
+                                            setShowCompletedTrips(
+                                                !showCompletedTrips,
+                                            )
+                                        }
                                         className="w-full flex items-center justify-between text-left font-medium text-green-700"
                                     >
                                         <div className="flex items-center">
                                             <div>
                                                 <span className="text-xs mr-3 bg-green-200 px-2 py-1 rounded-full">
-                                                    {bookings.filter(b => new Date(b.date.end_ymd) < new Date(data.now)).length}
+                                                    {
+                                                        bookings.filter(
+                                                            (b) =>
+                                                                new Date(
+                                                                    b.date.end_ymd,
+                                                                ) <
+                                                                new Date(
+                                                                    data.now,
+                                                                ),
+                                                        ).length
+                                                    }
                                                 </span>
                                                 Completed Trips
                                             </div>
-                                            {showCompletedTrips ? 
-                                                <ChevronDown className="h-5 w-5 mr-2" /> : 
+                                            {showCompletedTrips ? (
+                                                <ChevronDown className="h-5 w-5 mr-2" />
+                                            ) : (
                                                 <ChevronRight className="h-5 w-5 mr-2" />
-                                            }
+                                            )}
                                         </div>
                                     </button>
                                 </td>
@@ -2624,31 +2951,55 @@ export default function Index({ data }) {
 
                             {/* Add this state to the component */}
                             {/* const [showCompletedTrips, setShowCompletedTrips] = useState(false); */}
-                                        
-                            {showCompletedTrips && bookings
-                                .filter(booking => new Date(booking.date.end_ymd) < new Date(data.now))
-                                .map((booking, index) => (
-                                    <BookingRow
-                                        isCompleted={true}
-                                        startNumb={1 + index}
-                                        key={booking.id}
-                                        booking={booking}
-                                        index={index}
-                                        handleMoreVerticalClick={handleMoreVerticalClick}
-                                        updateBookingNote={updateBookingNote}
-                                        noteCategories={data.note_categories}
-                                        viewColumns={viewColumns}
-                                    />
-                                ))}
-                            
+
+                            {showCompletedTrips &&
+                                bookings
+                                    .filter(
+                                        (booking) =>
+                                            new Date(booking.date.end_ymd) <
+                                            new Date(data.now),
+                                    )
+                                    .map((booking, index) => (
+                                        <BookingRow
+                                            isCompleted={true}
+                                            startNumb={1 + index}
+                                            key={booking.id}
+                                            booking={booking}
+                                            index={index}
+                                            handleMoreVerticalClick={
+                                                handleMoreVerticalClick
+                                            }
+                                            updateBookingNote={
+                                                updateBookingNote
+                                            }
+                                            noteCategories={
+                                                data.note_categories
+                                            }
+                                            viewColumns={viewColumns}
+                                        />
+                                    ))}
+
                             {/* Active/Upcoming Trips Label */}
                             <tr className="border-b bg-blue-50">
-                                <td colSpan={selectedColumns.length + 4} className="py-2 px-4">
+                                <td
+                                    colSpan={selectedColumns.length + 4}
+                                    className="py-2 px-4"
+                                >
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center font-medium text-blue-700">
                                             <div>
                                                 <span className="text-xs mr-3 bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
-                                                    {bookings.filter(b => new Date(b.date.end_ymd) >= new Date(data.now)).length}
+                                                    {
+                                                        bookings.filter(
+                                                            (b) =>
+                                                                new Date(
+                                                                    b.date.end_ymd,
+                                                                ) >=
+                                                                new Date(
+                                                                    data.now,
+                                                                ),
+                                                        ).length
+                                                    }
                                                 </span>
                                                 Active & Upcoming Trips
                                             </div>
@@ -2659,14 +3010,28 @@ export default function Index({ data }) {
 
                             {/* Then replace the original bookings.map with this */}
                             {bookings
-                                .filter(booking => new Date(booking.date.end_ymd) >= new Date(data.now))
+                                .filter(
+                                    (booking) =>
+                                        new Date(booking.date.end_ymd) >=
+                                        new Date(data.now),
+                                )
                                 .map((booking, index) => (
                                     <BookingRow
-                                        startNumb={bookings.filter(b => new Date(b.date.end_ymd) < new Date(data.now)).length + 1 + index}
+                                        startNumb={
+                                            bookings.filter(
+                                                (b) =>
+                                                    new Date(b.date.end_ymd) <
+                                                    new Date(data.now),
+                                            ).length +
+                                            1 +
+                                            index
+                                        }
                                         key={booking.id}
                                         booking={booking}
                                         index={index}
-                                        handleMoreVerticalClick={handleMoreVerticalClick}
+                                        handleMoreVerticalClick={
+                                            handleMoreVerticalClick
+                                        }
                                         updateBookingNote={updateBookingNote}
                                         noteCategories={data.note_categories}
                                         viewColumns={viewColumns}

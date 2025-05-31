@@ -62,6 +62,8 @@ Route::prefix('third-party')->group(function () {
     });
 });
 Route::get('/auto-plotting', [ScheduleController::class,'massAutoPlotting']);
+Route::get('/finance/expense-manager/{id}/crew', [FinanceController::class, 'downloadExpense']);
+
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [DashboardController::class,'index'])->name('dashboard');
@@ -140,7 +142,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/expense-manager', [FinanceController::class, 'expense']);
         Route::get('/expense-manager/{id}/edit', [FinanceController::class, 'editExpense']);
         Route::post('/expense-manager/{id}/update', [FinanceController::class, 'updateExpense']);
-        Route::get('/expense-manager/{id}/crew', [FinanceController::class, 'downloadExpense']);
         Route::get('/expense-manager/{id}/paid', [FinanceController::class, 'downloadExpense']);
         Route::get('/expense-manager/{id}/internal', [FinanceController::class, 'downloadExpense']);
         Route::get('/expense-manager/{id}/pay-later', [FinanceController::class, 'downloadExpense']);

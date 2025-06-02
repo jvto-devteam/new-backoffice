@@ -2154,7 +2154,7 @@ class ScheduleController extends Controller
         try {
             DB::beginTransaction();
 
-            $booking = Booking::where('id', $request->booking_id)->first();
+            $booking = Booking::with('user')->where('id', $request->booking_id)->first();
 
             if (!$booking) {
                 throw new \Exception('Booking not found');
@@ -2202,6 +2202,17 @@ class ScheduleController extends Controller
                     $bookDriver->end_date = $booking->travel_date_end;
                 }
                 $bookDriver->save();
+
+                $getCrew = GuideDriver::where('id', $value)->first();
+                if($getCrew && $getCrew->phone) {
+                    $this->reminderPlotting([
+                        'crew' => $getCrew->name,
+                        'customer' => $booking->user->name,
+                        'travel_date_start' => date('d M Y', strtotime($booking->travel_date_start)),
+                        'duration' => $booking->package_duration." Hari",
+                        'phone' => $getCrew->phone
+                    ]);
+                }
             }
 
             // Save escort guides
@@ -2219,6 +2230,18 @@ class ScheduleController extends Controller
                     $bookDriver->end_date = $booking->travel_date_end;
                 }
                 $bookDriver->save();
+
+                $getCrew = GuideDriver::where('id', $value)->first();
+                if($getCrew && $getCrew->phone) {
+                    $this->reminderPlotting([
+                        'crew' => $getCrew->name,
+                        'customer' => $booking->user->name,
+                        'travel_date_start' => date('d M Y', strtotime($booking->travel_date_start)),
+                        'duration' => $booking->package_duration." Hari",
+                        'phone' => $getCrew->phone
+                    ]);
+                }
+
             }
 
             // Save ijen guides if applicable
@@ -2233,6 +2256,20 @@ class ScheduleController extends Controller
                     $bookDriver->end_date = $booking->at_bondowoso;
                     $bookDriver->guide_ijen = '1';
                     $bookDriver->save();
+
+                    $getCrew = GuideDriver::where('id', $value)->first();
+                    if($getCrew && $getCrew->phone) {
+                        $this->reminderPlotting([
+                            'is_ijen' => true,
+                            'crew' => $getCrew->name,
+                            'customer' => $booking->user->name,
+                            'travel_date_start' => date('d M Y', strtotime($booking->travel_date_start)),
+                            'duration' => $booking->package_duration." Hari",
+                            'ijen_date' => date('d M Y', strtotime($booking->at_bondowoso)),
+                            'phone' => $getCrew->phone
+                        ]);
+                    }
+
                 }
             }
 
@@ -2251,6 +2288,37 @@ class ScheduleController extends Controller
                 'message' => 'Failed to save plotting: ' . $e->getMessage()
             ], 500);
         }
+    }
+    function reminderPlotting($data)
+    {
+        $dataSending = array();
+        $dataSending["api_key"] = config('wa.wa_api_key');
+        $dataSending["number_key"] = config('wa.wa_number_key');
+        $isIjen = isset($data['is_ijen']) ? $data['is_ijen'] : false;
+        $guideIjen = $isIjen ? " sebagai *Ijen Guide*" : "";
+        $dateAtIjen = isset($data['ijen_date']) && $data['is_ijen'] ? "\r\n*Tanggal Ijen:* ".date('d M Y', strtotime($data['ijen_date'])) : "";
+        $dataSending["message"] = "*Hai ".$data['crew']."*,\r\Kamu sudah dijadwalkan".$guideIjen." untuk trip berikut:\r\n\r\n*Customer:* ".$data['customer']."\r\n*Tanggal Trip:* ".$data['travel_date_start']."\r\n*Durasi Trip:* ".$data['duration'].$dateAtIjen."\r\n\r\n📱 Check detailnya di:\r\nhttps://crew-portal.javavolcano-touroperator.com/";
+        $dataSending["phone_no"] = $data['phone'];
+
+
+        $curl = curl_init();
+        curl_setopt_array($curl, array(
+            CURLOPT_URL => 'https://api.watzap.id/v1/send_message',
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_ENCODING => '',
+            CURLOPT_MAXREDIRS => 10,
+            CURLOPT_TIMEOUT => 0,
+            CURLOPT_FOLLOWLOCATION => true,
+            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+            CURLOPT_CUSTOMREQUEST => 'POST',
+            CURLOPT_POSTFIELDS => json_encode($dataSending),
+            CURLOPT_HTTPHEADER => array(
+                'Content-Type: application/json'
+            ),
+        ));
+        $response = curl_exec($curl);
+        curl_close($curl);
+        $res = json_decode($response);
     }
     function previewFile()
     {

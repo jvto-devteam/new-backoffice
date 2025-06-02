@@ -9,7 +9,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('bookings', function (Blueprint $table) {
-            $table->enum('wa_status_reminder_crew', ['0', '1'])->default('0')->after('wa_schedule_trip_media_crew');
+            $table->enum('wa_status_reminder_crew', ['0', '1','00'])->default('0')->after('wa_schedule_trip_media_crew');
             $table->dateTime('wa_schedule_reminder_crew')->nullable()->after('wa_status_reminder_crew');
         });
     }

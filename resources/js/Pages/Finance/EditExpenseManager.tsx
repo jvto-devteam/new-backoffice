@@ -54,9 +54,9 @@ const PriceAndPayment = ({ booking, paymentHistory }) => {
                             <span className="text-sm font-medium text-gray-900">
                                 Total Price
                             </span>
-                            <span className="text-sm font-semibold text-gray-900">
+                            <a href={`https://javavolcano-touroperator.com/bookings/invoice/${booking.url}`} className="text-sm font-semibold text-blue-600 underline" target="_blank">
                                 {formatCurrency(totalPrice)}
-                            </span>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -257,10 +257,9 @@ const BookingInfo = ({ booking }) => {
                                 Package
                             </td>
                             <td className="px-6 py-3 text-sm text-blue-600 underline">
-                                {booking.agent_id == 2 &&
-                                booking.booking_category_id != 3 ? (
+                                {booking.agent_id == 2 ? (
                                     <a
-                                        href={`https://javavolcano-touroperator.com/details/${booking.booking_detail[0]?.package.url}`}
+                                        href={booking.booking_category_id != 3 ? `https://javavolcano-touroperator.com/details/${booking.booking_detail[0]?.package.url}` : "https://www.klook.com/activity/99790-3-day-mount-bromo-sunrise-ijen-madakaripura-trekking-trip-surabaya/"}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                     >
@@ -612,7 +611,7 @@ const SummaryCards = ({ booking, totals }) => {
 
     return (
         <>
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 {/* Total Expenses */}
                 <div className="bg-white rounded-lg shadow p-4">
                     <div className="flex justify-between items-center">
@@ -638,7 +637,7 @@ const SummaryCards = ({ booking, totals }) => {
                 <div className="bg-white rounded-lg shadow p-4">
                     <div className="flex justify-between items-center">
                         <span className="text-gray-500 text-sm">
-                            Net Total ({totals.unpaidItemsCount})
+                            Crew Expense ({totals.unpaidItemsCount})
                         </span>
                         <div className="flex gap-1">
                             <a
@@ -727,7 +726,7 @@ const SummaryCards = ({ booking, totals }) => {
                 </div>
 
                 {/* ✅ PRESERVED: Invoice Total */}
-                <div className="bg-white rounded-lg shadow p-4">
+                {/* <div className="bg-white rounded-lg shadow p-4">
                     <div className="flex justify-between items-center">
                         <span className="text-gray-500 text-sm">Invoice</span>
                         <div className="flex gap-1">
@@ -750,7 +749,7 @@ const SummaryCards = ({ booking, totals }) => {
                     <div className="text-xs text-gray-500 mt-1">
                         Customer invoice total
                     </div>
-                </div>
+                </div> */}
             </div>
 
             {/* Payment Proof Modal */}

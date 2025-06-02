@@ -382,6 +382,7 @@ class BookingController extends Controller
             $booking->wa_schedule_trip_media = date('Y-m-d 15:00:00', strtotime($booking->travel_date_start . " +$nights days"));
             $booking->wa_schedule_trip_media_crew = date('Y-m-d 15:00:00', strtotime($booking->travel_date_start . " -1 days"));
         }
+        $booking->wa_schedule_reminder_crew = date('Y-m-d 10:00:00', strtotime($booking->travel_date_start . " -1 days"));
 
         $booking->save();
 
@@ -824,7 +825,8 @@ class BookingController extends Controller
             $booking->wa_schedule_trip_media = null;
             $booking->wa_schedule_trip_media_crew = null;
         }
-
+        $booking->wa_schedule_reminder_crew = date('Y-m-d 10:00:00', strtotime($booking->travel_date_start . " -1 days"));
+        
         $booking->save();
 
         if ($request->hasFile('bookingFileOrigin')) {
@@ -1875,6 +1877,8 @@ class BookingController extends Controller
                     $slug = strtolower($slug);
                     $booking->url_name = $slug.$user->id;
                     $booking->url = md5($booking->url_name);
+                    $booking->wa_schedule_reminder_crew = date('Y-m-d 10:00:00', strtotime($booking->travel_date_start . " -1 days"));
+
                     $booking->save();
 
                     $bookingDocument = new BookingDocument();

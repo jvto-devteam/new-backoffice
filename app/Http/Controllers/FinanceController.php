@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AddOn;
+use App\Models\BookAddOn;
 use App\Models\BookCar;
 use App\Models\BookCarActivity;
 use App\Models\BookCrewActivity;
@@ -290,7 +291,7 @@ class FinanceController extends Controller
             'filters' => $filters,
         ]);
     }
-    private function getSummaryData($yearMonth, $channel = 'all',$dateType)
+    private function getSummaryData($yearMonth, $channel = 'all', $dateType)
     {
         // Get all bookings for summary
         $lastYearMonth = date('Y-m', strtotime($yearMonth . "-01 -1 months"));
@@ -316,8 +317,8 @@ class FinanceController extends Controller
         $jvtoPaid = 0;
         $twtPaid = 0;
         $klookPaid = 0;
-        if($channel == 'jvto' || $channel == 'all'){
-            if($dateType == 'trip') {
+        if ($channel == 'jvto' || $channel == 'all') {
+            if ($dateType == 'trip') {
                 $jvtoPaid = BookingPayment::whereHas('booking', function ($booking) use ($yearMonth, $channel) {
                     $booking->where('travel_date_start', 'like', '%' . $yearMonth . '%');
                 })->sum('nominal');
@@ -325,20 +326,19 @@ class FinanceController extends Controller
                 $jvtoPaid = BookingPayment::where('created_at', 'like', '%' . $yearMonth . '%')->sum('nominal');
             }
         }
-        if($channel == 'twt' || $channel == 'all'){
-            if($dateType == 'trip'){
+        if ($channel == 'twt' || $channel == 'all') {
+            if ($dateType == 'trip') {
                 $twtPaid = TwtInvoiceBooking::whereHas('invoice.bookingItems.booking', function ($query) use ($yearMonth) {
                     $query->where('travel_date_start', 'like', '%' . $yearMonth . '%');
                 })->sum('total_amount');
-            }
-            else{
+            } else {
                 $twtPaid = TwtInvoiceBooking::whereHas('invoice.payments', function ($query) use ($yearMonth) {
                     $query->where('payment_date', 'like', '%' . $yearMonth . '%');
                 })->sum('total_amount');
             }
         }
-        if($channel == 'klook' || $channel == 'all'){
-            if($dateType == 'payment'){
+        if ($channel == 'klook' || $channel == 'all') {
+            if ($dateType == 'payment') {
                 $klookPaid = Booking::where('travel_date_start', 'like', '%' . $lastYearMonth . '%')
                     ->where('agent_id', 2)
                     ->where('booking_category_id', 3)
@@ -404,7 +404,7 @@ class FinanceController extends Controller
             } else if ($channel == 'twt') {
                 $booking = $booking->where('agent_id', 1);
             }
-            $booking = $booking->where('status', 'booked')->orderBy('travel_date_start','asc')->get()->map(function ($data) {
+            $booking = $booking->where('status', 'booked')->orderBy('travel_date_start', 'asc')->get()->map(function ($data) {
                 $days = $data->package_duration;
                 $nights = $days - 1;
                 $per_pax = $data->grand_total / $data->total_pax;
@@ -507,16 +507,16 @@ class FinanceController extends Controller
                             ]
                         ];
                     });
-            } if ($channel == 'twt' || $channel == 'all') {
-                $twt = TwtInvoiceBooking::with(['booking.user', 'invoice.payments' => function($query){
+            }
+            if ($channel == 'twt' || $channel == 'all') {
+                $twt = TwtInvoiceBooking::with(['booking.user', 'invoice.payments' => function ($query) {
                     $query->orderBy('payment_date', 'asc');
                 }]);
-                if($dateType == 'trip'){
+                if ($dateType == 'trip') {
                     $twt = $twt->whereHas('booking', function ($query) use ($yearMonth) {
                         $query->where('travel_date_start', 'like', '%' . $yearMonth . '%');
                     });
-                }
-                else{
+                } else {
                     $twt = $twt->whereHas('invoice.payments', function ($query) use ($yearMonth) {
                         $query->where('payment_date', 'like', '%' . $yearMonth . '%');
                     });
@@ -553,22 +553,23 @@ class FinanceController extends Controller
                             'is_add_on' => $data->booking->book_add_on_total > 0 ? true : false,
                             'paid_at' => $data->invoice->payments->first()->payment_date,
                         ],
-                        'payment' => $data->invoice->payments->map(function($payment) use($data){
+                        'payment' => $data->invoice->payments->map(function ($payment) use ($data) {
                             $countPayment = TwtInvoicePayment::where('invoice_id', $data->invoice->id)->where('id', '<=', $payment->id)->count();
                             return [
                                 'id' => $payment->id,
                                 'nominal' => (int)$payment->amount,
                                 'payment_method' => "TRANSFER",
-                                'reference' => "https://twt.javavolcano-touroperator.com/storage/".$payment->transaction_reference,
+                                'reference' => "https://twt.javavolcano-touroperator.com/storage/" . $payment->transaction_reference,
                                 'description' => $payment->notes ?? "-",
                                 'receipt' => $data->invoice->invoice_number,
-                                'receipt_url' => "https://twt.javavolcano-touroperator.com/finance/invoices/".$data->invoice->id,
+                                'receipt_url' => "https://twt.javavolcano-touroperator.com/finance/invoices/" . $data->invoice->id,
                                 'paid_at' => $payment->payment_date,
                             ];
                         })
                     ];
                 });
-            } if ($channel == 'klook' || $channel == 'all') {
+            }
+            if ($channel == 'klook' || $channel == 'all') {
                 if ($dateType == 'payment') {
                     $klook = Booking::with('user')
                         ->where('travel_date_start', 'like', '%' . $lastYearMonth . '%')
@@ -625,8 +626,7 @@ class FinanceController extends Controller
                 } else {
                     $booking = [];
                 }
-            }
-            else {
+            } else {
                 $booking = $klook->merge($jvto)->merge($twt);
             }
 
@@ -683,7 +683,8 @@ class FinanceController extends Controller
                         ]
                     ];
                 });
-            } if ($channel == 'twt' || $channel == 'all') {
+            }
+            if ($channel == 'twt' || $channel == 'all') {
                 $twt = Booking::with('user')
                     ->where('travel_date_start', 'like', '%' . $yearMonth . '%')
                     ->where('agent_id', 1)
@@ -722,7 +723,8 @@ class FinanceController extends Controller
                             ]
                         ];
                     });
-            } if ($channel == 'klook' || $channel == 'all') {
+            }
+            if ($channel == 'klook' || $channel == 'all') {
                 $klook = Booking::with('user')
                     ->where('travel_date_start', 'like', '%' . $yearMonth . '%')
                     ->where('agent_id', 2)
@@ -853,11 +855,11 @@ class FinanceController extends Controller
                 ];
             });
         }
-         $summary = $this->getSummaryData($yearMonth, $channel,$dateType);
+        $summary = $this->getSummaryData($yearMonth, $channel, $dateType);
         //  return $booking;
         return Inertia::render('Finance/FinanceManager', [
             'booking' => $booking, // Array hasil dari controller
-            'summary' => $summary, 
+            'summary' => $summary,
             'filters' => [
                 'tab' => $tab,
                 'channel' => $channel,
@@ -945,13 +947,13 @@ class FinanceController extends Controller
     // }
     function editExpense($id)
     {
-        $booking = Booking::select('id', 'user_id', 'total_pax', 'travel_date_start', 'travel_date_end', 'grand_total', 'agent_id', 'booking_category_id', 'booking_date', 'package_duration', 'invoice_code_origin', 'url', 'payment_proof_expense','note','balance')->with(['user' => function ($query) {
+        $booking = Booking::select('id', 'user_id', 'total_pax', 'travel_date_start', 'travel_date_end', 'grand_total', 'agent_id', 'booking_category_id', 'booking_date', 'package_duration', 'invoice_code_origin', 'url', 'payment_proof_expense', 'note', 'balance')->with(['user' => function ($query) {
             $query->select('id', 'name');
         }, 'bookingDetail' => function ($query) {
             $query->select('id', 'package_id', 'booking_id')->with(['package' => function ($q) {
-                $q->select('id', 'name', 'duration_id','url')->with('duration');
+                $q->select('id', 'name', 'duration_id', 'url')->with('duration');
             }]);
-        },'bookingPayment'])->where('id', $id)->first();
+        }, 'bookingPayment'])->where('id', $id)->first();
 
         $booking->trip_date = date('d M', strtotime($booking->travel_date_start)) . " - " . date('d M Y', strtotime($booking->travel_date_end));
         $pax = $booking->total_pax;
@@ -1206,6 +1208,21 @@ class FinanceController extends Controller
                 $totalResources += $crew->subtotal;
                 return $crew;
             });
+        $bookAddOn = BookAddOn::with(['addOn' => function ($query) {
+            $query->select('id', 'add_on', 'price', 'is_transport', 'type_transport');
+        }])->where('booking_id', $id)->get()->map(function ($addOn) {
+            return [
+                'id' => $addOn->id,
+                'add_on_id' => $addOn->add_on_id,
+                'name' => $addOn->addOn->is_transport == '1' ? "Transport to " . ucwords(strtolower($addOn->addOn->add_on)) . " (" . ucfirst($addOn->addOn->type_transport) . ")" : $addOn->addOn->add_on,
+                'qty' => $addOn->qty,
+                'price' => $addOn->price,
+                'subtotal' => $addOn->qty * $addOn->price,
+                'is_debt'  => '0',
+                'debt_payment_id' => null,
+                'status_paid' => 'unpaid',
+            ];
+        });
         $listForNewItems['destinations'] = DestinationActivity::with(['destination' => function ($query) {
             $query->select('id', 'name');
         }])->select('id', 'destination_id', 'name', 'price');
@@ -1218,32 +1235,23 @@ class FinanceController extends Controller
         }
         $listForNewItems['destinations'] = $listForNewItems['destinations']->get()->groupBy(fn($item) => $item->destination->name);
         $listForNewItems['others'] = OthersActivity::get();
-        // return $listForNewItems['others'];
         $listForNewItems['cars'] = Car::whereIn('id', [1, 2, 4, 5, 21, 24, 7])->get();
         $listForNewItems['crews'] = CrewRole::where('order_channel_id', $orderChannelID)->get();
-        $listForNewItems['add_on'] = AddOn::get()->map(function($data){
+        $listForNewItems['add_on'] = AddOn::get()->map(function ($data) {
             return [
                 'id' => $data->id,
-                'name' => $data->is_transport == '1' ? "Transport to ".ucwords(strtolower($data->add_on))." (".ucfirst($data->type_transport).")" : $data->add_on,
+                'name' => $data->is_transport == '1' ? "Transport to " . ucwords(strtolower($data->add_on)) . " (" . ucfirst($data->type_transport) . ")" : $data->add_on,
                 'price' => $data->price,
             ];
         });
 
-        // return $listForNewItems;
-        // return $bookRoom;
-        // return [
-        //     'booking' => $booking,
-        //     'accommodations' => $bookRoom,
-        //     'destinations' => $destinations,
-        //     'resources' => $resources,
-        //     'others' => $others
-        // ];
         return Inertia::render('Finance/EditExpenseManager', [
             'booking' => $booking,
             'accommodations' => $bookRoom,
             'destinations' => $destinations,
             'resources' => $resources,
             'others' => $others,
+            'addOn' => $bookAddOn,
             'listForNewItems' => $listForNewItems,
             'paymentHistory' => $booking->bookingPayment->map(function ($payment) use ($booking) {
                 return [
@@ -1511,6 +1519,10 @@ class FinanceController extends Controller
                 }
             }
         }
+        if (!empty($request->addOns)) {
+            $this->handleAddOnUpdates($booking->id, $request->addOns);
+        }
+
         // ✅ CORRECTED: Update booking summary data
         if (!$booking->expense_file_internal) {
             $booking->expense_internal_total = $request->summary['totalAmount'];     // Total keseluruhan
@@ -1521,6 +1533,55 @@ class FinanceController extends Controller
             $booking->save();
         }
         return back()->with('message', 'Expense saved successfully');
+    }
+    private function handleAddOnUpdates($bookingId, $addOnsData)
+    {
+        // Handle deleted add ons
+        if (!empty($addOnsData['deleted'])) {
+            BookAddOn::whereIn('id', $addOnsData['deleted'])->delete();
+        }
+
+        // Handle modified add ons
+        if (!empty($addOnsData['modified'])) {
+            foreach ($addOnsData['modified'] as $addOnData) {
+                $bookAddOn = BookAddOn::find($addOnData['id']);
+                if ($bookAddOn) {
+                    $bookAddOn->update([
+                        'qty' => $addOnData['quantity'],
+                        'price' => $addOnData['price'],
+                        'is_debt' => $addOnData['is_debt'],
+                        'status_paid' => $addOnData['status_paid'],
+                    ]);
+                }
+            }
+        }
+
+        // Handle new add ons
+        if (!empty($addOnsData['new'])) {
+            foreach ($addOnsData['new'] as $addOnData) {
+                // If it's a completely new add on (not from existing list)
+                if (empty($addOnData['add_on_id'])) {
+                    // Create new AddOn master data first
+                    $newAddOn = AddOn::create([
+                        'add_on' => $addOnData['name'],
+                        'price' => $addOnData['price'],
+                        'is_transport' => '0',
+                        'type_transport' => null,
+                    ]);
+                    $addOnId = $newAddOn->id;
+                } else {
+                    $addOnId = $addOnData['add_on_id'];
+                }
+
+                // Create BookAddOn record
+                BookAddOn::create([
+                    'booking_id' => $bookingId,
+                    'add_on_id' => $addOnId,
+                    'qty' => $addOnData['quantity'],
+                    'price' => $addOnData['price'],
+                ]);
+            }
+        }
     }
     // function updateExpense(Request $request){
     //     // return  dd($request->all());
@@ -1818,6 +1879,28 @@ class FinanceController extends Controller
                 'status_paid' => $query->status_paid,
             ];
         });
+        $addOns = BookAddOn::with(['addOn' => function ($query) {
+            $query->select('id', 'add_on', 'price', 'is_transport', 'type_transport');
+        }]);
+
+        if ($option == 'pay-later') {
+            $addOns = $addOns->where('is_debt', '1');
+        } else if ($option == 'paid') {
+            $addOns = $addOns->where('status_paid', 'paid');
+        }
+
+        $addOns = $addOns->where('booking_id', $id)->get()->map(function ($query) {
+            return [
+                'item' => $query->addOn->is_transport == '1'
+                    ? "Transport to " . ucwords(strtolower($query->addOn->add_on)) . " (" . ucfirst($query->addOn->type_transport) . ")"
+                    : $query->addOn->add_on,
+                'quantity' => $query->qty,
+                'price' => $query->price,
+                'subtotal' => $query->qty * $query->price,
+                'is_debt' => $query->is_debt ?? '0',
+                'status_paid' => $query->status_paid ?? 'unpaid',
+            ];
+        });
         $drivers = [];
         $escorts = [];
         $ijens = [];
@@ -1829,6 +1912,7 @@ class FinanceController extends Controller
             'destinations' => $destinations,
             'resources' => $resources,
             'others' => $others,
+            'addOns' => $addOns,
             'plotting' => [
                 'drivers' => BookGuideDriver::select('id', 'guide_id')->with(['person' => function ($query) {
                     $query->select('id', 'name');
@@ -1849,10 +1933,9 @@ class FinanceController extends Controller
                 }) ? implode(', ', $ijens) : '',
             ]
         ];
-        if(request()->segment(4) == 'crew' && request()->preview){
-            return view('exports/expense',$data);
-        }
-        else{
+        if (request()->segment(4) == 'crew' && request()->preview) {
+            return view('exports/expense', $data);
+        } else {
             $pdf = PDF::loadView('exports/expense', $data);
             $name = Str::slug($booking['customer_name']);
             // Opsional: Set paper size dan orientation

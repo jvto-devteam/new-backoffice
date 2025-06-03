@@ -336,6 +336,42 @@
                     @endif
                 </tr>
             @endforeach
+            @if (count($addOns) > 0)
+                <tr class="section-row">
+                    <td colspan="6">Add On</td>
+                </tr>
+            @foreach($addOns as $item)
+            <tr {{$item['is_debt'] == '1' && $option != 'pay-later' ? "class=row-paid" : ($item['status_paid'] == 'paid' ? "class=row-paid-green" : "")}}>
+                <td>{{ $no++ }}</td>
+                <td>Additional Service</td>
+                <td>{{ $item['item'] }}</td>
+                <td class="text-right">{{ $item['quantity'] }}</td>
+                @if($item['is_debt'] != '1' || $option != 'crew')
+                    @if($item['status_paid'] == 'paid' && $option == 'crew' )
+                        <td class="text-right">-</td>
+                        <td class="text-right"><b>PAID</b></td>
+                    @else
+                        <td class="text-right">Rp {{ number_format($item['price'], 0, ',', '.') }}</td>
+                        <td class="text-right">Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</td>
+                        @php $grandTotal += $item['subtotal']; @endphp
+                    @endif
+                @else
+                    <td class="text-right">-</td>
+                    <td class="text-right"><b>PAID</b></td>
+                @endif
+                @if ($item['is_debt'] == '1')
+                    @php $payLater += $item['subtotal']; @endphp
+                @else
+                    @if ($item['status_paid'] == 'unpaid')
+                        @php $crewExpense += $item['subtotal']; @endphp
+                    @else                                
+                        @php $paid += $item['subtotal']; @endphp
+                    @endif
+                @endif
+            </tr>
+            @endforeach
+                
+            @endif
 
             <!-- Grand Total -->
             <tr class="total-row">

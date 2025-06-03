@@ -9,6 +9,13 @@ class BookAddOn extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'booking_id',
+        'add_on_id',
+        'qty',
+        'price',
+    ];    
+
     public function addOnPackage()
     {
         return $this->belongsTo(AddOnPackage::class, 'add_on_package_id');

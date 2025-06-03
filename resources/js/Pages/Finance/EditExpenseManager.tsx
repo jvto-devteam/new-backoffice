@@ -54,7 +54,11 @@ const PriceAndPayment = ({ booking, paymentHistory }) => {
                             <span className="text-sm font-medium text-gray-900">
                                 Total Price
                             </span>
-                            <a href={`https://javavolcano-touroperator.com/bookings/invoice/${booking.url}`} className="text-sm font-semibold text-blue-600 underline" target="_blank">
+                            <a
+                                href={`https://javavolcano-touroperator.com/bookings/invoice/${booking.url}`}
+                                className="text-sm font-semibold text-blue-600 underline"
+                                target="_blank"
+                            >
                                 {formatCurrency(totalPrice)}
                             </a>
                         </div>
@@ -143,13 +147,14 @@ const PriceAndPayment = ({ booking, paymentHistory }) => {
                                             <span
                                                 className={`font-medium ${booking.balance > 0 ? "text-red-600" : "text-green-600"}`}
                                             >
-                                                {formatCurrency(booking.balance)}
+                                                {formatCurrency(
+                                                    booking.balance,
+                                                )}
                                             </span>
                                         </td>
                                         <td></td>
                                         <td></td>
                                     </tr>
-
                                 )}
                         </tbody>
                     </table>
@@ -259,7 +264,11 @@ const BookingInfo = ({ booking }) => {
                             <td className="px-6 py-3 text-sm text-blue-600 underline">
                                 {booking.agent_id == 2 ? (
                                     <a
-                                        href={booking.booking_category_id != 3 ? `https://javavolcano-touroperator.com/details/${booking.booking_detail[0]?.package.url}` : "https://www.klook.com/activity/99790-3-day-mount-bromo-sunrise-ijen-madakaripura-trekking-trip-surabaya/"}
+                                        href={
+                                            booking.booking_category_id != 3
+                                                ? `https://javavolcano-touroperator.com/details/${booking.booking_detail[0]?.package.url}`
+                                                : "https://www.klook.com/activity/99790-3-day-mount-bromo-sunrise-ijen-madakaripura-trekking-trip-surabaya/"
+                                        }
                                         target="_blank"
                                         rel="noopener noreferrer"
                                     >
@@ -824,6 +833,7 @@ const ExpenseTable = ({
         "Others",
         "Transport",
         "Resource",
+        "AddOn",
     ];
 
     let counter = 1;
@@ -2029,21 +2039,206 @@ const AddCrewModal = ({
         </div>
     );
 };
+const AddAddOnModal = ({
+    isOpen,
+    onClose,
+    onAddItem,
+    listForNewItems,
+    existingItems,
+}) => {
+    const [selectedAddOn, setSelectedAddOn] = useState("");
+    const [newAddOn, setNewAddOn] = useState("");
+    const [quantity, setQuantity] = useState(1);
+    const [price, setPrice] = useState(0);
+    const [isNewAddOn, setIsNewAddOn] = useState(false);
 
+    const availableAddOns = useMemo(() => {
+        const addOnList =
+            listForNewItems && Array.isArray(listForNewItems)
+                ? listForNewItems
+                : [];
+        const existingAddOns = existingItems.map((item) => item.description);
+
+        return addOnList.filter(
+            (addOn) =>
+                addOn && addOn.name && !existingAddOns.includes(addOn.name),
+        );
+    }, [listForNewItems, existingItems]);
+
+    const getAddOnPrice = (addOnName) => {
+        const addOn = listForNewItems.find((a) => a.name === addOnName);
+        return addOn ? parseFloat(addOn.price) : 0;
+    };
+
+    const handleSubmit = () => {
+        const addOnName = isNewAddOn ? newAddOn : selectedAddOn;
+        if (addOnName) {
+            const selectedAddOnData = listForNewItems.find(
+                (a) => a.name === selectedAddOn,
+            );
+
+            const originalData = isNewAddOn
+                ? { type: "addon", name: addOnName, isNewAddOn: true }
+                : {
+                      type: "addon",
+                      add_on_id: selectedAddOnData.id,
+                      isNewAddOn: false,
+                  };
+
+            onAddItem({
+                category: "AddOn",
+                subCategory: "Additional Service",
+                description: addOnName,
+                unit: "Item",
+                qty: quantity,
+                rate: price || (isNewAddOn ? 0 : getAddOnPrice(selectedAddOn)),
+                amount:
+                    quantity *
+                    (price || (isNewAddOn ? 0 : getAddOnPrice(selectedAddOn))),
+                isDebt: false,
+                isPaid: false,
+                originalData: originalData,
+            });
+
+            // Reset modal
+            setSelectedAddOn("");
+            setNewAddOn("");
+            setQuantity(1);
+            setPrice(0);
+            setIsNewAddOn(false);
+            onClose();
+        }
+    };
+
+    const isSubmitDisabled =
+        (isNewAddOn ? !newAddOn : !selectedAddOn) || quantity <= 0;
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-xl w-96">
+                <h2 className="text-xl font-bold mb-4">Add New Add On</h2>
+
+                {/* Switch Toggle for New/Existing Add On */}
+                <div className="flex items-center justify-between mb-4 p-2 bg-gray-50 rounded">
+                    <span className="text-sm text-gray-700">New Add On</span>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                            type="checkbox"
+                            className="sr-only peer"
+                            checked={isNewAddOn}
+                            onChange={(e) => {
+                                setIsNewAddOn(e.target.checked);
+                                setSelectedAddOn("");
+                                setNewAddOn("");
+                                setPrice(0);
+                            }}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                {/* Add On Selection */}
+                <div className="mb-4">
+                    <label className="block text-gray-700 mb-2">
+                        {isNewAddOn ? "Enter New Add On" : "Select Add On"}
+                    </label>
+                    {isNewAddOn ? (
+                        <input
+                            type="text"
+                            value={newAddOn}
+                            onChange={(e) => setNewAddOn(e.target.value)}
+                            className="w-full p-2 border rounded"
+                            placeholder="Enter add on name"
+                        />
+                    ) : (
+                        <select
+                            value={selectedAddOn}
+                            onChange={(e) => {
+                                const addOnName = e.target.value;
+                                setSelectedAddOn(addOnName);
+                                setPrice(getAddOnPrice(addOnName));
+                            }}
+                            className="w-full p-2 border rounded"
+                        >
+                            <option value="">Select an add on</option>
+                            {availableAddOns.map((addOn) => (
+                                <option key={addOn.id} value={addOn.name}>
+                                    {addOn.name}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+                </div>
+
+                {/* Quantity */}
+                <div className="mb-4">
+                    <label className="block text-gray-700 mb-2">Quantity</label>
+                    <input
+                        type="number"
+                        value={quantity}
+                        onChange={(e) =>
+                            setQuantity(parseInt(e.target.value) || 1)
+                        }
+                        min="1"
+                        className="w-full p-2 border rounded"
+                    />
+                </div>
+
+                {/* Price */}
+                <div className="mb-4">
+                    <label className="block text-gray-700 mb-2">Price</label>
+                    <input
+                        type="text"
+                        value={formatCurrency(price)}
+                        onChange={(e) =>
+                            setPrice(
+                                parseInt(e.target.value.replace(/\D/g, "")) ||
+                                    0,
+                            )
+                        }
+                        className="w-full p-2 border rounded"
+                    />
+                </div>
+
+                {/* Buttons */}
+                <div className="flex justify-end gap-2">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSubmit}
+                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                        disabled={isSubmitDisabled}
+                    >
+                        Add Add On
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
 const EditExpenseManager = ({
     booking,
     accommodations,
     destinations,
     others,
     resources,
+    addOn,    
     listForNewItems,
-    paymentHistory    
+    paymentHistory,
 }) => {
     const [isDestinationModalOpen, setIsDestinationModalOpen] = useState(false);
     const [isOthersModalOpen, setIsOthersModalOpen] = useState(false);
     const [isTransportationModalOpen, setIsTransportationModalOpen] =
         useState(false);
     const [isCrewModalOpen, setIsCrewModalOpen] = useState(false);
+    const [isAddOnModalOpen, setIsAddOnModalOpen] = useState(false); // TAMBAHAN BARU
+
     const [deletedItems, setDeletedItems] = useState([]);
 
     const sortItems = (items) => {
@@ -2054,6 +2249,7 @@ const EditExpenseManager = ({
             Others: 3,
             Transport: 4,
             Resource: 5,
+            AddOn: 6,
         };
 
         return [...items].sort((a, b) => {
@@ -2144,6 +2340,7 @@ const EditExpenseManager = ({
                 Others: "other",
                 Transport: "trans",
                 Resource: "res",
+                AddOn: "addon",
             };
 
             return subType
@@ -2324,6 +2521,27 @@ const EditExpenseManager = ({
                     type: "crew",
                     crew_role_id: crew.crew_role.id,
                     crewId: crew.id,
+                },
+            })),
+
+            ...addOn.map((item) => ({
+                id: generateUniqueId(item.id, "AddOn"),
+                originalId: item.id,
+                category: "AddOn",
+                subCategory: "Additional Service",
+                description: item.name,
+                unit: "Item",
+                qty: item.qty,
+                rate: item.price,
+                amount: item.qty * item.price,
+                isDebt: item.is_debt === "1",
+                isPaid: item.status_paid === "paid",
+                debtPaymentId: item.debt_payment_id !== null,
+                status: "unchanged",
+                originalData: {
+                    type: "addon",
+                    add_on_id: item.add_on_id,
+                    itemId: item.id,
                 },
             })),
         ];
@@ -2699,6 +2917,38 @@ const EditExpenseManager = ({
                         })),
                 },
             },
+            addOns: {
+                deleted: deletedItems
+                    .filter((item) => item.category === "AddOn")
+                    .map((item) => item.originalId || item.id),
+
+                modified: itemsByStatus.modified
+                    .filter((item) => item.category === "AddOn")
+                    .map((item) => ({
+                        id: item.originalId || item.id,
+                        add_on_id: item.originalData.add_on_id,
+                        quantity: item.qty,
+                        price: parseInt(item.rate),
+                        is_debt: item.isDebt ? "1" : "0",
+                        status_paid: item.isPaid ? "paid" : "unpaid",
+                    })),
+
+                new: itemsByStatus.new
+                    .filter((item) => item.category === "AddOn")
+                    .map((item) => {
+                        const isNewAddOn = item.originalData.isNewAddOn;
+                        return {
+                            ...(isNewAddOn
+                                ? {}
+                                : { add_on_id: item.originalData.add_on_id }),
+                            name: item.description,
+                            quantity: item.qty,
+                            price: parseInt(item.rate),
+                            is_debt: item.isDebt ? "1" : "0",
+                            status_paid: item.isPaid ? "paid" : "unpaid",
+                        };
+                    }),
+            },
 
             summary: {
                 totalAmount: summaryTotals.totalAmount, // Total keseluruhan
@@ -2772,7 +3022,10 @@ const EditExpenseManager = ({
         <Authenticated>
             <div className="px-4 sm:px-6 lg:px-8 py-8">
                 <BookingInfo booking={booking} />
-                   <PriceAndPayment booking={booking} paymentHistory={paymentHistory} />
+                <PriceAndPayment
+                    booking={booking}
+                    paymentHistory={paymentHistory}
+                />
                 <SummaryCards booking={booking} totals={summaryTotals} />
                 <ExpenseTable
                     items={items}
@@ -2843,6 +3096,19 @@ const EditExpenseManager = ({
                                     tabIndex="-1"
                                 >
                                     Crew
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setIsAddOnModalOpen(true); // TAMBAHAN BARU
+                                        document
+                                            .getElementById("add-item-dropdown")
+                                            .classList.add("hidden");
+                                    }}
+                                    className="text-gray-700 block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 hover:rounded-b-md"
+                                    role="menuitem"
+                                    tabIndex="-1"
+                                >
+                                    Add On
                                 </button>
                             </div>
                         </div>
@@ -2918,6 +3184,15 @@ const EditExpenseManager = ({
                     listForNewItems={listForNewItems.crews}
                     existingItems={items.filter(
                         (item) => item.category === "Resource",
+                    )}
+                />
+                <AddAddOnModal
+                    isOpen={isAddOnModalOpen}
+                    onClose={() => setIsAddOnModalOpen(false)}
+                    onAddItem={handleAddNewItem}
+                    listForNewItems={listForNewItems.add_on}
+                    existingItems={items.filter(
+                        (item) => item.category === "AddOn",
                     )}
                 />
             </div>

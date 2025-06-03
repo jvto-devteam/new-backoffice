@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AddOn;
 use App\Models\BookCar;
 use App\Models\BookCarActivity;
 use App\Models\BookCrewActivity;
@@ -1184,34 +1185,6 @@ class FinanceController extends Controller
                 $insertCar->status_paid = 'unpaid';
                 $insertCar->save();
             }
-
-            // $cekCrewActivities = BookCrewActivity::where('booking_id',$id)->count();
-            // if($cekCrewActivities == 0 && $cekCar){
-            //     $insertCrew = new BookCrewActivity;
-            //     $insertCrew->booking_id = $id;
-
-            //     if($booking->agent_id == 1){
-            //         $crew_role_id = $cekCar->crew_twt_role_id;
-            //         $crew_price = $cekCar->crewTwtRole->rate;
-            //     }
-            //     else if($booking->agent_id == 2){
-            //         if($booking->booking_category_id == 3){
-            //             $crew_role_id = $cekCar->crew_klook_role_id;
-            //             $crew_price = $cekCar->crewKlookRole->rate;
-            //         }
-            //         else{
-            //             $crew_role_id = $cekCar->crew_jvto_role_id;
-            //             $crew_price = $cekCar->crewJvtoRole->rate;
-            //         }
-            //     }
-            //     $insertCrew->crew_role_id = $crew_role_id;
-            //     $insertCrew->qty = $day;
-            //     $insertCrew->price = $crew_price;
-
-            //     $insertCrew->subtotal = $insertCrew->qty*$insertCrew->price;
-            //     $insertCrew->status_paid = 'unpaid';
-            //     $insertCrew->save();
-            // }
         }
 
         $resources['cars'] = BookCarActivity::with(['car' => function ($query) {
@@ -1233,7 +1206,6 @@ class FinanceController extends Controller
                 $totalResources += $crew->subtotal;
                 return $crew;
             });
-
         $listForNewItems['destinations'] = DestinationActivity::with(['destination' => function ($query) {
             $query->select('id', 'name');
         }])->select('id', 'destination_id', 'name', 'price');
@@ -1249,6 +1221,14 @@ class FinanceController extends Controller
         // return $listForNewItems['others'];
         $listForNewItems['cars'] = Car::whereIn('id', [1, 2, 4, 5, 21, 24, 7])->get();
         $listForNewItems['crews'] = CrewRole::where('order_channel_id', $orderChannelID)->get();
+        $listForNewItems['add_on'] = AddOn::get()->map(function($data){
+            return [
+                'id' => $data->id,
+                'name' => $data->is_transport == '1' ? "Transport to ".ucwords(strtolower($data->add_on))." (".ucfirst($data->type_transport).")" : $data->add_on,
+                'price' => $data->price,
+            ];
+        });
+
         // return $listForNewItems;
         // return $bookRoom;
         // return [

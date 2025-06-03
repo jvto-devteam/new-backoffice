@@ -15,6 +15,8 @@ class ExpenseRefund extends Model
         'item',
         'price',
         'qty',
+        'refund_to',
+        'proof_image',
         'subtotal',
         'status',
     ];

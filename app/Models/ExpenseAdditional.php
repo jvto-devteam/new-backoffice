@@ -29,4 +29,9 @@ class ExpenseAdditional extends Model
     {
         return $this->belongsTo(Booking::class);
     }
+    public function crew()
+    {
+        return $this->belongsTo(GuideDriver::class,'submit_by');
+    }
+
 }

@@ -22,6 +22,8 @@ use App\Models\CrewRole;
 use App\Models\DebtPayment;
 use App\Models\DebtPaymentDetail;
 use App\Models\DestinationActivity;
+use App\Models\ExpenseAdditional;
+use App\Models\ExpenseRefund;
 use App\Models\Hotel;
 use App\Models\Itinerary;
 use App\Models\ItineraryDestination;
@@ -1245,7 +1247,47 @@ class FinanceController extends Controller
             ];
         });
 
+        $additionalRequests = ExpenseAdditional::with('crew')->where('booking_id', $id)
+            ->get()
+            ->map(function ($query) {
+                return [
+                    'id' => $query->id,
+                    'item' => $query->item,
+                    'qty' => $query->qty,
+                    'request_by' => $query->request_by,
+                    'request_date' => $query->request_date,
+                    'price' => (int)$query->price,
+                    'subtotal' => (int)$query->subtotal,
+                    'image' => $query->image,
+                    'bill' => $query->bill,
+                    'submit_date' => $query->submit_date,
+                    'submit_by' => $query->crew->name ?? null,
+                ];
+            });
+
+        $expenseRefund = ExpenseRefund::where('booking_id', $id)->orderBy('id', 'desc')->get()->map(function ($query) {
+                return [
+                    'id' => $query->id,
+                    'item' => $query->item,
+                    'refund_to' => $query->refund_to ?? 'office',
+                    'proof_image' => $query->proof_image,
+                    'price' => $query->price,
+                    'qty' => $query->qty,
+                    'subtotal' => $query->subtotal,
+                    'status' => $query->status,
+                ];
+        });
+
+        // return [
+        //     'additionalRequests' => $additionalRequests,
+        //     'expenseRefund' => $expenseRefund,
+
+        // ];
+        
+        
         return Inertia::render('Finance/EditExpenseManager', [
+            'additionalRequests' => $additionalRequests,
+            'expenseRefund' => $expenseRefund,
             'booking' => $booking,
             'accommodations' => $bookRoom,
             'destinations' => $destinations,

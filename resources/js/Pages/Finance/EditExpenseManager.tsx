@@ -2222,6 +2222,185 @@ const AddAddOnModal = ({
         </div>
     );
 };
+const RefundAndAdditionalCards = ({ additionalRequests, expenseRefund }) => {
+    return (
+        <div className="mb-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Additional Requests Card */}
+            <div className="bg-white rounded-lg shadow">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                        Additional Requests & Claims
+                    </h2>
+                </div>
+                <div className="p-6">
+                    {additionalRequests && additionalRequests.length > 0 ? (
+                        <div className="space-y-4 max-h-64 overflow-y-auto">
+                            {additionalRequests.map((request, index) => (
+                                <div
+                                    key={request.id}
+                                    className="border rounded-lg p-4 bg-gray-50"
+                                >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="font-medium text-gray-900">
+                                            {request.item}
+                                        </h3>
+                                        <span className="text-sm font-bold text-blue-600">
+                                            {formatCurrency(request.subtotal)}
+                                        </span>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                                        <div>
+                                            <span className="font-medium">Qty:</span> {request.qty}
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Price:</span> {formatCurrency(request.price)}
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Requested by:</span> {request.request_by}
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Date:</span> {request.request_date}
+                                        </div>
+                                    </div>
+                                    {request.submit_by && (
+                                        <div className="mt-2 text-sm text-green-600">
+                                            <span className="font-medium">Submitted by:</span> {request.submit_by}
+                                            {request.submit_date && (
+                                                <span className="ml-2">on {request.submit_date}</span>
+                                            )}
+                                        </div>
+                                    )}
+                                    {(request.bill || request.image) && (
+                                        <div className="mt-2 space-x-2">
+                                            {request.bill && (
+                                                <a
+                                                    href={request.bill}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded hover:bg-blue-200"
+                                                >
+                                                    View Bill
+                                                </a>
+                                            )}
+                                            {request.image && (
+                                                <a
+                                                    href={request.image}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded hover:bg-blue-200"
+                                                >
+                                                    View Image
+                                                </a>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-gray-500">
+                            <div className="text-4xl mb-2">📋</div>
+                            <p>No additional requests</p>
+                        </div>
+                    )}
+                    {additionalRequests && additionalRequests.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex justify-between items-center">
+                                <span className="font-medium text-gray-900">Total Additional:</span>
+                                <span className="font-bold text-blue-600">
+                                    {formatCurrency(
+                                        additionalRequests.reduce(
+                                            (sum, request) => sum + parseInt(request.subtotal),
+                                            0
+                                        )
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Expense Refunds Card */}
+            <div className="bg-white rounded-lg shadow">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <h2 className="text-lg font-semibold text-gray-900">
+                        Expense Refunds
+                    </h2>
+                </div>
+                <div className="p-6">
+                    {expenseRefund && expenseRefund.length > 0 ? (
+                        <div className="space-y-4 max-h-64 overflow-y-auto">
+                            {expenseRefund.map((refund, index) => (
+                                <div
+                                    key={refund.id}
+                                    className="border rounded-lg p-4 bg-gray-50"
+                                >
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="font-medium text-gray-900">
+                                            {refund.item}
+                                        </h3>
+                                        <div className="text-right">
+                                            <div className="text-sm font-bold text-red-600">
+                                                {formatCurrency(refund.subtotal)}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
+                                        <div>
+                                            <span className="font-medium">Qty:</span> {refund.qty}
+                                        </div>
+                                        <div>
+                                            <span className="font-medium">Price:</span> {formatCurrency(refund.price)}
+                                        </div>
+                                        <div className="col-span-2">
+                                            <span className="font-medium">Refund to:</span>{" "}
+                                            <span className="capitalize">{refund.refund_to}</span>
+                                        </div>
+                                    </div>
+                                    {refund.proof_image && (
+                                        <div className="mt-2">
+                                            <a
+                                                href={refund.proof_image}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center px-2 py-1 text-xs font-medium text-blue-600 bg-blue-100 rounded hover:bg-blue-200"
+                                            >
+                                                View Proof
+                                            </a>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-gray-500">
+                            <div className="text-4xl mb-2">💰</div>
+                            <p>No expense refunds</p>
+                        </div>
+                    )}
+                    {expenseRefund && expenseRefund.length > 0 && (
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                            <div className="flex justify-between items-center">
+                                <span className="font-medium text-gray-900">Total Refunds:</span>
+                                <span className="font-bold text-red-600">
+                                    {formatCurrency(
+                                        expenseRefund
+                                            .reduce(
+                                                (sum, refund) => sum + parseInt(refund.subtotal),
+                                                0
+                                            )
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 const EditExpenseManager = ({
     booking,
     accommodations,
@@ -2231,6 +2410,8 @@ const EditExpenseManager = ({
     addOn,    
     listForNewItems,
     paymentHistory,
+    additionalRequests,
+    expenseRefund
 }) => {
     const [isDestinationModalOpen, setIsDestinationModalOpen] = useState(false);
     const [isOthersModalOpen, setIsOthersModalOpen] = useState(false);
@@ -3026,6 +3207,13 @@ const EditExpenseManager = ({
                     booking={booking}
                     paymentHistory={paymentHistory}
                 />
+                {(additionalRequests.length > 0 ||
+                    expenseRefund.length > 0) && (
+                        <RefundAndAdditionalCards 
+                            additionalRequests={additionalRequests}
+                            expenseRefund={expenseRefund}
+                        />                
+                    )}
                 <SummaryCards booking={booking} totals={summaryTotals} />
                 <ExpenseTable
                     items={items}

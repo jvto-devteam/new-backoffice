@@ -150,6 +150,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/profit-loss-summary', [FinanceController::class, 'profitLoss']);
     });
     Route::prefix('package-inventory')->group(function () {
+        Route::get('/json', [PackageController::class, 'json']);
         Route::get('/create', [PackageController::class, 'create']);
         Route::put('/update/{id}', [PackageController::class, 'update']);
         Route::get('/edit/{id}', [PackageController::class, 'edit']);

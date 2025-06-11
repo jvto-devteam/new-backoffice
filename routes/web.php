@@ -64,6 +64,7 @@ Route::prefix('third-party')->group(function () {
 Route::get('/auto-plotting', [ScheduleController::class,'massAutoPlotting']);
 Route::get('/finance/expense-manager/{id}/crew', [FinanceController::class, 'downloadExpense']);
 
+Route::get('/booking-overview?filter_type=month&json=true', [ScheduleController::class,'index']);
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [DashboardController::class,'index'])->name('dashboard');

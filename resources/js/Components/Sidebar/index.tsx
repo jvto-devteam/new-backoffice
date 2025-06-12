@@ -1,29 +1,31 @@
-import React, {useEffect, useRef, useState} from 'react';
-import {useLocation} from 'react-router-dom';
-import {Link} from '@inertiajs/react';
-import SidebarLinkGroup from './SidebarLinkGroup';
-import Logo from '../../../../public/assets/images/logo/logo.svg';
+import React, { useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
+import { Link } from "@inertiajs/react";
+import SidebarLinkGroup from "./SidebarLinkGroup";
+import Logo from "../../../../public/assets/images/logo/logo.svg";
 
 interface SidebarProps {
     sidebarOpen: boolean;
     setSidebarOpen: (arg: boolean) => void;
 }
 
-const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
+const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
     const location = useLocation();
-    const {pathname} = location;
+    const { pathname } = location;
 
     const trigger = useRef<any>(null);
     const sidebar = useRef<any>(null);
 
-    const storedSidebarExpanded = localStorage.getItem('sidebar-expanded');
+    const storedSidebarExpanded = localStorage.getItem("sidebar-expanded");
     const [sidebarExpanded, setSidebarExpanded] = useState(
-        storedSidebarExpanded === null ? false : storedSidebarExpanded === 'true'
+        storedSidebarExpanded === null
+            ? false
+            : storedSidebarExpanded === "true",
     );
 
     // close on click outside
     useEffect(() => {
-        const clickHandler = ({target}: MouseEvent) => {
+        const clickHandler = ({ target }: MouseEvent) => {
             if (!sidebar.current || !trigger.current) return;
             if (
                 !sidebarOpen ||
@@ -33,26 +35,28 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                 return;
             setSidebarOpen(false);
         };
-        document.addEventListener('click', clickHandler);
-        return () => document.removeEventListener('click', clickHandler);
+        document.addEventListener("click", clickHandler);
+        return () => document.removeEventListener("click", clickHandler);
     });
 
     // close if the esc key is pressed
     useEffect(() => {
-        const keyHandler = ({keyCode}: KeyboardEvent) => {
+        const keyHandler = ({ keyCode }: KeyboardEvent) => {
             if (!sidebarOpen || keyCode !== 27) return;
             setSidebarOpen(false);
         };
-        document.addEventListener('keydown', keyHandler);
-        return () => document.removeEventListener('keydown', keyHandler);
+        document.addEventListener("keydown", keyHandler);
+        return () => document.removeEventListener("keydown", keyHandler);
     });
 
     useEffect(() => {
-        localStorage.setItem('sidebar-expanded', sidebarExpanded.toString());
+        localStorage.setItem("sidebar-expanded", sidebarExpanded.toString());
         if (sidebarExpanded) {
-            document.querySelector('body')?.classList.add('sidebar-expanded');
+            document.querySelector("body")?.classList.add("sidebar-expanded");
         } else {
-            document.querySelector('body')?.classList.remove('sidebar-expanded');
+            document
+                .querySelector("body")
+                ?.classList.remove("sidebar-expanded");
         }
     }, [sidebarExpanded]);
 
@@ -60,14 +64,17 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
         <aside
             ref={sidebar}
             className={`absolute left-0 top-0 z-9999 flex h-screen w-72.5 flex-col overflow-y-hidden bg-black duration-300 ease-linear dark:bg-boxdark lg:static lg:translate-x-0 ${
-                sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                sidebarOpen ? "translate-x-0" : "-translate-x-full"
             }`}
         >
             {/* <!-- SIDEBAR HEADER --> */}
             <div className="flex items-center justify-center gap-2 px-6 py-3.5 lg:py-4.5">
                 <Link href="/">
-                    <img className="h-13" src="https://javavolcano-touroperator.com/assets/img/jvto-color.png"
-                         alt="Logo"/>
+                    <img
+                        className="h-13"
+                        src="https://javavolcano-touroperator.com/assets/img/jvto-color.png"
+                        alt="Logo"
+                    />
                 </Link>
 
                 <button
@@ -105,7 +112,7 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                     href="/"
                                     className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
                                         pathname.length == 0 &&
-                                        'bg-graydark dark:bg-meta-4'
+                                        "bg-graydark dark:bg-meta-4"
                                     }`}
                                 >
                                     <svg
@@ -133,7 +140,6 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                             fill=""
                                         />
                                     </svg>
-
                                     Homepage
                                 </Link>
                             </li>
@@ -141,8 +147,8 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                 <Link
                                     href="/portal-vendor"
                                     className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                                        pathname.includes('portal-vendor') &&
-                                        'bg-graydark dark:bg-meta-4'
+                                        pathname.includes("portal-vendor") &&
+                                        "bg-graydark dark:bg-meta-4"
                                     }`}
                                 >
                                     <svg
@@ -164,12 +170,14 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                     </svg>
                                     Portal Vendor
                                 </Link>
-                            </li>                            
+                            </li>
                         </ul>
-                        <h3 className="mb-4 ml-4 text-sm font-semibold text-bodydark2">BOOKINGS</h3>
+                        <h3 className="mb-4 ml-4 text-sm font-semibold text-bodydark2">
+                            BOOKINGS
+                        </h3>
                         <ul className="mb-6 flex flex-col gap-1.5">
                             {/* <!-- Menu Item Calendar --> */}
-                            <li>
+                            {/* <li>
                                 <Link
                                     href="/booking-overview"
                                     className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
@@ -192,12 +200,96 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                     </svg>
                                     Booking Overview
                                 </Link>
-                            </li>
+                            </li> */}
+                            <SidebarLinkGroup
+                                activeCondition={
+                                    pathname === "/booking-overview" ||
+                                    pathname.includes("booking-overview")
+                                }
+                            >
+                                {(handleClick, open) => {
+                                    return (
+                                        <React.Fragment>
+                                            <Link
+                                                href="#"
+                                                className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                                                    (pathname ===
+                                                        "/booking-overview" ||
+                                                        pathname.includes(
+                                                            "booking-overview",
+                                                        )) &&
+                                                    "bg-graydark dark:bg-meta-4"
+                                                }`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    sidebarExpanded
+                                                        ? handleClick()
+                                                        : setSidebarExpanded(
+                                                              true,
+                                                          );
+                                                }}
+                                            >
+                                                <svg
+                                                    className="fill-current"
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 18 18"
+                                                    fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                >
+                                                    <path
+                                                        d="M15.7499 2.9812H14.2874V2.36245C14.2874 2.02495 14.0062 1.71558 13.6405 1.71558C13.2749 1.71558 12.9937 1.99683 12.9937 2.36245V2.9812H4.97803V2.36245C4.97803 2.02495 4.69678 1.71558 4.33115 1.71558C3.96553 1.71558 3.68428 1.99683 3.68428 2.36245V2.9812H2.2499C1.29365 2.9812 0.478027 3.7687 0.478027 4.75308V14.5406C0.478027 15.4968 1.26553 16.3125 2.2499 16.3125H15.7499C16.7062 16.3125 17.5218 15.525 17.5218 14.5406V4.72495C17.5218 3.7687 16.7062 2.9812 15.7499 2.9812ZM1.77178 8.21245H4.1624V10.9968H1.77178V8.21245ZM5.42803 8.21245H8.38115V10.9968H5.42803V8.21245ZM8.38115 12.2625V15.0187H5.42803V12.2625H8.38115ZM9.64678 12.2625H12.5999V15.0187H9.64678V12.2625ZM9.64678 10.9968V8.21245H12.5999V10.9968H9.64678ZM13.8374 8.21245H16.228V10.9968H13.8374V8.21245ZM2.2499 4.24683H3.7124V4.83745C3.7124 5.17495 3.99365 5.48433 4.35928 5.48433C4.7249 5.48433 5.00615 5.20308 5.00615 4.83745V4.24683H13.0499V4.83745C13.0499 5.17495 13.3312 5.48433 13.6968 5.48433C14.0624 5.48433 14.3437 5.20308 14.3437 4.83745V4.24683H15.7499C16.0312 4.24683 16.2562 4.47183 16.2562 4.75308V6.94683H1.77178V4.75308C1.77178 4.47183 1.96865 4.24683 2.2499 4.24683ZM1.77178 14.5125V12.2343H4.1624V14.9906H2.2499C1.96865 15.0187 1.77178 14.7937 1.77178 14.5125ZM15.7499 15.0187H13.8374V12.2625H16.228V14.5406C16.2562 14.7937 16.0312 15.0187 15.7499 15.0187Z"
+                                                        fill=""
+                                                    />
+                                                </svg>
+                                                Booking Overview
+                                                <svg
+                                                    className={`absolute right-4 top-1/2 -translate-y-1/2 fill-current ${
+                                                        open && "rotate-180"
+                                                    }`}
+                                                    width="20"
+                                                    height="20"
+                                                    viewBox="0 0 20 20"
+                                                    fill="none"
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                >
+                                                    <path
+                                                        fillRule="evenodd"
+                                                        clipRule="evenodd"
+                                                        d="M4.41107 6.9107C4.73651 6.58527 5.26414 6.58527 5.58958 6.9107L10.0003 11.3214L14.4111 6.91071C14.7365 6.58527 15.2641 6.58527 15.5896 6.91071C15.915 7.23614 15.915 7.76378 15.5896 8.08922L10.5896 13.0892C10.2641 13.4147 9.73651 13.4147 9.41107 13.0892L4.41107 8.08922C4.08563 7.76378 4.08563 7.23614 4.41107 6.9107Z"
+                                                        fill=""
+                                                    />
+                                                </svg>
+                                            </Link>
+                                            <div
+                                                className={`translate transform overflow-hidden ${
+                                                    !open && "hidden"
+                                                }`}
+                                            >
+                                                <ul className="mt-4 mb-5.5 flex flex-col gap-2.5 pl-6">
+                                                    <li>
+                                                        <Link href="/booking-overview">
+                                                            Table View
+                                                        </Link>
+                                                    </li>
+                                                    <li>
+                                                        <Link href="/booking-overview/kanban">
+                                                            Kanban View
+                                                        </Link>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </React.Fragment>
+                                    );
+                                }}
+                            </SidebarLinkGroup>
+
                             <li>
                                 <Link
                                     href="/booking-analist"
                                     className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                                        pathname.includes('booking-analist') && 'bg-graydark dark:bg-meta-4'
+                                        pathname.includes("booking-analist") &&
+                                        "bg-graydark dark:bg-meta-4"
                                     }`}
                                 >
                                     <svg
@@ -236,71 +328,96 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                 <Link
                                     href="/client-management"
                                     className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                                        pathname.includes('booking-list') &&
-                                        'bg-graydark dark:bg-meta-4'
+                                        pathname.includes("booking-list") &&
+                                        "bg-graydark dark:bg-meta-4"
                                     }`}
                                 >
-                                    <svg className="fill-current" width="16" height="18" viewBox="0 0 16 18" fill="none"
-                                         xmlns="http://www.w3.org/2000/svg">
+                                    <svg
+                                        className="fill-current"
+                                        width="16"
+                                        height="18"
+                                        viewBox="0 0 16 18"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
                                         <path
                                             d="M13.2875 0.506226H2.7125C1.75625 0.506226 0.96875 1.29373 0.96875 2.24998V15.75C0.96875 16.7062 1.75625 17.5219 2.74063 17.5219H13.3156C14.2719 17.5219 15.0875 16.7344 15.0875 15.75V2.24998C15.0313 1.29373 14.2438 0.506226 13.2875 0.506226ZM13.7656 15.75C13.7656 16.0312 13.5406 16.2562 13.2594 16.2562H2.7125C2.43125 16.2562 2.20625 16.0312 2.20625 15.75V2.24998C2.20625 1.96873 2.43125 1.74373 2.7125 1.74373H13.2875C13.5688 1.74373 13.7938 1.96873 13.7938 2.24998V15.75H13.7656Z"
-                                            fill=""></path>
+                                            fill=""
+                                        ></path>
                                         <path
                                             d="M11.7965 2.6156H8.73086C8.22461 2.6156 7.80273 3.03748 7.80273 3.54373V7.25623C7.80273 7.76248 8.22461 8.18435 8.73086 8.18435H11.7965C12.3027 8.18435 12.7246 7.76248 12.7246 7.25623V3.5156C12.6965 3.03748 12.3027 2.6156 11.7965 2.6156ZM11.4309 6.8906H9.06836V3.88123H11.4309V6.8906Z"
-                                            fill=""></path>
+                                            fill=""
+                                        ></path>
                                         <path
                                             d="M3.97773 4.35938H6.03086C6.36836 4.35938 6.67773 4.07812 6.67773 3.7125C6.67773 3.34687 6.39648 3.09375 6.03086 3.09375H3.94961C3.61211 3.09375 3.30273 3.375 3.30273 3.74063C3.30273 4.10625 3.61211 4.35938 3.97773 4.35938Z"
-                                            fill=""></path>
+                                            fill=""
+                                        ></path>
                                         <path
                                             d="M3.97773 7.9312H6.03086C6.36836 7.9312 6.67773 7.64995 6.67773 7.28433C6.67773 6.9187 6.39648 6.63745 6.03086 6.63745H3.94961C3.61211 6.63745 3.30273 6.9187 3.30273 7.28433C3.30273 7.64995 3.61211 7.9312 3.97773 7.9312Z"
-                                            fill=""></path>
+                                            fill=""
+                                        ></path>
                                         <path
                                             d="M12.0789 10.2374H3.97891C3.64141 10.2374 3.33203 10.5187 3.33203 10.8843C3.33203 11.2499 3.61328 11.5312 3.97891 11.5312H12.0789C12.4164 11.5312 12.7258 11.2499 12.7258 10.8843C12.7258 10.5187 12.4164 10.2374 12.0789 10.2374Z"
-                                            fill=""></path>
+                                            fill=""
+                                        ></path>
                                         <path
                                             d="M12.0789 13.8093H3.97891C3.64141 13.8093 3.33203 14.0906 3.33203 14.4562C3.33203 14.8218 3.61328 15.1031 3.97891 15.1031H12.0789C12.4164 15.1031 12.7258 14.8218 12.7258 14.4562C12.7258 14.0906 12.4164 13.8093 12.0789 13.8093Z"
-                                            fill=""></path>
+                                            fill=""
+                                        ></path>
                                     </svg>
                                     Client Management
                                 </Link>
                             </li>
-
-                            </ul>
-                            <ul className="mb-6 flex flex-col gap-1.5">
-                            <h3 className="mb-4 ml-4 text-sm font-semibold text-bodydark2">FINANCE</h3>
+                        </ul>
+                        <ul className="mb-6 flex flex-col gap-1.5">
+                            <h3 className="mb-4 ml-4 text-sm font-semibold text-bodydark2">
+                                FINANCE
+                            </h3>
                             <li>
                                 <Link
                                     href="/finance"
                                     className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                                        pathname.includes('finance') &&
-                                        'bg-graydark dark:bg-meta-4'
+                                        pathname.includes("finance") &&
+                                        "bg-graydark dark:bg-meta-4"
                                     }`}
                                 >
-                                    <svg className="fill-current" width="16" height="18" viewBox="0 0 16 18" fill="none"
-                                         xmlns="http://www.w3.org/2000/svg">
+                                    <svg
+                                        className="fill-current"
+                                        width="16"
+                                        height="18"
+                                        viewBox="0 0 16 18"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
                                         <path
                                             d="M13.2875 0.506226H2.7125C1.75625 0.506226 0.96875 1.29373 0.96875 2.24998V15.75C0.96875 16.7062 1.75625 17.5219 2.74063 17.5219H13.3156C14.2719 17.5219 15.0875 16.7344 15.0875 15.75V2.24998C15.0313 1.29373 14.2438 0.506226 13.2875 0.506226ZM13.7656 15.75C13.7656 16.0312 13.5406 16.2562 13.2594 16.2562H2.7125C2.43125 16.2562 2.20625 16.0312 2.20625 15.75V2.24998C2.20625 1.96873 2.43125 1.74373 2.7125 1.74373H13.2875C13.5688 1.74373 13.7938 1.96873 13.7938 2.24998V15.75H13.7656Z"
-                                            fill=""></path>
+                                            fill=""
+                                        ></path>
                                         <path
                                             d="M11.7965 2.6156H8.73086C8.22461 2.6156 7.80273 3.03748 7.80273 3.54373V7.25623C7.80273 7.76248 8.22461 8.18435 8.73086 8.18435H11.7965C12.3027 8.18435 12.7246 7.76248 12.7246 7.25623V3.5156C12.6965 3.03748 12.3027 2.6156 11.7965 2.6156ZM11.4309 6.8906H9.06836V3.88123H11.4309V6.8906Z"
-                                            fill=""></path>
+                                            fill=""
+                                        ></path>
                                         <path
                                             d="M3.97773 4.35938H6.03086C6.36836 4.35938 6.67773 4.07812 6.67773 3.7125C6.67773 3.34687 6.39648 3.09375 6.03086 3.09375H3.94961C3.61211 3.09375 3.30273 3.375 3.30273 3.74063C3.30273 4.10625 3.61211 4.35938 3.97773 4.35938Z"
-                                            fill=""></path>
+                                            fill=""
+                                        ></path>
                                         <path
                                             d="M3.97773 7.9312H6.03086C6.36836 7.9312 6.67773 7.64995 6.67773 7.28433C6.67773 6.9187 6.39648 6.63745 6.03086 6.63745H3.94961C3.61211 6.63745 3.30273 6.9187 3.30273 7.28433C3.30273 7.64995 3.61211 7.9312 3.97773 7.9312Z"
-                                            fill=""></path>
+                                            fill=""
+                                        ></path>
                                         <path
                                             d="M12.0789 10.2374H3.97891C3.64141 10.2374 3.33203 10.5187 3.33203 10.8843C3.33203 11.2499 3.61328 11.5312 3.97891 11.5312H12.0789C12.4164 11.5312 12.7258 11.2499 12.7258 10.8843C12.7258 10.5187 12.4164 10.2374 12.0789 10.2374Z"
-                                            fill=""></path>
+                                            fill=""
+                                        ></path>
                                         <path
                                             d="M12.0789 13.8093H3.97891C3.64141 13.8093 3.33203 14.0906 3.33203 14.4562C3.33203 14.8218 3.61328 15.1031 3.97891 15.1031H12.0789C12.4164 15.1031 12.7258 14.8218 12.7258 14.4562C12.7258 14.0906 12.4164 13.8093 12.0789 13.8093Z"
-                                            fill=""></path>
+                                            fill=""
+                                        ></path>
                                     </svg>
                                     Finance
                                 </Link>
                             </li>
-                                {/* <SidebarLinkGroup
+                            {/* <SidebarLinkGroup
                                     activeCondition={
                                         pathname === '/finance' || pathname.includes('finance')
                                     }
@@ -406,7 +523,7 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                         );
                                     }}
                                 </SidebarLinkGroup> */}
-                                {/* <SidebarLinkGroup
+                            {/* <SidebarLinkGroup
                                     activeCondition={
                                         pathname === '/finance' || pathname.includes('finance')
                                     }
@@ -512,14 +629,16 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                         );
                                     }}
                                 </SidebarLinkGroup> */}
-
-                            </ul>
-                            <h3 className="mb-4 ml-4 text-sm font-semibold text-bodydark2">DATA MASTER</h3>
-                            <ul className="mb-6 flex flex-col gap-1.5">
+                        </ul>
+                        <h3 className="mb-4 ml-4 text-sm font-semibold text-bodydark2">
+                            DATA MASTER
+                        </h3>
+                        <ul className="mb-6 flex flex-col gap-1.5">
                             {/* <!-- Menu Item Forms --> */}
                             <SidebarLinkGroup
                                 activeCondition={
-                                    pathname === '/package-inventory' || pathname.includes('package-inventory')
+                                    pathname === "/package-inventory" ||
+                                    pathname.includes("package-inventory")
                                 }
                             >
                                 {(handleClick, open) => {
@@ -528,15 +647,20 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                             <Link
                                                 href="#"
                                                 className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                                                    (pathname === '/package-inventory' ||
-                                                        pathname.includes('package-inventory')) &&
-                                                    'bg-graydark dark:bg-meta-4'
+                                                    (pathname ===
+                                                        "/package-inventory" ||
+                                                        pathname.includes(
+                                                            "package-inventory",
+                                                        )) &&
+                                                    "bg-graydark dark:bg-meta-4"
                                                 }`}
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     sidebarExpanded
                                                         ? handleClick()
-                                                        : setSidebarExpanded(true);
+                                                        : setSidebarExpanded(
+                                                              true,
+                                                          );
                                                 }}
                                             >
                                                 <svg
@@ -571,7 +695,7 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                                 Package Inventory
                                                 <svg
                                                     className={`absolute right-4 top-1/2 -translate-y-1/2 fill-current ${
-                                                        open && 'rotate-180'
+                                                        open && "rotate-180"
                                                     }`}
                                                     width="20"
                                                     height="20"
@@ -589,19 +713,17 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                             </Link>
                                             <div
                                                 className={`translate transform overflow-hidden ${
-                                                    !open && 'hidden'
+                                                    !open && "hidden"
                                                 }`}
                                             >
                                                 <ul className="mt-4 mb-5.5 flex flex-col gap-2.5 pl-6">
                                                     <li>
-                                                        <Link
-                                                            href="/package-inventory/jvto">
+                                                        <Link href="/package-inventory/jvto">
                                                             JVTO Package
                                                         </Link>
                                                     </li>
                                                     <li>
-                                                        <Link
-                                                            href="/package-inventory/klook">
+                                                        <Link href="/package-inventory/klook">
                                                             Klook Package
                                                         </Link>
                                                     </li>
@@ -613,7 +735,8 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                             </SidebarLinkGroup>
                             <SidebarLinkGroup
                                 activeCondition={
-                                    pathname === '/data-master-management' || pathname.includes('data-master-management')
+                                    pathname === "/data-master-management" ||
+                                    pathname.includes("data-master-management")
                                 }
                             >
                                 {(handleClick, open) => {
@@ -622,15 +745,20 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                             <Link
                                                 href="#"
                                                 className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                                                    (pathname === '/data-master-management' ||
-                                                        pathname.includes('data-master-management')) &&
-                                                    'bg-graydark dark:bg-meta-4'
+                                                    (pathname ===
+                                                        "/data-master-management" ||
+                                                        pathname.includes(
+                                                            "data-master-management",
+                                                        )) &&
+                                                    "bg-graydark dark:bg-meta-4"
                                                 }`}
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     sidebarExpanded
                                                         ? handleClick()
-                                                        : setSidebarExpanded(true);
+                                                        : setSidebarExpanded(
+                                                              true,
+                                                          );
                                                 }}
                                             >
                                                 <svg
@@ -665,7 +793,7 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                                 Data Master Management
                                                 <svg
                                                     className={`absolute right-4 top-1/2 -translate-y-1/2 fill-current ${
-                                                        open && 'rotate-180'
+                                                        open && "rotate-180"
                                                     }`}
                                                     width="20"
                                                     height="20"
@@ -683,31 +811,27 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                             </Link>
                                             <div
                                                 className={`translate transform overflow-hidden ${
-                                                    !open && 'hidden'
+                                                    !open && "hidden"
                                                 }`}
                                             >
                                                 <ul className="mt-4 mb-5.5 flex flex-col gap-2.5 pl-6">
                                                     <li>
-                                                        <Link
-                                                            href="/data-master-management/hotels">
+                                                        <Link href="/data-master-management/hotels">
                                                             Hotels
                                                         </Link>
                                                     </li>
                                                     <li>
-                                                        <Link
-                                                            href="/data-master-management/activities">
+                                                        <Link href="/data-master-management/activities">
                                                             Activities
                                                         </Link>
                                                     </li>
                                                     <li>
-                                                        <Link
-                                                            href="/data-master-management/transportation">
+                                                        <Link href="/data-master-management/transportation">
                                                             Transportation
                                                         </Link>
                                                     </li>
                                                     <li>
-                                                        <Link
-                                                            href="/data-master-management/miscellaneous">
+                                                        <Link href="/data-master-management/miscellaneous">
                                                             Miscellaneous
                                                         </Link>
                                                     </li>
@@ -718,156 +842,197 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                                 }}
                             </SidebarLinkGroup>
 
-                                {/* <!-- Menu Item Forms --> */}
-                                <SidebarLinkGroup
-                                    activeCondition={
-                                        pathname === '/data-master-management' || pathname.includes('data-master-management')
-                                    }
-                                >
-                                    {(handleClick, open) => {
-                                        return (
-                                            <React.Fragment>
-                                                <h3 className="mb-4 mt-6 ml-4 text-sm font-semibold text-bodydark2">TOOLS</h3>
-                                                <ul className="mb-6 flex flex-col gap-1.5">
-                                                    <SidebarLinkGroup
-                                                        activeCondition={
-                                                            pathname === '/generator' || pathname.includes('generator')
-                                                        }
-                                                    >
-                                                        {(handleClick, open) => {
-                                                            return (
-                                                                <React.Fragment>
-                                                                    <Link
-                                                                        href="#"
-                                                                        className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                                                                            (pathname === '/generator' ||
-                                                                                pathname.includes('generator')) &&
-                                                                            'bg-graydark dark:bg-meta-4'
-                                                                        }`}
-                                                                        onClick={(e) => {
-                                                                            e.preventDefault();
-                                                                            sidebarExpanded
-                                                                                ? handleClick()
-                                                                                : setSidebarExpanded(true);
-                                                                        }}
+                            {/* <!-- Menu Item Forms --> */}
+                            <SidebarLinkGroup
+                                activeCondition={
+                                    pathname === "/data-master-management" ||
+                                    pathname.includes("data-master-management")
+                                }
+                            >
+                                {(handleClick, open) => {
+                                    return (
+                                        <React.Fragment>
+                                            <h3 className="mb-4 mt-6 ml-4 text-sm font-semibold text-bodydark2">
+                                                TOOLS
+                                            </h3>
+                                            <ul className="mb-6 flex flex-col gap-1.5">
+                                                <SidebarLinkGroup
+                                                    activeCondition={
+                                                        pathname ===
+                                                            "/generator" ||
+                                                        pathname.includes(
+                                                            "generator",
+                                                        )
+                                                    }
+                                                >
+                                                    {(handleClick, open) => {
+                                                        return (
+                                                            <React.Fragment>
+                                                                <Link
+                                                                    href="#"
+                                                                    className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                                                                        (pathname ===
+                                                                            "/generator" ||
+                                                                            pathname.includes(
+                                                                                "generator",
+                                                                            )) &&
+                                                                        "bg-graydark dark:bg-meta-4"
+                                                                    }`}
+                                                                    onClick={(
+                                                                        e,
+                                                                    ) => {
+                                                                        e.preventDefault();
+                                                                        sidebarExpanded
+                                                                            ? handleClick()
+                                                                            : setSidebarExpanded(
+                                                                                  true,
+                                                                              );
+                                                                    }}
+                                                                >
+                                                                    <svg
+                                                                        className="fill-current"
+                                                                        width="18"
+                                                                        height="18"
+                                                                        viewBox="0 0 18 18"
+                                                                        fill="none"
+                                                                        xmlns="http://www.w3.org/2000/svg"
                                                                     >
-                                                                        <svg className="fill-current" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                                            <g clipPath="url(#clip0_1184_13869)">
-                                                                                <path d="M10.8559 0.506226C10.5184 0.506226 10.209 0.787476 10.209 1.1531V6.7781C10.209 7.1156 10.4902 7.42498 10.8559 7.42498H16.8746C17.0434 7.42498 17.2121 7.3406 17.3246 7.2281C17.4371 7.08748 17.4934 6.91873 17.4934 6.74998C17.2684 3.23435 14.3434 0.506226 10.8559 0.506226ZM11.4746 6.1031V1.79998C13.809 2.08123 15.6934 3.82498 16.1434 6.13123H11.4746V6.1031Z" fill=""></path>
-                                                                                <path d="M15.384 8.69057H9.11211V2.6437C9.11211 2.3062 8.83086 2.02495 8.49336 2.02495C8.40898 2.02495 8.32461 2.02495 8.24023 2.02495C3.96523 1.99682 0.505859 5.48432 0.505859 9.75932C0.505859 14.0343 3.99336 17.5218 8.26836 17.5218C12.5434 17.5218 16.0309 14.0343 16.0309 9.75932C16.0309 9.59057 16.0309 9.42182 16.0027 9.2812C16.0027 8.9437 15.7215 8.69057 15.384 8.69057ZM8.26836 16.2562C4.66836 16.2562 1.77148 13.3593 1.77148 9.75932C1.77148 6.32807 4.47148 3.48745 7.87461 3.29057V9.30932C7.87461 9.64682 8.15586 9.9562 8.52148 9.9562H14.7934C14.6809 13.4437 11.784 16.2562 8.26836 16.2562Z" fill=""></path>
-                                                                            </g>
-                                                                            <defs>
-                                                                                <clipPath id="clip0_1184_13869">
-                                                                                    <rect width="18" height="18" fill="white"></rect>
-                                                                                </clipPath>
-                                                                            </defs>
-                                                                        </svg>
-                                                                        Generator
-                                                                        <svg
-                                                                            className={`absolute right-4 top-1/2 -translate-y-1/2 fill-current ${
-                                                                                open && 'rotate-180'
-                                                                            }`}
-                                                                            width="20"
-                                                                            height="20"
-                                                                            viewBox="0 0 20 20"
-                                                                            fill="none"
-                                                                            xmlns="http://www.w3.org/2000/svg"
-                                                                        >
+                                                                        <g clipPath="url(#clip0_1184_13869)">
                                                                             <path
-                                                                                fillRule="evenodd"
-                                                                                clipRule="evenodd"
-                                                                                d="M4.41107 6.9107C4.73651 6.58527 5.26414 6.58527 5.58958 6.9107L10.0003 11.3214L14.4111 6.91071C14.7365 6.58527 15.2641 6.58527 15.5896 6.91071C15.915 7.23614 15.915 7.76378 15.5896 8.08922L10.5896 13.0892C10.2641 13.4147 9.73651 13.4147 9.41107 13.0892L4.41107 8.08922C4.08563 7.76378 4.08563 7.23614 4.41107 6.9107Z"
+                                                                                d="M10.8559 0.506226C10.5184 0.506226 10.209 0.787476 10.209 1.1531V6.7781C10.209 7.1156 10.4902 7.42498 10.8559 7.42498H16.8746C17.0434 7.42498 17.2121 7.3406 17.3246 7.2281C17.4371 7.08748 17.4934 6.91873 17.4934 6.74998C17.2684 3.23435 14.3434 0.506226 10.8559 0.506226ZM11.4746 6.1031V1.79998C13.809 2.08123 15.6934 3.82498 16.1434 6.13123H11.4746V6.1031Z"
                                                                                 fill=""
-                                                                            />
-                                                                        </svg>
-                                                                    </Link>
-                                                                    {/* <!-- Dropdown Menu Start --> */}
-                                                                    <div
-                                                                        className={`translate transform overflow-hidden ${
-                                                                            !open && 'hidden'
+                                                                            ></path>
+                                                                            <path
+                                                                                d="M15.384 8.69057H9.11211V2.6437C9.11211 2.3062 8.83086 2.02495 8.49336 2.02495C8.40898 2.02495 8.32461 2.02495 8.24023 2.02495C3.96523 1.99682 0.505859 5.48432 0.505859 9.75932C0.505859 14.0343 3.99336 17.5218 8.26836 17.5218C12.5434 17.5218 16.0309 14.0343 16.0309 9.75932C16.0309 9.59057 16.0309 9.42182 16.0027 9.2812C16.0027 8.9437 15.7215 8.69057 15.384 8.69057ZM8.26836 16.2562C4.66836 16.2562 1.77148 13.3593 1.77148 9.75932C1.77148 6.32807 4.47148 3.48745 7.87461 3.29057V9.30932C7.87461 9.64682 8.15586 9.9562 8.52148 9.9562H14.7934C14.6809 13.4437 11.784 16.2562 8.26836 16.2562Z"
+                                                                                fill=""
+                                                                            ></path>
+                                                                        </g>
+                                                                        <defs>
+                                                                            <clipPath id="clip0_1184_13869">
+                                                                                <rect
+                                                                                    width="18"
+                                                                                    height="18"
+                                                                                    fill="white"
+                                                                                ></rect>
+                                                                            </clipPath>
+                                                                        </defs>
+                                                                    </svg>
+                                                                    Generator
+                                                                    <svg
+                                                                        className={`absolute right-4 top-1/2 -translate-y-1/2 fill-current ${
+                                                                            open &&
+                                                                            "rotate-180"
                                                                         }`}
+                                                                        width="20"
+                                                                        height="20"
+                                                                        viewBox="0 0 20 20"
+                                                                        fill="none"
+                                                                        xmlns="http://www.w3.org/2000/svg"
                                                                     >
-                                                                        <ul className="mt-4 mb-5.5 flex flex-col gap-2.5 pl-6">
-                                                                            <li>
-                                                                                <Link
-                                                                                    href="/generator/short-link">
-                                                                                    Short Link
-                                                                                </Link>
-                                                                            </li>
-                                                                            <li>
-                                                                                <Link
-                                                                                    href="/generator/flipbook">
-                                                                                    Flipbook
-                                                                                </Link>
-                                                                            </li>
-                                                                        </ul>
-                                                                    </div>
-                                                                    {/* <!-- Dropdown Menu End --> */}
-                                                                </React.Fragment>
-                                                            );
-                                                        }}
-                                                    </SidebarLinkGroup>
+                                                                        <path
+                                                                            fillRule="evenodd"
+                                                                            clipRule="evenodd"
+                                                                            d="M4.41107 6.9107C4.73651 6.58527 5.26414 6.58527 5.58958 6.9107L10.0003 11.3214L14.4111 6.91071C14.7365 6.58527 15.2641 6.58527 15.5896 6.91071C15.915 7.23614 15.915 7.76378 15.5896 8.08922L10.5896 13.0892C10.2641 13.4147 9.73651 13.4147 9.41107 13.0892L4.41107 8.08922C4.08563 7.76378 4.08563 7.23614 4.41107 6.9107Z"
+                                                                            fill=""
+                                                                        />
+                                                                    </svg>
+                                                                </Link>
+                                                                {/* <!-- Dropdown Menu Start --> */}
+                                                                <div
+                                                                    className={`translate transform overflow-hidden ${
+                                                                        !open &&
+                                                                        "hidden"
+                                                                    }`}
+                                                                >
+                                                                    <ul className="mt-4 mb-5.5 flex flex-col gap-2.5 pl-6">
+                                                                        <li>
+                                                                            <Link href="/generator/short-link">
+                                                                                Short
+                                                                                Link
+                                                                            </Link>
+                                                                        </li>
+                                                                        <li>
+                                                                            <Link href="/generator/flipbook">
+                                                                                Flipbook
+                                                                            </Link>
+                                                                        </li>
+                                                                    </ul>
+                                                                </div>
+                                                                {/* <!-- Dropdown Menu End --> */}
+                                                            </React.Fragment>
+                                                        );
+                                                    }}
+                                                </SidebarLinkGroup>
 
-                                                    {/* <!-- Article Management Menu Item --> */}
-                                                    <li>
-                                                        <Link
-                                                            href="/articles"
-                                                            className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                                                                pathname.includes('article-management') && 'bg-graydark dark:bg-meta-4'
-                                                            }`}
+                                                {/* <!-- Article Management Menu Item --> */}
+                                                <li>
+                                                    <Link
+                                                        href="/articles"
+                                                        className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                                                            pathname.includes(
+                                                                "article-management",
+                                                            ) &&
+                                                            "bg-graydark dark:bg-meta-4"
+                                                        }`}
+                                                    >
+                                                        <svg
+                                                            className="fill-current"
+                                                            width="18"
+                                                            height="18"
+                                                            viewBox="0 0 18 18"
+                                                            fill="none"
+                                                            xmlns="http://www.w3.org/2000/svg"
                                                         >
-                                                            <svg
-                                                                className="fill-current"
-                                                                width="18"
-                                                                height="18"
-                                                                viewBox="0 0 18 18"
-                                                                fill="none"
-                                                                xmlns="http://www.w3.org/2000/svg"
-                                                            >
-                                                                <path
-                                                                    d="M16.0755 2.8875C15.9375 2.6156 15.6195 2.4375 15.2933 2.4375H12.8855L13.4449 0.6094C13.545 0.2813 13.4449 0 13.1449 0C13.0448 0 12.9447 0 12.8446 0.0938L8.0673 2.625H8.0222H8.0402H7.9951C7.9951 2.625 7.977 2.625 7.9319 2.625L3.1096 0.0938C3.0546 0.0469 2.9995 0 2.9445 0C2.6445 0 2.4894 0.2344 2.5894 0.6094L3.1488 2.4375H0.696C0.396 2.4375 0.096 2.6156 0.0059 2.8875C-0.0841 3.1313 0.0059 3.4219 0.216 3.5906L3.0095 5.9063L2.1303 8.3906C2.0483 8.6344 2.1453 8.925 2.3554 9.0938C2.5204 9.2156 2.8204 9.2156 3.0095 9.0938L7.9319 6.75L12.8546 9.0938C12.9546 9.1406 13.0547 9.1875 13.1548 9.1875C13.3648 9.1875 13.6199 9.0469 13.7199 8.8313C13.775 8.7375 13.8049 8.5781 13.73 8.3906L12.8506 5.9063L15.6541 3.5906C15.8642 3.4219 15.9643 3.1313 15.8642 2.8875H16.0755H16.0755Z" fill=""></path>
-                                                                <path
-                                                                    d="M13.0448 11.2969H4.99536C4.73536 11.2969 4.52539 11.5156 4.52539 11.7656V17.5312C4.52539 17.7812 4.74536 18 4.99536 18H13.0448C13.3048 18 13.5148 17.7812 13.5148 17.5312V11.7656C13.5148 11.5156 13.3048 11.2969 13.0448 11.2969ZM12.5746 16.8281H5.46532V12H12.5746V16.8281Z" fill=""></path>
-                                                            </svg>
-                                                            Article Management
-                                                        </Link>
-                                                    </li>
+                                                            <path
+                                                                d="M16.0755 2.8875C15.9375 2.6156 15.6195 2.4375 15.2933 2.4375H12.8855L13.4449 0.6094C13.545 0.2813 13.4449 0 13.1449 0C13.0448 0 12.9447 0 12.8446 0.0938L8.0673 2.625H8.0222H8.0402H7.9951C7.9951 2.625 7.977 2.625 7.9319 2.625L3.1096 0.0938C3.0546 0.0469 2.9995 0 2.9445 0C2.6445 0 2.4894 0.2344 2.5894 0.6094L3.1488 2.4375H0.696C0.396 2.4375 0.096 2.6156 0.0059 2.8875C-0.0841 3.1313 0.0059 3.4219 0.216 3.5906L3.0095 5.9063L2.1303 8.3906C2.0483 8.6344 2.1453 8.925 2.3554 9.0938C2.5204 9.2156 2.8204 9.2156 3.0095 9.0938L7.9319 6.75L12.8546 9.0938C12.9546 9.1406 13.0547 9.1875 13.1548 9.1875C13.3648 9.1875 13.6199 9.0469 13.7199 8.8313C13.775 8.7375 13.8049 8.5781 13.73 8.3906L12.8506 5.9063L15.6541 3.5906C15.8642 3.4219 15.9643 3.1313 15.8642 2.8875H16.0755H16.0755Z"
+                                                                fill=""
+                                                            ></path>
+                                                            <path
+                                                                d="M13.0448 11.2969H4.99536C4.73536 11.2969 4.52539 11.5156 4.52539 11.7656V17.5312C4.52539 17.7812 4.74536 18 4.99536 18H13.0448C13.3048 18 13.5148 17.7812 13.5148 17.5312V11.7656C13.5148 11.5156 13.3048 11.2969 13.0448 11.2969ZM12.5746 16.8281H5.46532V12H12.5746V16.8281Z"
+                                                                fill=""
+                                                            ></path>
+                                                        </svg>
+                                                        Article Management
+                                                    </Link>
+                                                </li>
 
-                                                    <li>
-                                                        <Link
-                                                            href="/crew-assignment"
-                                                            className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
-                                                                pathname.includes('crew-assignment') && 'bg-graydark dark:bg-meta-4'
-                                                            }`}
+                                                <li>
+                                                    <Link
+                                                        href="/crew-assignment"
+                                                        className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                                                            pathname.includes(
+                                                                "crew-assignment",
+                                                            ) &&
+                                                            "bg-graydark dark:bg-meta-4"
+                                                        }`}
+                                                    >
+                                                        <svg
+                                                            className="fill-current"
+                                                            width="18"
+                                                            height="18"
+                                                            viewBox="0 0 18 18"
+                                                            fill="none"
+                                                            xmlns="http://www.w3.org/2000/svg"
                                                         >
-                                                            <svg
-                                                                className="fill-current"
-                                                                width="18"
-                                                                height="18"
-                                                                viewBox="0 0 18 18"
-                                                                fill="none"
-                                                                xmlns="http://www.w3.org/2000/svg"
-                                                            >
-                                                                <path
-                                                                    d="M9.0002 7.79065C11.0814 7.79065 12.7689 6.1594 12.7689 4.1344C12.7689 2.1094 11.0814 0.478149 9.0002 0.478149C6.91895 0.478149 5.23145 2.1094 5.23145 4.1344C5.23145 6.1594 6.91895 7.79065 9.0002 7.79065ZM9.0002 1.7719C10.3783 1.7719 11.5033 2.84065 11.5033 4.16252C11.5033 5.4844 10.3783 6.55315 9.0002 6.55315C7.62207 6.55315 6.49707 5.4844 6.49707 4.16252C6.49707 2.84065 7.62207 1.7719 9.0002 1.7719Z"
-                                                                    fill=""
-                                                                />
-                                                                <path
-                                                                    d="M10.8283 9.05627H7.17207C4.16269 9.05627 1.71582 11.5313 1.71582 14.5406V16.875C1.71582 17.2125 1.99707 17.5219 2.3627 17.5219C2.72832 17.5219 3.00957 17.2407 3.00957 16.875V14.5406C3.00957 12.2344 4.89394 10.3219 7.22832 10.3219H10.8564C13.1627 10.3219 15.0752 12.2063 15.0752 14.5406V16.875C15.0752 17.2125 15.3564 17.5219 15.7221 17.5219C16.0877 17.5219 16.3689 17.2407 16.3689 16.875V14.5406C16.2846 11.5313 13.8377 9.05627 10.8283 9.05627Z"
-                                                                    fill=""
-                                                                />
-                                                            </svg>
-                                                            Crew Assignment
-                                                        </Link>
-                                                    </li>
-                                                </ul>
-                                                {/* <!-- Dropdown Menu End --> */}
-                                            </React.Fragment>
-                                        );
-                                    }}
-                                </SidebarLinkGroup>
-                                {/* <!-- Menu Item Forms --> */}
-
+                                                            <path
+                                                                d="M9.0002 7.79065C11.0814 7.79065 12.7689 6.1594 12.7689 4.1344C12.7689 2.1094 11.0814 0.478149 9.0002 0.478149C6.91895 0.478149 5.23145 2.1094 5.23145 4.1344C5.23145 6.1594 6.91895 7.79065 9.0002 7.79065ZM9.0002 1.7719C10.3783 1.7719 11.5033 2.84065 11.5033 4.16252C11.5033 5.4844 10.3783 6.55315 9.0002 6.55315C7.62207 6.55315 6.49707 5.4844 6.49707 4.16252C6.49707 2.84065 7.62207 1.7719 9.0002 1.7719Z"
+                                                                fill=""
+                                                            />
+                                                            <path
+                                                                d="M10.8283 9.05627H7.17207C4.16269 9.05627 1.71582 11.5313 1.71582 14.5406V16.875C1.71582 17.2125 1.99707 17.5219 2.3627 17.5219C2.72832 17.5219 3.00957 17.2407 3.00957 16.875V14.5406C3.00957 12.2344 4.89394 10.3219 7.22832 10.3219H10.8564C13.1627 10.3219 15.0752 12.2063 15.0752 14.5406V16.875C15.0752 17.2125 15.3564 17.5219 15.7221 17.5219C16.0877 17.5219 16.3689 17.2407 16.3689 16.875V14.5406C16.2846 11.5313 13.8377 9.05627 10.8283 9.05627Z"
+                                                                fill=""
+                                                            />
+                                                        </svg>
+                                                        Crew Assignment
+                                                    </Link>
+                                                </li>
+                                            </ul>
+                                            {/* <!-- Dropdown Menu End --> */}
+                                        </React.Fragment>
+                                    );
+                                }}
+                            </SidebarLinkGroup>
+                            {/* <!-- Menu Item Forms --> */}
                         </ul>
                     </div>
 
@@ -878,7 +1043,6 @@ const Sidebar = ({sidebarOpen, setSidebarOpen}: SidebarProps) => {
                     {/*    <h3 className="mb-4 ml-4 text-sm font-semibold text-bodydark2">*/}
                     {/*        OTHERS*/}
                     {/*    </h3>*/}
-
 
                     {/*    <ul className="mb-6 flex flex-col gap-1.5">*/}
                     {/*        <li>*/}

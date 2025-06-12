@@ -366,7 +366,12 @@ class ScheduleController extends Controller
             $name = 'Schedule' . $name . '.pdf';
             return $pdf->download($name);
         } else {
-            return Inertia::render('Schedule/Index', ['data' => $data]);
+            if($request->segment(2) == 'kanban'){
+                return Inertia::render('Schedule/Kanban', ['bookingData' => $data['booking'],'month' => $data['filters']['month']]);
+            }
+            else{
+                return Inertia::render('Schedule/Index', ['data' => $data]);
+            }
         }
     }
 

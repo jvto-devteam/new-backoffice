@@ -14,6 +14,7 @@ class CorsMiddleware
             'https://jv-to.com',
             'https://archive-pathfinder.javavolcano-touroperator.com',
             'https://travelhub.javavolcano-touroperator.com',
+            'https://47d7-36-73-181-2.ngrok-free.app'
         ];
     
         $origin = $request->header('Origin');

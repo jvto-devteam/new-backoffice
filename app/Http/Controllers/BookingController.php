@@ -171,7 +171,7 @@ class BookingController extends Controller
                         return [
                             'start' => $q->priceCategory->start,
                             'end' => $q->priceCategory->end,
-                            'pricePerPax' => $q->price,
+                            'pricePerPax' => (int)$q->price,
                         ];
                     }),
                     'itineraries' => $query->itinerary->map(function($q){

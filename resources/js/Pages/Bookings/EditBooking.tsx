@@ -496,7 +496,7 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
       
       
       // Calculate total add-on
-      const totalAddOn = addOnItems.reduce((total, item) => total + item.subtotal, 0);
+      const totalAddOn = addOnItems.reduce((total, item) => total + parseInt(item.subtotal), 0);
       // Calculate discount
       const discount = calculateDiscount(totalPackage);
       

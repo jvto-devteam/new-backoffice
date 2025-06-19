@@ -73,7 +73,7 @@ class ClientController extends Controller
                     'Name' => $client->user->name,
                     'Country' => $client->user->country?->long_name ?? '-',
                     'Email' => $client->user->email,
-                    'Phone' => $client->user->phone,
+                    'Phone' => "'".$client->user->phone,
                     'Order Channel' => $client->booking_category_id == 3 ? 'KLOOK' : 'JVTO',
                     'Package' => $client->bookingDetail[0]->package->name ?? '-',
                     'Package Code' => $client->bookingDetail[0]->package->package_code ?? '-',

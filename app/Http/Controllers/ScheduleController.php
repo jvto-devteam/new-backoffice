@@ -2210,13 +2210,13 @@ class ScheduleController extends Controller
 
                 $getCrew = GuideDriver::where('id', $value)->first();
                 if($getCrew && $getCrew->phone) {
-                    $this->reminderPlotting([
-                        'crew' => $getCrew->name,
-                        'customer' => $booking->user->name,
-                        'travel_date_start' => date('d M Y', strtotime($booking->travel_date_start)),
-                        'duration' => $booking->package_duration." Hari",
-                        'phone' => $getCrew->phone
-                    ]);
+                    // $this->reminderPlotting([
+                    //     'crew' => $getCrew->name,
+                    //     'customer' => $booking->user->name,
+                    //     'travel_date_start' => date('d M Y', strtotime($booking->travel_date_start)),
+                    //     'duration' => $booking->package_duration." Hari",
+                    //     'phone' => $getCrew->phone
+                    // ]);
                 }
             }
 
@@ -2238,13 +2238,13 @@ class ScheduleController extends Controller
 
                 $getCrew = GuideDriver::where('id', $value)->first();
                 if($getCrew && $getCrew->phone) {
-                    $this->reminderPlotting([
-                        'crew' => $getCrew->name,
-                        'customer' => $booking->user->name,
-                        'travel_date_start' => date('d M Y', strtotime($booking->travel_date_start)),
-                        'duration' => $booking->package_duration." Hari",
-                        'phone' => $getCrew->phone
-                    ]);
+                    // $this->reminderPlotting([
+                    //     'crew' => $getCrew->name,
+                    //     'customer' => $booking->user->name,
+                    //     'travel_date_start' => date('d M Y', strtotime($booking->travel_date_start)),
+                    //     'duration' => $booking->package_duration." Hari",
+                    //     'phone' => $getCrew->phone
+                    // ]);
                 }
 
             }
@@ -2264,15 +2264,15 @@ class ScheduleController extends Controller
 
                     $getCrew = GuideDriver::where('id', $value)->first();
                     if($getCrew && $getCrew->phone) {
-                        $this->reminderPlotting([
-                            'is_ijen' => true,
-                            'crew' => $getCrew->name,
-                            'customer' => $booking->user->name,
-                            'travel_date_start' => date('d M Y', strtotime($booking->travel_date_start)),
-                            'duration' => $booking->package_duration." Hari",
-                            'ijen_date' => date('d M Y', strtotime($booking->at_bondowoso)),
-                            'phone' => $getCrew->phone
-                        ]);
+                        // $this->reminderPlotting([
+                        //     'is_ijen' => true,
+                        //     'crew' => $getCrew->name,
+                        //     'customer' => $booking->user->name,
+                        //     'travel_date_start' => date('d M Y', strtotime($booking->travel_date_start)),
+                        //     'duration' => $booking->package_duration." Hari",
+                        //     'ijen_date' => date('d M Y', strtotime($booking->at_bondowoso)),
+                        //     'phone' => $getCrew->phone
+                        // ]);
                     }
 
                 }

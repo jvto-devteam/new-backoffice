@@ -70,7 +70,7 @@ class ScheduleController extends Controller
                 });
             }
             $status = "booked";
-            $orderByBookingColumn = $data['filters']['sort_column'] == 'date' ? 'travel_date_start asc, travel_date_end asc, booking_date asc' : $data['filters']['sort_column'];
+            $orderByBookingColumn = $data['filters']['sort_column'] == 'date' ? 'travel_date_start asc, travel_date_end asc, booking_date' : $data['filters']['sort_column'];
             $orderByBookingOrder = $data['filters']['sort_order'] == 'asc' ? 'asc' : 'desc';
             $data['booking'] = $data['booking']->where('status', $status)->orderByRaw($orderByBookingColumn." ".$orderByBookingOrder)->get();
             $data['bookingReal'] = $data['booking'];

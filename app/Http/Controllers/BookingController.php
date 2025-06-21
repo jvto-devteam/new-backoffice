@@ -165,8 +165,8 @@ class BookingController extends Controller
                 return [
                     'value' => $query->id,
                     'label' => $query->package_code." - ".$query->name,
-                    'day' => $query->duration->day,
-                    'night' => $query->duration->night,
+                    'day' => (int)$query->duration->day,
+                    'night' => (int)$query->duration->night,
                     'prices' => $query->packagePrice->map(function($q){
                         return [
                             'start' => $q->priceCategory->start,
@@ -176,7 +176,7 @@ class BookingController extends Controller
                     }),
                     'itineraries' => $query->itinerary->map(function($q){
                         return [
-                            'day' => $q->day,
+                            'day' => (int)$q->day,
                             'activity_start_id' => $q->activity_start_id,
                             'activity_end_id' => $q->activity_end_id,
                             'itinerary' => $q->title,
@@ -184,7 +184,7 @@ class BookingController extends Controller
                     }),
                     'hotels' => $query->packageHotel->map(function($q){
                         return [
-                            'day' => $q->day,
+                            'day' => (int)$q->day,
                             'hotel_id' => $q->hotel_id,
                         ];
                     })

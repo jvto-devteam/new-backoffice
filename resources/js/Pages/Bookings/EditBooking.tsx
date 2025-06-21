@@ -875,6 +875,8 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
   const renderStep3 = () => {
     const handlePackageSelection = (value) => {
       const selectedPackage = packages.find(pkg => pkg.value === value);
+      console.log('selectedPackage',selectedPackage);
+      
       
       if (channel === 'TWT') {
         // Existing TWT specific logic
@@ -903,6 +905,7 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
       } else {
         // For other channels
         const packageDays = getPackageDays(value);
+        console.log("packageDays : ",packageDays);
         
         setFormData(prev => {
           const pricePerPax = selectedPackage 
@@ -932,6 +935,8 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
               }]
             };
           });
+          console.log("mappedPackageDays : ",mappedPackageDays);
+          
     
           return {
             ...prev,

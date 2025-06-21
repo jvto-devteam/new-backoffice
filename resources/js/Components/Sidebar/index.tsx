@@ -177,7 +177,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                         </h3>
                         <ul className="mb-6 flex flex-col gap-1.5">
                             {/* <!-- Menu Item Calendar --> */}
-                            {/* <li>
+                            <li>
                                 <Link
                                     href="/booking-overview"
                                     className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
@@ -200,7 +200,8 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                                     </svg>
                                     Booking Overview
                                 </Link>
-                            </li> */}
+                            </li>
+                            {/* 
                             <SidebarLinkGroup
                                 activeCondition={
                                     pathname === "/booking-overview" ||
@@ -283,6 +284,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                                     );
                                 }}
                             </SidebarLinkGroup>
+                             */}
 
                             <li>
                                 <Link

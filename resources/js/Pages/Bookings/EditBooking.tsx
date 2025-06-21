@@ -1847,7 +1847,8 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
       });
   };
   
-
+  console.log(formData.packageDays);
+  
   return (
     <Authenticated>
       <Head title="Client Management" />

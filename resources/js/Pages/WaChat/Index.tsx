@@ -18,10 +18,11 @@ export default function WaChat({ summaries = [] }) {
   const chatContainerRef = useRef(null);
   
   // Filter summaries based on search term
-  const filteredSummaries = summaries.filter(chat => 
-    chat.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    chat.phone.includes(searchTerm)
-  );
+  const filteredSummaries = summaries
+  // .filter(chat => 
+  //   chat.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  //   chat.phone.includes(searchTerm)
+  // );
 
   // Fetch chat details - this is the only function that uses API
   const fetchChatDetails = async (userId) => {

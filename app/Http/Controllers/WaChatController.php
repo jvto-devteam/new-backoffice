@@ -17,6 +17,7 @@ class WaChatController extends Controller
         $summaries = WaChat::select('user_id', DB::raw('MAX(id) as last_chat_id'))
         ->groupBy('user_id')
         ->with('user') // relasi ke model User
+        ->orderBy('id','desc')
         ->get()
         ->map(function ($chat) {
             $lastChat = WaChat::where('user_id', $chat->user_id)

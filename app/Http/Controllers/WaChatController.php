@@ -33,6 +33,7 @@ class WaChatController extends Controller
                 'sent_at'   => $lastChat->created_at,
             ];
         });
+        return $summaries;
         return Inertia::render('WaChat/Index', ['summaries' => $summaries]);
     }
     public function getChatDetail($userId)

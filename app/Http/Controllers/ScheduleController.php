@@ -2296,34 +2296,34 @@ class ScheduleController extends Controller
     }
     function reminderPlotting($data)
     {
-        $dataSending = array();
-        $dataSending["api_key"] = config('wa.wa_api_key');
-        $dataSending["number_key"] = config('wa.wa_number_key');
-        $isIjen = isset($data['is_ijen']) ? $data['is_ijen'] : false;
-        $guideIjen = $isIjen ? " sebagai *Ijen Guide*" : "";
-        $dateAtIjen = isset($data['ijen_date']) && $data['is_ijen'] ? "\r\n*Tanggal Ijen:* ".date('d M Y', strtotime($data['ijen_date'])) : "";
-        $dataSending["message"] = "*Hai ".$data['crew']."*,\r\Kamu sudah dijadwalkan".$guideIjen." untuk trip berikut:\r\n\r\n*Customer:* ".$data['customer']."\r\n*Tanggal Trip:* ".$data['travel_date_start']."\r\n*Durasi Trip:* ".$data['duration'].$dateAtIjen."\r\n\r\n📱 Check detailnya di:\r\nhttps://crew-portal.javavolcano-touroperator.com/";
-        $dataSending["phone_no"] = $data['phone'];
+        // $dataSending = array();
+        // $dataSending["api_key"] = config('wa.wa_api_key');
+        // $dataSending["number_key"] = config('wa.wa_number_key');
+        // $isIjen = isset($data['is_ijen']) ? $data['is_ijen'] : false;
+        // $guideIjen = $isIjen ? " sebagai *Ijen Guide*" : "";
+        // $dateAtIjen = isset($data['ijen_date']) && $data['is_ijen'] ? "\r\n*Tanggal Ijen:* ".date('d M Y', strtotime($data['ijen_date'])) : "";
+        // $dataSending["message"] = "*Hai ".$data['crew']."*,\r\Kamu sudah dijadwalkan".$guideIjen." untuk trip berikut:\r\n\r\n*Customer:* ".$data['customer']."\r\n*Tanggal Trip:* ".$data['travel_date_start']."\r\n*Durasi Trip:* ".$data['duration'].$dateAtIjen."\r\n\r\n📱 Check detailnya di:\r\nhttps://crew-portal.javavolcano-touroperator.com/";
+        // $dataSending["phone_no"] = $data['phone'];
 
 
-        $curl = curl_init();
-        curl_setopt_array($curl, array(
-            CURLOPT_URL => 'https://api.watzap.id/v1/send_message',
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_ENCODING => '',
-            CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 0,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-            CURLOPT_CUSTOMREQUEST => 'POST',
-            CURLOPT_POSTFIELDS => json_encode($dataSending),
-            CURLOPT_HTTPHEADER => array(
-                'Content-Type: application/json'
-            ),
-        ));
-        $response = curl_exec($curl);
-        curl_close($curl);
-        $res = json_decode($response);
+        // $curl = curl_init();
+        // curl_setopt_array($curl, array(
+        //     CURLOPT_URL => 'https://api.watzap.id/v1/send_message',
+        //     CURLOPT_RETURNTRANSFER => true,
+        //     CURLOPT_ENCODING => '',
+        //     CURLOPT_MAXREDIRS => 10,
+        //     CURLOPT_TIMEOUT => 0,
+        //     CURLOPT_FOLLOWLOCATION => true,
+        //     CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        //     CURLOPT_CUSTOMREQUEST => 'POST',
+        //     CURLOPT_POSTFIELDS => json_encode($dataSending),
+        //     CURLOPT_HTTPHEADER => array(
+        //         'Content-Type: application/json'
+        //     ),
+        // ));
+        // $response = curl_exec($curl);
+        // curl_close($curl);
+        // $res = json_decode($response);
     }
     function previewFile()
     {

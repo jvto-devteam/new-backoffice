@@ -21,9 +21,11 @@ use App\Models\PaymentMethod;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use PDF;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Spatie\GoogleCalendar\Event;
+use Carbon\Carbon;
+
 
 class ScheduleController extends Controller
 {
@@ -72,7 +74,7 @@ class ScheduleController extends Controller
             $status = "booked";
             $orderByBookingColumn = $data['filters']['sort_column'] == 'date' ? 'travel_date_start asc, travel_date_end asc, booking_date' : $data['filters']['sort_column'];
             $orderByBookingOrder = $data['filters']['sort_order'] == 'asc' ? 'asc' : 'desc';
-            $data['booking'] = $data['booking']->where('status', $status)->orderByRaw($orderByBookingColumn." ".$orderByBookingOrder)->get();
+            $data['booking'] = $data['booking']->where('status', $status)->orderByRaw($orderByBookingColumn . " " . $orderByBookingOrder)->get();
             $data['bookingReal'] = $data['booking'];
             $d = $data;
             $data['booking'] = $data['booking']->map(function ($booking) use ($request, $d) {
@@ -366,10 +368,9 @@ class ScheduleController extends Controller
             $name = 'Schedule' . $name . '.pdf';
             return $pdf->download($name);
         } else {
-            if($request->segment(2) == 'kanban'){
-                return Inertia::render('Schedule/Kanban', ['bookingData' => $data['booking'],'month' => $data['filters']['month']]);
-            }
-            else{
+            if ($request->segment(2) == 'kanban') {
+                return Inertia::render('Schedule/Kanban', ['bookingData' => $data['booking'], 'month' => $data['filters']['month']]);
+            } else {
                 return Inertia::render('Schedule/Index', ['data' => $data]);
             }
         }
@@ -2209,12 +2210,12 @@ class ScheduleController extends Controller
                 $bookDriver->save();
 
                 $getCrew = GuideDriver::where('id', $value)->first();
-                if($getCrew && $getCrew->phone) {
+                if ($getCrew && $getCrew->phone) {
                     $this->reminderPlotting([
                         'crew' => $getCrew->name,
                         'customer' => $booking->user->name,
                         'travel_date_start' => date('d M Y', strtotime($booking->travel_date_start)),
-                        'duration' => $booking->package_duration." Hari",
+                        'duration' => $booking->package_duration . " Hari",
                         'phone' => $getCrew->phone
                     ]);
                 }
@@ -2237,16 +2238,15 @@ class ScheduleController extends Controller
                 $bookDriver->save();
 
                 $getCrew = GuideDriver::where('id', $value)->first();
-                if($getCrew && $getCrew->phone) {
+                if ($getCrew && $getCrew->phone) {
                     $this->reminderPlotting([
                         'crew' => $getCrew->name,
                         'customer' => $booking->user->name,
                         'travel_date_start' => date('d M Y', strtotime($booking->travel_date_start)),
-                        'duration' => $booking->package_duration." Hari",
+                        'duration' => $booking->package_duration . " Hari",
                         'phone' => $getCrew->phone
                     ]);
                 }
-
             }
 
             // Save ijen guides if applicable
@@ -2263,18 +2263,17 @@ class ScheduleController extends Controller
                     $bookDriver->save();
 
                     $getCrew = GuideDriver::where('id', $value)->first();
-                    if($getCrew && $getCrew->phone) {
+                    if ($getCrew && $getCrew->phone) {
                         $this->reminderPlotting([
                             'is_ijen' => true,
                             'crew' => $getCrew->name,
                             'customer' => $booking->user->name,
                             'travel_date_start' => date('d M Y', strtotime($booking->travel_date_start)),
-                            'duration' => $booking->package_duration." Hari",
+                            'duration' => $booking->package_duration . " Hari",
                             'ijen_date' => date('d M Y', strtotime($booking->at_bondowoso)),
                             'phone' => $getCrew->phone
                         ]);
                     }
-
                 }
             }
 
@@ -2328,5 +2327,55 @@ class ScheduleController extends Controller
     function previewFile()
     {
         return view('preview-file');
+    }
+    function googleCalendar()
+    {
+        config(['google-calendar.calendar_id' => env('GOOGLE_CALENDAR_ID')]);
+
+        // --- Data dari gambar ---
+        $bookingId = 'KLOOK-1053';
+        $guestName = 'NASA ZLI RAHMAT';
+        // ... (data lainnya bisa dimasukkan ke variabel juga)
+
+        // 1. Buat instance Event baru
+        $event = new Event;
+
+        // 2. Mengatur Informasi Dasar (Judul)
+        $event->name = "Trip $bookingId: $guestName (Surabaya - Ijen - Bromo)";
+
+        // 3. Mengatur Waktu & Jadwal
+        $event->startDate = Carbon::create(2025, 6, 1);
+        $event->endDate = Carbon::create(2025, 6, 5);
+        $event->allDay = true;
+
+        // 4. Mengatur Deskripsi Acara (Sama seperti sebelumnya)
+        $description = "<b>--- DETAIL PERJALANAN ---</b>" .
+            "<br><b>ID Booking:</b> $bookingId" .
+            // ... (sisa deskripsi lengkap seperti jawaban sebelumnya)
+            "<br>... (dan seterusnya)";
+        $event->description = $description;
+
+        // 5. LOGIKA UNTUK KATEGORI & LABEL (Bagian Baru)
+        $colorId = null; // Nilai default
+
+        if (str_contains($bookingId, 'JVTO')) {
+            $colorId = '9'; // Biru Blueberry
+        } elseif (str_contains($bookingId, 'KLOOK')) {
+            $colorId = '6'; // Oranye Tangerine
+        } elseif (str_contains($bookingId, 'TWT')) {
+            $colorId = '5'; // Kuning Banana
+        }
+
+        // Terapkan colorId jika label ditemukan
+        if ($colorId) {
+            $event->colorId = $colorId;
+        }
+
+        // 6. Simpan acara ke Google Calendar
+        $newEvent = $event->save();
+
+        // 7. Tampilkan hasil untuk konfirmasi
+        echo "Acara perjalanan untuk $guestName dengan kategori $bookingId berhasil dibuat!";
+        dd($newEvent);
     }
 }

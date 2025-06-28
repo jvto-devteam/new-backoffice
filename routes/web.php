@@ -69,6 +69,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [DashboardController::class,'index'])->name('dashboard');
     Route::get('/portal-vendor', [DashboardController::class,'portalVendor']);
+    Route::get('/google-calendar', [ScheduleController::class,'googleCalendar']);
     Route::get('/booking-overview', [ScheduleController::class,'index']);
     Route::get('/booking-overview/kanban', [ScheduleController::class,'index']);
     Route::post('/plotting', [ScheduleController::class,'plotting']);

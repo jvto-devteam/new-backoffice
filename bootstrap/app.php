@@ -12,17 +12,23 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Daftarkan CorsMiddleware untuk grup 'web'
+        // PERBAIKAN: Daftarkan CorsMiddleware sebagai middleware global.
+        // Ini akan membuatnya berjalan untuk SEMUA permintaan (web dan api)
+        // dan hanya akan dimuat sekali, sehingga memperbaiki error.
+        $middleware->use([
+            \App\Http\Middleware\CorsMiddleware::class,
+        ]);
+
+        // Middleware yang spesifik untuk grup 'web'
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
-            \App\Http\Middleware\CorsMiddleware::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        // Daftarkan CorsMiddleware untuk grup 'api'
-        $middleware->api(prepend: [
-            \App\Http\Middleware\CorsMiddleware::class,
-        ]);
+        // Middleware yang spesifik untuk grup 'api' (jika ada)
+        // $middleware->api(prepend: [
+        //     // middleware lain untuk api bisa ditambahkan di sini
+        // ]);
 
         // Konfigurasi pengecualian untuk CSRF Token
         $middleware->validateCsrfTokens(except: [

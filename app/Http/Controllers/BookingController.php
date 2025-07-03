@@ -254,6 +254,15 @@ class BookingController extends Controller
         $user->password  = Hash::make('password');
         $user->save();
 
+    if ($request->has('newAddOns') && !empty($request->newAddOns)) {
+        $newAddOns = json_decode($request->newAddOns, true);
+        foreach ($newAddOns as $newAddOn) {
+            $addOn = new AddOn();
+            $addOn->add_on = $newAddOn['name'];
+            $addOn->price = $newAddOn['price'];
+            $addOn->save();
+        }
+    }
         $ym = date('Y-m', strtotime($request->travelDate));
         $getBooking = Booking::where('agent_id', $agent_id)->where('travel_date_start', 'like', '%' . $ym . '%');
         $getBooking = $getBooking->orderBy('booking_numb', 'desc');
@@ -418,29 +427,47 @@ class BookingController extends Controller
             'parent_id' => $packageId,
         ];
 
-        if ($summary['totalAddOn']) {
-            foreach ($addOns as $key => $value) {
-                $bookAddOn = new BookAddOn();
+    if ($summary['totalAddOn']) {
+        foreach ($addOns as $key => $value) {
+            $bookAddOn = new BookAddOn();
+            
+            // Jika addOn berupa string 'new-X', cari berdasarkan nama
+            if (is_string($value['addOn']) && strpos($value['addOn'], 'new-') === 0) {
+                // Ambil add-on berdasarkan nama dari newAddOns
+                $newAddOnIndex = (int)str_replace('new-', '', $value['addOn']);
+                $newAddOns = json_decode($request->newAddOns, true);
+                
+                if (isset($newAddOns[$newAddOnIndex])) {
+                    $addOnName = $newAddOns[$newAddOnIndex]['name'];
+                    $addOnRecord = AddOn::where('add_on', $addOnName)->orderBy('id', 'desc')->first();
+                    
+                    if ($addOnRecord) {
+                        $bookAddOn->add_on_id = $addOnRecord->id;
+                    }
+                }
+            } else {
                 $bookAddOn->add_on_id = $value['addOn'];
-                $bookAddOn->booking_id = $booking->id;
-                $bookAddOn->price = $value['price'];
-                $bookAddOn->qty = $value['quantity'];
-                $bookAddOn->save();
-
-
-                $getAddOn = AddOn::find($bookAddOn->add_on_id);
-
-                $invoiceHistory[] = [
-                    'booking_id' => $booking->id,
-                    'description' => $getAddOn->add_on,
-                    'rate' => $bookAddOn->price,
-                    'qty' => $bookAddOn->qty,
-                    'line_total' => $bookAddOn->price * $bookAddOn->qty,
-                    'type' => 'add on',
-                    'parent_id' => $bookAddOn->add_on_id,
-                ];
             }
+            
+            $bookAddOn->booking_id = $booking->id;
+            $bookAddOn->price = $value['price'];
+            $bookAddOn->price_expense = $value['price'];
+            $bookAddOn->qty = $value['quantity'];
+            $bookAddOn->save();
+
+            $getAddOn = AddOn::find($bookAddOn->add_on_id);
+
+            $invoiceHistory[] = [
+                'booking_id' => $booking->id,
+                'description' => $getAddOn->add_on,
+                'rate' => $bookAddOn->price,
+                'qty' => $bookAddOn->qty,
+                'line_total' => $bookAddOn->price * $bookAddOn->qty,
+                'type' => 'add on',
+                'parent_id' => $bookAddOn->add_on_id,
+            ];
         }
+    }
 
         $bookingDetail = new BookingDetail();
         $bookingDetail->booking_id = $booking->id;
@@ -674,6 +701,15 @@ class BookingController extends Controller
 
     function update(Request $request){
         $booking = Booking::where('id', $request->booking_id)->first();
+        if ($request->has('newAddOns') && !empty($request->newAddOns)) {
+            $newAddOns = json_decode($request->newAddOns, true);
+            foreach ($newAddOns as $newAddOn) {
+                $addOn = new AddOn();
+                $addOn->add_on = $newAddOn['name'];
+                $addOn->price = $newAddOn['price'];
+                $addOn->save();
+            }
+        }        
         $user = User::find($booking->user_id);
         $user->name = $request->customer;
         if($request->channel == 'TWT'){
@@ -881,29 +917,46 @@ class BookingController extends Controller
 
         BookAddOn::where('booking_id',$booking->id)->delete();
         InvoiceHistory::where('booking_id',$booking->id)->delete();
-        if ($summary['totalAddOn']) {
-            foreach ($addOns as $key => $value) {
-                $bookAddOn = new BookAddOn();
-                $bookAddOn->add_on_id = $value['addOn'];
-                $bookAddOn->booking_id = $booking->id;
-                $bookAddOn->price = $value['price'];
-                $bookAddOn->qty = $value['quantity'];
-                $bookAddOn->save();
-
-
-                $getAddOn = AddOn::find($bookAddOn->add_on_id);
-
-                $invoiceHistory[] = [
-                    'booking_id' => $booking->id,
-                    'description' => $getAddOn->add_on,
-                    'rate' => $bookAddOn->price,
-                    'qty' => $bookAddOn->qty,
-                    'line_total' => $bookAddOn->price * $bookAddOn->qty,
-                    'type' => 'add on',
-                    'parent_id' => $bookAddOn->add_on_id,
-                ];
+    if ($summary['totalAddOn']) {
+        foreach ($addOns as $key => $value) {
+            $bookAddOn = new BookAddOn();
+            
+            // Handle add-on ID mapping untuk add-on baru
+            $addOnId = $value['addOn'];
+            if (is_string($addOnId) && strpos($addOnId, 'new-') === 0) {
+                // Ini adalah add-on baru, cari berdasarkan nama
+                $tempIndex = (int)str_replace('new-', '', $addOnId);
+                $newAddOns = json_decode($request->newAddOns, true);
+                
+                if (isset($newAddOns[$tempIndex])) {
+                    $addOnName = $newAddOns[$tempIndex]['name'];
+                    $addOnRecord = AddOn::where('add_on', $addOnName)->orderBy('id', 'desc')->first();
+                    
+                    if ($addOnRecord) {
+                        $addOnId = $addOnRecord->id;
+                    }
+                }
             }
-        }    
+            
+            $bookAddOn->add_on_id = $addOnId;
+            $bookAddOn->booking_id = $booking->id;
+            $bookAddOn->price = $value['price'];
+            $bookAddOn->qty = $value['quantity'];
+            $bookAddOn->save();
+
+            $getAddOn = AddOn::find($bookAddOn->add_on_id);
+
+            $invoiceHistory[] = [
+                'booking_id' => $booking->id,
+                'description' => $getAddOn->add_on,
+                'rate' => $bookAddOn->price,
+                'qty' => $bookAddOn->qty,
+                'line_total' => $bookAddOn->price * $bookAddOn->qty,
+                'type' => 'add on',
+                'parent_id' => $bookAddOn->add_on_id,
+            ];
+        }
+    }
         
         $bookingDetail = BookingDetail::where('booking_id',$booking->id)->first();
         if($isPackage){

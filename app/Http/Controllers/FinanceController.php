@@ -1218,8 +1218,8 @@ class FinanceController extends Controller
                 'add_on_id' => $addOn->add_on_id,
                 'name' => $addOn->addOn->is_transport == '1' ? "Transport to " . ucwords(strtolower($addOn->addOn->add_on)) . " (" . ucfirst($addOn->addOn->type_transport) . ")" : $addOn->addOn->add_on,
                 'qty' => $addOn->qty,
-                'price' => $addOn->price,
-                'subtotal' => $addOn->qty * $addOn->price,
+                'price' => (int)$addOn->price_expense,
+                'subtotal' => $addOn->qty * $addOn->price_expense,
                 'is_debt'  => '0',
                 'debt_payment_id' => null,
                 'status_paid' => 'unpaid',
@@ -1243,7 +1243,7 @@ class FinanceController extends Controller
             return [
                 'id' => $data->id,
                 'name' => $data->is_transport == '1' ? "Transport to " . ucwords(strtolower($data->add_on)) . " (" . ucfirst($data->type_transport) . ")" : $data->add_on,
-                'price' => $data->price,
+                'price' => (int)$data->price,
             ];
         });
 
@@ -1590,7 +1590,7 @@ class FinanceController extends Controller
                 if ($bookAddOn) {
                     $bookAddOn->update([
                         'qty' => $addOnData['quantity'],
-                        'price' => $addOnData['price'],
+                        'price_expense' => $addOnData['price'],
                         'is_debt' => $addOnData['is_debt'],
                         'status_paid' => $addOnData['status_paid'],
                     ]);
@@ -1620,7 +1620,7 @@ class FinanceController extends Controller
                     'booking_id' => $bookingId,
                     'add_on_id' => $addOnId,
                     'qty' => $addOnData['quantity'],
-                    'price' => $addOnData['price'],
+                    'price_expense' => $addOnData['price'],
                 ]);
             }
         }
@@ -1937,8 +1937,8 @@ class FinanceController extends Controller
                     ? "Transport to " . ucwords(strtolower($query->addOn->add_on)) . " (" . ucfirst($query->addOn->type_transport) . ")"
                     : $query->addOn->add_on,
                 'quantity' => $query->qty,
-                'price' => $query->price,
-                'subtotal' => $query->qty * $query->price,
+                'price' => $query->price_expense,
+                'subtotal' => $query->qty * $query->price_expense,
                 'is_debt' => $query->is_debt ?? '0',
                 'status_paid' => $query->status_paid ?? 'unpaid',
             ];

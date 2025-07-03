@@ -14,6 +14,7 @@ class BookAddOn extends Model
         'add_on_id',
         'qty',
         'price',
+        'price_expense',
     ];    
 
     public function addOnPackage()

@@ -112,6 +112,42 @@ function formatCurrency(amount) {
         minimumFractionDigits: 0,
     }).format(amount);
 }
+const getDateBasedColor = (dateString, allBookings) => {
+    // Hitung berapa kali tanggal ini muncul
+    const dateCount = allBookings.filter(b => b.date.start_ymd === dateString).length;
+    
+    // Jika tanggal hanya muncul sekali (tidak duplikat), return putih
+    if (dateCount === 1) return 'bg-white';
+    
+    // Untuk tanggal yang duplikat, ambil semua tanggal yang memiliki duplikat
+    const duplicatedDates = [...new Set(allBookings
+        .filter(b => allBookings.filter(bb => bb.date.start_ymd === b.date.start_ymd).length > 1)
+        .map(b => b.date.start_ymd)
+    )].sort();
+    
+    // Daftar warna background yang akan digunakan secara bergilir untuk tanggal duplikat
+    const colors = [
+        'bg-red-200',
+        'bg-green-200', 
+        'bg-blue-200',
+        'bg-yellow-200',
+        'bg-cyan-200',
+        'bg-orange-200',
+        'bg-indigo-200',
+        'bg-pink-200',
+        'bg-teal-200',
+        'bg-purple-200',
+    ];
+    
+    // Cari index tanggal ini dalam array tanggal duplikat
+    const dateIndex = duplicatedDates.indexOf(dateString);
+    
+    // Jika tidak ditemukan, return putih
+    if (dateIndex === -1) return 'bg-white';
+    
+    // Return warna berdasarkan index (bergilir jika lebih dari 10 tanggal duplikat)
+    return colors[dateIndex % colors.length];
+};
 
 // Let's create a Note component with edit capabilities
 const EditableNote = ({ note, bookingId, onNoteUpdate, noteCategories }) => {
@@ -337,6 +373,7 @@ const BookingRow = ({
     updateBookingNote,
     noteCategories,
     viewColumns,
+    allBookings
 }) => {
     const [hoveredCrew, setHoveredCrew] = useState(null);
     const [openDropdownId, setOpenDropdownId] = useState(null);
@@ -347,6 +384,8 @@ const BookingRow = ({
         categoryId: booking.noteCategoryId || 1,
         categoryColor: booking.noteCategoryColor || "#3B82F6",
     });
+    const dateBasedBgColor = getDateBasedColor(booking.date.start_ymd, allBookings);
+
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (
@@ -379,13 +418,13 @@ const BookingRow = ({
             className={`border-b ${isCompleted ? "bg-green-50" : ""} ${parseInt(booking.total_pax) >= 18 ? "bg-gradient-to-r from-pink-50 via-transparent to-transparent" : ""}`}
         >
             {/* Row Index */}
-            <td className="py-3 px-2 align-top relative">
+            <td className={`py-3 px-2 align-top font-bold relative ${dateBasedBgColor}`}>
                 {parseInt(booking.total_pax) >= 18 ? (
                     <div className="relative">
                         <div className="absolute -left-1 -top-1 flex items-center justify-center">
                             <div className="relative">
                                 <div className="absolute inset-0 bg-pink-500 rounded-full animate-ping opacity-30"></div>
-                                <div className="relative bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold rounded-full h-5 w-5 flex items-center justify-center text-xs">
+                                <div className="relative bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">
                                     {startNumb}
                                 </div>
                             </div>
@@ -2688,7 +2727,7 @@ export default function Index({ data }) {
                                             </button>
 
                                             {isDateSortDropdownOpen && (
-                                                <div className="absolute left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                                                <div className="absolute left-0 mt-1 min-w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
                                                     <div className="py-1">
                                                         <button
                                                             className={`block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${
@@ -2976,6 +3015,7 @@ export default function Index({ data }) {
                                                 data.note_categories
                                             }
                                             viewColumns={viewColumns}
+                                            allBookings={bookings}
                                         />
                                     ))}
 
@@ -3035,6 +3075,7 @@ export default function Index({ data }) {
                                         updateBookingNote={updateBookingNote}
                                         noteCategories={data.note_categories}
                                         viewColumns={viewColumns}
+                                        allBookings={bookings}
                                     />
                                 ))}
                         </tbody>

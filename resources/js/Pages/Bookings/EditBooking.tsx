@@ -272,7 +272,29 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
     isShuttle: booking.is_shuttle == '1' ? true : false,
     isSendWa:  booking.is_send_wa == '1' ? true : false,    
   });
-
+  const [newAddOns, setNewAddOns] = useState([]);
+  const [showAddOnModal, setShowAddOnModal] = useState(false);
+  const handleAddNewAddOn = (newAddOn) => {
+    console.log('Adding new add-on:', newAddOn);
+    setNewAddOns(prev => {
+      const updated = [...prev, newAddOn];
+      console.log('Updated newAddOns:', updated);
+      return updated;
+    });
+  };
+  const allAddOns = [
+    ...addOns.map(addon => ({
+      id: addon.value,
+      name: addon.label,
+      defaultPrice: addon.defaultPrice
+    })),
+    ...newAddOns.map((addon, index) => ({
+      id: `new-${index}`,
+      name: addon.name,
+      defaultPrice: addon.price
+    }))
+  ];
+    
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
@@ -446,34 +468,33 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
   };
 
   const updateAddOnItem = (index, field, value) => {
-      const updatedAddOnItems = [...addOnItems];
-      
-      if (field === 'addOn') {
-          // Cari harga default untuk add-on yang dipilih
-          const selectedAddOn = addOns.find(addon => addon.value === value);
-          updatedAddOnItems[index] = {
-              addOn: value,
-              price: selectedAddOn ? selectedAddOn.defaultPrice : 0,
-              qty: 1,
-              subtotal: selectedAddOn ? selectedAddOn.defaultPrice : 0
-          };
-      } else if (field === 'price') {
-          // Update harga dan subtotal
-          updatedAddOnItems[index] = {
-              ...updatedAddOnItems[index],
-              price: value || 0,
-              subtotal: (value || 0) * updatedAddOnItems[index].qty
-          };
-      } else if (field === 'qty') {
-          // Update qty dan subtotal
-          updatedAddOnItems[index] = {
-              ...updatedAddOnItems[index],
-              qty: value || 1,
-              subtotal: updatedAddOnItems[index].price * (value || 1)
-          };
-      }
+    const updatedAddOnItems = [...addOnItems];
+    
+    if (field === 'addOn') {
+      // Cek apakah ini add-on baru atau yang sudah ada
+      const selectedAddOn = allAddOns.find(addon => addon.id === value);
+      updatedAddOnItems[index] = {
+        addOn: value,
+        price: selectedAddOn ? selectedAddOn.defaultPrice : 0,
+        qty: 1,
+        subtotal: selectedAddOn ? selectedAddOn.defaultPrice : 0,
+        isNew: value.toString().startsWith('new-')
+      };
+    } else if (field === 'price') {
+      updatedAddOnItems[index] = {
+        ...updatedAddOnItems[index],
+        price: value || 0,
+        subtotal: (value || 0) * updatedAddOnItems[index].qty
+      };
+    } else if (field === 'qty') {
+      updatedAddOnItems[index] = {
+        ...updatedAddOnItems[index],
+        qty: value || 1,
+        subtotal: updatedAddOnItems[index].price * (value || 1)
+      };
+    }
 
-      setAddOnItems(updatedAddOnItems);
+    setAddOnItems(updatedAddOnItems);
   };
   
   const calculateDiscount = (totalPackage) => {
@@ -501,14 +522,14 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
       const discount = calculateDiscount(totalPackage);
       
       // Calculate grand total
-      const grandTotal = totalPackage + totalAddOn - discount;
+      const grandTotal = totalPackage + parseInt(totalAddOn) - discount;
   
       return {
         pricePerPax: pricePerPax, // Total price divided by number of pax
         totalPackage,
         totalAddOn,
         discount,
-        subTotal: totalPackage + totalAddOn,
+        subTotal: totalPackage + parseInt(totalAddOn),
         grandTotal
       };
     }
@@ -527,7 +548,7 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
     const discount = calculateDiscount(totalPackage);
     
     // Calculate grand total
-    const subTotal = totalPackage + totalAddOn;
+    const subTotal = parseInt(totalPackage) + parseInt(totalAddOn);
     const grandTotal = subTotal - discount;
   
     return {
@@ -553,13 +574,13 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
     }
   }, [formData.numOfPax, formData.packageName, isCustomPackage]);
 
-  useEffect(() => {
-    setFormData(prev => ({
-        ...prev,
-        addOns: addOnItems
-    }));
-  }, [addOnItems]);
-
+useEffect(() => {
+  setFormData(prev => ({
+      ...prev,
+      addOns: addOnItems,
+      newAddOns: newAddOns // TAMBAHKAN INI
+  }));
+}, [addOnItems, newAddOns]);
   useEffect(() => {
     setFormData(prev => ({
       ...prev,
@@ -1433,92 +1454,100 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
   };
   
   
-  const renderStep4 = () => (
+const renderStep4 = () => {
+
+  return (
     <div className="space-y-6 border rounded-lg">
-        <div className="bg-gray-800 text-white p-4 rounded-t-lg">
-            <h2 className="text-lg font-semibold">Additional Services</h2>
+      <div className="bg-gray-800 text-white p-4 rounded-t-lg">
+        <h2 className="text-lg font-semibold">Additional Services</h2>
+      </div>
+      <div className="space-y-6 p-6 pt-0">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-md font-medium">Add-Ons</h3>
+          <div className="flex space-x-2">
+            <button
+              type="button"
+              onClick={() => setShowAddOnModal(true)}
+              className="px-3 py-1 bg-green-500 text-white rounded-md hover:bg-green-600 transition"
+            >
+              + New Add-On
+            </button>
+            <button
+              type="button"
+              onClick={addAddOnItem}
+              className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
+            >
+              + Add Add-On
+            </button>
+          </div>
         </div>
-        <div className="space-y-6 p-6 pt-0">
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-md font-medium">Add-Ons</h3>
-                <button
-                    type="button"
-                    onClick={addAddOnItem}
-                    className="px-3 py-1 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition"
-                >
-                    + Add Add-On
-                </button>
+
+        {addOnItems.map((item, index) => (
+          <div key={index} className="grid grid-cols-12 gap-4 items-center">
+            <div className="col-span-4">
+              <label className="block text-sm font-medium text-gray-700">Add-On</label>
+              <SearchableSelect 
+                options={allAddOns}
+                value={item.addOn}
+                onChange={(value) => updateAddOnItem(index, 'addOn', value)}
+                placeholder="Select add-on"
+                displayKey="name"
+                open={dropdowns[`addon-${index}`] || false}
+                setOpen={(value) => handleDropdownChange(`addon-${index}`, value)}
+              />
             </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700">Price</label>
+              <CurrencyInput
+                prefix="Rp "
+                decimalSeparator=","
+                groupSeparator="."
+                value={item.price}
+                onValueChange={(value) => updateAddOnItem(index, 'price', value)}
+                className="w-full px-3 py-2 border rounded-md"
+                placeholder="Price"
+              />
+            </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700">Qty</label>
+              <input
+                type="number"
+                value={item.qty}
+                onChange={(e) => updateAddOnItem(index, 'qty', parseInt(e.target.value))}
+                min="1"
+                className="w-full px-3 py-2 border rounded-md"
+                placeholder="Qty"
+              />
+            </div>
+            <div className="col-span-3">
+              <label className="block text-sm font-medium text-gray-700">Subtotal</label>
+              <div className="px-3 py-2 border rounded-md bg-gray-100">
+                Rp {new Intl.NumberFormat('id-ID').format(item.subtotal)}
+              </div>
+            </div>
+            <div className="col-span-1">
+              <button
+                type="button"
+                onClick={() => removeAddOnItem(index)}
+                className="text-red-500 hover:text-red-700 mt-6"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        ))}
 
-            {addOnItems.map((item, index) => (
-                <div key={index} className="grid grid-cols-12 gap-4 items-center">
-                    <div className="col-span-4">
-                        <label className="block text-sm font-medium text-gray-700">Add-On</label>
-                        <SearchableSelect 
-                            options={addOns.map(addon => ({
-                                id: addon.value,
-                                name: addon.label
-                            }))}
-                            value={item.addOn}
-                            onChange={(value) => updateAddOnItem(index, 'addOn', value)}
-                            placeholder="Select add-on"
-                            displayKey="name"
-                            open={dropdowns[`addon-${index}`] || false}
-                            setOpen={(value) => handleDropdownChange(`addon-${index}`, value)}
-                        />
-                    </div>
-                    <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700">Price</label>
-                        <CurrencyInput
-                            prefix="Rp "
-                            decimalSeparator=","
-                            groupSeparator="."
-                            value={item.price}
-                            onValueChange={(value) => updateAddOnItem(index, 'price', value)}
-                            className="w-full px-3 py-2 border rounded-md"
-                            placeholder="Price"
-                        />
-                    </div>
-                    <div className="col-span-2">
-                        <label className="block text-sm font-medium text-gray-700">Qty</label>
-                        <input
-                            type="number"
-                            value={item.qty}
-                            onChange={(e) => updateAddOnItem(index, 'qty', parseInt(e.target.value))}
-                            min="1"
-                            className="w-full px-3 py-2 border rounded-md"
-                            placeholder="Qty"
-                        />
-                    </div>
-                    <div className="col-span-3">
-                        <label className="block text-sm font-medium text-gray-700">Subtotal</label>
-                        <div className="px-3 py-2 border rounded-md bg-gray-100">
-                            Rp {new Intl.NumberFormat('id-ID').format(item.subtotal)}
-                        </div>
-                    </div>
-                    <div className="col-span-1">
-                        <button
-                            type="button"
-                            onClick={() => removeAddOnItem(index)}
-                            className="text-red-500 hover:text-red-700 mt-6"
-                        >
-                            <X className="h-5 w-5" />
-                        </button>
-                    </div>
-                </div>
-            ))}
-
-            {addOnItems.length > 0 && (
-                <div className="mt-4 text-right font-bold">
-                    Total Add-Ons: Rp {new Intl.NumberFormat('id-ID').format(
-                        addOnItems.reduce((total, item) => total + item.subtotal, 0)
-                    )}
-                </div>
+        {addOnItems.length > 0 && (
+          <div className="mt-4 text-right font-bold">
+            Total Add-Ons: Rp {new Intl.NumberFormat('id-ID').format(
+              addOnItems.reduce((total, item) => total + parseInt(item.subtotal), 0)
             )}
-        </div>
+          </div>
+        )}
+      </div>
     </div>
   );
-
+};
   const renderStep5 = () => (
     <div className="space-y-6 border rounded-lg">
         <div className="bg-gray-800 text-white p-4 rounded-t-lg">
@@ -1786,6 +1815,7 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
                   ...locationInfo,
                   ...packageInfo,
                   addOns: addOnsInfo,
+                  newAddOns: newAddOns,                  
                   discount: discountInfo,
                   summary,
                   isSendWa: isWhatsappSelected
@@ -1846,7 +1876,96 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
           }
       });
   };
-  
+// TAMBAHKAN KOMPONEN MODAL INI SEBELUM RETURN UTAMA
+const AddOnModal = ({ isOpen, onClose, onSubmit }) => {
+  const [modalFormData, setModalFormData] = useState({
+    name: "",
+    price: 0,
+    description: "",
+  });
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!modalFormData.name || !modalFormData.price) {
+      alert("Please fill in required fields");
+      return;
+    }
+    onSubmit(modalFormData);
+    setModalFormData({ name: "", price: 0, description: "" });
+    onClose();
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setModalFormData((prev) => ({
+      ...prev,
+      [name]: name === "price" ? parseFloat(value) || 0 : value,
+    }));
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <h3 className="text-lg font-semibold mb-4">Add New Add-On</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Add-On Name *
+            </label>
+            <input
+              type="text"
+              name="name"
+              value={modalFormData.name}
+              onChange={handleInputChange}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter add-on name"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Price (IDR) *
+            </label>
+            <CurrencyInput
+              prefix="Rp "
+              decimalSeparator=","
+              groupSeparator="."
+              value={modalFormData.price}
+              onValueChange={(value) =>
+                setModalFormData((prev) => ({
+                  ...prev,
+                  price: value || 0,
+                }))
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder="Enter price"
+              required
+            />
+          </div>
+          <div className="flex justify-end space-x-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            >
+              Add Add-On
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};  
   console.log(formData.packageDays);
   
   return (
@@ -1970,6 +2089,11 @@ const AddBooking = ({booking,channel,countries,packages,startActivityOptions,end
           </form>
         </div>
       </Card>
+    <AddOnModal
+      isOpen={showAddOnModal}
+      onClose={() => setShowAddOnModal(false)}
+      onSubmit={handleAddNewAddOn}
+    />      
     </Authenticated>
   );
 };

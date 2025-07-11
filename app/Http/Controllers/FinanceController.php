@@ -1977,7 +1977,11 @@ class FinanceController extends Controller
         ];
         if (request()->segment(4) == 'crew' && request()->preview) {
             return view('exports/expense', $data);
-        } else {
+        } 
+        else if(request()->segment(5) == 'api'){
+            return response()->json($data);
+        }
+        else {
             $pdf = PDF::loadView('exports/expense', $data);
             $name = Str::slug($booking['customer_name']);
             // Opsional: Set paper size dan orientation

@@ -62,6 +62,8 @@ Route::prefix('third-party')->group(function () {
     });
 });
 Route::get('/auto-plotting', [ScheduleController::class,'massAutoPlotting']);
+Route::get('/finance/expense-manager/{id}/internal/api', [FinanceController::class, 'downloadExpense']);
+
 Route::get('/finance/expense-manager/{id}/crew', [FinanceController::class, 'downloadExpense']);
 
 Route::get('/booking-overview/api', [ScheduleController::class,'index']);

@@ -1572,6 +1572,8 @@ export default function Index({ data }) {
     const [paymentStatus, setPaymentStatus] = useState("");
     const [startDate, setStartDate] = useState(data.filters.startDate);
     const [endDate, setEndDate] = useState(data.filters.endDate);
+    const [selectedPayment, setSelectedPayment] = useState(data.filters.payment);
+    const [selectedCrew, setSelectedCrew] = useState(data.filters.crew);
     const [filterType, setFilterType] = useState(data.filters.filterType); // Default to month selection
     const [selectedMonth, setSelectedMonth] = useState(data.filters.month);
     // State to track which booking is expanded
@@ -2418,7 +2420,9 @@ export default function Index({ data }) {
                                 month: selectedMonth,
                                 date_range: startDate + "_" + endDate,
                                 search: searchTerm,
-                                channel: selectedChannel,
+                                channel: selectedPayment ? 'JVTO' : selectedChannel,
+                                payment: selectedPayment,
+                                crew: selectedCrew,
                                 view: selectedColumns.join(","), // Add this line to include selected columns
                             });
                         }}
@@ -2533,14 +2537,11 @@ export default function Index({ data }) {
                                         <option value="KLOOK">KLOOK</option>
                                         <option value="JVTO">JVTO</option>
                                     </select>
-                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                                        <ChevronDown className="h-4 w-4" />
-                                    </div>
                                 </div>
                             </div>
 
                             {/* Search Column */}
-                            <div className="col-span-12 md:col-span-3">
+                            <div className="col-span-12 md:col-span-2">
                                 <div className="mb-2 font-bold text-gray-800">
                                     Search
                                 </div>
@@ -2554,7 +2555,7 @@ export default function Index({ data }) {
                                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 />
                             </div>
-                            <div className="col-span-12 md:col-span-3">
+                            <div className="col-span-12 md:col-span-2">
                                 <div className="mb-2 font-bold text-gray-800">
                                     View Columns
                                 </div>
@@ -2563,9 +2564,42 @@ export default function Index({ data }) {
                                     setSelectedColumns={setSelectedColumns}
                                 />
                             </div>
+                            <div className="col-span-12 md:col-span-2">
+                                <div className="mb-2 font-bold text-gray-800">
+                                    Payment Status
+                                </div>
+                                    <select
+                                        className="w-full appearance-none px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                        value={selectedPayment}
+                                        onChange={(e) =>
+                                            setSelectedPayment(e.target.value)
+                                        }
+                                    >
+                                        <option value="">All Payments</option>
+                                        <option value="fully">Fully Paid</option>
+                                        <option value="partially">Partially Paid</option>
+                                        <option value="overdue">Overdue</option>
+                                    </select>
+                            </div>
+                            <div className="col-span-12 md:col-span-2">
+                                <div className="mb-2 font-bold text-gray-800">
+                                    CREW
+                                </div>
+                                    <select
+                                        className="w-full appearance-none px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                        value={selectedCrew}
+                                        onChange={(e) =>
+                                            setSelectedCrew(e.target.value)
+                                        }
+                                    >
+                                        <option value="">All Crew</option>
+                                        {data.crew.map((crew) => (
+                                            <option key={crew.id} value={crew.id}>{crew.name}</option>
+                                        ))}
 
-                            <div className="col-span-12">
-                                <div className="h-full flex gap-2">
+                                    </select>
+                            </div>
+                            <div className="col-span-12 flex gap-2 md:col-span-6">
                                     <div>
                                         <button
                                             type="submit"
@@ -2685,7 +2719,6 @@ export default function Index({ data }) {
                                             </div>
                                         )}
                                     </div>
-                                </div>
                             </div>
                         </div>
                     </form>

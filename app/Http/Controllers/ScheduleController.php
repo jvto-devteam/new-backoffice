@@ -45,6 +45,8 @@ class ScheduleController extends Controller
             'view' => $request->view ? $request->view : 'pickup,dropoff,itinerary,accommodation,vehicleCrew,financial,notes', // Add this line
             'sort_column' => $request->sort_column ? $request->sort_column : 'date',
             'sort_order' => $request->sort_order ? $request->sort_order : 'asc',
+            'payment' => $request->payment ? $request->payment : '',
+            'crew' => $request->crew ? $request->crew : '',
         ];
 
         $data['note_categories'] = NoteCategory::get();
@@ -74,6 +76,20 @@ class ScheduleController extends Controller
             $status = "booked";
             $orderByBookingColumn = $data['filters']['sort_column'] == 'date' ? 'travel_date_start asc, travel_date_end asc, booking_date' : $data['filters']['sort_column'];
             $orderByBookingOrder = $data['filters']['sort_order'] == 'asc' ? 'asc' : 'desc';
+            if($request->payment) {
+                if ($request->payment == 'fully') {
+                    $data['booking'] = $data['booking']->where('balance', 0);
+                } else if ($request->payment == 'partially') {
+                    $data['booking'] = $data['booking']->where('balance', '>', 0);
+                } else if ($request->payment == 'overdue') {
+                    $data['booking'] = $data['booking']->where('balance', '>', 0)->where('travel_date_end', '<', date('Y-m-d'));
+                }
+            }
+            if($request->crew) {
+                $data['booking'] = $data['booking']->whereHas('guideDriver', function ($query) use ($request) {
+                    $query->where('guide_id', $request->crew);
+                });
+            }
             $data['booking'] = $data['booking']->where('status', $status)->orderByRaw($orderByBookingColumn . " " . $orderByBookingOrder)->get();
             $data['bookingReal'] = $data['booking'];
             $d = $data;
@@ -331,6 +347,7 @@ class ScheduleController extends Controller
                 ];
             });
             $data['now'] = date('Y-m-d');
+            $data['crew'] = GuideDriver::orderBy('name','asc')->get();
             // return $data;
 
             if ($request->json) {

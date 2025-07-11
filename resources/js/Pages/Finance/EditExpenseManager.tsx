@@ -262,7 +262,7 @@ const BookingInfo = ({ booking }) => {
                                 Package
                             </td>
                             <td className="px-6 py-3 text-sm text-blue-600 underline">
-                                {booking.agent_id == 2 ? (
+                                {booking.agent_id == 2 && booking.booking_detail[0].package ? (
                                     <a
                                         href={
                                             booking.booking_category_id != 3

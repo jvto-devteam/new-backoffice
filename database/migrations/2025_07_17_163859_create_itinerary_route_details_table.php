@@ -11,9 +11,9 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('itinerary_route_id')->constrained('itinerary_routes')->onDelete('cascade');
             $table->time('time')->nullable();
+            $table->foreignId('destination_id')->constrained('destinations')->onDelete('cascade')->nullable();
             $table->foreignId('activity_category_id')->constrained('activity_categories')->onDelete('cascade');
             $table->string('activity');
-            $table->text('pro_tips')->nullable();
             $table->timestamps();
         });
     }

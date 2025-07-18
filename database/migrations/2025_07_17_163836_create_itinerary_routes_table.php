@@ -12,8 +12,12 @@ return new class extends Migration {
             $table->string('route');
             $table->string('title');
             $table->text('description');
-            $table->foreignId('activity_start_id')->constrained('activity_starts')->onDelete('cascade');
-            $table->foreignId('activity_end_id')->constrained('activity_ends')->onDelete('cascade');
+            $table->text('pro_tips')->nullable();
+            $table->foreignId('start_destination_id')->constrained('destinations')->onDelete('cascade');
+            $table->foreignId('end_destination_id')->constrained('destinations')->onDelete('cascade');
+            $table->enum('breakfast', ['yes', 'no'])->default('no');
+            $table->enum('lunch', ['yes', 'no'])->default('no');
+            $table->enum('dinner', ['yes', 'no'])->default('no');
             $table->timestamps();
         });
     }

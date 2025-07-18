@@ -31,4 +31,9 @@ class ItineraryRoute extends Model
     {
         return $this->hasMany(ItineraryRouteDetail::class);
     }
+
+    public function destinations()
+    {
+        return $this->hasMany(ItineraryRouteDestination::class);
+    }
 }

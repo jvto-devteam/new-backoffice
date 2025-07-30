@@ -7,7 +7,7 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('packages', function (Blueprint $table) {
-            $table->text('physicality')->nullable()->after('ideal_for');
+            $table->text('physicality')->nullable()->after('ideal_arrival');
         });
     }
 

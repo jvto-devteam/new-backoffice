@@ -24,6 +24,7 @@ use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\CrewController;
 use App\Http\Controllers\ThirdParty\WatzapController;
 use App\Http\Controllers\WaChatController;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -42,6 +43,7 @@ use SebastianBergmann\CodeCoverage\Report\Html\Dashboard;
 //     return Inertia::render('Dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
 
+Route::get('/json-source', [ScheduleController::class, 'jsonSource']);
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);

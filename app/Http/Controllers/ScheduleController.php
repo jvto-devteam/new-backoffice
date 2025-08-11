@@ -393,6 +393,58 @@ class ScheduleController extends Controller
         }
     }
 
+    function jsonSource(){
+        $customer = Booking::with(['bookingDetail','user.country'])->where('status', 'booked')->where('agent_id',2)->where('booking_category_id', '!=', 3)->where('travel_date_start','like','%'.date('Y-m').'%')->orderBy('travel_date_start','asc')->limit(5)->get()->map(function ($booking) {
+            $tshirtSizes = [];
+            if ($booking->bookingDetail[0]->xss != 0) {
+                array_push($tshirtSizes, "XSS x " . $booking->bookingDetail[0]->xss);
+            }
+            if ($booking->bookingDetail[0]->xxs != 0) {
+                array_push($tshirtSizes, "XXS x " . $booking->bookingDetail[0]->xxs);
+            }
+            if ($booking->bookingDetail[0]->xs != 0) {
+                array_push($tshirtSizes, "XS x " . $booking->bookingDetail[0]->xs);
+            }
+            if ($booking->bookingDetail[0]->s != 0) {
+                array_push($tshirtSizes, "S x " . $booking->bookingDetail[0]->s);
+            }
+            if ($booking->bookingDetail[0]->m != 0) {
+                array_push($tshirtSizes, "M x " . $booking->bookingDetail[0]->m);
+            }
+            if ($booking->bookingDetail[0]->l != 0) {
+                array_push($tshirtSizes, "L x " . $booking->bookingDetail[0]->l);
+            }
+            if ($booking->bookingDetail[0]->xl != 0) {
+                array_push($tshirtSizes, "XL x " . $booking->bookingDetail[0]->xl);
+            }
+            if ($booking->bookingDetail[0]->xxl != 0) {
+                array_push($tshirtSizes, "XXL x " . $booking->bookingDetail[0]->xxl);
+            }
+            if ($booking->bookingDetail[0]->xxxl != 0) {
+                array_push($tshirtSizes, "XXXL x " . $booking->bookingDetail[0]->xxxl);
+            }
+            $tshirtSize = implode(', ', $tshirtSizes);
+
+            return [
+                "customer_id" => "JVTO-C-".$booking->user->id,
+                "name" => $booking->user->name,
+                "passport_number" => null,
+                "email" => $booking->user->email,
+                "phone" => $booking->user->phone,
+                "country" => $booking->user->country ? $booking->user->country->long_name : null,
+                "t_shirt_size" => $tshirtSize,
+                "dietary_restrictions" => null,
+                "emergency_contact_name" => null,
+                "emergency_contact_phone" => null,
+                "trip_media_url" => $booking->media_link
+            ];
+        });
+
+        return [
+            'customer' => $customer,
+        ];
+    }
+
     function details($id)
     {
         $booking = Booking::with(['user.country', 'bookingDetail.package.itinerary' => function ($query) {

@@ -58,4 +58,14 @@ class Destination extends Model
     {
         return $this->hasMany(DestinationActivity::class);
     }    
+
+    public function destinationDetail()
+    {
+        return $this->hasOne(DestinationDetail::class, 'destination_id');
+    }    
+    public function activities()
+    {
+        return $this->belongsTo(Activity::class, 'activity_id');
+    }
+
 }

@@ -12,11 +12,14 @@ use App\Models\BookingDocument;
 use App\Models\BookingItinerary;
 use App\Models\BookingPayment;
 use App\Models\Car;
+use App\Models\CarConfiguration;
+use App\Models\CrewRole;
 use App\Models\Destination;
 use App\Models\GuideDriver;
 use App\Models\Hotel;
 use App\Models\NoteCategory;
 use App\Models\Package;
+use App\Models\PackageHotel;
 use App\Models\PaymentMethod;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -393,8 +396,572 @@ class ScheduleController extends Controller
         }
     }
 
+    function displayTime($time)
+    {
+        // Cek apakah format H:i (14:30) atau H:i:s (14:30:00)
+        if (preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $time)) {
+            return date('H:i', strtotime($time));
+        }
+        // Jika bukan time, tampilkan string biasa
+        return $time;
+    }
+
+    public function packageDetailJson()
+    {
+        // Main package data with basic relations
+        $package = Package::with([
+            'duration',
+            'category',
+            'packagePrice.priceCategory',
+            'packageDestination.destination.activities',
+            'packageDestination.destination.destinationDetail',
+            'packageBanner.gallery',
+            'itinerary' => function ($q) {
+                $q->orderBy('day', 'asc');
+            },
+            'itinerary.itineraryDestination.destination.activities', // pastikan ini benar
+            'itinerary.itineraryDestination.secondDestination.activities', // pastikan ini benar
+            'itinerary.itineraryMeals' => function ($query) {
+                $query->where('price_plan_id', 2);
+            },
+            'itinerary.itineraryDetail.activity', // Add these new relationships
+            'itinerary.itineraryDetail.location'
+        ])->where('is_publish','1')->get()->map(function ($package) {
+        // Initialize meal counters
+        $mealSummary = [
+            'breakfast' => 0,
+            'lunch' => 0,
+            'dinner' => 0
+        ];
+
+        $dailyMeals = [];
+
+        // Base result structure
+        $destinationIds = [];
+        $destinationNames = [];
+        $highlights = array_values(array_filter(
+                    array_map(function($dest) {
+                        return $dest['destination']['highlight'] ?? null;
+                    }, $package->packageDestination->toArray() ?? []),
+                    fn($value) => !is_null($value)
+                ));
+        array_push($highlights, 'Enjoy comfortable accommodations');
+        array_push($highlights, 'Benefit from private transportation');
+        array_push($highlights, 'Guided by experienced English-speaking guides');
+        $result = [
+            'package' => [
+                'id' => (int)$package->id,
+                'package_code' => $package->package_code,
+                'name' => $package->name,
+                'duration' => [
+                    'id' => (int)$package->duration->id,
+                    'name' => $package->duration->name,
+                    'days' => (int)$package->duration->day,
+                    'nights' => (int)$package->duration->night
+                ],
+                'departure' => $package->startDestination->name,
+                'return' => $package->endDestination->name,
+                'category' => $package->category->name,
+                'overview' => $package->overview,
+                'highligts' => $highlights,
+                'key_experiences' => array_values(array_filter(
+                    array_map(function($dest) {
+                        return $dest['destination']['activities']['name'] ?? null;
+                    }, $package->packageDestination->toArray() ?? []),
+                    fn($value) => !is_null($value)
+                )),
+                'overall_physicality' => $package->physicality,
+                'ideal_for' => $package->suitable_for,
+                'url' => "https://javavolcano-touroperator.com/packages/" . strtolower($package->startDestination->name) . '/' . $package->duration->day . 'd' . $package->duration->night . 'n/' . $package->id_url,
+                'galleries' => $package->packageBanner->map(function ($banner) {
+                    return [
+                        'id' => (int)$banner->gallery->id,
+                        'image_url' => "https://javavolcano-touroperator.com/assets/img/destinations/" . $banner->gallery->image,
+                        'caption' => $banner->gallery->caption,
+                        'alt_text' => $banner->gallery->alt_text
+                    ];
+                }),
+                'itinerary' => $package->itinerary->map(function ($itineraryDay) use (&$mealSummary,&$dailyMeals) {
+
+                    $activities = [];
+                    // Handle single itineraryDestination object
+                    if ($itineraryDay->itineraryDestination) {
+                        // Primary destination activities
+                        if (
+                            $itineraryDay->itineraryDestination->destination &&
+                            $itineraryDay->itineraryDestination->destination->activities
+                        ) {
+                            $activity = $itineraryDay->itineraryDestination->destination->activities;
+                            $activities[] = [
+                                'activity_id' => $activity->activity_code,
+                                'activity' => $activity->name
+                            ];
+                        }
+
+                        // Secondary destination activities
+                        if (
+                            $itineraryDay->itineraryDestination->secondDestination &&
+                            $itineraryDay->itineraryDestination->secondDestination->activities
+                        ) {
+                            $activity = $itineraryDay->itineraryDestination->secondDestination->activities;
+                            $activities[] = [
+                                'activity_id' => $activity->activity_code,
+                                'activity' => $activity->name
+                            ];
+                        }
+                    }
+
+                    // Get meals for this day (now filtered by price_plan_id = 2 in the relationship)
+                    $meals = [
+                        'breakfast' => false,
+                        'lunch' => false,
+                        'dinner' => false
+                    ];
+                    $todayMeals = [];
+                    if ($itineraryDay->itineraryMeals && !empty($itineraryDay->itineraryMeals[0])) {
+                        $meals = [
+                            'breakfast' => (bool)$itineraryDay->itineraryMeals[0]->breakfast,
+                            'lunch' => (bool)$itineraryDay->itineraryMeals[0]->lunch,
+                            'dinner' => (bool)$itineraryDay->itineraryMeals[0]->dinner
+                        ];
+
+                        // Update meal summary
+                        if ($meals['breakfast']) {
+                            $mealSummary['breakfast']++;
+                            array_push($todayMeals, 'Breakfast');
+                        }
+                        if ($meals['lunch']){
+                            $mealSummary['lunch']++;
+                            array_push($todayMeals, 'Lunch');
+                        }
+                        if ($meals['dinner']){
+                            $mealSummary['dinner']++;
+                            array_push($todayMeals, 'Dinner');
+                        }
+                    }
+                    $dailyMeals[] = [
+                        'day' => $itineraryDay->day,
+                        'itinerary' => $itineraryDay->title,
+                        'meals' => count($todayMeals) == '' ? 'No meals provided' : implode(', ',$todayMeals)
+                    ];
+
+                    // Get detailed itinerary for this day
+                    $detailedSchedule = $itineraryDay->itineraryDetail
+                        ->sortBy('no')
+                        ->values()
+                        ->map(function ($detail) {
+                            return [
+                                'sequence_no' => (int)$detail->no,
+                                'time' => $this->displayTime($detail->time),
+                                // 'activity' => [
+                                //     'id' => $detail->activity->id ?? null,
+                                //     'name' => $detail->activity->name ?? null
+                                // ],
+                                // 'location' => [
+                                //     'id' => $detail->location->id ?? null,
+                                //     'name' => $detail->location->name ?? null
+                                // ],
+                                'activity' => strip_tags($detail->notes ?? ''),
+                                // 'care_tip_for_tomorrow' => ''
+                            ];
+                        });
+                    $todayHotel = PackageHotel::where('package_id', $itineraryDay->package_id)
+                        ->where('day', $itineraryDay->day)
+                        ->where('price_plan_id', 2)
+                        ->first();
+                    $travelLogistic = $itineraryDay->travel_logistic == '' ? '[]' : $itineraryDay->travel_logistic;
+                    eval("\$travelLogisticArray = $travelLogistic;");
+
+                    return [
+                        'id' => (int)$itineraryDay->id,
+                        'day' => (int)$itineraryDay->day,
+                        // 'activities' => $activities,
+                        'title' => $itineraryDay->title,
+                        'details' => strip_tags($itineraryDay->activity),
+                        'meals' => $meals,
+                        'accommodation' => $todayHotel ? [
+                            'id' => (int)$todayHotel->id,
+                            'name' => $todayHotel->hotel->name,
+                        ] : null,
+                        'detailed_schedule' => $detailedSchedule,
+                        'physical_demand' => $itineraryDay->physical_demand,
+                        'travel_logistic' => $travelLogisticArray,
+                    ];
+                }),
+                'activity_profile' => $package->packageDestination->where('destination_id', '!=', 3)->where('destination_id', '!=', 4)->where('destination_id', '!=', 17)->where('activity_id','is not', null)->map(function ($packageDestination) {
+                    $destination = $packageDestination->destination;
+                    $trek =
+                        $destination->trek_details == ''
+                            ? '[]'
+                            : $destination->trek_details;
+                    eval("\$trekArray = $trek;");
+
+                    $healthSafety =
+                        $destination->health_safety == ''
+                            ? '[]'
+                            : $destination->health_safety;
+                    eval("\$healthSafetyArray = $healthSafety;");
+
+                    $requirements =
+                        $destination->requirements == ''
+                            ? '[]'
+                            : $destination->requirements;
+                    eval("\$requirementsArray = $requirements;");
+
+                    return [
+                        'id' => (int)$destination->id,
+                        'name' => $destination->activities ? strip_tags($destination->activities->name) : null,
+                        'difficulty' => $destination->difficulty,
+                        'trek_details' => $trekArray,
+                        'health_safety' => $healthSafetyArray,
+                        'requirements' => $requirementsArray,
+                    ];
+                })->values(),
+                'destinations' => $package->packageDestination->where('destination_id', '!=', 3)->where('destination_id', '!=', 4)->where('destination_id', '!=', 17)->map(function ($packageDestination) use(&$destinationIds,&$destinationNames) {
+                    $destination = $packageDestination->destination;
+                    $details = $destination->destinationDetail;
+                    array_push($destinationIds,$destination->id);
+                    if(!in_array($destination->id,[3,4,17])){
+                        array_push($destinationNames,$destination->name);
+                    }
+                    return [
+                        'id' => (int)$destination->id,
+                        'name' => strip_tags($destination->name),
+                        'description' => $destination->description,
+                        'image_url' => "https://javavolcano-touroperator.com/assets/img/destinations/" . $destination->gallery->image,
+                        // 'galleries' => $packageDestination->destination->galleries->map(function($gallery){
+                        //     return [
+                        //         'id' => $gallery->id,
+                        //         'image_url' => "https://javavolcano-touroperator.com/assets/img/destinations/" . $gallery->image,
+                        //         'caption' => $gallery->caption,
+                        //         'alt_text' => $gallery->alt_text
+                        //     ];
+                        // }),
+                        // 'weather_by_season' => $details->weather_by_season ?? '',
+                        // 'rainfall_intensity' => $details->rainfall_intensity ?? '',
+                        // 'trail_details' => $details->trail_details ?? '',
+                        // 'required_gear' => $details->required_gear ?? '',
+                        // 'difficulty_level' => $details->difficulty_level ?? '',
+                        // 'environmental_factors' => $details->environmental_factors ?? '',
+                        // 'physical_requirements' => $details->physical_requirements ?? '',
+                        // 'main_attractions' => $details->main_attractions ?? '',
+                        // 'best_time_to_visit' => $details->best_time_to_visit ?? '',
+                        // 'tips_for_visitors' => $details->tips_for_visitors ?? ''
+                    ];
+                })->values(),
+            ]
+        ];
+
+        // Get and transform accommodation data with room configurations
+        $hotels = PackageHotel::with([
+            'hotel',
+            'hotel.roomConfigurations' => function ($query) {
+                $query->with('room');
+            }
+        ])
+            ->where('package_id', $package->id)
+            ->where('price_plan_id', 2)
+            ->get();
+
+        $result['package']['accommodation'] = $hotels->map(function ($hotel) {
+            $banner = ["https://javavolcano-touroperator.com/assets/img/hotels/" . $hotel->hotel->banner];
+            if($hotel->hotel->hotelImage){
+                foreach($hotel->hotel->hotelImage->take(2) as $image) {
+                    $banner[] = "https://javavolcano-touroperator.com/assets/img/hotels/" . $image->image;
+                }
+            }
+            $facilities = $hotel->hotel->facilities == '' ? '[]' : $hotel->hotel->facilities;
+            eval("\$facilitiesArray = $facilities;");
+            return [
+                'id' => (int)$hotel->hotel->id,
+                // 'hotel_code' => $hotel->hotel->code,
+                'day' => (int)$hotel->day,
+                'hotel' => $hotel->hotel->name,
+                'location' => $hotel->hotel->address,
+                'short_description' => $hotel->hotel->short_description,
+                'description' => $hotel->hotel->description,
+                'rating' => $hotel->hotel->rating,
+                'map' => $hotel->hotel->url,
+                'banner' => $banner,
+                'facilities' => $facilitiesArray,
+                // 'room_configurations' => $hotel->hotel->roomConfigurations->map(function ($config) {
+                //     return [
+                //         'room_configuration_id' => (int)$config->id,
+                //         'room_id' => (int)$config->room->id,
+                //         'pax' => (int)$config->pax,
+                //         'room_type' => $config->room->room_name,
+                //         'qty' => (int)$config->qty
+                //     ];
+                // })
+            ];
+        });
+
+        $result['package']['meal_plan'] = [
+            'summary' => $mealSummary,
+            'details' => $dailyMeals
+        ];
+
+        // Transform transportation and crew data
+        $carConfigs = CarConfiguration::with([
+            'car',
+            'crewRole' => function ($query) {
+                // Assuming we're using JVTO role
+                $query->where('order_channel_id', 1); // Adjust the channel ID as needed
+            }
+        ])->whereNotNull('crew_jvto_role_id')->get();
+
+
+        // Transform package prices
+        $result['package']['package_price'] = $package->packagePrice->sortBy('priceCategory.start')->map(function ($price) {
+            return [
+                'package_price_id' => (int)$price->id,
+                'start' => (int)$price->priceCategory->start,
+                'end' => (int)$price->priceCategory->end == 0 ? null : (int)$price->priceCategory->end,
+                'group_size' => $price->priceCategory->temp_text,
+                'price_per_person' => (int)$price->price
+            ];
+        })->values();
+
+        $result['package']['group_discounts'] = [
+            'One FOC for every 18 participants',
+            'Two FOC for 35 participants',
+            'Three FOC + 5% discount for 50 or more participants',
+            'These benefits apply to both students and staff'
+        ];
+        $result['package']['vehicle_and_crew_allocation'] = [
+            [
+                "group_size" => "1-3 Pax",
+                "vehicle" => "MPV",
+                "crew" => "Driver-cum-Guide"
+            ],
+            [
+                "group_size" => "4-11 Pax",
+                "vehicle" => "Hiace Van",
+                "crew" => "Driver + Local Guides"
+            ],
+            [
+                "group_size" => ">11 Pax",
+                "vehicle" => "Additional Vehicle",
+                "crew" => "Customized Crew"
+            ]
+        ];
+
+        $result['package']['payment_terms'] = [
+            '<b>Deposit:</b> A 20% deposit of the total tour cost is required to secure your booking',
+            '<b>Final Payment Deadlines:</b><ul><li>Credit/Debit Cards: At least 5 days prior to the tour date (please allow 5-7 business days for processing).</li><li>Bank Transfers/Wise: At least 3 days prior to the tour date.</li><li>Cash: Permitted on the first day of the tour only if pre-approved during booking. Please ensure you have the exact IDR amount, as airport exchange rates are unfavorable</li></ul>',
+            '<b>Last-Minute Bookings (within 14 days of departure):</b> Full payment (100%) is required at the time of booking.',
+            '<b>Late Payments:</b> Failure to meet payment deadlines may result in booking cancellation without a refund'
+        ];
+        $includeMeals = [];
+        if($mealSummary['breakfast'] != 0){
+            array_push($includeMeals,$mealSummary['breakfast']."x Breakfast");
+        }
+        if($mealSummary['lunch'] != 0){
+            array_push($includeMeals, $mealSummary['lunch']."x Lunch");
+        }
+        if($mealSummary['dinner'] != 0){
+            array_push($includeMeals, $mealSummary['dinner']."x Dinner");
+        }
+
+        $result['package']['included'] = [
+            '<b>Private Transport:</b> Air-conditioned private vehicles (MPV for 1-3 guests, Minibus for 4-11 guests) with a dedicated driver. This includes fuel, tolls, and parking fees.',
+            '<b>Tour Guides:</b> Experienced English-speaking guides. For 2-3 guests, a driver-guide. For 4+ guests, a separate local guide will be provided at each main destination (Bromo, Ijen, Madakaripura).',
+            '<b>Mineral Water:</b> Daily supply.',
+            '<b>Complimentary Travel T-Shirt:</b> One custom travel T-shirt per participant, with customizable designs/logos.',
+            '<b>Full Assistance:</b> From your arrival to your final drop-off.',
+            '<b>Quality Hotel Accommodation:</b> For '.count($result['package']['accommodation']).' nights, including daily breakfast.',
+            '<b>All Entrance Fees & Permits:</b> To attractions such as '.implode(', ', $destinationNames),
+            '<b>Meals:</b> '.implode(', ',$includeMeals),
+        ];
+        
+        if(in_array(1,$destinationIds)){
+            array_push($result['package']['included'],'<b>Private 4WD Jeep:</b> For the Mount Bromo sunrise tour.');
+        }
+        $trekkingEquipment = "";
+        if(in_array(2,$destinationIds)){
+            $trekkingEquipment .= "Gas masks and trekking poles for the Ijen Crater hike, and headlamps for the Ijen night hike. ";
+            array_push($result['package']['included'],"<b>Medical Check-up:</b> Ijen authorities require a doctor's health certificate. This check-up will be conveniently arranged at your hotel in Bondowoso the evening before your trek. You only need your passport");
+        }
+        if(in_array(6,$destinationIds)){
+            $trekkingEquipment .= "Helmets for Madakaripura Waterfall are provided by local management.";
+        }
+        if($trekkingEquipment != ''){
+            array_push($result['package']['included'],'<b>Trekking Equipment: '.$trekkingEquipment.'</b>');
+        }
+        if($package->end_destination_id == 3){
+            array_push($result['package']['included'], '<b>Ferry Tickets:</b> From Ketapang Harbour to Bali (public ferry with air-conditioned cabins).');
+        }
+        $result['package']['exclude'] = [
+            "<b>International/Domestic Air Tickets:</b> To and from your tour's starting and ending points.",
+            '<b>Indonesian VISA:</b> (If applicable).',
+            '<b>Travel Insurance:</b> Optional but highly recommended for peace of mind, covering trip interruptions, medical emergencies, and lost luggage.',
+            '<b>Meals Not Stated in Itinerary:</b> Specific lunches and additional dinners are at your own expense.',
+            "<b>Personal Expenses:</b> Such as snacks, souvenirs, beverages, laundry, etc. It is recommended to carry at least IDR 500,000 per person for these.",
+            "<b>Tips:</b> For drivers and guides (at your discretion).",
+        ];
+
+
+        $packingListBromoIjen = "";
+        $packingListWaterfall = "";
+        $packingListTreks = "";
+        $packingListWaterfallFootwear = "";
+        if(in_array(1,$destinationIds) || in_array(2,$destinationIds)){
+            $excludeActivityBromo = "";
+            $excludeActivityIjen = "";
+            
+            $packingListBromoIjenIds = [];
+            if(in_array(1,$destinationIds)){
+                $excludeActivityBromo = "<li>Horse ride at Mount Bromo: (Optional) Typically IDR 150,000–350,000 per person, payable directly to local horsemen on-site.</li>";
+                array_push($packingListBromoIjenIds,"Bromo");
+            }
+            if(in_array(2,$destinationIds)){
+                $excludeActivityIjen = "<li>Ijen Ojek Trolley Service: (Optional) Available for an additional fee if assistance is needed during the trek.</li>";
+                array_push($packingListBromoIjenIds,"Ijen");
+            }
+            $excludeActivities = "<b>Optional Activities:</b><ul>".$excludeActivityBromo.$excludeActivityIjen."</ul>";
+            array_push($result['package']['exclude'],$excludeActivities);
+            
+            $packingListBromoIjen = "<li><b>Evenings & Treks (".implode('/',$packingListBromoIjenIds)."):</b> Warm layers are crucial as temperatures can drop below 10°C (41°F). This includes a thermal jacket, warm hat, and gloves.</li>";
+        }
+        if(in_array(6,$destinationIds) ||in_array(7,$destinationIds)){
+            $packingListWaterfallIds = [];
+            if(in_array(6,$destinationIds)){
+                array_push($packingListWaterfallIds,'Madakaripura');
+            }
+            if(in_array(7,$destinationIds)){
+                array_push($packingListWaterfallIds,'Tumpak Sewu');
+            }
+            $packingListWaterfallFootwear = "<li><b>Waterfalls (".implode('/',$packingListWaterfallIds)."):</b> Trekking sandals or water shoes with good grip are highly recommended for navigating slippery terrain and walking through water.</li>";
+            $packingListWaterfall = "<li><b>Waterfalls (".implode('/',$packingListWaterfallIds)."):</b> Quick-dry clothes and a poncho are essential, as you will get wet.</li>";
+        }
+        if(in_array(1,$destinationIds) || in_array(2,$destinationIds) || in_array(6,$destinationIds) || in_array(7,$destinationIds)){
+            $packingListTreksIds = [];
+            if(in_array(1,$destinationIds)){
+                array_push($packingListTreksIds,'Bromo');
+            }
+            if(in_array(2,$destinationIds)){
+                array_push($packingListTreksIds,'Ijen');
+            }
+            if(in_array(6,$destinationIds)){
+                array_push($packingListTreksIds,'Madakaripura');
+            }
+            if(in_array(7,$destinationIds)){
+                array_push($packingListTreksIds,'Tumpak Sewu');
+            }
+
+            $packingListTreks = "<li><b>Treks (".implode('/',$packingListTreksIds)."):</b> Sturdy hiking boots with excellent grip and ankle support are indispensable.</li>";
+        }
+        if($package->start_destination_id == 17 || $package->end_destination_id == 17){
+            array_push($result['package']['exclude'],"<b>Train Tickets:</b> (e.g., for travel to/from Yogyakarta, not applicable for this package but generally excluded).");
+        }
+
+        if(in_array(2,$destinationIds)){
+            $result['package']['before_you_go']['mandatory_requirements_for_ijen_trekking'] = [
+                "<b>Medical Check-up:</b>Ijen authorities require a doctor's health certificate. This check-up (costing IDR 35,000-50,000) will be conveniently arranged at your hotel in Bondowoso the evening before your trek. You only need your passport.","<b>Printed Passport Copy:</b>A clear, printed copy of your passport is essential for permit processing at the Ijen site."
+            ];
+        }
+        $result['package']['before_you_go']['recommended_packing_list'] = [
+            "<b>Clothing for Varied Climates:</b><ul><li><b>Daytime:</b> Light, breathable attire for warmer temperatures.</li>$packingListBromoIjen<li><b>Rain Gear:</b> A reliable rain jacket or poncho for unexpected weather changes.</li>$packingListWaterfall</ul>",
+            "<b>Health & Safety Priorities:</b><ul><li><b>Personal Medication:</b> Any prescription or essential personal medications.</li><li><b>First Aid:</b> A basic personal first aid kit (JVTO supplements with additional supplies).</li><li><b>Sun Protection:</b> High SPF sunscreen, a wide-brimmed hat, and sunglasses.</li><li><b>Insect Repellent:</b> To guard against mosquitoes and other insects.</li></ul>",
+            "<b>Photography Gear:</b> Camera with spare batteries and memory cards. A protective cover for your camera against sulfur gases at Ijen. Drones are allowed, provided safety guidelines are adhered to.",
+            "<b>Personal Expenses:</b> We recommend carrying at least IDR 500,000 per person."
+        ];
+        if(in_array(6,$destinationIds) ||in_array(7,$destinationIds)){
+            array_push($result['package']['before_you_go']['recommended_packing_list'],"<b>Footwear Essentials:</b><ul>$packingListTreks"."$packingListWaterfallFootwear</ul>");
+        }
+        if(in_array(1,$destinationIds) ||in_array(2,$destinationIds)){
+            array_push($result['package']['before_you_go']['recommended_packing_list'],"<b>Essential Gear:</b><ul>".(in_array(2,$destinationIds) ? "<li><b>Illumination:</b> A flashlight or headlamp (provided by JVTO for Ijen night hikes).</li>" : "").(in_array(1,$destinationIds) || in_array(2,$destinationIds) ? "<li><b>Protection:</b> ".(in_array(2,$destinationIds) ? "Gas masks for sulfur fumes at Ijen (provided by JVTO, personal ones are advisable)." : "").(in_array(1,$destinationIds) ? "A dust mask is useful for the \"Sea of Sand\" at Bromo. Waterproof bags/dry sacks for electronics, especially at waterfalls." : "")."</li>" : "" )."</ul>");
+        }
+        $result['package']['before_you_go']['general_travel_tips'] = [
+            "<b>Currency Exchange:</b> We strongly advise against using airport money changers due to poor exchange rates. Ensure you have access to reliable IDR cash sources (ATMs or local money changers outside the airport).",
+        ];
+        if(in_array(2,$destinationIds)){
+            array_push($result['package']['before_you_go']['general_travel_tips'],"<b>Jewelry:</b> It is advised to avoid wearing jewelry at Ijen to prevent tarnishing due to sulfur.");
+        }
+        if(in_array(1,$destinationIds)){
+            array_push($result['package']['before_you_go']['general_travel_tips'],"<b>Luggage Handling:</b> During activities like the Bromo jeep ride, large bags can be safely left at your hotel; only essentials are needed.");
+        }
+        $result['package']['before_you_go']['safety_and_support'] = [
+            "<b>JVTO Safety Record:</b> JVTO maintains a 100% safety record and takes great care of all guests.",
+            "<b>Emergency Contact Information:</b> For any questions or immediate assistance during your trip, contact the dedicated JVTO Support Team via WhatsApp at +62822-4478-8833 or email at javavolcanotouroperator@gmail.com.",
+            "<b>Travel Insurance:</b> Optional but recommended. JVTO can provide an official letter regarding non-refundable terms for insurance claims."
+        ];
+        $result['package']['before_you_go']['travel_insurance'] = [
+            "Optional but recommended. JVTO can provide an official letter regarding non-refundable terms for insurance claims."
+        ];
+        $result['package']['terms_and_conditions']['confirmation'] = [
+            "You'll get confirmation within minutes. If you don't see any confirmation, reach out to our customer support.",
+        ];
+        $result['package']['terms_and_conditions']['cancellation_policy'] = [
+            "<ul><li><b>Within 48 hours of tour start or No-Shows:</b> No refund will be issued for cancellations.</li><li><b>Late Payments:</b> Failure to meet payment deadlines may result in booking cancellation without refund.</li><li><b>Injury during tour:</b> If an incident (e.g., injury) occurs during the tour, JVTO will provide immediate assistance (e.g., transport to a hospital). However, full refunds are typically not provided as tour services (transport, crew, logistics) will have already commenced or been mobilized.</li></ul>",
+        ];
+        $result['package']['terms_and_conditions']['rescheduling_policy'] = [
+            "<ul><li><b>More than 48 hours prior to tour:</b> Rescheduling incurs no charge.</li><li><b>Within 48 hours of tour start:</b> Rescheduling is possible and will not incur a charge, subject to availability and potential itinerary adjustments.</li></ul>",
+        ];
+        $result['package']['terms_and_conditions']['skipped_attractions'] = [
+            "<b>Skipped Attractions:</b><ul><li>Refunds are generally not provided for skipped attractions once the tour has commenced or tickets have been booked, as all services are integrated into the package price.</li></ul>",
+        ];
+        $result['package']['terms_and_conditions']['unforeseen_circumstances'] = [
+            "<ul><li>JVTO monitors weather conditions and adjusts itineraries for safety (e.g., during the rainy season or foggy mornings).</li><li>In cases of flight cancellations or other unforeseen circumstances, JVTO can provide an official letter stating the non-refundable terms for insurance claims.</li></ul>"];
+        $result['package']['terms_and_conditions']['full_terms'] = [
+            "For a comprehensive understanding of all booking terms, conditions, and policies, please refer to our official website: https://javavolcano-touroperator.com/terms-and-condition."
+        ];
+        $result['package']['faq'] = [
+            [
+                'question' => 'What kind of tours do you offer?',
+                'answer' => 'All tour packages are private and structured as all-inclusive packages. We provide personalized experiences with dedicated guides and transportation.'
+            ],
+            [
+                'question' => 'Can I customize my tour?',
+                'answer' => 'Yes, minor adjustments and "micro-tweaks" to the itinerary are allowed. However, major detours from the planned route are discouraged to ensure the best experience and safety.'
+            ],
+            [
+                'question' => 'How do I confirm my booking?',
+                'answer' => 'A deposit of 20% is required to confirm your booking. The remaining balance must be paid 3 days before the tour begins. If you book less than 24 hours in advance, 100% upfront payment is required.'
+            ],
+            [
+                'question' => 'What payment methods are accepted?',
+                'answer' => 'Payment can be made via cash, bank transfer, or other Wise-approved channels. We accept major credit cards, bank transfers, and cash (pre-approved).'
+            ],
+            [
+                'question' => 'What happens if the weather is bad?',
+                'answer' => 'JVTO continuously monitors weather conditions. For safety reasons, we may adjust itineraries during extreme weather (heavy rain, thick fog). Tours typically continue in light rain. If major attractions are completely inaccessible due to weather, we\'ll provide alternative activities when possible.'
+            ],
+            [
+                'question' => 'Is this tour suitable for children or elderly people?',
+                'answer' => 'This tour requires good physical fitness due to early starts, hiking, and potentially challenging conditions. Children under 12 and elderly individuals with mobility issues should carefully consider their abilities. The Ijen trek is not suitable for those with respiratory conditions due to sulfur exposure.'
+            ],
+            [
+                'question' => 'Do you cater to dietary restrictions?',
+                'answer' => 'Yes, we can accommodate most dietary requirements including vegetarian, vegan, halal, and basic food allergies. Please inform us of any dietary restrictions during booking so we can arrange appropriate meals. Some remote locations may have limited options.'
+            ],
+            [
+                'question' => 'What about transportation and group size?',
+                'answer' => 'Transportation is by private air-conditioned vehicle (MPV for 1-3 guests, Toyota Hiace Van for 4-11 guests) with professional driver. For Bromo, we use private 4WD jeeps. Group sizes are typically small (2-11 people) for personalized service and safety.'
+            ],
+            [
+                'question' => 'What languages do the guides speak?',
+                'answer' => 'All our guides are experienced and speak English fluently. For groups of 2-3 guests, you\'ll have a driver-guide. For 4+ guests, we provide separate local guides at each main destination for more detailed explanations and cultural insights.'
+            ],
+            [
+                'question' => 'What benefits are there for large groups?',
+                'answer' => '<strong>Group Benefits:</strong> 18+ pax: 1 person travels free of charge (FOC). 35+ pax: 2 people travel FOC. 50+ pax: 3 people travel FOC, plus a 5% discount on the total price.'
+            ],
+            [
+                'question' => 'What is your safety record?',
+                'answer' => 'The company has a 100% safety record. The team consists of dedicated and respectful local crew who provide extra care for children. Immediate assistance is provided in case of medical issues. A nurse visit can be arranged to obtain the Ijen health certificate for a fee of IDR 30,000-50,000.'
+            ]
+        ];        
+        return $result;
+        });
+        return $package;
+
+    }
+
+
     function jsonSource(){
-        $customer = Booking::with(['bookingDetail','user.country'])->where('status', 'booked')->where('agent_id',2)->where('booking_category_id', '!=', 3)->where('travel_date_start','like','%'.date('Y-m').'%')->orderBy('travel_date_start','asc')->limit(5)->get()->map(function ($booking) {
+        // return $this->packageDetailJson();
+        $customer = Booking::with(['bookingDetail','user.country'])->where('status', 'booked')->where('agent_id',2)->where('travel_date_start','like','%'.date('Y-m').'%')->orderBy('travel_date_start','asc')->get()->map(function ($booking) {
             $tshirtSizes = [];
             if ($booking->bookingDetail[0]->xss != 0) {
                 array_push($tshirtSizes, "XSS x " . $booking->bookingDetail[0]->xss);
@@ -426,23 +993,112 @@ class ScheduleController extends Controller
             $tshirtSize = implode(', ', $tshirtSizes);
 
             return [
-                "customer_id" => "JVTO-C-".$booking->user->id,
+                "customer_id" => $booking->user->id,
                 "name" => $booking->user->name,
-                "passport_number" => null,
                 "email" => $booking->user->email,
                 "phone" => $booking->user->phone,
                 "country" => $booking->user->country ? $booking->user->country->long_name : null,
                 "t_shirt_size" => $tshirtSize,
-                "dietary_restrictions" => null,
-                "emergency_contact_name" => null,
-                "emergency_contact_phone" => null,
+                "dietary_restrictions" => $booking->special_requirements,
                 "trip_media_url" => $booking->media_link
             ];
         });
 
-        return [
-            'customer' => $customer,
-        ];
+        $crewMember = GuideDriver::orderBy('name','asc')->get()->map(function ($crew) {
+            $recapEscort = BookGuideDriver::where('guide_id', $crew->id)->where('guide_ijen', '0')->where('start_date', 'like', date('Y-m')."%")->count();
+            $recapIjen = BookGuideDriver::where('guide_id', $crew->id)->where('guide_ijen', '0')->where('start_date', 'like', date('Y-m')."%")->count();
+
+            return [
+                "crew_member_id" => $crew->id,
+                "name" => $crew->name,
+                "phone" => $crew->phone,
+                "type" => $crew->is_driver ? "Driver" : "Guide",
+                "photo_url" => $crew->photo ? 'https://javavolcano-touroperator.com/assets/img/guide/' . $crew->photo : 'https://javavolcano-touroperator.com/assets/img/guide/default.jpg',
+                "tags" => $crew->tags,
+                "monthly_escorts_recap" => $recapEscort,
+                "monthly_ijen_escorts_recap" => $recapIjen
+            ];
+        });
+
+        $hotels = Hotel::with(['roomConfigurations','roomHotel'])->whereIn('id',[34,11,33,6])->get()->map(function ($hotel) {
+            $groupedByPax = $hotel->roomConfigurations->groupBy('pax');
+            $facilities = $hotel->facilities == '' ? '[]' : $hotel->facilities;
+            eval("\$facilitiesArray = $facilities;");
+            return [
+                "hotel_id" => $hotel->id,
+                "name" => $hotel->name,
+                "location" => $hotel->address,
+                'facilities' => $facilitiesArray,
+                "url" => $hotel->map_url,
+                "banner_image_url" => "https://javavolcano-touroperator.com/assets/img/hotels/".$hotel->banner,
+                "room_types" => $hotel->roomHotel->map(function ($room) {
+                    return [
+                        'room_type_id' => "ROOM-".str_replace(" ","-",strtoupper($room->room_name)),
+                        'name' => $room->room_name,
+                        'price' => $room->rate,
+                    ];
+                }),
+                'lodging_rules' => $groupedByPax->map(function ($configs, $pax) {
+                    return [
+                        'pax' => (int)$pax,
+                        'configuration' => $configs->pluck('room.room_name')->unique()->values()->toArray()
+                    ];
+                })->values()->toArray()
+            ];
+        });
+
+        $vehicles = Car::whereIn('id', [1, 2, 5, 21, 24, 25])->get()->map(function ($car) {
+            return [
+                'vehicle_type_id' => $car->id,
+                'name' => $car->name,
+                'rate' => $car->price,
+                'capacity' => $car->start_pax." ".($car->end_pax == 0 ? 'Pax Above' : ($car->start_pax == $car->end_pax ? "Pax" : " - ".$car->end_pax." Pax")),
+            ];
+        });
+
+        $crewRoles = CrewRole::where('order_channel_id', 1)->get()->map(function ($role) {
+            return [
+                'crew_role_id' => $role->id,
+                'name' => $role->role,
+                'rate' => $role->rate,
+            ];
+        });
+
+        $destinations = Destination::with(['gallery','destinationDetail','activity' => function($query){
+                $query->where('is_default_jvto','1');
+            }])->whereIn('id', [1, 2, 7, 6, 9])->get()->map(function ($destination) {
+            return [
+                "destination_id" => $destination->id,
+                "name" => $destination->name,
+                "thumbnail_url" => "https://javavolcano-touroperator.com/assets/img/destinations/" . $destination->gallery->image,
+                "description" => $destination->description,
+                "weather_by_season" => $destination->destinationDetail->weather_by_season,
+                "rainfall_intensity" => $destination->destinationDetail->rainfall_intensity,
+                "trail_details" => $destination->destinationDetail->trail_details,
+                "required_gear" => $destination->destinationDetail->required_gear,
+                "difficulty_level" => $destination->destinationDetail->difficulty_level,
+                "environmental_factors" => $destination->destinationDetail->environmental_factors,
+                "physical_requirements" => $destination->destinationDetail->physical_requirements,
+                "main_attractions" => $destination->destinationDetail->main_attractions,
+                "best_time_to_visit" => $destination->destinationDetail->best_time_to_visit,
+                "tips_for_visitors" => $destination->destinationDetail->tips_for_visitors,
+                "activities" => $destination->activity->map(function ($activity) {
+                    return [
+                        'activity_id' => "ACT-".str_replace(" ","-",strtoupper($activity->name)),
+                        'name' => $activity->name,
+                        'unit' => $activity->unit,
+                        'price' => (int)$activity->price,
+                    ];
+                })
+            ];
+        });
+
+            return $customer;
+            // return $crewMember;
+            // return $hotels;
+            // return $vehicles;
+            // return $crewRoles;
+            // return $destinations;
     }
 
     function details($id)

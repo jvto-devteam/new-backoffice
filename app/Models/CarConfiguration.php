@@ -54,4 +54,9 @@ class CarConfiguration extends Model
     {
         return $this->belongsTo(CrewRole::class, 'crew_klook_role_id');
     }
+    public function crewRole()
+    {
+        return $this->belongsTo(CrewRole::class, 'crew_jvto_role_id');
+    }
+
 }

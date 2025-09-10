@@ -13,7 +13,12 @@ class ExportDataHotel extends Controller
         $roomTypes = RoomHotel::whereHas('hotel', function ($query) {
             $query->where('is_publish', 1);
         })
-            ->orderBy('hotel_id')
+            ->orderBy('id','asc');
+        if(request()->limit){
+            $roomTypes = $roomTypes->limit(request()->limit);
+        }
+
+        $roomTypes = $roomTypes
             ->get()
             ->map(function ($data) {
                 return [
@@ -35,7 +40,12 @@ class ExportDataHotel extends Controller
         return ExportCSV::export('room_types.csv', $columns, $roomTypes);
     }
     function hotels(){
-        $hotels = Hotel::where('is_publish','1')->get()
+        $hotels = Hotel::where('is_publish','1')->orderBy('id','asc');
+        if(request()->limit){
+            $hotels = $hotels->limit(request()->limit);
+        }
+        $hotels = $hotels
+        ->get()
         ->map(function($data){
             return [
                 'id' => $data->id,

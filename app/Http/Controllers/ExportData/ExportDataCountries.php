@@ -9,7 +9,13 @@ use Illuminate\Http\Request;
 class ExportDataCountries extends Controller
 {
     function countries(){
-        $countries = Country::orderBy('long_name')->get(['id','short_name', 'long_name','dial_code','created_at','updated_at','deleted_at']);        
+        $countries = Country::orderBy('id','asc');
+        
+        if(request()->limit){
+            $countries = $countries->limit(request()->limit);
+        }
+        $countries = $countries
+        ->get(['id','short_name', 'long_name','dial_code','created_at','updated_at','deleted_at']);        
         $columns = ['id','short_name', 'long_name','dial_code','created_at','updated_at','deleted_at'];
         return ExportCSV::export('countries.csv', $columns, $countries->toArray());
     }

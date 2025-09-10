@@ -9,7 +9,13 @@ use Illuminate\Http\Request;
 class ExportDataDestinations extends Controller
 {
     function destinations(){
-        $destinations = Destination::with('destinationDetail')->where('is_publish', '1')->get()
+        $destinations = Destination::with('destinationDetail')->where('is_publish', '1')->orderBy('id','asc');
+        
+        if(request()->limit){
+            $destinations = $destinations->limit(request()->limit);
+        }
+        $destinations = $destinations
+        ->get()
         ->map(function ($data) {
             return [
                 'id' => $data->id,

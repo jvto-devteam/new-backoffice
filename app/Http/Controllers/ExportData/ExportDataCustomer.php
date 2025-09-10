@@ -9,7 +9,13 @@ use Illuminate\Http\Request;
 class ExportDataCustomer extends Controller
 {
     function customers(){
-        $customers = Booking::with('user')->where('status','booked')->where('travel_date_start','>=','2024-09-01')->get()->map(function($query){
+        $customers = Booking::with('user')->where('status','booked')->where('travel_date_start','>=','2024-09-01')->orderBy('user_id','asc');
+        
+        if(request()->limit){
+            $customers = $customers->limit(request()->limit);
+        }
+        $customers = $customers
+        ->get()->map(function($query){
             return [
                 'id' => $query->user->id,
                 'name' => $query->user->name,

@@ -22,4 +22,9 @@ class Gallery extends Model
         return $this->hasOne(PackageBanner::class, 'gallery_id');
     }
 
+    public function destinationGallery()
+    {
+        return $this->belongsTo(Destination::class, 'destination_id');
+    }
+
 }

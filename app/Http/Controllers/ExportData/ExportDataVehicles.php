@@ -10,7 +10,13 @@ class ExportDataVehicles extends Controller
 {
     function vehicleTypes()
     {
-        $vehicle = Car::whereIn('id', [1, 2, 5, 14, 24, 25])->get(['id', 'car_name as name', 'start_pax as capacity_min_pax', 'end_pax as capacity_max_pax', 'price as price_per_day', 'price_twt as twt_price_per_day', 'created_at', 'updated_at', 'deleted_at'])
+        $vehicle = Car::whereIn('id', [1, 2, 5, 14, 24, 25])->orderBy('id','asc');
+        
+        if(request()->limit){
+            $vehicle = $vehicle->limit(request()->limit);
+        }
+        $vehicle = $vehicle
+        ->get(['id', 'car_name as name', 'start_pax as capacity_min_pax', 'end_pax as capacity_max_pax', 'price as price_per_day', 'price_twt as twt_price_per_day', 'created_at', 'updated_at', 'deleted_at'])
             ->values() // reset index
             ->map(function ($item, $index) {
                 $item->id = $index + 1; // ganti id mulai dari 1
@@ -30,7 +36,13 @@ class ExportDataVehicles extends Controller
             'Mini Bus (Elf)' => 6,
         ];
 
-        $vehicleUnits = Car::where('is_publish', '1')->get()->map(function ($data) use ($vehicleTypes) {
+        $vehicleUnits = Car::where('is_publish', '1')->orderBy('id','asc');
+        
+        if(request()->limit){
+            $vehicleUnits = $vehicleUnits->limit(request()->limit);
+        }
+        $vehicleUnits = $vehicleUnits
+        ->get()->map(function ($data) use ($vehicleTypes) {
             return [
                 'id' => $data->id,
                 'vehicle_type_id' => $vehicleTypes[$data->car_name] ?? $data->car_name,

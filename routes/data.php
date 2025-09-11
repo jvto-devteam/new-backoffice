@@ -1,11 +1,14 @@
 <?php
 
+use App\Http\Controllers\ExportData\ExportDataAddons;
+use App\Http\Controllers\ExportData\ExportDataAllController;
 use App\Http\Controllers\ExportData\ExportDataCountries;
 use App\Http\Controllers\ExportData\ExportDataCrew;
 use App\Http\Controllers\ExportData\ExportDataCustomer;
 use App\Http\Controllers\ExportData\ExportDataDestinations;
 use App\Http\Controllers\ExportData\ExportDataHotel;
 use App\Http\Controllers\ExportData\ExportDataPackage;
+use App\Http\Controllers\ExportData\ExportDataPriceTiers;
 use App\Http\Controllers\ExportData\ExportDataVehicles;
 use App\Http\Controllers\ExportData\ExportIncludeExclude;
 use App\Http\Controllers\ExportDataController;
@@ -40,10 +43,21 @@ Route::prefix('export-data')->group(function () {
         Route::get('/package-images', [ExportDataPackage::class, 'packageImages']);
         Route::get('/package-includes', [ExportDataPackage::class, 'packageIncludes']);
         Route::get('/package-excludes', [ExportDataPackage::class, 'packageExcludes']);
+        Route::get('/package-addons', [ExportDataPackage::class, 'packageAddons']);
+        Route::get('/package-prices', [ExportDataPackage::class, 'packagePrices']);
+        Route::get('/package-itinerary-days', [ExportDataPackage::class, 'packageItineraryDays']);
     });
     Route::prefix('include-exclude')->group(function () {
         Route::get('/item-includes', [ExportIncludeExclude::class, 'include']);
         Route::get('/item-excludes', [ExportIncludeExclude::class, 'exclude']);
     });
+    Route::prefix('addons')->group(function () {
+        Route::get('/addons', [ExportDataAddons::class, 'addons']);
+    });
+    Route::prefix('price-tiers')->group(function () {
+        Route::get('/price-tiers', [ExportDataPriceTiers::class, 'priceTiers']);
+    });
+    Route::get('/all', [ExportDataAllController::class, 'all']);
 });
+
 

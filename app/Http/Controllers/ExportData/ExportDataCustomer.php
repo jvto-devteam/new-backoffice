@@ -20,6 +20,7 @@ class ExportDataCustomer extends Controller
                 'id' => $query->user->id,
                 'name' => $query->user->name,
                 'email' => $query->user->email,
+                'order_channel_id' => $query->agent_id == 1 ? 2 : ($query->booking_category_id == 3 ? 3 : 1),
                 'phone' => $query->user->phone,
                 'country_id' => $query->user->country_id,
                 'google_id' => $query->user->google_id,
@@ -28,7 +29,7 @@ class ExportDataCustomer extends Controller
                 'deleted_at' => $query->user->deleted_at,
             ];
         })->unique('id')->values()->toArray();
-        $columns = ['id', 'name', 'email', 'phone', 'country_id', 'google_id', 'created_at', 'updated_at', 'deleted_at'];
+        $columns = ['id', 'name', 'email', 'phone', 'country_id','order_channel_id', 'google_id', 'created_at', 'updated_at', 'deleted_at'];
         return ExportCSV::export('customers.csv', $columns, $customers);
     }
 }

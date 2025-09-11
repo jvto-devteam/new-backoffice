@@ -48,7 +48,7 @@ class ExportDataCrew extends Controller
                     'type' => $query->is_driver == '1' ? 'driver' : 'guide',
                     'tags' => $query->tags,
                     'phone' => $query->phone,
-                    'photo_url' => $query->photo ? '/img/guide/' . $query->photo : '/img/guide/default.jpg',
+                    'photo_url' => $query->photo ? '/img/crews/' . $query->photo : '/img/crews/default.jpg',
                     'created_at' => $query->created_at,
                     'updated_at' => $query->updated_at,
                     'deleted_at' => $query->deleted_at,

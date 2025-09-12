@@ -11,6 +11,7 @@ use App\Http\Controllers\ExportData\ExportDataPackage;
 use App\Http\Controllers\ExportData\ExportDataPriceTiers;
 use App\Http\Controllers\ExportData\ExportDataVehicles;
 use App\Http\Controllers\ExportData\ExportIncludeExclude;
+use App\Http\Controllers\ExportData\ExportDataActivities;
 use App\Http\Controllers\ExportDataController;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +57,10 @@ Route::prefix('export-data')->group(function () {
     });
     Route::prefix('price-tiers')->group(function () {
         Route::get('/price-tiers', [ExportDataPriceTiers::class, 'priceTiers']);
+    });
+    Route::prefix('activities')->group(function () {
+        Route::get('/activities', [ExportDataActivities::class, 'activities']);
+        Route::get('/activity_categories', [ExportDataActivities::class, 'activity_categories']);
     });
     Route::get('/all', [ExportDataAllController::class, 'all']);
 });

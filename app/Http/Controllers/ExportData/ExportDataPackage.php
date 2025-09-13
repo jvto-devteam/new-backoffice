@@ -6,8 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\AddOn;
 use App\Models\AddOnPackage;
 use App\Models\Category;
+use App\Models\Itinerary;
+use App\Models\ItineraryDetail;
 use App\Models\Package;
 use App\Models\PackageBanner;
+use App\Models\PackageDestination;
+use App\Models\PackageHotel;
 use App\Models\PackagePrice;
 use App\Services\IncludeExcludeService;
 use Carbon\Carbon;
@@ -244,6 +248,109 @@ class ExportDataPackage extends Controller
         return ExportCSV::export('package_prices.csv', $columns, $packagePrices);
     }
     function packageItineraryDays() {
-        
+        $itinerary = Itinerary::with(['package.packageHotel' => function($query){
+            $query->where('price_plan_id', 2);
+        }, 'itineraryMeals' => function($query){
+            $query->where('price_plan_id', 2);
+        }])->whereHas('package', function ($query) {
+            $query->where('is_publish', '1');
+        })->orderBy('id', 'asc');
+
+        if (request()->limit) {
+            $itinerary = $itinerary->limit(request()->limit);
+        }
+        $itinerary = $itinerary
+            ->get()->map(function ($data) {
+                return [
+                    'id' => $data->id,
+                    'package_id' => $data->package_id,
+                    'day_no' => $data->day,
+                    'activity_start_id' => $data->activity_start_id,
+                    'activity_end_id' => $data->activity_end_id,
+                    'title' => $data->title,
+                    'activity' => $data->activity,
+                    'hotel_id' => $data->package->packageHotel->where('day', $data->day)->first()->hotel_id ?? null,
+                    'meal_breakfast' => (int)($data->itineraryMeals[0]->breakfast ?? 0),
+                    'meal_lunch' => (int)($data->itineraryMeals[0]->lunch ?? 0),
+                    'meal_dinner' => (int)($data->itineraryMeals[0]->dinner ?? 0),
+                    'created_at' => $data->created_at,
+                    'updated_at' => $data->updated_at,
+                    'deleted_at' => $data->deleted_at,
+                ];
+            })->toArray();
+        $columns = ['id', 'package_id', 'day_no', 'activity_start_id', 'activity_end_id', 'title', 'activity', 'hotel_id', 'meal_breakfast', 'meal_lunch', 'meal_dinner', 'created_at', 'updated_at', 'deleted_at'];
+        return ExportCSV::export('package_itinerary_days.csv', $columns, $itinerary);
     }
+
+    function packageItineraryDayDetails(){
+        $itineraryDetails = ItineraryDetail::with('itinerary')->whereHas('itinerary.package', function ($query) {
+            $query->where('is_publish', '1');
+        })->orderBy('id', 'asc');
+        if (request()->limit) {
+            $itineraryDetails = $itineraryDetails->limit(request()->limit);
+        }
+        $itineraryDetails = $itineraryDetails
+            ->get()->map(function ($data) {
+                return [
+                    'id' => $data->id,
+                    'itinerary_day_id' => $data->itinerary_id,
+                    'sort_order' => $data->no,
+                    'time' => $data->time,
+                    'activity_id' => $data->activity_id,
+                    'notes' => $data->notes,
+                    'created_at' => $data->created_at,
+                    'updated_at' => $data->updated_at,
+                    'deleted_at' => $data->deleted_at,
+                ];
+            })->toArray();
+        $columns = ['id', 'itinerary_day_id', 'sort_order', 'time', 'activity_id', 'notes', 'created_at', 'updated_at', 'deleted_at'];
+        return ExportCSV::export('package_itinerary_day_details.csv', $columns, $itineraryDetails);
+    }
+
+    function packageDestinations(){
+        $packageDestination = PackageDestination::with('package')->whereHas('package', function ($query) {
+            $query->where('is_publish', '1');
+        })->orderBy('id', 'asc');
+        if (request()->limit) {
+            $packageDestination = $packageDestination->limit(request()->limit);
+        }
+        $packageDestination = $packageDestination->get()->map(function ($data) {
+            return [
+                'id' => $data->id,
+                'package_id' => $data->package_id,
+                'destination_id' => $data->destination_id,
+                'sort_order' => 0,
+                'created_at' => $data->created_at,
+                'updated_at' => $data->updated_at,
+                'deleted_at' => $data->deleted_at,
+            ];
+        })->toArray();
+        $columns = ['id', 'package_id', 'destination_id', 'sort_order', 'created_at', 'updated_at', 'deleted_at'];
+        return ExportCSV::export('package_destinations.csv', $columns, $packageDestination);
+    }
+
+    function packageHotelOptions(){
+        $packageHotelOptions = PackageHotel::with('package')->whereHas('package', function ($query) {
+            $query->where('is_publish', '1');
+        })->where('price_plan_id',2)->orderBy('id', 'asc');
+        if (request()->limit) {
+            $packageHotelOptions = $packageHotelOptions->limit(request()->limit);
+        }
+        $packageHotelOptions = $packageHotelOptions
+            ->get()->map(function ($data) {
+                return [
+                    'id' => $data->id,
+                    'package_id' => $data->package_id,
+                    'day_no' => $data->day,
+                    'hotel_id' => $data->hotel_id,
+                    'created_at' => $data->created_at,
+                    'updated_at' => $data->updated_at,
+                    'deleted_at' => $data->deleted_at,
+                ];
+            })->toArray();
+        $columns = ['id', 'package_id', 'day_no', 'hotel_id', 'created_at', 'updated_at', 'deleted_at'];
+        return ExportCSV::export('package_hotel_options.csv', $columns, $packageHotelOptions);
+    }
+
 }
+

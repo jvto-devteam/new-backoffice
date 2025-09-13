@@ -47,6 +47,9 @@ Route::prefix('export-data')->group(function () {
         Route::get('/package-addons', [ExportDataPackage::class, 'packageAddons']);
         Route::get('/package-prices', [ExportDataPackage::class, 'packagePrices']);
         Route::get('/package-itinerary-days', [ExportDataPackage::class, 'packageItineraryDays']);
+        Route::get('/package-itinerary-day-details', [ExportDataPackage::class, 'packageItineraryDayDetails']);
+        Route::get('/package-destinations', [ExportDataPackage::class, 'packageDestinations']);
+        Route::get('/package-hotel-options', [ExportDataPackage::class, 'packageHotelOptions']);
     });
     Route::prefix('include-exclude')->group(function () {
         Route::get('/item-includes', [ExportIncludeExclude::class, 'include']);

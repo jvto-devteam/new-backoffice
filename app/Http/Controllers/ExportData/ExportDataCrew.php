@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\ExportData;
 
 use App\Http\Controllers\Controller;
+use App\Models\CarConfiguration;
 use App\Models\CrewRole;
 use App\Models\GuideDriver;
 use Illuminate\Http\Request;
@@ -103,7 +104,73 @@ class ExportDataCrew extends Controller
         $columns = ['id', 'crew_member_id', 'crew_role_id', 'created_at', 'updated_at', 'deleted_at'];
         return ExportCSV::export('crew_member_roles.csv', $columns, $crew_role_pivot);
     }
-    function transportCrewRules(){
-        
+    function transportCrewRules()
+    {
+        $vehicleTypes = [
+            'MPV' => 1,
+            'Innova' => 2,
+            'Hiace' => 3,
+            'Hiace Premio' => 4,
+            'Medium Bus' => 5,
+            'Mini Bus (Elf)' => 6,
+        ];
+        $carConfigunations = CarConfiguration::orderBy('id', 'asc');
+        if (request()->limit) {
+            $carConfigunations = $carConfigunations->limit(request()->limit);
+        }
+        $carConfigunations = $carConfigunations
+            ->get()->map(function ($data) use ($vehicleTypes) {
+                return [
+                    'id' => $data->id,
+                    'pax' => $data->pax,
+                    'vehicle_type_id' => $vehicleTypes[$data->car->car_name] ?? $data->car->car_name,
+                    'crew_role_id' => $data->crew_jvto_role_id ?? $data->crew_klook_role_id,
+                    'order_channel_id' => $data->crew_jvto_role_id ? 1 : 3,
+                    'created_at' => $data->created_at,
+                    'updated_at' => $data->updated_at,
+                    'deleted_at' => null
+                ];
+            })->toArray();
+        $appendConfigs = [];
+        $id = 24;
+        for ($i = 1; $i <= 10; $i++) {
+            $id++;
+            if ($i <= 2) {
+                // 1-2 pax MPV, Crew Role 1
+                $vehicleTypeId = $vehicleTypes['MPV'];
+                $crewRoleId = 1;
+            } elseif ($i == 3) {
+                // 3 pax Innova, Crew Role 1
+                $vehicleTypeId = $vehicleTypes['Innova'];
+                $crewRoleId = 1;
+            } elseif ($i >= 4 && $i <= 7) {
+                // 4-7 pax Hiace, Crew Role 2
+                $vehicleTypeId = $vehicleTypes['Hiace'];
+                $crewRoleId = 2;
+            } elseif ($i >= 8 && $i <= 9) {
+                // 8-10 pax Hiace Premio, Crew Role 2
+                $vehicleTypeId = $vehicleTypes['Hiace Premio'];
+                $crewRoleId = 2;
+            } else {
+                // pax 10 MPV, Crew Role 4
+                $vehicleTypeId = $vehicleTypes['MPV'];
+                $crewRoleId = 4;
+            }
+
+            $appendConfigs[] = [
+                'id' => $id,
+                'pax' => $i,
+                'vehicle_type_id' => $vehicleTypeId,
+                'crew_role_id' => $crewRoleId,
+                'order_channel_id' => 2,
+                'created_at' => now(),
+                'updated_at' => now(),
+                'deleted_at' => null,
+            ];
+        }
+
+        $carConfigunations = array_merge($carConfigunations, $appendConfigs);
+        $columns = ['id', 'pax', 'vehicle_type_id', 'crew_role_id', 'order_channel_id', 'created_at', 'updated_at', 'deleted_at'];
+        return ExportCSV::export('transport_crew_rules.csv', $columns, $carConfigunations);
     }
 }

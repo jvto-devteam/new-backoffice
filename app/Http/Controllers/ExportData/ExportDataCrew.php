@@ -103,4 +103,7 @@ class ExportDataCrew extends Controller
         $columns = ['id', 'crew_member_id', 'crew_role_id', 'created_at', 'updated_at', 'deleted_at'];
         return ExportCSV::export('crew_member_roles.csv', $columns, $crew_role_pivot);
     }
+    function transportCrewRules(){
+        
+    }
 }

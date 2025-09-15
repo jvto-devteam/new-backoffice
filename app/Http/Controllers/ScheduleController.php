@@ -117,8 +117,8 @@ class ScheduleController extends Controller
                         'date' => date('d M Y', strtotime($booking->travel_date_start . " +$key days")),
                         'itinerary' => $value->itinerary,
                         'activity' => $activity,
-                        'destination_id' => $value->activityStart->destination ? $value->activityStart->destination->id : null,
-                        'destination' => $value->activityStart->destination ? $value->activityStart->destination->name : null,
+                        'destination_id' => $value->activityStart && $value->activityStart->destination ? $value->activityStart->destination->id : null,
+                        'destination' => $value->activityStart && $value->activityStart->destination ? $value->activityStart->destination->name : null,
 
                     ];
                     if (count($value->bookHotel) != 0) {

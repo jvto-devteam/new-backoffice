@@ -12,6 +12,7 @@ use App\Http\Controllers\ExportData\ExportDataPriceTiers;
 use App\Http\Controllers\ExportData\ExportDataVehicles;
 use App\Http\Controllers\ExportData\ExportIncludeExclude;
 use App\Http\Controllers\ExportData\ExportDataActivities;
+use App\Http\Controllers\ExportData\ExportDataPolicies;
 use App\Http\Controllers\ExportDataController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +20,7 @@ Route::prefix('export-data')->group(function () {
     Route::prefix('hotels')->group(function () {
         Route::get('/hotels', [ExportDataHotel::class, 'hotels']);
         Route::get('/room-types', [ExportDataHotel::class, 'roomTypes']);
+        Route::get('/room-configurations', [ExportDataHotel::class, 'roomConfigurations']);
     });
     Route::prefix('vehicles')->group(function () {
         Route::get('/vehicle-types', [ExportDataVehicles::class, 'vehicleTypes']);
@@ -28,6 +30,7 @@ Route::prefix('export-data')->group(function () {
         Route::get('/crew-roles', [ExportDataCrew::class, 'crewRoles']);
         Route::get('/crew-member', [ExportDataCrew::class, 'crewMember']);
         Route::get('/crew-member-roles', [ExportDataCrew::class, 'crewMemberRoles']);
+        Route::get('/transport-crew-rules', [ExportDataCrew::class, 'transportCrewRules']);
     });
     Route::prefix('destinations')->group(function () {
         Route::get('/destinations', [ExportDataDestinations::class, 'destinations']);
@@ -65,7 +68,8 @@ Route::prefix('export-data')->group(function () {
         Route::get('/activities', [ExportDataActivities::class, 'activities']);
         Route::get('/activity_categories', [ExportDataActivities::class, 'activity_categories']);
     });
+    Route::prefix('policies')->group(function () {
+        Route::get('/policies', [ExportDataPolicies::class, 'policies']);
+    });
     Route::get('/all', [ExportDataAllController::class, 'all']);
 });
-
-

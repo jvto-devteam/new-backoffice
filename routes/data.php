@@ -13,6 +13,7 @@ use App\Http\Controllers\ExportData\ExportDataVehicles;
 use App\Http\Controllers\ExportData\ExportIncludeExclude;
 use App\Http\Controllers\ExportData\ExportDataActivities;
 use App\Http\Controllers\ExportData\ExportDataPolicies;
+use App\Http\Controllers\ExportData\ExportDataBookings;
 use App\Http\Controllers\ExportDataController;
 use Illuminate\Support\Facades\Route;
 
@@ -70,6 +71,26 @@ Route::prefix('export-data')->group(function () {
     });
     Route::prefix('policies')->group(function () {
         Route::get('/policies', [ExportDataPolicies::class, 'policies']);
+    });
+    Route::prefix('bookings')->group(function () {
+        Route::get('/bookings', [ExportDataBookings::class, 'bookings']);
+        Route::get('/booking-payment-terms', [ExportDataBookings::class, 'bookingPaymentTerms']);
+        Route::get('/booking-payment-histories', [ExportDataBookings::class, 'bookingPaymentHistories']);
+        Route::get('/booking-logistics', [ExportDataBookings::class, 'bookingLogistics']);
+        Route::get('/booking-police-escorts', [ExportDataBookings::class, 'bookingPoliceEscorts']);
+        Route::get('/booking-tshirts', [ExportDataBookings::class, 'bookingTshirts']);
+        Route::get('/booking-destination-schedules', [ExportDataBookings::class, 'bookingDestinationSchedules']);
+        Route::get('/booking-whatsapp-logs', [ExportDataBookings::class, 'bookingWhatsappLogs']);
+        Route::get('/booking-finances', [ExportDataBookings::class, 'bookingFinances']);
+        Route::get('/booking-itineraries', [ExportDataBookings::class, 'bookingItineraries']);
+        Route::get('/booking-hotels', [ExportDataBookings::class, 'bookingHotels']);
+        Route::get('/booking-hotel-rooms', [ExportDataBookings::class, 'bookingHotelRooms']);
+        Route::get('/booking-hotel-meals', [ExportDataBookings::class, 'bookingHotelMeals']);
+        Route::get('/booking-addons', [ExportDataBookings::class, 'bookingAddons']);
+        Route::get('/booking-vehicle-units', [ExportDataBookings::class, 'bookingVehcileUnits']);
+        Route::get('/booking-crew-members', [ExportDataBookings::class, 'bookingCrewMembers']);
+        Route::get('/booking-destination-activities', [ExportDataBookings::class, 'bookingDestinationActivities']);
+        Route::get('/booking-other-activities', [ExportDataBookings::class, 'bookingOtherActivities']);
     });
     Route::get('/all', [ExportDataAllController::class, 'all']);
 });

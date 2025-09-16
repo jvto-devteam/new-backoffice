@@ -4,12 +4,14 @@ namespace App\Http\Controllers\ExportData;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ExportDataCustomer extends Controller
 {
     function customers(){
-        $customers = Booking::with('user')->where('status','booked')->where('travel_date_start','>=','2024-09-01')->orderBy('user_id','asc');
+        $duaBelasBulanLalu = Carbon::now()->subMonths(12)->toDateString();
+        $customers = Booking::with('user')->where('status','booked')->where('travel_date_start','>=',$duaBelasBulanLalu)->orderBy('user_id','asc');
         
         if(request()->limit){
             $customers = $customers->limit(request()->limit);

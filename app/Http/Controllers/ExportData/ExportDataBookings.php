@@ -5,11 +5,14 @@ namespace App\Http\Controllers\ExportData;
 use App\Http\Controllers\Controller;
 use App\Models\BookAddOn;
 use App\Models\BookCarActivity;
+use App\Models\BookCrewActivity;
+use App\Models\BookDestinationActivity;
 use App\Models\BookHotel;
 use App\Models\BookHotelMeal;
 use App\Models\Booking;
 use App\Models\BookingItinerary;
 use App\Models\BookingPayment;
+use App\Models\BookOthersActivity;
 use App\Models\BookRoomHotel;
 use Carbon\Carbon;
 use DateTime;
@@ -21,7 +24,7 @@ class ExportDataBookings extends Controller
     protected string $firstDate;
     public function __construct()
     {
-        $this->firstDate = Carbon::now()->subMonths(12)->toDateString();
+        $this->firstDate = Carbon::now()->subMonths(12)->toDateString();//16-09-2024
     }
     function bookings()
     {
@@ -333,8 +336,9 @@ class ExportDataBookings extends Controller
         $columns = ['id', 'booking_id', 'total_expense', 'total_expense_crew', 'total_expense_paid', 'total_expense_debt', 'profit', 'created_at', 'updated_at', 'deleted_at'];
         return ExportCSV::export('booking_finances.csv', $columns, $bookings->toArray());
     }
-    function bookingItineraries(){
-        $bookingItineraries = BookingItinerary::whereHas('booking', function($query){
+    function bookingItineraries()
+    {
+        $bookingItineraries = BookingItinerary::whereHas('booking', function ($query) {
             $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
         })->orderBy('id', 'asc');
         if (request()->limit) {
@@ -344,27 +348,28 @@ class ExportDataBookings extends Controller
             ->get()->map(function ($itinerary) {
                 $date = Carbon::parse($itinerary->booking->travel_date_start)->addDays($itinerary->day - 1)->toDateString();
                 return [
-                    'id' => $itinerary->id, 
-                    'booking_id' => $itinerary->booking_id, 
-                    'day' => $itinerary->day, 
-                    'date' => $date, 
-                    'activity_start_id' => $itinerary->activity_start_id, 
-                    'activity_end_id' => $itinerary->activity_end_id, 
-                    'itinerary' => $itinerary->itinerary, 
-                    'activity' => $itinerary->activity, 
-                    'breakfast' => $itinerary->b == '1' ? true : false, 
-                    'lunch' => $itinerary->l == '1' ? true : false, 
-                    'dinner' => $itinerary->d == '1' ? true : false, 
-                    'created_at' => $itinerary->created_at, 
-                    'updated_at' => $itinerary->updated_at, 
-                    'deleted_at  ' => $itinerary->deleted_at,                   
+                    'id' => $itinerary->id,
+                    'booking_id' => $itinerary->booking_id,
+                    'day' => $itinerary->day,
+                    'date' => $date,
+                    'activity_start_id' => $itinerary->activity_start_id,
+                    'activity_end_id' => $itinerary->activity_end_id,
+                    'itinerary' => $itinerary->itinerary,
+                    'activity' => $itinerary->activity,
+                    'breakfast' => $itinerary->b == '1' ? true : false,
+                    'lunch' => $itinerary->l == '1' ? true : false,
+                    'dinner' => $itinerary->d == '1' ? true : false,
+                    'created_at' => $itinerary->created_at,
+                    'updated_at' => $itinerary->updated_at,
+                    'deleted_at  ' => $itinerary->deleted_at,
                 ];
             })->toArray();
         $columns = ['id', 'booking_id', 'day', 'date', 'activity_start_id', 'activity_end_id', 'itinerary', 'activity', 'breakfast', 'lunch', 'dinner', 'created_at', 'updated_at', 'deleted_at'];
         return ExportCSV::export('booking_itineraries.csv', $columns, $bookingItineraries);
     }
-    function bookingHotels() {
-        $bookingHotels = BookHotel::with(['bookRoom','bookHotelMeal'])->whereHas('booking', function($query){
+    function bookingHotels()
+    {
+        $bookingHotels = BookHotel::with(['bookRoom', 'bookHotelMeal'])->whereHas('booking', function ($query) {
             $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
         })->orderBy('id', 'asc');
         if (request()->limit) {
@@ -396,8 +401,9 @@ class ExportDataBookings extends Controller
         return ExportCSV::export('booking_hotels.csv', $columns, $bookingHotels->toArray());
     }
 
-    function bookingHotelRooms(){
-        $bookHotelRooms = BookRoomHotel::whereHas('booking', function($query){
+    function bookingHotelRooms()
+    {
+        $bookHotelRooms = BookRoomHotel::whereHas('booking', function ($query) {
             $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
         })->orderBy('id', 'asc');
         if (request()->limit) {
@@ -416,16 +422,17 @@ class ExportDataBookings extends Controller
                     'subtotal' => $room->subtotal ?? 0,
                     'created_at' => $room->created_at,
                     'updated_at' => $room->updated_at,
-                    'deleted_at ' => $room->deleted_at,                    
-                ]; 
+                    'deleted_at ' => $room->deleted_at,
+                ];
             })->toArray();
 
-        $columns = ['id', 'booking_id', 'booking_itinerary_id', 'book_hotel_id', 'room_type_id', 'quantity', 'price', 'subtotal','created_at', 'updated_at', 'deleted_at'];
+        $columns = ['id', 'booking_id', 'booking_itinerary_id', 'book_hotel_id', 'room_type_id', 'quantity', 'price', 'subtotal', 'created_at', 'updated_at', 'deleted_at'];
         return ExportCSV::export('booking_hotel_rooms.csv', $columns, $bookHotelRooms);
     }
 
-    function bookingHotelMeals(){
-        $bookHotelMeals = BookHotelMeal::whereHas('booking', function($query){
+    function bookingHotelMeals()
+    {
+        $bookHotelMeals = BookHotelMeal::whereHas('booking', function ($query) {
             $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
         })->orderBy('id', 'asc');
         if (request()->limit) {
@@ -444,16 +451,17 @@ class ExportDataBookings extends Controller
                     'subtotal' => $room->subtotal,
                     'created_at' => $room->created_at,
                     'updated_at' => $room->updated_at,
-                    'deleted_at ' => $room->deleted_at,                    
-                ]; 
+                    'deleted_at ' => $room->deleted_at,
+                ];
             })->toArray();
 
-        $columns = ['id', 'booking_id', 'book_hotel_id', 'hotel_id', 'meals', 'quantity','price', 'subtotal','created_at', 'updated_at', 'deleted_at'];
+        $columns = ['id', 'booking_id', 'book_hotel_id', 'hotel_id', 'meals', 'quantity', 'price', 'subtotal', 'created_at', 'updated_at', 'deleted_at'];
         return ExportCSV::export('booking_hotel_meals.csv', $columns, $bookHotelMeals);
     }
 
-    function bookingAddons() {
-        $bookAddons = BookAddOn::whereHas('booking', function($query){
+    function bookingAddons()
+    {
+        $bookAddons = BookAddOn::whereHas('booking', function ($query) {
             $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
         })->orderBy('id', 'asc');
         if (request()->limit) {
@@ -468,50 +476,176 @@ class ExportDataBookings extends Controller
                     'price' => $room->price,
                     'price_expense' => $room->price_expense == 0 ? $room->price : $room->price_expense,
                     'quantity' => $room->qty,
-                    'total' => $room->price*$room->qty,
+                    'total' => $room->price * $room->qty,
                     'created_at' => $room->created_at,
                     'updated_at' => $room->updated_at,
                     'deleted_at' => $room->deleted_at,
                 ];
             });
-        $columns = ['id','addon_id', 'booking_id','price','price_expense','quantity', 'total','created_at', 'updated_at', 'deleted_at'];
+        $columns = ['id', 'addon_id', 'booking_id', 'price', 'price_expense', 'quantity', 'total', 'created_at', 'updated_at', 'deleted_at'];
         return ExportCSV::export('booking_hotel_addons.csv', $columns, $bookAddons);
     }
-    function bookingVehcileUnits(){
-        $bookVehicleUnit = BookCarActivity::whereHas('booking', function($query){
+    function bookingVehcileUnits()
+    {
+        $bookVehicleUnit = BookCarActivity::with('booking.bookCar')->whereHas('booking', function ($query) {
             $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $bookVehicleUnit = $bookVehicleUnit->limit(request()->limit);
         }
-        $vehicleTypes = [
-            'MPV' => 1,
-            'Innova' => 2,
-            'Hiace' => 3,
-            'Hiace Premio' => 4,
-            'Medium Bus' => 5,
-            'Mini Bus (Elf)' => 6,
-        ];
 
-        $bookVehicleUnit = $bookVehicleUnit->get()->map(function($bookVehicle) use($vehicleTypes){
+        $bookVehicleUnit = $bookVehicleUnit->get()->map(function ($bookVehicle) {
+            $bookCar = $bookVehicle->booking->bookCar->first();
             return [
-                'id' => $bookVehicle->id, 
-                'booking_id' => $bookVehicle->booking_id, 
-                'vehicle_unit_id' => $bookVehicle->car_id, 
-                'quantity' => $bookVehicle->qty, 
-                'duration_day' => $bookVehicle->duration_day, 
-                'start_date' => $bookVehicle->start_date, 
-                'end_date' => $bookVehicle->end_date, 
-                'driver' => $bookVehicle->driver, 
-                'price' => $bookVehicle->price, 
-                'subtotal' => $bookVehicle->subtotal, 
-                'note' => $bookVehicle->note, 
-                'is_debt' => $bookVehicle->is_debt, 
-                'is_paid' => $bookVehicle->is_paid, 
-                'created_at' => $bookVehicle->created_at, 
-                'updated_at' => $bookVehicle->updated_at, 
-                'deleted_at ' => $bookVehicle->deleted_at,                
+                'id' => $bookVehicle->id,
+                'booking_id' => $bookVehicle->booking_id,
+                'vehicle_unit_id' => $bookVehicle->car_id,
+                'quantity' => $bookCar ? $bookVehicle->qty / $bookCar->duration : null,
+                'duration_day' => $bookCar->duration ?? null,
+                'start_date' => $bookCar->start_date ?? null,
+                'end_date' => $bookCar->end_date ?? null,
+                'driver' => $bookVehicle->driver_txt,
+                'price' => $bookVehicle->price,
+                'subtotal' => $bookVehicle->subtotal,
+                'note' => $bookVehicle->note_txt,
+                'is_debt' => $bookVehicle->is_debt == '1' ? true : false,
+                'is_paid' => $bookVehicle->status_paid == 'paid' ? true : false,
+                'created_at' => $bookVehicle->created_at,
+                'updated_at' => $bookVehicle->updated_at,
+                'deleted_at ' => $bookVehicle->deleted_at,
             ];
         });
+
+        $columns = [
+            'id',
+            'booking_id',
+            'vehicle_unit_id',
+            'quantity',
+            'duration_day',
+            'start_date',
+            'end_date',
+            'driver',
+            'price',
+            'subtotal',
+            'note',
+            'is_debt',
+            'is_paid',
+            'created_at',
+            'updated_at',
+            'deleted_at ',
+        ];
+        return ExportCSV::export('booking_vehicle_units.csv', $columns, $bookVehicleUnit);
+    }
+
+    function bookingCrewMember() {
+        $bookCrewActivities = BookCrewActivity::with('booking')->whereHas('booking', function ($query) {
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+        })->orderBy('id', 'asc');
+        if (request()->limit) {
+            $bookCrewActivities = $bookCrewActivities->limit(request()->limit);
+        }
+        $bookCrewActivities = $bookCrewActivities->get()->map(function($bookCrewActivity){
+            return [
+                'id' => $bookCrewActivity->id,
+                'booking_id' => $bookCrewActivity->booking_id,
+                'crew_member_id' => null,
+                'crew_role_id' => $bookCrewActivity->crew_role_id,
+                'type' => null,
+                'duration_day' => $bookCrewActivity->duration_day,
+                'start_date' => $bookCrewActivity->start_date,
+                'end_date' => $bookCrewActivity->end_date,
+                'is_ijen_guide' => $bookCrewActivity->is_ijen_guide,
+                'is_escort_guide' => $bookCrewActivity->is_escort_guide,
+                'price' => $bookCrewActivity->price,
+                'subtotal' => $bookCrewActivity->subtotal,
+                'created_at' => $bookCrewActivity->created_at,
+                'updated_at' => $bookCrewActivity->updated_at,
+                'deleted_at ' => $bookCrewActivity->deleted_at,               
+            ]
+        });
+    }
+    function bookingDestinationActivities()
+    {
+        $bookDestinationActivities = BookDestinationActivity::with('booking')->whereHas('booking', function ($query) {
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+        })->orderBy('id', 'asc');
+        if (request()->limit) {
+            $bookDestinationActivities = $bookDestinationActivities->limit(request()->limit);
+        }
+
+        $bookDestinationActivities = $bookDestinationActivities->get()->map(function ($bookDestinationActivity) {
+            return [
+                'id' => $bookDestinationActivity->id,
+                'booking_id' => $bookDestinationActivity->booking_id,
+                'destination_id' => $bookDestinationActivity->destination_id,
+                'destination_activity_id' => $bookDestinationActivity->destination_activity_id,
+                'quantity' => $bookDestinationActivity->qty,
+                'price' => (int)$bookDestinationActivity->price,
+                'subtotal' => (int)$bookDestinationActivity->subtotal,
+                'is_paid' => $bookDestinationActivity->status_paid == 'paid' ? true : false,
+                'is_debt' => $bookDestinationActivity->is_debt == '1' ? true : false,
+                'created_at' => $bookDestinationActivity->created_at,
+                'updated_at' => $bookDestinationActivity->updated_at,
+                'deleted_at' => $bookDestinationActivity->deleted_at,
+            ];
+        });
+
+        $columns = [
+            'id',
+            'booking_id',
+            'destination_id',
+            'destination_activity_id',
+            'quantity',
+            'price',
+            'subtotal',
+            'is_paid',
+            'is_debt',
+            'created_at',
+            'updated_at',
+            'deleted_at',
+        ];
+
+        return ExportCSV::export('booking_destination_activities.csv', $columns, $bookDestinationActivities);
+    }
+    function bookingOtherActivities()
+    {
+        $bookOtherActivities = BookOthersActivity::with('booking')->whereHas('booking', function ($query) {
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+        })->orderBy('id', 'asc');
+        if (request()->limit) {
+            $bookOtherActivities = $bookOtherActivities->limit(request()->limit);
+        }
+
+        $bookOtherActivities = $bookOtherActivities->get()->map(function ($bookOtherActivity) {
+            return [
+                'id' => $bookOtherActivity->id,
+                'booking_id' => $bookOtherActivity->booking_id,
+                'other_activity_id' => $bookOtherActivity->others_activity_id,
+                'quantity' => $bookOtherActivity->qty,
+                'price' => (int)$bookOtherActivity->price,
+                'subtotal' => (int)$bookOtherActivity->subtotal,
+                'is_paid' => $bookOtherActivity->status_paid == 'paid' ? true : false,
+                'is_debt' => $bookOtherActivity->is_debt == '1' ? true : false,
+                'created_at' => $bookOtherActivity->created_at,
+                'updated_at' => $bookOtherActivity->updated_at,
+                'deleted_at' => $bookOtherActivity->deleted_at,
+            ];
+        });
+
+        $columns = [
+            'id',
+            'booking_id',
+            'other_activity_id',
+            'quantity',
+            'price',
+            'subtotal',
+            'is_paid',
+            'is_debt',
+            'created_at',
+            'updated_at',
+            'deleted_at',
+        ];
+
+        return ExportCSV::export('booking_other_activities.csv', $columns, $bookOtherActivities);
     }
 }

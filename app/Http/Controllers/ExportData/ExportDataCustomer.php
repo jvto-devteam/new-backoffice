@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 class ExportDataCustomer extends Controller
 {
     function customers(){
-        $duaBelasBulanLalu = Carbon::now()->subMonths(12)->toDateString();
+        $duaBelasBulanLalu = Carbon::now()->subMonths(12)->toDateString(); //16-09-2024
         $customers = Booking::with('user')->where('status','booked')->where('travel_date_start','>=',$duaBelasBulanLalu)->orderBy('user_id','asc');
         
         if(request()->limit){

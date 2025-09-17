@@ -27,6 +27,6 @@ class ExportDataPriceTiers extends Controller
             ];
         })->toArray();
         $columns = ['id','name','uuid','min_pax','max_pax','created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('price_tiers.csv', $columns, $priceTiers);
+        return ExportSQL::export('price_tiers.csv', $columns, $priceTiers);
     }
 }

@@ -20,7 +20,7 @@ class ExportIncludeExclude extends Controller
             ];
         })->toArray();
         $columns = ['id', 'item', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('item_includes.csv', $columns, $export);
+        return ExportSQL::export('item_includes.csv', $columns, $export);
     }
 
     function exclude(){
@@ -37,6 +37,6 @@ class ExportIncludeExclude extends Controller
         })->toArray();
 
         $columns = ['id','item','created_at','updated_at','deleted_at'];
-        return ExportCSV::export('item_excludes.csv', $columns, $export);
+        return ExportSQL::export('item_excludes.csv', $columns, $export);
     }
 }

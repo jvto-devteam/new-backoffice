@@ -29,7 +29,6 @@ class ExportDataAddons extends Controller
             ];
         })->toArray();
         $columns = ['id','name','is_transport','transport_type','image','price','is_per_person','created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('addons.csv', $columns, $addons);
-        
+        return ExportSQL::export('addons.csv', $columns, $addons);
     }
 }

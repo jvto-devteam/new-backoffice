@@ -23,7 +23,7 @@ class ExportDataVehicles extends Controller
                 return $item;
             });
         $columns = ['id', 'name', 'capacity_min_pax', 'capacity_max_pax', 'price_per_day', 'twt_price_per_day', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('vehicle_types.csv', $columns, $vehicle);
+        return ExportSQL::export('vehicle_types.csv', $columns, $vehicle);
     }
     function vehicleUnits()
     {
@@ -56,6 +56,6 @@ class ExportDataVehicles extends Controller
             ];
         })->toArray();
         $columns = ['id', 'vehicle_type_id', 'plat_no', 'nickname', 'is_active', 'vendor_id', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('vehicle_units.csv', $columns, $vehicleUnits);
+        return ExportSQL::export('vehicle_units.csv', $columns, $vehicleUnits);
     }
 }

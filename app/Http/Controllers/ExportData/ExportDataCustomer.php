@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 class ExportDataCustomer extends Controller
 {
     function customers(){
-        $duaBelasBulanLalu = Carbon::now()->subMonths(12)->toDateString(); //16-09-2024
+        $duaBelasBulanLalu = Carbon::now()->subMonths(12)->toDateString(); //17-09-2024
         $customers = Booking::with('user')->where('status','booked')->where('travel_date_start','>=',$duaBelasBulanLalu)->orderBy('user_id','asc');
         
         if(request()->limit){
@@ -25,13 +25,12 @@ class ExportDataCustomer extends Controller
                 'order_channel_id' => $query->agent_id == 1 ? 2 : ($query->booking_category_id == 3 ? 3 : 1),
                 'phone' => $query->user->phone,
                 'country_id' => $query->user->country_id,
-                'google_id' => $query->user->google_id,
                 'created_at' => $query->user->created_at,
                 'updated_at' => $query->user->updated_at,
                 'deleted_at' => $query->user->deleted_at,
             ];
         })->unique('id')->values()->toArray();
-        $columns = ['id', 'name', 'email', 'phone', 'country_id','order_channel_id', 'google_id', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('customers.csv', $columns, $customers);
+        $columns = ['id', 'name', 'email', 'phone', 'country_id','order_channel_id', 'created_at', 'updated_at', 'deleted_at'];
+        return ExportSQL::export('customers.csv', $columns, $customers);
     }
 }

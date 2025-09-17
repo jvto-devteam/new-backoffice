@@ -23,13 +23,18 @@ use Illuminate\Support\Str;
 class ExportDataBookings extends Controller
 {
     protected string $firstDate;
+    protected array $packageIds;
     public function __construct()
     {
-        $this->firstDate = Carbon::now()->subMonths(12)->toDateString();//16-09-2024
+        $this->firstDate = Carbon::now()->subMonths(12)->toDateString(); //17-09-2024
+        $this->packageIds = [73, 48, 47, 29, 28, 85, 65, 86, 91, 63, 80, 32, 33, 34, 54, 56, 43, 55, 74, 82, 83, 84];
     }
     function bookings()
     {
-        $bookings = Booking::with(['bookingDetail.package', 'bookingDocument'])->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->orderBy('id', 'asc');
+        $bookings = Booking::with(['bookingDetail.package', 'bookingDocument'])->whereHas('bookingDetail', function ($q) {
+            $q->whereNull('package_id')
+                ->orWhereIn('package_id', $this->packageIds);
+        })->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->orderBy('id', 'asc');
 
         if (request()->limit) {
             $bookings = $bookings->limit(request()->limit);
@@ -91,11 +96,14 @@ class ExportDataBookings extends Controller
                 ];
             });
         $columns = ['id', 'booking_code', 'booking_code_origin', 'invoice_file_origin', 'customer_id', 'package_id', 'duration_id', 'order_channel_id', 'booking_date', 'start_date', 'end_date', 'total_participants', 'booking_status', 'trip_status', 'payment_status', 'is_shuttle_service', 'slug', 'trip_media_url', 'special_requirement', 'internal_note', 'is_invoice_twt', 'date_paid_invoiced_twt', 'is_police_escort', 'is_send_whatsapp', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('bookings.csv', $columns, $bookings->toArray());
+        return ExportSQL::export('bookings.csv', $columns, $bookings->toArray());
     }
     function bookingPaymentTerms()
     {
-        $bookings = Booking::with(['bookingDetail'])->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->orderBy('id', 'asc');
+        $bookings = Booking::with(['bookingDetail'])->whereHas('bookingDetail', function ($q) {
+            $q->whereNull('package_id')
+                ->orWhereIn('package_id', $this->packageIds);
+        })->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->orderBy('id', 'asc');
 
         if (request()->limit) {
             $bookings = $bookings->limit(request()->limit);
@@ -139,12 +147,15 @@ class ExportDataBookings extends Controller
             ];
         });
         $columns = ['id', 'booking_id', 'deposit_payment_method_id', 'deposit_payment_link', 'deposit_due_date', 'deposit_amount', 'outstanding_payment_method_id', 'outstanding_payment_link', 'full_payment_due_date', 'total_before_discount', 'total_discount', 'discount_id', 'discount_type', 'total_add_on', 'grandtotal', 'total_payment', 'balance', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('booking_payment_terms.csv', $columns, $bookings->toArray());
+        return ExportSQL::export('booking_payment_terms.csv', $columns, $bookings->toArray());
     }
     function bookingPaymentHistories()
     {
         $paymentHistories = BookingPayment::whereHas('booking', function ($query) {
-            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            });
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $paymentHistories = $paymentHistories->limit(request()->limit);
@@ -166,11 +177,14 @@ class ExportDataBookings extends Controller
                 ];
             })->toArray();
         $columns = ['id', 'booking_id', 'amount', 'payment_method_id', 'description', 'reference', 'attachment', 'payment_date', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('booking_payment_histories.csv', $columns, $paymentHistories);
+        return ExportSQL::export('booking_payment_histories.csv', $columns, $paymentHistories);
     }
     function bookingLogistics()
     {
-        $bookings = Booking::where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->orderBy('id', 'asc');
+        $bookings = Booking::where('status', 'booked')->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            })->where('travel_date_start', '>=', $this->firstDate)->orderBy('id', 'asc');
 
         if (request()->limit) {
             $bookings = $bookings->limit(request()->limit);
@@ -203,11 +217,14 @@ class ExportDataBookings extends Controller
             ];
         });
         $columns = ['id', 'booking_id', 'pickup_location', 'pickup_location_detail', 'pickup_time', 'pickup_ticket_number', 'dropoff_location', 'dropoff_location_detail', 'dropoff_time', 'dropoff_ticket_number', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('booking_logistics.csv', $columns, $bookings->toArray());
+        return ExportSQL::export('booking_logistics.csv', $columns, $bookings->toArray());
     }
     function bookingPoliceEscorts()
     {
-        $bookings = Booking::where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->where('is_police_escort', '1')->orderBy('id', 'asc');
+        $bookings = Booking::where('status', 'booked')->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            })->where('travel_date_start', '>=', $this->firstDate)->where('is_police_escort', '1')->orderBy('id', 'asc');
 
         if (request()->limit) {
             $bookings = $bookings->limit(request()->limit);
@@ -226,11 +243,14 @@ class ExportDataBookings extends Controller
             ];
         });
         $columns = ['id', 'booking_id', 'police_escort_date', 'police_escort_route', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('booking_police_escorts.csv', $columns, $bookings->toArray());
+        return ExportSQL::export('booking_police_escorts.csv', $columns, $bookings->toArray());
     }
     function bookingTshirts()
     {
-        $bookings = Booking::with('bookingDetail')->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->orderBy('id', 'asc');
+        $bookings = Booking::with('bookingDetail')->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            })->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->orderBy('id', 'asc');
 
         if (request()->limit) {
             $bookings = $bookings->limit(request()->limit);
@@ -257,11 +277,14 @@ class ExportDataBookings extends Controller
             ];
         });
         $columns = ['id', 'booking_id', 'xss', 'xxs', 'xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl', 'xxxxl', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('booking_tshirts.csv', $columns, $bookings->toArray());
+        return ExportSQL::export('booking_tshirts.csv', $columns, $bookings->toArray());
     }
     function bookingDestinationSchedules()
     {
-        $bookings = Booking::with('bookingItinerary')->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->orderBy('id', 'asc');
+        $bookings = Booking::with('bookingItinerary')->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            })->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->orderBy('id', 'asc');
 
         if (request()->limit) {
             $bookings = $bookings->limit(request()->limit);
@@ -287,12 +310,15 @@ class ExportDataBookings extends Controller
             ];
         });
         $columns = ['id', 'booking_id', 'at_ijen_date', 'at_bromo_date', 'bromo_hotel_id', 'at_tumpak_sewu_date', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('booking_destination_schedules.csv', $columns, $bookings->toArray());
+        return ExportSQL::export('booking_destination_schedules.csv', $columns, $bookings->toArray());
     }
 
     function bookingFinances()
     {
-        $bookings = Booking::with('bookingPayment')->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->orderBy('id', 'asc');
+        $bookings = Booking::with('bookingPayment')->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            })->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->orderBy('id', 'asc');
 
         if (request()->limit) {
             $bookings = $bookings->limit(request()->limit);
@@ -335,12 +361,15 @@ class ExportDataBookings extends Controller
             ];
         });
         $columns = ['id', 'booking_id', 'total_expense', 'total_expense_crew', 'total_expense_paid', 'total_expense_debt', 'profit', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('booking_finances.csv', $columns, $bookings->toArray());
+        return ExportSQL::export('booking_finances.csv', $columns, $bookings->toArray());
     }
     function bookingItineraries()
     {
         $bookingItineraries = BookingItinerary::whereHas('booking', function ($query) {
-            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            });
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $bookingItineraries = $bookingItineraries->limit(request()->limit);
@@ -366,12 +395,15 @@ class ExportDataBookings extends Controller
                 ];
             })->toArray();
         $columns = ['id', 'booking_id', 'day', 'date', 'activity_start_id', 'activity_end_id', 'itinerary', 'activity', 'breakfast', 'lunch', 'dinner', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('booking_itineraries.csv', $columns, $bookingItineraries);
+        return ExportSQL::export('booking_itineraries.csv', $columns, $bookingItineraries);
     }
     function bookingHotels()
     {
         $bookingHotels = BookHotel::with(['bookRoom', 'bookHotelMeal'])->whereHas('booking', function ($query) {
-            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            });
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $bookingHotels = $bookingHotels->limit(request()->limit);
@@ -399,13 +431,16 @@ class ExportDataBookings extends Controller
                 ];
             });
         $columns = ['id', 'booking_id', 'booking_itinerary_id', 'hotel_id', 'breakfast', 'lunch', 'dinner', 'reservation_status', 'reject_message', 'total_room_cost', 'total_meal_cost', 'total', 'is_paid', 'is_debt', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('booking_hotels.csv', $columns, $bookingHotels->toArray());
+        return ExportSQL::export('booking_hotels.csv', $columns, $bookingHotels->toArray());
     }
 
     function bookingHotelRooms()
     {
         $bookHotelRooms = BookRoomHotel::whereHas('booking', function ($query) {
-            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            });
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $bookHotelRooms = $bookHotelRooms->limit(request()->limit);
@@ -428,13 +463,16 @@ class ExportDataBookings extends Controller
             })->toArray();
 
         $columns = ['id', 'booking_id', 'booking_itinerary_id', 'book_hotel_id', 'room_type_id', 'quantity', 'price', 'subtotal', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('booking_hotel_rooms.csv', $columns, $bookHotelRooms);
+        return ExportSQL::export('booking_hotel_rooms.csv', $columns, $bookHotelRooms);
     }
 
     function bookingHotelMeals()
     {
         $bookHotelMeals = BookHotelMeal::whereHas('booking', function ($query) {
-            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            });
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $bookHotelMeals = $bookHotelMeals->limit(request()->limit);
@@ -457,13 +495,16 @@ class ExportDataBookings extends Controller
             })->toArray();
 
         $columns = ['id', 'booking_id', 'book_hotel_id', 'hotel_id', 'meals', 'quantity', 'price', 'subtotal', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('booking_hotel_meals.csv', $columns, $bookHotelMeals);
+        return ExportSQL::export('booking_hotel_meals.csv', $columns, $bookHotelMeals);
     }
 
     function bookingAddons()
     {
         $bookAddons = BookAddOn::whereHas('booking', function ($query) {
-            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            });
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $bookAddons = $bookAddons->limit(request()->limit);
@@ -484,12 +525,15 @@ class ExportDataBookings extends Controller
                 ];
             });
         $columns = ['id', 'addon_id', 'booking_id', 'price', 'price_expense', 'quantity', 'total', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('booking_hotel_addons.csv', $columns, $bookAddons);
+        return ExportSQL::export('booking_hotel_addons.csv', $columns, $bookAddons);
     }
     function bookingVehcileUnits()
     {
         $bookVehicleUnit = BookCarActivity::with('booking.bookCar')->whereHas('booking', function ($query) {
-            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            });
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $bookVehicleUnit = $bookVehicleUnit->limit(request()->limit);
@@ -535,17 +579,21 @@ class ExportDataBookings extends Controller
             'updated_at',
             'deleted_at ',
         ];
-        return ExportCSV::export('booking_vehicle_units.csv', $columns, $bookVehicleUnit);
+        return ExportSQL::export('booking_vehicle_units.csv', $columns, $bookVehicleUnit);
     }
 
-    function bookingCrewMembers() {
+    function bookingCrewMembers()
+    {
         $bookCrewMembers = BookGuideDriver::with('booking')->whereHas('booking', function ($query) {
-            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            });
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $bookCrewMembers = $bookCrewMembers->limit(request()->limit);
         }
-        $bookCrewMembers = $bookCrewMembers->get()->map(function($bookCrewMember){
+        $bookCrewMembers = $bookCrewMembers->get()->map(function ($bookCrewMember) {
             return [
                 'id' => $bookCrewMember->id,
                 'booking_id' => $bookCrewMember->booking_id,
@@ -557,7 +605,7 @@ class ExportDataBookings extends Controller
                 'trip_type' => $bookCrewMember->guide_ijen == '1' ? 'ijen' : 'escort',
                 'created_at' => $bookCrewMember->created_at,
                 'updated_at' => $bookCrewMember->updated_at,
-                'deleted_at ' => $bookCrewMember->deleted_at,               
+                'deleted_at ' => $bookCrewMember->deleted_at,
             ];
         })->toArray();
         $columns = [
@@ -573,16 +621,20 @@ class ExportDataBookings extends Controller
             'updated_at',
             'deleted_at ',
         ];
-        return ExportCSV::export('booking_crew_members.csv', $columns, $bookCrewMembers);
+        return ExportSQL::export('booking_crew_members.csv', $columns, $bookCrewMembers);
     }
-    function bookingCrewMemberActivities() {
+    function bookingCrewMemberActivities()
+    {
         $bookCrewActivities = BookCrewActivity::with('booking')->whereHas('booking', function ($query) {
-            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            });
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $bookCrewActivities = $bookCrewActivities->limit(request()->limit);
         }
-        $bookCrewActivities = $bookCrewActivities->get()->map(function($bookCrewActivity){
+        $bookCrewActivities = $bookCrewActivities->get()->map(function ($bookCrewActivity) {
             return [
                 'id' => $bookCrewActivity->id,
                 'booking_id' => $bookCrewActivity->booking_id,
@@ -594,7 +646,7 @@ class ExportDataBookings extends Controller
                 'is_debt' => $bookCrewActivity->is_debt == '1' ? true : false,
                 'created_at' => $bookCrewActivity->created_at,
                 'updated_at' => $bookCrewActivity->updated_at,
-                'deleted_at ' => $bookCrewActivity->deleted_at,               
+                'deleted_at ' => $bookCrewActivity->deleted_at,
             ];
         })->toArray();
         $columns = [
@@ -610,12 +662,15 @@ class ExportDataBookings extends Controller
             'updated_at',
             'deleted_at ',
         ];
-        return ExportCSV::export('booking_crew_member_activities.csv', $columns, $bookCrewActivities);
+        return ExportSQL::export('booking_crew_member_activities.csv', $columns, $bookCrewActivities);
     }
     function bookingDestinationActivities()
     {
         $bookDestinationActivities = BookDestinationActivity::with('booking')->whereHas('booking', function ($query) {
-            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            });
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $bookDestinationActivities = $bookDestinationActivities->limit(request()->limit);
@@ -653,12 +708,15 @@ class ExportDataBookings extends Controller
             'deleted_at',
         ];
 
-        return ExportCSV::export('booking_destination_activities.csv', $columns, $bookDestinationActivities);
+        return ExportSQL::export('booking_destination_activities.csv', $columns, $bookDestinationActivities);
     }
     function bookingOtherActivities()
     {
         $bookOtherActivities = BookOthersActivity::with('booking')->whereHas('booking', function ($query) {
-            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            });
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $bookOtherActivities = $bookOtherActivities->limit(request()->limit);
@@ -694,6 +752,48 @@ class ExportDataBookings extends Controller
             'deleted_at',
         ];
 
-        return ExportCSV::export('booking_other_activities.csv', $columns, $bookOtherActivities);
+        return ExportSQL::export('booking_other_activities.csv', $columns, $bookOtherActivities);
+    }
+    function bookingWhatsappLogs(){
+        $bookingWhatsappLogs = Booking::whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            })->where('status', 'booked')->where('is_send_wa','1')->where('travel_date_start', '>=', $this->firstDate)->orderBy('id', 'asc');
+
+        if (request()->limit) {
+            $bookingWhatsappLogs = $bookingWhatsappLogs->limit(request()->limit);
+        }
+        $id = 0;
+        $bookingWhatsappLogs = $bookingWhatsappLogs->get()->map(function ($booking) use (&$id) {
+            $id++;
+            return [
+                'id' => $id,
+                'booking_id' => $booking->id,
+                'wa_schedule_trip_information' => $booking->wa_schedule_trip_information, 
+                'wa_status_trip_information' => $booking->wa_status_trip_information, 
+                'wa_schedule_trip_media' => $booking->wa_schedule_trip_media, 
+                'wa_status_trip_media' => $booking->wa_status_trip_media, 
+                'wa_schedule_reminder_crew' => $booking->wa_schedule_reminder_crew, 
+                'wa_status_reminder_crew' => $booking->wa_status_reminder_crew, 
+                'created_at' => $booking->created_at,
+                'updated_at' => $booking->updated_at,
+                'deleted_at'   => $booking->deleted_at,
+            ];
+        });
+        $columns = [
+                'id',
+                'booking_id',
+                'wa_schedule_trip_information',
+                'wa_status_trip_information',
+                'wa_schedule_trip_media',
+                'wa_status_trip_media',
+                'wa_schedule_reminder_crew',
+                'wa_status_reminder_crew',
+                'created_at',
+                'updated_at',
+                'deleted_at',
+        ];
+        return ExportSQL::export('booking_whatsapp_logs.csv', $columns, $bookingWhatsappLogs->toArray());
+        
     }
 }

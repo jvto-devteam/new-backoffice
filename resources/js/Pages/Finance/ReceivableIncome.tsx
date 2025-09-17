@@ -294,7 +294,7 @@ export default function ReceivableIncome({ payments, summary, filters, paymentMe
         }).format(amount);
     };
     
-    const handleExportCSV = () => {
+    const handleExportSQL = () => {
         // Format the data for Excel export
         const excelData = payments.map(payment => ({
             'Source': payment.source,
@@ -426,7 +426,7 @@ export default function ReceivableIncome({ payments, summary, filters, paymentMe
                     </div>
                     <div className="flex gap-2">
                         <Button
-                            onClick={handleExportCSV}
+                            onClick={handleExportSQL}
                             variant="outline"
                             className="gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors dark:text-white"
                         >

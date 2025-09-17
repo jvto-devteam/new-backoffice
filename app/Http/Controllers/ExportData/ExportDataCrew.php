@@ -31,7 +31,7 @@ class ExportDataCrew extends Controller
                 ];
             });
         $columns = ['id', 'name', 'rate_per_day', 'rate_twt_per_day', 'order_channel_id', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('crew_roles.csv', $columns, $role);
+        return ExportSQL::export('crew_roles.csv', $columns, $role);
     }
     function crewMember()
     {
@@ -56,7 +56,7 @@ class ExportDataCrew extends Controller
                 ];
             });
         $columns = ['id', 'name', 'email', 'type', 'phone', 'photo_url', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('crew_members.csv', $columns, $crew);
+        return ExportSQL::export('crew_members.csv', $columns, $crew);
     }
     function crewMemberRoles()
     {
@@ -102,7 +102,7 @@ class ExportDataCrew extends Controller
         }
 
         $columns = ['id', 'crew_member_id', 'crew_role_id', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('crew_member_roles.csv', $columns, $crew_role_pivot);
+        return ExportSQL::export('crew_member_roles.csv', $columns, $crew_role_pivot);
     }
     function transportCrewRules()
     {
@@ -171,6 +171,6 @@ class ExportDataCrew extends Controller
 
         $carConfigunations = array_merge($carConfigunations, $appendConfigs);
         $columns = ['id', 'pax', 'vehicle_type_id', 'crew_role_id', 'order_channel_id', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('transport_crew_rules.csv', $columns, $carConfigunations);
+        return ExportSQL::export('transport_crew_rules.csv', $columns, $carConfigunations);
     }
 }

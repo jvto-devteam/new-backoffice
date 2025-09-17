@@ -15,6 +15,11 @@ use App\Http\Controllers\ExportData\ExportDataActivities;
 use App\Http\Controllers\ExportData\ExportDataPolicies;
 use App\Http\Controllers\ExportData\ExportDataBookings;
 use App\Http\Controllers\ExportData\ExportDataDiscount;
+use App\Http\Controllers\ExportData\ExportDataDurations;
+use App\Http\Controllers\ExportData\ExportDataOrderChannels;
+use App\Http\Controllers\ExportData\ExportDataOtherActivities;
+use App\Http\Controllers\ExportData\ExportDataPaymentMethods;
+use App\Http\Controllers\ExportData\ExportDataVendors;
 use App\Http\Controllers\ExportDataController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +60,8 @@ Route::prefix('export-data')->group(function () {
         Route::get('/package-itinerary-day-details', [ExportDataPackage::class, 'packageItineraryDayDetails']);
         Route::get('/package-destinations', [ExportDataPackage::class, 'packageDestinations']);
         Route::get('/package-hotel-options', [ExportDataPackage::class, 'packageHotelOptions']);
+        Route::get('/combined-packages', [ExportDataPackage::class, 'combinedPackages']);
+        Route::get('/combined-package-details', [ExportDataPackage::class, 'combinedPackageDetails']);
     });
     Route::prefix('include-exclude')->group(function () {
         Route::get('/item-includes', [ExportIncludeExclude::class, 'include']);
@@ -67,14 +74,31 @@ Route::prefix('export-data')->group(function () {
         Route::get('/price-tiers', [ExportDataPriceTiers::class, 'priceTiers']);
     });
     Route::prefix('activities')->group(function () {
+        Route::get('/other-activities', [ExportDataActivities::class, 'otherActivities']);
+        Route::get('/destination-activities', [ExportDataActivities::class, 'destinationActivities']);
         Route::get('/activities', [ExportDataActivities::class, 'activities']);
-        Route::get('/activity_categories', [ExportDataActivities::class, 'activity_categories']);
+        Route::get('/activity-categories', [ExportDataActivities::class, 'activity_categories']);
+        Route::get('/activity-ends', [ExportDataActivities::class, 'activityEnds']);
+        Route::get('/activity-starts', [ExportDataActivities::class, 'activityStarts']);
+    });
+    Route::prefix('vendors')->group(function () {
+        Route::get('/vendors', [ExportDataVendors::class, 'vendors']);
+        Route::get('/vendor-categories', [ExportDataVendors::class, 'vendorCategories']);
+    });
+    Route::prefix('order-channels')->group(function () {
+        Route::get('/order-channels', [ExportDataOrderChannels::class, 'orderChannels']);
     });
     Route::prefix('policies')->group(function () {
         Route::get('/policies', [ExportDataPolicies::class, 'policies']);
     });
     Route::prefix('discount')->group(function () {
         Route::get('/discount', [ExportDataDiscount::class, 'discount']);
+    });
+    Route::prefix('payment-methods')->group(function () {
+        Route::get('/payment-methods', [ExportDataPaymentMethods::class, 'paymentMethods']);
+    });
+    Route::prefix('durations')->group(function () {
+        Route::get('/durations', [ExportDataDurations::class, 'durations']);
     });
     Route::prefix('bookings')->group(function () {
         Route::get('/bookings', [ExportDataBookings::class, 'bookings']);

@@ -38,7 +38,7 @@ class ExportDataHotel extends Controller
 
         $columns = ['id', 'hotel_id', 'room_name', 'bed_type', 'rate_idr', 'rate_twt_idr', 'created_at', 'updated_at', 'deleted_at'];
 
-        return ExportCSV::export('room_types.csv', $columns, $roomTypes);
+        return ExportSQL::export('room_types.csv', $columns, $roomTypes);
     }
     function hotels(){
         $hotels = Hotel::where('is_publish','1')->orderBy('id','asc');
@@ -70,7 +70,7 @@ class ExportDataHotel extends Controller
             ];
         })->toArray();
         $columns = ['id', 'name', 'destination_id', 'description', 'facilities', 'address', 'phone', 'banner', 'slug', 'group_wa_id', 'map_url', 'website_url', 'lunch_rate', 'dinner_rate', 'is_publish', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('hotels.csv', $columns, $hotels);
+        return ExportSQL::export('hotels.csv', $columns, $hotels);
     }
     function roomConfigurations(){
         $roomConfigurations = RoomHotelConfiguration::whereHas('hotel', function ($query) {
@@ -101,6 +101,6 @@ class ExportDataHotel extends Controller
 
         $columns = ['id', 'hotel_id', 'room_type_id', 'pax', 'quantity', 'created_at', 'updated_at', 'deleted_at'];
 
-        return ExportCSV::export('room_configurations.csv', $columns, $roomConfigurations);
+        return ExportSQL::export('room_configurations.csv', $columns, $roomConfigurations);
     }
 }

@@ -17,6 +17,6 @@ class ExportDataCountries extends Controller
         $countries = $countries
         ->get(['id','short_name', 'long_name','dial_code','created_at','updated_at','deleted_at']);        
         $columns = ['id','short_name', 'long_name','dial_code','created_at','updated_at','deleted_at'];
-        return ExportCSV::export('countries.csv', $columns, $countries->toArray());
+        return ExportSQL::export('countries.csv', $columns, $countries->toArray());
     }
 }

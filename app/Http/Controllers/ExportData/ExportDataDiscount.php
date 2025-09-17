@@ -10,14 +10,19 @@ use Illuminate\Http\Request;
 class ExportDataDiscount extends Controller
 {
     protected string $firstDate;
+    protected array $packageIds;
     public function __construct()
     {
-        $this->firstDate = Carbon::now()->subMonths(12)->toDateString();//16-09-2024
+        $this->firstDate = Carbon::now()->subMonths(12)->toDateString(); //17-09-2024
+        $this->packageIds = [73, 48, 47, 29, 28, 85, 65, 86, 91, 63, 80, 32, 33, 34, 54, 56, 43, 55, 74, 82, 83, 84];
     }
 
     function discount(){
         $discount = Discount::with('booking')->whereHas('booking', function ($query) {
-            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->whereHas('bookingDetail', function ($q) {
+                $q->whereNull('package_id')
+                    ->orWhereIn('package_id', $this->packageIds);
+            });
         })->orderBy('id','desc');
         if (request()->limit) {
             $discount = $discount->limit(request()->limit);
@@ -41,6 +46,6 @@ class ExportDataDiscount extends Controller
                 ];
             });
         $columns = ['id', 'name', 'amount', 'type', 'customer_id', 'booking_id', 'valid_until', 'verification_code', 'is_verified', 'is_used', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('discounts.csv', $columns, $discount);
+        return ExportSQL::export('discounts.csv', $columns, $discount);
     }
 }

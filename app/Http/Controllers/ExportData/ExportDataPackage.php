@@ -9,6 +9,7 @@ use App\Models\Category;
 use App\Models\Itinerary;
 use App\Models\ItineraryDetail;
 use App\Models\Package;
+use App\Models\PackageActivity;
 use App\Models\PackageBanner;
 use App\Models\PackageDestination;
 use App\Models\PackageHotel;
@@ -20,6 +21,12 @@ use Illuminate\Support\Facades\DB;
 
 class ExportDataPackage extends Controller
 {
+    protected array $packageIds;
+    public function __construct()
+    {
+        $this->packageIds = [73, 48, 47, 29, 28, 85, 65, 86, 91, 63, 80, 32, 33, 34, 54, 56, 43, 55, 74, 82, 83, 84];
+    }
+
     function packageCategories()
     {
         $packageCategories = Category::whereIn('id', [1, 2])->orderBy('id', 'asc');
@@ -29,13 +36,13 @@ class ExportDataPackage extends Controller
         $packageCategories = $packageCategories
             ->get(['id', 'name', 'created_at', 'updated_at', DB::raw('NULL as deleted_at')])->toArray();
         $columns = ['id', 'name', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('package_categories.csv', $columns, $packageCategories);
+        return ExportSQL::export('package_categories.csv', $columns, $packageCategories);
     }
     function packages()
     {
         $package = Package::with(['itinerary.itineraryMeals' => function ($query) {
             $query->where('price_plan_id', 2);
-        }])->where('is_publish', '1')->orderBy('id', 'asc');
+        }])->whereIn('id', $this->packageIds)->where('is_publish', '1')->orderBy('id', 'asc');
         if (request()->limit) {
             $package = $package->limit(request()->limit);
         }
@@ -80,12 +87,12 @@ class ExportDataPackage extends Controller
                 ];
             })->toArray();
         $columns = ['id', 'uuid', 'code', 'slug', 'description', 'duration_idr', 'order_channel_id', 'package_category_id', 'start_destination_id', 'end_destination_id', 'key_highlights', 'ideal_arrival', 'physicallity', 'suitable_for', 'is_publish', 'total_breakfast', 'total_lunch', 'total_dinner', 'google_merchant_product_id', 'meta_catalogue_id', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('packages.csv', $columns, $package);
+        return ExportSQL::export('packages.csv', $columns, $package);
     }
     function packageImages()
     {
         $images = PackageBanner::with('gallery.destinationGallery')->whereHas('package', function ($query) {
-            $query->where('is_publish', '1');
+            $query->where('is_publish', '1')->whereIn('id', $this->packageIds);
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $images = $images->limit(request()->limit);
@@ -114,12 +121,12 @@ class ExportDataPackage extends Controller
                 ];
             })->toArray();
         $columns = ['id', 'package_id', 'url', 'sort_order', 'alt_text', 'caption', 'tags', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('package_images.csv', $columns, $images);
+        return ExportSQL::export('package_images.csv', $columns, $images);
     }
 
     function packageIncludes()
     {
-        $package = Package::where('is_publish', '1')->orderBy('id', 'asc');
+        $package = Package::where('is_publish', '1')->whereIn('id', $this->packageIds)->orderBy('id', 'asc');
         if (request()->limit) {
             $package = $package->limit(request()->limit);
         }
@@ -143,12 +150,12 @@ class ExportDataPackage extends Controller
             }
         }
         $columns = ['id', 'package_id', 'item_exclude_id', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('package_includes.csv', $columns, $export);
+        return ExportSQL::export('package_includes.csv', $columns, $export);
     }
 
     function packageExcludes()
     {
-        $package = Package::where('is_publish', '1')->orderBy('id', 'asc');
+        $package = Package::where('is_publish', '1')->whereIn('id', $this->packageIds)->orderBy('id', 'asc');
         if (request()->limit) {
             $package = $package->limit(request()->limit);
         }
@@ -172,11 +179,11 @@ class ExportDataPackage extends Controller
             }
         }
         $columns = ['id', 'package_id', 'item_exclude_id', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('package_excludes.csv', $columns, $export);
+        return ExportSQL::export('package_excludes.csv', $columns, $export);
     }
     function packageAddons()
     {
-        $packages = Package::with('packageDestination')->where('is_publish', '1')->orderBy('id', 'asc');
+        $packages = Package::with('packageDestination')->whereIn('id', $this->packageIds)->where('is_publish', '1')->orderBy('id', 'asc');
 
         if (request()->limit) {
             $packages = $packages->limit(request()->limit);
@@ -220,12 +227,12 @@ class ExportDataPackage extends Controller
             }
         }
         $columns = ['id', 'package_id', 'addon_id', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('package_addons.csv', $columns, $result);
+        return ExportSQL::export('package_addons.csv', $columns, $result);
     }
     function packagePrices()
     {
         $packagePrices = PackagePrice::with('package')->whereHas('package', function ($query) {
-            $query->where('is_publish', '1');
+            $query->where('is_publish', '1')->whereIn('id', $this->packageIds);
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $packagePrices = $packagePrices->limit(request()->limit);
@@ -245,15 +252,16 @@ class ExportDataPackage extends Controller
                 ];
             })->toArray();
         $columns = ['id', 'package_id', 'price_tier_id', 'price', 'klook_retail_price', 'klook_net_price', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('package_prices.csv', $columns, $packagePrices);
+        return ExportSQL::export('package_prices.csv', $columns, $packagePrices);
     }
-    function packageItineraryDays() {
-        $itinerary = Itinerary::with(['package.packageHotel' => function($query){
+    function packageItineraryDays()
+    {
+        $itinerary = Itinerary::with(['package.packageHotel' => function ($query) {
             $query->where('price_plan_id', 2);
-        }, 'itineraryMeals' => function($query){
+        }, 'itineraryMeals' => function ($query) {
             $query->where('price_plan_id', 2);
         }])->whereHas('package', function ($query) {
-            $query->where('is_publish', '1');
+            $query->where('is_publish', '1')->whereIn('id', $this->packageIds);
         })->orderBy('id', 'asc');
 
         if (request()->limit) {
@@ -279,12 +287,13 @@ class ExportDataPackage extends Controller
                 ];
             })->toArray();
         $columns = ['id', 'package_id', 'day_no', 'activity_start_id', 'activity_end_id', 'title', 'activity', 'hotel_id', 'meal_breakfast', 'meal_lunch', 'meal_dinner', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('package_itinerary_days.csv', $columns, $itinerary);
+        return ExportSQL::export('package_itinerary_days.csv', $columns, $itinerary);
     }
 
-    function packageItineraryDayDetails(){
+    function packageItineraryDayDetails()
+    {
         $itineraryDetails = ItineraryDetail::with('itinerary')->whereHas('itinerary.package', function ($query) {
-            $query->where('is_publish', '1');
+            $query->where('is_publish', '1')->whereIn('id', $this->packageIds);
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $itineraryDetails = $itineraryDetails->limit(request()->limit);
@@ -304,12 +313,13 @@ class ExportDataPackage extends Controller
                 ];
             })->toArray();
         $columns = ['id', 'itinerary_day_id', 'sort_order', 'time', 'activity_id', 'notes', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('package_itinerary_day_details.csv', $columns, $itineraryDetails);
+        return ExportSQL::export('package_itinerary_day_details.csv', $columns, $itineraryDetails);
     }
 
-    function packageDestinations(){
+    function packageDestinations()
+    {
         $packageDestination = PackageDestination::with('package')->whereHas('package', function ($query) {
-            $query->where('is_publish', '1');
+            $query->where('is_publish', '1')->whereIn('id', $this->packageIds);
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $packageDestination = $packageDestination->limit(request()->limit);
@@ -326,13 +336,14 @@ class ExportDataPackage extends Controller
             ];
         })->toArray();
         $columns = ['id', 'package_id', 'destination_id', 'sort_order', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('package_destinations.csv', $columns, $packageDestination);
+        return ExportSQL::export('package_destinations.csv', $columns, $packageDestination);
     }
 
-    function packageHotelOptions(){
+    function packageHotelOptions()
+    {
         $packageHotelOptions = PackageHotel::with('package')->whereHas('package', function ($query) {
-            $query->where('is_publish', '1');
-        })->where('price_plan_id',2)->orderBy('id', 'asc');
+            $query->where('is_publish', '1')->whereIn('id', $this->packageIds);
+        })->where('price_plan_id', 2)->orderBy('id', 'asc');
         if (request()->limit) {
             $packageHotelOptions = $packageHotelOptions->limit(request()->limit);
         }
@@ -349,8 +360,65 @@ class ExportDataPackage extends Controller
                 ];
             })->toArray();
         $columns = ['id', 'package_id', 'day_no', 'hotel_id', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('package_hotel_options.csv', $columns, $packageHotelOptions);
+        return ExportSQL::export('package_hotel_options.csv', $columns, $packageHotelOptions);
     }
 
+    function combinedPackages()
+    {
+        $combinedPackages = PackageActivity::where('is_single', '0')->orderBy('id', 'asc');
+        if (request()->limit) {
+            $combinedPackages = $combinedPackages->limit(request()->limit);
+        }
+        $combinedPackages = $combinedPackages
+            ->get()->map(function ($data) {
+                return [
+                    'id' => $data->id,
+                    'name' => $data->name,
+                    'long_name' => $data->long_name,
+                    'slug' => $data->url,
+                    'highlights' => $data->highlights,
+                    'created_at' => $data->created_at,
+                    'updated_at' => $data->updated_at,
+                    'deleted_at' => $data->deleted_at,
+                ];
+            })->toArray();
+        $columns = ['id', 'name', 'long_name', 'slug', 'highlights', 'created_at', 'updated_at', 'deleted_at'];
+        return ExportSQL::export('combined_packages.csv', $columns, $combinedPackages);
+    }
+    function combinedPackageDetails()
+    {
+        $data = [
+            ['id' => 1, 'combined_packages_id' => 1, 'package_id' => 28, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 2, 'combined_packages_id' => 1, 'package_id' => 29, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 3, 'combined_packages_id' => 1, 'package_id' => 32, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 4, 'combined_packages_id' => 1, 'package_id' => 33, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 5, 'combined_packages_id' => 1, 'package_id' => 42, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 6, 'combined_packages_id' => 1, 'package_id' => 56, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 7, 'combined_packages_id' => 2, 'package_id' => 33, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 8, 'combined_packages_id' => 2, 'package_id' => 29, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 9, 'combined_packages_id' => 2, 'package_id' => 32, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 10, 'combined_packages_id' => 3, 'package_id' => 29, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 11, 'combined_packages_id' => 3, 'package_id' => 85, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 12, 'combined_packages_id' => 3, 'package_id' => 28, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 25, 'combined_packages_id' => 4, 'package_id' => 73, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 23, 'combined_packages_id' => 5, 'package_id' => 48, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 24, 'combined_packages_id' => 5, 'package_id' => 47, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 58, 'combined_packages_id' => 6, 'package_id' => 63, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 59, 'combined_packages_id' => 6, 'package_id' => 80, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 60, 'combined_packages_id' => 8, 'package_id' => 54, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 61, 'combined_packages_id' => 8, 'package_id' => 69, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 13, 'combined_packages_id' => 9, 'package_id' => 32, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 14, 'combined_packages_id' => 9, 'package_id' => 33, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 15, 'combined_packages_id' => 9, 'package_id' => 34, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 16, 'combined_packages_id' => 9, 'package_id' => 70, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 17, 'combined_packages_id' => 12, 'package_id' => 56, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 18, 'combined_packages_id' => 12, 'package_id' => 43, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 19, 'combined_packages_id' => 13, 'package_id' => 71, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 20, 'combined_packages_id' => 13, 'package_id' => 74, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 21, 'combined_packages_id' => 14, 'package_id' => 72, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 22, 'combined_packages_id' => 14, 'package_id' => 75, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+        ];
+        $columns = ['id', 'combined_packages_id', 'package_id','created_at', 'updated_at', 'deleted_at'];
+        return ExportSQL::export('combined_package_details.csv', $columns, $data);
+    }
 }
-

@@ -38,6 +38,6 @@ class ExportDataDestinations extends Controller
             ];
         })->toArray();
         $columns = ['id', 'name', 'thumbnail_url', 'description', 'weather_by_season', 'rainfall_intensity', 'trail_details', 'required_gear', 'difficulty_level', 'environmental_factors', 'physical_requirements', 'main_attractions', 'best_time_to_visit', 'tips_for_visitors', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportCSV::export('destinations.csv', $columns, $destinations);
+        return ExportSQL::export('destinations.csv', $columns, $destinations);
     }
 }

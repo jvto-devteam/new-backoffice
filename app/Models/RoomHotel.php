@@ -11,7 +11,7 @@ class RoomHotel extends Model
     use HasFactory,SoftDeletes;
     public function hotel()
     {
-        return $this->belongsTo(Hotel::class,'hotel_id')->withTrashed();
+        return $this->belongsTo(Hotel::class,'hotel_id');
     }
     public function roomPhoto()
     {

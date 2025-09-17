@@ -12,7 +12,7 @@ class ExportDataHotel extends Controller
     public function roomTypes()
     {
         $roomTypes = RoomHotel::whereHas('hotel', function ($query) {
-            $query->where('is_publish', 1);
+            $query->where('is_publish', '1');
         })
             ->orderBy('id','asc');
         if(request()->limit){

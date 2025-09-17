@@ -14,6 +14,7 @@ use App\Http\Controllers\ExportData\ExportIncludeExclude;
 use App\Http\Controllers\ExportData\ExportDataActivities;
 use App\Http\Controllers\ExportData\ExportDataPolicies;
 use App\Http\Controllers\ExportData\ExportDataBookings;
+use App\Http\Controllers\ExportData\ExportDataDiscount;
 use App\Http\Controllers\ExportDataController;
 use Illuminate\Support\Facades\Route;
 
@@ -72,6 +73,9 @@ Route::prefix('export-data')->group(function () {
     Route::prefix('policies')->group(function () {
         Route::get('/policies', [ExportDataPolicies::class, 'policies']);
     });
+    Route::prefix('discount')->group(function () {
+        Route::get('/discount', [ExportDataDiscount::class, 'discount']);
+    });
     Route::prefix('bookings')->group(function () {
         Route::get('/bookings', [ExportDataBookings::class, 'bookings']);
         Route::get('/booking-payment-terms', [ExportDataBookings::class, 'bookingPaymentTerms']);
@@ -89,6 +93,7 @@ Route::prefix('export-data')->group(function () {
         Route::get('/booking-addons', [ExportDataBookings::class, 'bookingAddons']);
         Route::get('/booking-vehicle-units', [ExportDataBookings::class, 'bookingVehcileUnits']);
         Route::get('/booking-crew-members', [ExportDataBookings::class, 'bookingCrewMembers']);
+        Route::get('/booking-crew-member-activities', [ExportDataBookings::class, 'bookingCrewMemberActivities']);
         Route::get('/booking-destination-activities', [ExportDataBookings::class, 'bookingDestinationActivities']);
         Route::get('/booking-other-activities', [ExportDataBookings::class, 'bookingOtherActivities']);
     });

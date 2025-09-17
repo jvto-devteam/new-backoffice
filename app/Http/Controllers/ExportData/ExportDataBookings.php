@@ -7,6 +7,7 @@ use App\Models\BookAddOn;
 use App\Models\BookCarActivity;
 use App\Models\BookCrewActivity;
 use App\Models\BookDestinationActivity;
+use App\Models\BookGuideDriver;
 use App\Models\BookHotel;
 use App\Models\BookHotelMeal;
 use App\Models\Booking;
@@ -537,7 +538,44 @@ class ExportDataBookings extends Controller
         return ExportCSV::export('booking_vehicle_units.csv', $columns, $bookVehicleUnit);
     }
 
-    function bookingCrewMember() {
+    function bookingCrewMembers() {
+        $bookCrewMembers = BookGuideDriver::with('booking')->whereHas('booking', function ($query) {
+            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
+        })->orderBy('id', 'asc');
+        if (request()->limit) {
+            $bookCrewMembers = $bookCrewMembers->limit(request()->limit);
+        }
+        $bookCrewMembers = $bookCrewMembers->get()->map(function($bookCrewMember){
+            return [
+                'id' => $bookCrewMember->id,
+                'booking_id' => $bookCrewMember->booking_id,
+                'crew_member_id' => $bookCrewMember->guide_id,
+                'type' => $bookCrewMember->type,
+                'duration_day' => $bookCrewMember->duration,
+                'start_date' => $bookCrewMember->start_date,
+                'end_date' => $bookCrewMember->end_date,
+                'trip_type' => $bookCrewMember->guide_ijen == '1' ? 'ijen' : 'escort',
+                'created_at' => $bookCrewMember->created_at,
+                'updated_at' => $bookCrewMember->updated_at,
+                'deleted_at ' => $bookCrewMember->deleted_at,               
+            ];
+        })->toArray();
+        $columns = [
+            'id',
+            'booking_id',
+            'crew_member_id',
+            'type',
+            'duration_day',
+            'start_date',
+            'end_date',
+            'trip_type',
+            'created_at',
+            'updated_at',
+            'deleted_at ',
+        ];
+        return ExportCSV::export('booking_crew_members.csv', $columns, $bookCrewMembers);
+    }
+    function bookingCrewMemberActivities() {
         $bookCrewActivities = BookCrewActivity::with('booking')->whereHas('booking', function ($query) {
             $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate);
         })->orderBy('id', 'asc');
@@ -548,21 +586,31 @@ class ExportDataBookings extends Controller
             return [
                 'id' => $bookCrewActivity->id,
                 'booking_id' => $bookCrewActivity->booking_id,
-                'crew_member_id' => null,
                 'crew_role_id' => $bookCrewActivity->crew_role_id,
-                'type' => null,
-                'duration_day' => $bookCrewActivity->duration_day,
-                'start_date' => $bookCrewActivity->start_date,
-                'end_date' => $bookCrewActivity->end_date,
-                'is_ijen_guide' => $bookCrewActivity->is_ijen_guide,
-                'is_escort_guide' => $bookCrewActivity->is_escort_guide,
-                'price' => $bookCrewActivity->price,
-                'subtotal' => $bookCrewActivity->subtotal,
+                'quantity' => $bookCrewActivity->qty,
+                'price' => (int)$bookCrewActivity->price,
+                'subtotal' => (int)$bookCrewActivity->subtotal,
+                'is_paid' => $bookCrewActivity->status_paid == 'paid' ? true : false,
+                'is_debt' => $bookCrewActivity->is_debt == '1' ? true : false,
                 'created_at' => $bookCrewActivity->created_at,
                 'updated_at' => $bookCrewActivity->updated_at,
                 'deleted_at ' => $bookCrewActivity->deleted_at,               
-            ]
-        });
+            ];
+        })->toArray();
+        $columns = [
+            'id',
+            'booking_id',
+            'crew_role_id',
+            'quantity',
+            'price',
+            'subtotal',
+            'is_paid',
+            'is_debt',
+            'created_at',
+            'updated_at',
+            'deleted_at ',
+        ];
+        return ExportCSV::export('booking_crew_member_activities.csv', $columns, $bookCrewActivities);
     }
     function bookingDestinationActivities()
     {

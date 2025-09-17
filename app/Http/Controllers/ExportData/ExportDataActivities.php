@@ -117,7 +117,7 @@ class ExportDataActivities extends Controller
                     'name' => $data->name, 
                     'unit' => $data->unit, 
                     'formula' => $data->formula, 
-                    'price' => $data->price, 
+                    'price' => (int)$data->price, 
                     'is_twt' => $data->is_twt == '1' ? true : false, 
                     'is_default_jvto' => $data->is_default_jvto == '1' ? true : false, 
                     'is_default_klook' => $data->is_default_klook == '1' ? true : false, 

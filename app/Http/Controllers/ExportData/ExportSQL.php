@@ -8,7 +8,7 @@ class ExportSQL
 {
     public static function export(string $tableName, array $columns, $data): StreamedResponse
     {
-        $tableName = str_replace(".csv","",$tableName);
+        $tableName = str_replace(".csv", "", $tableName);
         $headers = [
             'Content-Type' => 'application/sql',
             'Content-Disposition' => "attachment; filename=\"{$tableName}.sql\"",
@@ -31,6 +31,8 @@ class ExportSQL
 
                     if (is_null($val)) {
                         $values[] = "NULL";
+                    } elseif (is_bool($val)) {
+                        $values[] = $val ? 'true' : 'false';
                     } elseif (is_numeric($val)) {
                         $values[] = $val;
                     } else {

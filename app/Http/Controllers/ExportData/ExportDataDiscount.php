@@ -17,13 +17,23 @@ class ExportDataDiscount extends Controller
         $this->packageIds = [73, 48, 47, 29, 28, 85, 65, 86, 91, 63, 80, 32, 33, 34, 54, 56, 43, 55, 74, 82, 83, 84];
     }
 
-    function discount(){
-        $discount = Discount::with('booking')->whereHas('booking', function ($query) {
-            $query->where('status', 'booked')->where('travel_date_start', '>=', $this->firstDate)->whereHas('bookingDetail', function ($q) {
-                $q->whereNull('package_id')
-                    ->orWhereIn('package_id', $this->packageIds);
-            });
-        })->orderBy('id','desc');
+    function discount()
+    {
+        $discount = Discount::with('booking')
+            ->where(function ($query) {
+                // ambil yang ada booking dengan kondisi tertentu
+                $query->whereHas('booking', function ($q) {
+                    $q->where('status', 'booked')
+                        ->where('travel_date_start', '>=', $this->firstDate)
+                        ->whereHas('bookingDetail', function ($qq) {
+                            $qq->whereNull('package_id')
+                                ->orWhereIn('package_id', $this->packageIds);
+                        });
+                })
+                    // ATAU booking_id null
+                    ->orWhereNull('booking_id');
+            })
+            ->orderBy('id', 'asc');
         if (request()->limit) {
             $discount = $discount->limit(request()->limit);
         }

@@ -16,13 +16,13 @@ class ExportDataVehicles extends Controller
             $vehicle = $vehicle->limit(request()->limit);
         }
         $vehicle = $vehicle
-        ->get(['id', 'car_name as name', 'start_pax as capacity_min_pax', 'end_pax as capacity_max_pax', 'price as price_per_day', 'price_twt as twt_price_per_day', 'created_at', 'updated_at', 'deleted_at'])
+        ->get(['id', 'car_name as name', 'start_pax as capacity_min_pax', 'end_pax as capacity_max_pax', 'price as price_per_day', 'price_twt as price_twt_per_day', 'created_at', 'updated_at', 'deleted_at'])
             ->values() // reset index
             ->map(function ($item, $index) {
                 $item->id = $index + 1; // ganti id mulai dari 1
                 return $item;
             });
-        $columns = ['id', 'name', 'capacity_min_pax', 'capacity_max_pax', 'price_per_day', 'twt_price_per_day', 'created_at', 'updated_at', 'deleted_at'];
+        $columns = ['id', 'name', 'capacity_min_pax', 'capacity_max_pax', 'price_per_day', 'price_twt_per_day', 'created_at', 'updated_at', 'deleted_at'];
         return ExportSQL::export('vehicle_types.csv', $columns, $vehicle);
     }
     function vehicleUnits()
@@ -46,7 +46,7 @@ class ExportDataVehicles extends Controller
             return [
                 'id' => $data->id,
                 'vehicle_type_id' => $vehicleTypes[$data->car_name] ?? $data->car_name,
-                'plat_no' => '',
+                'plate_no' => null,
                 'nickname' => $data->name,
                 'is_active' => true,
                 'vendor_id' => $data->vendor_id,
@@ -55,7 +55,7 @@ class ExportDataVehicles extends Controller
                 'deleted_at' => $data->deleted_at,
             ];
         })->toArray();
-        $columns = ['id', 'vehicle_type_id', 'plat_no', 'nickname', 'is_active', 'vendor_id', 'created_at', 'updated_at', 'deleted_at'];
+        $columns = ['id', 'vehicle_type_id', 'plate_no', 'nickname', 'is_active', 'vendor_id', 'created_at', 'updated_at', 'deleted_at'];
         return ExportSQL::export('vehicle_units.csv', $columns, $vehicleUnits);
     }
 }

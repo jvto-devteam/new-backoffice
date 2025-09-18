@@ -42,7 +42,7 @@ class ExportDataPackage extends Controller
     {
         $package = Package::with(['itinerary.itineraryMeals' => function ($query) {
             $query->where('price_plan_id', 2);
-        }])->whereIn('id', $this->packageIds)->where('is_publish', '1')->orderBy('id', 'asc');
+        }])->whereIn('id', $this->packageIds)->orderBy('id', 'asc');
         if (request()->limit) {
             $package = $package->limit(request()->limit);
         }
@@ -65,17 +65,18 @@ class ExportDataPackage extends Controller
                     'uuid' => $data->uuid,
                     'code' => $data->package_code,
                     'slug' => $data->url,
+                    'name' => $data->name,
                     'description' => $data->overview,
-                    'duration_idr' => $data->duration_id,
+                    'duration_id' => $data->duration_id,
                     'order_channel_id' => $data->package_platform == 'website' ? 1 : 3,
                     'package_category_id' => $data->category_id,
                     'start_destination_id' => $data->start_destination_id,
                     'end_destination_id' => $data->end_destination_id,
                     'key_highlights' => $data->key_highlights,
                     'ideal_arrival' => $data->ideal_arrival,
-                    'physicallity' => $data->physicality,
+                    'physicality' => $data->physicality,
                     'suitable_for' => $data->suitable_for,
-                    'is_publish' => $data->is_publish,
+                    'is_publish' => $data->is_publish == '1' ? true : false,
                     'total_breakfast' => $totalBreakfast,
                     'total_lunch' => $totalLunch,
                     'total_dinner' => $totalDinner,
@@ -86,13 +87,13 @@ class ExportDataPackage extends Controller
                     'deleted_at' => $data->deleted_at,
                 ];
             })->toArray();
-        $columns = ['id', 'uuid', 'code', 'slug', 'description', 'duration_idr', 'order_channel_id', 'package_category_id', 'start_destination_id', 'end_destination_id', 'key_highlights', 'ideal_arrival', 'physicallity', 'suitable_for', 'is_publish', 'total_breakfast', 'total_lunch', 'total_dinner', 'google_merchant_product_id', 'meta_catalogue_id', 'created_at', 'updated_at', 'deleted_at'];
+        $columns = ['id', 'uuid', 'code', 'slug','name', 'description', 'duration_id', 'order_channel_id', 'package_category_id', 'start_destination_id', 'end_destination_id', 'key_highlights', 'ideal_arrival', 'physicality', 'suitable_for', 'is_publish', 'total_breakfast', 'total_lunch', 'total_dinner', 'google_merchant_product_id', 'meta_catalogue_id', 'created_at', 'updated_at', 'deleted_at'];
         return ExportSQL::export('packages.csv', $columns, $package);
     }
     function packageImages()
     {
         $images = PackageBanner::with('gallery.destinationGallery')->whereHas('package', function ($query) {
-            $query->where('is_publish', '1')->whereIn('id', $this->packageIds);
+            $query->whereIn('id', $this->packageIds);
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $images = $images->limit(request()->limit);
@@ -126,7 +127,7 @@ class ExportDataPackage extends Controller
 
     function packageIncludes()
     {
-        $package = Package::where('is_publish', '1')->whereIn('id', $this->packageIds)->orderBy('id', 'asc');
+        $package = Package::whereIn('id', $this->packageIds)->orderBy('id', 'asc');
         if (request()->limit) {
             $package = $package->limit(request()->limit);
         }
@@ -149,13 +150,13 @@ class ExportDataPackage extends Controller
                 ];
             }
         }
-        $columns = ['id', 'package_id', 'item_exclude_id', 'created_at', 'updated_at', 'deleted_at'];
+        $columns = ['id', 'package_id', 'item_include_id', 'created_at', 'updated_at', 'deleted_at'];
         return ExportSQL::export('package_includes.csv', $columns, $export);
     }
 
     function packageExcludes()
     {
-        $package = Package::where('is_publish', '1')->whereIn('id', $this->packageIds)->orderBy('id', 'asc');
+        $package = Package::whereIn('id', $this->packageIds)->orderBy('id', 'asc');
         if (request()->limit) {
             $package = $package->limit(request()->limit);
         }
@@ -183,7 +184,7 @@ class ExportDataPackage extends Controller
     }
     function packageAddons()
     {
-        $packages = Package::with('packageDestination')->whereIn('id', $this->packageIds)->where('is_publish', '1')->orderBy('id', 'asc');
+        $packages = Package::with('packageDestination')->whereIn('id', $this->packageIds)->orderBy('id', 'asc');
 
         if (request()->limit) {
             $packages = $packages->limit(request()->limit);
@@ -232,7 +233,7 @@ class ExportDataPackage extends Controller
     function packagePrices()
     {
         $packagePrices = PackagePrice::with('package')->whereHas('package', function ($query) {
-            $query->where('is_publish', '1')->whereIn('id', $this->packageIds);
+            $query->whereIn('id', $this->packageIds);
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $packagePrices = $packagePrices->limit(request()->limit);
@@ -261,7 +262,7 @@ class ExportDataPackage extends Controller
         }, 'itineraryMeals' => function ($query) {
             $query->where('price_plan_id', 2);
         }])->whereHas('package', function ($query) {
-            $query->where('is_publish', '1')->whereIn('id', $this->packageIds);
+            $query->whereIn('id', $this->packageIds);
         })->orderBy('id', 'asc');
 
         if (request()->limit) {
@@ -278,9 +279,9 @@ class ExportDataPackage extends Controller
                     'title' => $data->title,
                     'activity' => $data->activity,
                     'hotel_id' => $data->package->packageHotel->where('day', $data->day)->first()->hotel_id ?? null,
-                    'meal_breakfast' => (int)($data->itineraryMeals[0]->breakfast ?? 0),
-                    'meal_lunch' => (int)($data->itineraryMeals[0]->lunch ?? 0),
-                    'meal_dinner' => (int)($data->itineraryMeals[0]->dinner ?? 0),
+                    'meal_breakfast' => $data->itineraryMeals[0]->breakfast == '1' ? true : false,
+                    'meal_lunch' => $data->itineraryMeals[0]->lunch == '1' ? true : false,
+                    'meal_dinner' => $data->itineraryMeals[0]->dinner == '1' ? true : false,
                     'created_at' => $data->created_at,
                     'updated_at' => $data->updated_at,
                     'deleted_at' => $data->deleted_at,
@@ -293,7 +294,7 @@ class ExportDataPackage extends Controller
     function packageItineraryDayDetails()
     {
         $itineraryDetails = ItineraryDetail::with('itinerary')->whereHas('itinerary.package', function ($query) {
-            $query->where('is_publish', '1')->whereIn('id', $this->packageIds);
+            $query->whereIn('id', $this->packageIds);
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $itineraryDetails = $itineraryDetails->limit(request()->limit);
@@ -319,7 +320,7 @@ class ExportDataPackage extends Controller
     function packageDestinations()
     {
         $packageDestination = PackageDestination::with('package')->whereHas('package', function ($query) {
-            $query->where('is_publish', '1')->whereIn('id', $this->packageIds);
+            $query->whereIn('id', $this->packageIds);
         })->orderBy('id', 'asc');
         if (request()->limit) {
             $packageDestination = $packageDestination->limit(request()->limit);
@@ -342,7 +343,7 @@ class ExportDataPackage extends Controller
     function packageHotelOptions()
     {
         $packageHotelOptions = PackageHotel::with('package')->whereHas('package', function ($query) {
-            $query->where('is_publish', '1')->whereIn('id', $this->packageIds);
+            $query->whereIn('id', $this->packageIds);
         })->where('price_plan_id', 2)->orderBy('id', 'asc');
         if (request()->limit) {
             $packageHotelOptions = $packageHotelOptions->limit(request()->limit);
@@ -388,37 +389,31 @@ class ExportDataPackage extends Controller
     function combinedPackageDetails()
     {
         $data = [
-            ['id' => 1, 'combined_packages_id' => 1, 'package_id' => 28, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 2, 'combined_packages_id' => 1, 'package_id' => 29, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 3, 'combined_packages_id' => 1, 'package_id' => 32, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 4, 'combined_packages_id' => 1, 'package_id' => 33, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 5, 'combined_packages_id' => 1, 'package_id' => 42, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 6, 'combined_packages_id' => 1, 'package_id' => 56, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 7, 'combined_packages_id' => 2, 'package_id' => 33, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 8, 'combined_packages_id' => 2, 'package_id' => 29, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 9, 'combined_packages_id' => 2, 'package_id' => 32, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 10, 'combined_packages_id' => 3, 'package_id' => 29, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 11, 'combined_packages_id' => 3, 'package_id' => 85, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 12, 'combined_packages_id' => 3, 'package_id' => 28, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 25, 'combined_packages_id' => 4, 'package_id' => 73, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 23, 'combined_packages_id' => 5, 'package_id' => 48, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 24, 'combined_packages_id' => 5, 'package_id' => 47, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 58, 'combined_packages_id' => 6, 'package_id' => 63, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 59, 'combined_packages_id' => 6, 'package_id' => 80, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 60, 'combined_packages_id' => 8, 'package_id' => 54, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 61, 'combined_packages_id' => 8, 'package_id' => 69, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 13, 'combined_packages_id' => 9, 'package_id' => 32, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 14, 'combined_packages_id' => 9, 'package_id' => 33, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 15, 'combined_packages_id' => 9, 'package_id' => 34, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 16, 'combined_packages_id' => 9, 'package_id' => 70, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 17, 'combined_packages_id' => 12, 'package_id' => 56, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 18, 'combined_packages_id' => 12, 'package_id' => 43, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 19, 'combined_packages_id' => 13, 'package_id' => 71, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 20, 'combined_packages_id' => 13, 'package_id' => 74, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 21, 'combined_packages_id' => 14, 'package_id' => 72, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
-            ['id' => 22, 'combined_packages_id' => 14, 'package_id' => 75, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 1, 'combined_package_id' => 1, 'package_id' => 28, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 2, 'combined_package_id' => 1, 'package_id' => 29, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 3, 'combined_package_id' => 1, 'package_id' => 32, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 4, 'combined_package_id' => 1, 'package_id' => 33, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 5, 'combined_package_id' => 1, 'package_id' => 56, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 6, 'combined_package_id' => 2, 'package_id' => 33, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 7, 'combined_package_id' => 2, 'package_id' => 29, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 8, 'combined_package_id' => 2, 'package_id' => 32, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 9, 'combined_package_id' => 3, 'package_id' => 29, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 10, 'combined_package_id' => 3, 'package_id' => 85, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 11, 'combined_package_id' => 3, 'package_id' => 28, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 12, 'combined_package_id' => 4, 'package_id' => 73, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 13, 'combined_package_id' => 5, 'package_id' => 48, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 14, 'combined_package_id' => 5, 'package_id' => 47, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 15, 'combined_package_id' => 6, 'package_id' => 63, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 16, 'combined_package_id' => 6, 'package_id' => 80, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 17, 'combined_package_id' => 8, 'package_id' => 54, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 18, 'combined_package_id' => 9, 'package_id' => 32, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 19, 'combined_package_id' => 9, 'package_id' => 33, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 20, 'combined_package_id' => 9, 'package_id' => 34, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 21, 'combined_package_id' => 12, 'package_id' => 56, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 22, 'combined_package_id' => 12, 'package_id' => 43, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+            ['id' => 23, 'combined_package_id' => 13, 'package_id' => 74, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
         ];
-        $columns = ['id', 'combined_packages_id', 'package_id','created_at', 'updated_at', 'deleted_at'];
+        $columns = ['id', 'combined_package_id', 'package_id','created_at', 'updated_at', 'deleted_at'];
         return ExportSQL::export('combined_package_details.csv', $columns, $data);
     }
 }

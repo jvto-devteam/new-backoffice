@@ -55,7 +55,8 @@ class ExportDataCrew extends Controller
                     'deleted_at' => $query->deleted_at,
                 ];
             });
-        $columns = ['id', 'name', 'email', 'type', 'phone', 'photo_url', 'created_at', 'updated_at', 'deleted_at'];
+            return $crew;
+        $columns = ['id', 'name', 'email', 'type','tags', 'phone', 'photo_url', 'created_at', 'updated_at', 'deleted_at'];
         return ExportSQL::export('crew_members.csv', $columns, $crew);
     }
     function crewMemberRoles()

@@ -15,6 +15,7 @@ use App\Models\BookingItinerary;
 use App\Models\BookingPayment;
 use App\Models\BookOthersActivity;
 use App\Models\BookRoomHotel;
+use App\Models\Duration;
 use Carbon\Carbon;
 use DateTime;
 use Illuminate\Http\Request;
@@ -65,6 +66,12 @@ class ExportDataBookings extends Controller
                     $invoiceFileOrigin = $booking->bookingDocument->where('attachment_type_id', 7)->last();
                     $invoiceFileOrigin = $invoiceFileOrigin ? '/customer-document/' . $invoiceFileOrigin->file : null;
                 }
+                if($booking->bookingDetail[0]->package_id){
+                    $durationId = $booking->bookingDetail[0]->package->duration_id;
+                }
+                else{
+                    $durationId = Duration::where('day',$booking->package_duration)->first()->id ?? null;
+                }
                 return [
                     'id' => $booking->id,
                     'booking_code' => $booking->booking_code,
@@ -72,15 +79,15 @@ class ExportDataBookings extends Controller
                     'invoice_file_origin' => $invoiceFileOrigin,
                     'customer_id' => $booking->user_id,
                     'package_id' => $booking->bookingDetail[0]->package_id ?? null,
-                    'duration_id' => $booking->bookingDetail[0]->package->duration_id ?? null,
+                    'duration_id' => $durationId,
                     'order_channel_id' => $orderChannelId,
                     'booking_date' => $booking->booking_date,
                     'start_date' => $booking->travel_date_start,
                     'end_date' => $booking->travel_date_end,
                     'total_participants' => $booking->total_pax,
-                    'booking_status' => 'confirmed',
-                    'trip_status' => $tripStatus,
-                    'payment_status' => $paymentStatus,
+                    'booking_status' => 'CONFIRMED',
+                    'trip_status' => strtoupper($tripStatus),
+                    'payment_status' => strtoupper($paymentStatus),
                     'is_shuttle_service' => $booking->is_shuttle == '1' ? true : false,
                     'slug' => $booking->url_name,
                     'trip_media_url' => $booking->media_link,
@@ -146,6 +153,7 @@ class ExportDataBookings extends Controller
                 'deleted_at' => $booking->deleted_at,
             ];
         });
+
         $columns = ['id', 'booking_id', 'deposit_payment_method_id', 'deposit_payment_link', 'deposit_due_date', 'deposit_amount', 'outstanding_payment_method_id', 'outstanding_payment_link', 'full_payment_due_date', 'total_before_discount', 'total_discount', 'discount_id', 'discount_type', 'total_add_on', 'grandtotal', 'total_payment', 'balance', 'created_at', 'updated_at', 'deleted_at'];
         return ExportSQL::export('booking_payment_terms.csv', $columns, $bookings->toArray());
     }
@@ -525,7 +533,7 @@ class ExportDataBookings extends Controller
                 ];
             });
         $columns = ['id', 'addon_id', 'booking_id', 'price', 'price_expense', 'quantity', 'total', 'created_at', 'updated_at', 'deleted_at'];
-        return ExportSQL::export('booking_hotel_addons.csv', $columns, $bookAddons);
+        return ExportSQL::export('booking_addons.csv', $columns, $bookAddons);
     }
     function bookingVehcileUnits()
     {
@@ -589,7 +597,11 @@ class ExportDataBookings extends Controller
                 $q->whereNull('package_id')
                     ->orWhereIn('package_id', $this->packageIds);
             });
-        })->orderBy('id', 'asc');
+        })
+        ->whereHas('person', function ($q) {
+            $q->whereNull('deleted_at'); // filter hanya crew/guide yang belum soft delete
+        })        
+        ->orderBy('id', 'asc');
         if (request()->limit) {
             $bookCrewMembers = $bookCrewMembers->limit(request()->limit);
         }
@@ -770,11 +782,11 @@ class ExportDataBookings extends Controller
                 'id' => $id,
                 'booking_id' => $booking->id,
                 'wa_schedule_trip_information' => $booking->wa_schedule_trip_information, 
-                'wa_status_trip_information' => $booking->wa_status_trip_information, 
+                'wa_status_trip_information' => $booking->wa_status_trip_information == '0' ? 'PENDING' : ($booking->wa_status_trip_information == '1' ? 'SENT' : 'FAILED'), 
                 'wa_schedule_trip_media' => $booking->wa_schedule_trip_media, 
-                'wa_status_trip_media' => $booking->wa_status_trip_media, 
+                'wa_status_trip_media' => $booking->wa_status_trip_media == '0' ? 'PENDING' : ($booking->wa_status_trip_media == '1' ? 'SENT' : 'FAILED'), 
                 'wa_schedule_reminder_crew' => $booking->wa_schedule_reminder_crew, 
-                'wa_status_reminder_crew' => $booking->wa_status_reminder_crew, 
+                'wa_status_reminder_crew' => $booking->wa_status_reminder_crew == '0' ? 'PENDING' : ($booking->wa_status_reminder_crew == '1' ? 'SENT' : 'FAILED'), 
                 'created_at' => $booking->created_at,
                 'updated_at' => $booking->updated_at,
                 'deleted_at'   => $booking->deleted_at,

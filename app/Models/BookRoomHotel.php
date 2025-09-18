@@ -14,7 +14,7 @@ class BookRoomHotel extends Model
     
     public function roomHotel()
     {
-        return $this->belongsTo(RoomHotel::class, 'room_hotel_id')->withTrashed();
+        return $this->belongsTo(RoomHotel::class, 'room_hotel_id');
     }
 
     public function bookHotel()

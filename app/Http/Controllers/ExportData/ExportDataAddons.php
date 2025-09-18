@@ -18,7 +18,7 @@ class ExportDataAddons extends Controller
             return [
                 'id' => $data->id,
                 'name' => $data->add_on,
-                'is_transport' => $data->is_transport,
+                'is_transport' => $data->is_transport == '1' ? true : false,
                 'transport_type' => $data->type_transport,
                 'image' => $data->img ? '/img/addons/'.$data->img : null,
                 'price' => (int)$data->price,

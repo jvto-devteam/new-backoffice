@@ -237,6 +237,7 @@ const getActivityIcon = (type) => {
 
 // Komponen utama DayActivities
 const DayActivities = ({ day,locations,activities, dayIndex, updateDay, formStatus, setFormStatus,activityTypes,departure,returnDay,numbOfDay,hotelOptions }) => {
+  
     // State untuk dropdown
     const [addActivityDropdown, setAddActivityDropdown] = useState(false);
     const [addFirstActivityDropdown, setAddFirstActivityDropdown] = useState(false);
@@ -407,7 +408,7 @@ const DayActivities = ({ day,locations,activities, dayIndex, updateDay, formStat
                         updateActivity={updateActivity}
                         addActivityAfter={handleAddActivityAfter}
                         locations={locations}
-                        activityOptions={activities.filter((item) => item.activity_category_id === activity.type)}
+                        activityOptions={activities.filter((item) => item.activity_category_id == activity.type)}
                         activityTypes={activityTypes}
                         hotelOptions={hotelOptions}                        
                     />

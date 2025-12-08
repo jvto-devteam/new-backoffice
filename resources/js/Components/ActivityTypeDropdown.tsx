@@ -30,6 +30,7 @@ const ActivityTypeDropdown = ({ isOpen, onSelect, onClose, dayIndex, triggerRef,
   // Kalkulasi posisi dropdown berdasarkan posisi tombol trigger
   useEffect(() => {
     if (isOpen && triggerRef.current) {
+      
       const triggerRect = triggerRef.current.getBoundingClientRect();
       const { top, left, height, width } = triggerRect;
       

@@ -76,7 +76,7 @@ class CrewController extends Controller
         
             return $item;
         });        
-        $crew->photo = $crew->photo ? 'https://javavolcano-touroperator.com/assets/img/guide/'.$crew->photo : 'https://javavolcano-touroperator.com/assets/img/guide/default.jpg';
+        $crew->photo = $crew->photo ? 'https://legacy.javavolcano-touroperator.com/assets/img/guide/'.$crew->photo : 'https://legacy.javavolcano-touroperator.com/assets/img/guide/default.jpg';
         $crew->escort_trips = $crew->bookGuideDriver->filter(function($item){
             return $item->guide_ijen == '0';
         })->count();

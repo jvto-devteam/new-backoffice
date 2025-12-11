@@ -673,7 +673,7 @@ class BookingController extends Controller
                 
             $dataSending["message"] = "✅ *Booking Confirmed – Java Volcano Tour Operator (JVTO)*\r\nThank you, ".$user->name.", for completing your *booking*.\r\n\r\nWe’re pleased to confirm that your *tour booking is now secured*. 📩".$isJvto."\r\n\r\nIf you have any questions or special requests, feel free to contact us via WhatsApp or email.".$isKlook."\r\n\r\n🙏 We truly appreciate your trust. We look forward to welcoming you on an unforgettable journey!\r\n\r\n*JVTO Team*";
             $dataSending["phone_no"] = (string)$user->phone;
-            $dataSending["url"] = "https://javavolcano-touroperator.com/assets/img/banner.jpeg";
+            $dataSending["url"] = "https://legacy.javavolcano-touroperator.com/assets/img/banner.jpeg";
             $dataSending["separate_caption"] = "0";
     
             $curl = curl_init();

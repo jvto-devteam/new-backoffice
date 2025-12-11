@@ -22,7 +22,7 @@ const TourLandingPage = () => {
             {/* Hero Section */}
             <div className="relative h-96 mb-8">
                 <img
-                    src="https://javavolcano-touroperator.com/assets/img/destinations/ijen-bromo-tumpak-sewu-malang-sightseeing-tour-1676526893742/1687320433_IJEN31.webp"
+                    src="https://legacy.javavolcano-touroperator.com/assets/img/destinations/ijen-bromo-tumpak-sewu-malang-sightseeing-tour-1676526893742/1687320433_IJEN31.webp"
                     alt="Mount Bromo Sunrise Tour"
                     className="w-full h-full object-cover"
                 />

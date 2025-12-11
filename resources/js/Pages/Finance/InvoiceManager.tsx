@@ -774,9 +774,9 @@ const PaymentStatusBadge = ({ status }) => {
                                                         <button 
                                                         onClick={(e) => {
                                                             e.preventDefault();
-                                                            window.open(`https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/${data.id}`, '_blank');
+                                                            window.open(`https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-invoice/${data.id}`, '_blank');
                                                             if(data.total_add_on && data.total_add_on != 0) {
-                                                            window.open(`https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/${data.id}?addon=true`, '_blank');
+                                                            window.open(`https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-invoice/${data.id}?addon=true`, '_blank');
                                                             }
                                                         }}
 

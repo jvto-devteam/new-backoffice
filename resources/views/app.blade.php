@@ -8,10 +8,10 @@
         <meta property="og:title" content="New Back Office JVTO" />
         <meta property="og:description" content="Welcome to New Back Office JVTO" />
         <meta property="og:url" content="https://new-backoffice.javavolcano-touroperator.com/" />
-        <meta property="og:image" content="https://javavolcano-touroperator.com/assets/img/download.png" />
+        <meta property="og:image" content="https://legacy.javavolcano-touroperator.com/assets/img/download.png" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="627" />
-        <link rel="icon" type="image/png" href="https://javavolcano-touroperator.com/assets/img/download.png" id="favicon"/>
+        <link rel="icon" type="image/png" href="https://legacy.javavolcano-touroperator.com/assets/img/download.png" id="favicon"/>
         <link rel="manifest" href="/manifest.json">        
 
         {{-- <title inertia>{{ config('app.name', 'New Backoffice JVTO') }}</title> --}}

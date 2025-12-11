@@ -55,7 +55,7 @@ const PriceAndPayment = ({ booking, paymentHistory }) => {
                                 Total Price
                             </span>
                             <a
-                                href={`https://javavolcano-touroperator.com/bookings/invoice/${booking.url}`}
+                                href={`https://legacy.javavolcano-touroperator.com/bookings/invoice/${booking.url}`}
                                 className="text-sm font-semibold text-blue-600 underline"
                                 target="_blank"
                             >
@@ -266,7 +266,7 @@ const BookingInfo = ({ booking }) => {
                                     <a
                                         href={
                                             booking.booking_category_id != 3
-                                                ? `https://javavolcano-touroperator.com/details/${booking.booking_detail[0]?.package.url}`
+                                                ? `https://javavolcano-touroperator.com/${booking.booking_detail[0]?.package.new_slug}`
                                                 : "https://www.klook.com/activity/99790-3-day-mount-bromo-sunrise-ijen-madakaripura-trekking-trip-surabaya/"
                                         }
                                         target="_blank"
@@ -740,7 +740,7 @@ const SummaryCards = ({ booking, totals }) => {
                         <span className="text-gray-500 text-sm">Invoice</span>
                         <div className="flex gap-1">
                             <a
-                                href={`https://javavolcano-touroperator.com/bookings/invoice/${booking.url}`}
+                                href={`https://legacy.javavolcano-touroperator.com/bookings/invoice/${booking.url}`}
                                 className="text-red-500"
                                 target="_blank"
                                 rel="noopener noreferrer"

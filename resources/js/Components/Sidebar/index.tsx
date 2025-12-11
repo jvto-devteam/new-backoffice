@@ -72,7 +72,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                 <Link href="/">
                     <img
                         className="h-13"
-                        src="https://javavolcano-touroperator.com/assets/img/jvto-color.png"
+                        src="https://legacy.javavolcano-touroperator.com/assets/img/jvto-color.png"
                         alt="Logo"
                     />
                 </Link>

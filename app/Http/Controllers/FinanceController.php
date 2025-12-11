@@ -423,7 +423,7 @@ class FinanceController extends Controller
                     'package' => [
                         'duration' => $days . "D " . $nights . "N",
                         'package_name' => $data->bookingDetail[0]->package ? $data->bookingDetail[0]->package->name : ($data->package_duration > 1 ? $data->package_duration . "D " . ($data->package_duration - 1) . "N Package" : $data->package_duration . "D " . ($data->package_duration) . "N Package"),
-                        'package_url' => $data->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/packages/details/" . $data->bookingDetail[0]->package->url : null,
+                        'package_url' => $data->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/" . $data->bookingDetail[0]->package->new_slug : null,
                         'price_per_pax'  => (int)$per_pax,
                     ],
                     'booking' => [
@@ -485,7 +485,7 @@ class FinanceController extends Controller
                             'package' => [
                                 'duration' => $days . "D " . $nights . "N",
                                 'package_name' => $data->booking->bookingDetail[0]->package ? $data->booking->bookingDetail[0]->package->name : ($data->booking->package_duration > 1 ? $data->booking->package_duration . "D " . ($data->booking->package_duration - 1) . "N Package" : $data->booking->package_duration . "D " . ($data->booking->package_duration) . "N Package"),
-                                'package_url' => $data->booking->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/packages/details/" . $data->booking->bookingDetail[0]->package->url : null,
+                                'package_url' => $data->booking->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/" . $data->booking->bookingDetail[0]->package->new_slug : null,
                                 'price_per_pax'  => (int)$per_pax,
                             ],
                             'booking' => [
@@ -666,7 +666,7 @@ class FinanceController extends Controller
                         'package' => [
                             'duration' => $days . "D " . $nights . "N",
                             'package_name' => $data->bookingDetail[0]->package ? $data->bookingDetail[0]->package->name : ($data->package_duration > 1 ? $data->package_duration . "D " . ($data->package_duration - 1) . "N Package" : $data->package_duration . "D " . ($data->package_duration) . "N Package"),
-                            'package_url' => $data->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/packages/details/" . $data->bookingDetail[0]->package->url : null,
+                            'package_url' => $data->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/" . $data->bookingDetail[0]->package->new_slug : null,
                             'price_per_pax'  => (int)$per_pax,
                         ],
                         'booking' => [
@@ -803,7 +803,7 @@ class FinanceController extends Controller
                     'package' => [
                         'duration' => $days . "D " . $nights . "N",
                         'package_name' => $data->bookingDetail[0]->package ? $data->bookingDetail[0]->package->name : ($data->package_duration > 1 ? $data->package_duration . "D " . ($data->package_duration - 1) . "N Package" : $data->package_duration . "D " . ($data->package_duration) . "N Package"),
-                        'package_url' => $data->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/packages/details/" . $data->bookingDetail[0]->package->url : null,
+                        'package_url' => $data->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/" . $data->bookingDetail[0]->package->new_slug : null,
                         'price_per_pax'  => (int)$per_pax,
                     ],
                     'booking' => [
@@ -842,7 +842,7 @@ class FinanceController extends Controller
                     'package' => [
                         'duration' => $days . "D " . $nights . "N",
                         'package_name' => $data->bookingDetail[0]->package ? $data->bookingDetail[0]->package->name : ($data->package_duration > 1 ? $data->package_duration . "D " . ($data->package_duration - 1) . "N Package" : $data->package_duration . "D " . ($data->package_duration) . "N Package"),
-                        'package_url' => $data->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/packages/details/" . $data->bookingDetail[0]->package->url : null,
+                        'package_url' => $data->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/" . $data->bookingDetail[0]->package->new_slug : null,
                         'price_per_pax'  => (int)$per_pax,
                     ],
                     'booking' => [
@@ -1302,7 +1302,7 @@ class FinanceController extends Controller
                     'paymentMethod' => $payment->paymentMethod->name,
                     'description' => $payment->description,
                     'reference' => $payment->reference,
-                    'receipt' => "https://javavolcano-touroperator.com/backoffice/invoice/view-receipt/" . $booking->id . "/partial/" . $payment->id,
+                    'receipt' => "https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-receipt/" . $booking->id . "/partial/" . $payment->id,
                     'date' => date('d M y H:i', strtotime($payment->created_at)),
                 ];
             })
@@ -2103,7 +2103,7 @@ class FinanceController extends Controller
             : 0;
         $jvto['color'] = "#0EA5E9";
         $jvto['bgColor'] = "#F0F9FF";
-        $jvto['icon'] = "https://javavolcano-touroperator.com/assets/img/download.png";
+        $jvto['icon'] = "https://legacy.javavolcano-touroperator.com/assets/img/download.png";
         $jvto['description'] = "Japan Volcano Tour Operator";
         $jvto['name'] = "JVTO";
 

@@ -74,7 +74,7 @@ const SummaryCards = ({ booking,totals }) => {
         <div className="flex justify-between items-center">
           <span className="text-gray-500 text-sm">Invoice</span>
           <div className="flex gap-1">
-            <a href={`https://javavolcano-touroperator.com/bookings/invoice/${booking.url}`} className="text-orange-500"><Download/></a>
+            <a href={`https://legacy.javavolcano-touroperator.com/bookings/invoice/${booking.url}`} className="text-orange-500"><Download/></a>
           </div>
         </div>
         <div className="text-red-500 text-2xl font-bold mt-1">

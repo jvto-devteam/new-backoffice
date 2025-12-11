@@ -113,12 +113,7 @@ class PackageController extends Controller
             $day = $package->duration->day;
             $night = $package->duration->day - 1;
             $nightCustom = $night == 0 ? 1 : $night;
-            if($package->id_url){
-                $url = "https://javavolcano-touroperator.com/packages/".strtolower($package->startDestination->name)."/".$day."d".$nightCustom."n/".$package->id_url; 
-            }
-            else{
-                $url = "https://javavolcano-touroperator.com/packages/details/".$package->url;
-            }
+                $url = "https://javavolcano-touroperator.com/".$package->new_slug;
             return [
                 'id' => $package->id,
                 'name' => $package->name,
@@ -163,7 +158,7 @@ class PackageController extends Controller
                 })->toArray(),
                 'galleries' => $package->packageBanner->map(function ($banner) {
                     return [
-                        'url' => "https://javavolcano-touroperator.com/assets/img/destinations/" . $banner->gallery->image,
+                        'url' => "https://legacy.javavolcano-touroperator.com/assets/img/destinations/" . $banner->gallery->image,
                         'caption' => $banner->gallery->caption,
                     ];
                 })->toArray(),
@@ -289,7 +284,7 @@ class PackageController extends Controller
 
             //            $data['packages'] = $data['packages']->where('id',$request->id)->first();
             $packageId = $request->id;
-            $apiUrl = "https://javavolcano-touroperator.com/public/api/backoffice/packages/$packageId";
+            $apiUrl = "https://legacy.javavolcano-touroperator.com/public/api/backoffice/packages/$packageId";
 
             // Fetch data from API
             $response = Http::get($apiUrl);
@@ -504,7 +499,7 @@ class PackageController extends Controller
                 'galleries' => $query->galleries->map(function ($q) {
                     return [
                         'id' => $q->id,
-                        'url' => "https://javavolcano-touroperator.com/assets/img/destinations/" . $q->image,
+                        'url' => "https://legacy.javavolcano-touroperator.com/assets/img/destinations/" . $q->image,
                         'caption' => $q->caption,
                         'alt_text' => $q->alt_text,
                     ];
@@ -544,7 +539,7 @@ class PackageController extends Controller
                 'galleries' => $query->galleries->map(function ($q) {
                     return [
                         'id' => $q->id,
-                        'url' => "https://javavolcano-touroperator.com/assets/img/destinations/" . $q->image,
+                        'url' => "https://legacy.javavolcano-touroperator.com/assets/img/destinations/" . $q->image,
                         'caption' => $q->caption,
                         'alt_text' => $q->alt_text,
                     ];
@@ -561,7 +556,7 @@ class PackageController extends Controller
                 'departure_id' => $package->start_destination_id,
                 'return_id' => $package->end_destination_id,
                 'cover_photo' => [
-                    'preview' => "https://javavolcano-touroperator.com/assets/img/destinations/" . $package->packageBanner[0]->gallery->image,
+                    'preview' => "https://legacy.javavolcano-touroperator.com/assets/img/destinations/" . $package->packageBanner[0]->gallery->image,
                     'id' => $package->packageBanner[0]->gallery->id,
                     'alt_text' => $package->packageBanner[0]->gallery->alt_text,
                     'caption' => $package->packageBanner[0]->gallery->caption,
@@ -570,7 +565,7 @@ class PackageController extends Controller
                 ],
                 'other_photos' => $package->packageBanner->skip(1)->map(function ($q) {
                     return [
-                        'preview' => "https://javavolcano-touroperator.com/assets/img/destinations/" . $q->gallery->image,
+                        'preview' => "https://legacy.javavolcano-touroperator.com/assets/img/destinations/" . $q->gallery->image,
                         'id' => $q->gallery->id,
                         'alt_text' => $q->gallery->alt_text,
                         'caption' => $q->gallery->caption,

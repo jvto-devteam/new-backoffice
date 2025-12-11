@@ -6,10 +6,10 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <meta property="og:title" content="{{request()->get('title')}}" />
     <meta property="og:description" content="Preview File" />
-    <meta property="og:image" content="https://javavolcano-touroperator.com/assets/img/download.png" />
+    <meta property="og:image" content="https://legacy.javavolcano-touroperator.com/assets/img/download.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="627" />
-    <link rel="icon" type="image/png" href="https://javavolcano-touroperator.com/assets/img/download.png" id="favicon"/>
+    <link rel="icon" type="image/png" href="https://legacy.javavolcano-touroperator.com/assets/img/download.png" id="favicon"/>
 
     <title>{{request()->get('title')}}</title>
 </head>

@@ -203,7 +203,7 @@ class ScheduleController extends Controller
                                 'id' => $value->person->id,
                                 'name' => $value->person->name,
                                 'tags' => $value->person->tags,
-                                'photo' => $value->person->photo ? 'https://javavolcano-touroperator.com/assets/img/guide/' . $value->person->photo : 'https://javavolcano-touroperator.com/assets/img/guide/default.jpg',
+                                'photo' => $value->person->photo ? 'https://legacy.javavolcano-touroperator.com/assets/img/guide/' . $value->person->photo : 'https://legacy.javavolcano-touroperator.com/assets/img/guide/default.jpg',
                                 'recap_this_month_escort' => $recapEscort, // for driver & guide
                             ];
 
@@ -224,7 +224,7 @@ class ScheduleController extends Controller
                                 'name' => $value->person->name,
                                 'type' => $value->guide_ijen == '0' ? 'Escort' : 'Ijen',
                                 'tags' => $value->person->tags,
-                                'photo' => $value->person->photo ? 'https://javavolcano-touroperator.com/assets/img/guide/' . $value->person->photo : 'https://javavolcano-touroperator.com/assets/img/guide/default.jpg',
+                                'photo' => $value->person->photo ? 'https://legacy.javavolcano-touroperator.com/assets/img/guide/' . $value->person->photo : 'https://legacy.javavolcano-touroperator.com/assets/img/guide/default.jpg',
                                 'recap_this_month_escort' => $recapEscort, // for driver & guide
                                 'recap_this_month_ijen' => $recapIjen, // for guide only
 
@@ -234,9 +234,9 @@ class ScheduleController extends Controller
                 }
                 $invoiceLinks = [];
                 if ($orderChannel == 'JVTO') {
-                    array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/" . $booking->id);
+                    array_push($invoiceLinks, "https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-invoice/" . $booking->id);
                     if ($booking->book_add_on_total != 0) {
-                        array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/" . $booking->id . "?addon=true");
+                        array_push($invoiceLinks, "https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-invoice/" . $booking->id . "?addon=true");
                     }
                 } else {
                     $attachmentType = $orderChannel == 'TWT' ? 6 : 7;
@@ -472,11 +472,11 @@ class ScheduleController extends Controller
                 )),
                 'overall_physicality' => $package->physicality,
                 'ideal_for' => $package->suitable_for,
-                'url' => "https://javavolcano-touroperator.com/packages/" . strtolower($package->startDestination->name) . '/' . $package->duration->day . 'd' . $package->duration->night . 'n/' . $package->id_url,
+                'url' => "https://javavolcano-touroperator.com/" . $package->new_slug,
                 'galleries' => $package->packageBanner->map(function ($banner) {
                     return [
                         'id' => (int)$banner->gallery->id,
-                        'image_url' => "https://javavolcano-touroperator.com/assets/img/destinations/" . $banner->gallery->image,
+                        'image_url' => "https://legacy.javavolcano-touroperator.com/assets/img/destinations/" . $banner->gallery->image,
                         'caption' => $banner->gallery->caption,
                         'alt_text' => $banner->gallery->alt_text
                     ];
@@ -628,11 +628,11 @@ class ScheduleController extends Controller
                         'id' => (int)$destination->id,
                         'name' => strip_tags($destination->name),
                         'description' => $destination->description,
-                        'image_url' => "https://javavolcano-touroperator.com/assets/img/destinations/" . $destination->gallery->image,
+                        'image_url' => "https://legacy.javavolcano-touroperator.com/assets/img/destinations/" . $destination->gallery->image,
                         // 'galleries' => $packageDestination->destination->galleries->map(function($gallery){
                         //     return [
                         //         'id' => $gallery->id,
-                        //         'image_url' => "https://javavolcano-touroperator.com/assets/img/destinations/" . $gallery->image,
+                        //         'image_url' => "https://legacy.javavolcano-touroperator.com/assets/img/destinations/" . $gallery->image,
                         //         'caption' => $gallery->caption,
                         //         'alt_text' => $gallery->alt_text
                         //     ];
@@ -664,10 +664,10 @@ class ScheduleController extends Controller
             ->get();
 
         $result['package']['accommodation'] = $hotels->map(function ($hotel) {
-            $banner = ["https://javavolcano-touroperator.com/assets/img/hotels/" . $hotel->hotel->banner];
+            $banner = ["https://legacy.javavolcano-touroperator.com/assets/img/hotels/" . $hotel->hotel->banner];
             if($hotel->hotel->hotelImage){
                 foreach($hotel->hotel->hotelImage->take(2) as $image) {
-                    $banner[] = "https://javavolcano-touroperator.com/assets/img/hotels/" . $image->image;
+                    $banner[] = "https://legacy.javavolcano-touroperator.com/assets/img/hotels/" . $image->image;
                 }
             }
             $facilities = $hotel->hotel->facilities == '' ? '[]' : $hotel->hotel->facilities;
@@ -1013,7 +1013,7 @@ class ScheduleController extends Controller
                 "name" => $crew->name,
                 "phone" => $crew->phone,
                 "type" => $crew->is_driver ? "Driver" : "Guide",
-                "photo_url" => $crew->photo ? 'https://javavolcano-touroperator.com/assets/img/guide/' . $crew->photo : 'https://javavolcano-touroperator.com/assets/img/guide/default.jpg',
+                "photo_url" => $crew->photo ? 'https://legacy.javavolcano-touroperator.com/assets/img/guide/' . $crew->photo : 'https://legacy.javavolcano-touroperator.com/assets/img/guide/default.jpg',
                 "tags" => $crew->tags,
                 "monthly_escorts_recap" => $recapEscort,
                 "monthly_ijen_escorts_recap" => $recapIjen
@@ -1030,7 +1030,7 @@ class ScheduleController extends Controller
                 "location" => $hotel->address,
                 'facilities' => $facilitiesArray,
                 "url" => $hotel->map_url,
-                "banner_image_url" => "https://javavolcano-touroperator.com/assets/img/hotels/".$hotel->banner,
+                "banner_image_url" => "https://legacy.javavolcano-touroperator.com/assets/img/hotels/".$hotel->banner,
                 "room_types" => $hotel->roomHotel->map(function ($room) {
                     return [
                         'room_type_id' => "ROOM-".str_replace(" ","-",strtoupper($room->room_name)),
@@ -1070,7 +1070,7 @@ class ScheduleController extends Controller
             return [
                 "destination_id" => $destination->id,
                 "name" => $destination->name,
-                "thumbnail_url" => "https://javavolcano-touroperator.com/assets/img/destinations/" . $destination->gallery->image,
+                "thumbnail_url" => "https://legacy.javavolcano-touroperator.com/assets/img/destinations/" . $destination->gallery->image,
                 "description" => $destination->description,
                 "weather_by_season" => $destination->destinationDetail->weather_by_season,
                 "rainfall_intensity" => $destination->destinationDetail->rainfall_intensity,
@@ -1227,9 +1227,9 @@ class ScheduleController extends Controller
 
         $invoiceLinks = [];
         if ($channel == 'JVTO') {
-            array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/" . $booking->id);
+            array_push($invoiceLinks, "https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-invoice/" . $booking->id);
             if ($booking->book_add_on_total != 0) {
-                array_push($invoiceLinks, "https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/" . $booking->id . "?addon=true");
+                array_push($invoiceLinks, "https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-invoice/" . $booking->id . "?addon=true");
             }
         } else {
             $attachmentType = $channel == 'TWT' ? 6 : 7;
@@ -1358,7 +1358,7 @@ class ScheduleController extends Controller
                 'email_address' => $booking->user->email,
                 'nationality' => $booking->user->country ? $booking->user->country->long_name : '-',
                 'media_link' => $booking->media_link,
-                'portal' => $channel != 'TWT' ? 'https://javavolcano-touroperator.com/bookings/details/' . $booking->url : null,
+                'portal' => $channel != 'TWT' ? 'https://javavolcano-touroperator.com/my-booking/' . $booking->url : null,
                 'participants' => $booking->participant
             ],
             'booking_information' => [
@@ -1426,7 +1426,7 @@ class ScheduleController extends Controller
                         'paymentMethod' => $payment->paymentMethod->name,
                         'description' => $payment->description,
                         'reference' => $payment->reference,
-                        'receipt' => "https://javavolcano-touroperator.com/backoffice/invoice/view-receipt/" . $booking->id . "/partial/" . $payment->id,
+                        'receipt' => "https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-receipt/" . $booking->id . "/partial/" . $payment->id,
                         'date' => date('d M y H:i', strtotime($payment->created_at)),
                     ];
                 }),

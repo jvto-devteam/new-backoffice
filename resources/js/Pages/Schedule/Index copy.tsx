@@ -765,9 +765,9 @@ const BookingRow = ({no, booking, isExpanded, onToggle}) => {
                         <button 
                           onClick={(e) => {
                             e.preventDefault();
-                            window.open(`https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/${booking.id}`, '_blank');
+                            window.open(`https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-invoice/${booking.id}`, '_blank');
                             if(booking.book_add_on_total) {
-                              window.open(`https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/${booking.id}?addon=true`, '_blank');
+                              window.open(`https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-invoice/${booking.id}?addon=true`, '_blank');
                             }
                           }}
                           className="flex items-center justify-between group"

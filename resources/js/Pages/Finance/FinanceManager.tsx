@@ -709,7 +709,7 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
                                         "-"
                                     ) : (
                                         <a
-                                            href={`https://javavolcano-touroperator.com/backoffice/invoice/view-receipt/${row.booking.booking_id}/partial/${row.payment.id}`}
+                                            href={`https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-receipt/${row.booking.booking_id}/partial/${row.payment.id}`}
                                             target="_blank"
                                             className="text-blue-600 underline hover:text-blue-700"
                                         >

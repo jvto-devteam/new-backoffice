@@ -151,7 +151,7 @@ class DashboardController extends Controller
                         'name' => $crew->person->name,
                         'type' => $crew->type,
                         'tags' => $crew->person->tags,
-                        'photo' => $crew->person->photo ? 'https://javavolcano-touroperator.com/assets/img/guide/'.$crew->person->photo : 'https://javavolcano-touroperator.com/assets/img/guide/default.jpg',
+                        'photo' => $crew->person->photo ? 'https://legacy.javavolcano-touroperator.com/assets/img/guide/'.$crew->person->photo : 'https://legacy.javavolcano-touroperator.com/assets/img/guide/default.jpg',
                         'is_ijen' => $crew->guide_ijen,
                         'recap_this_month_escort' => BookGuideDriver::where('guide_id',$crew->person->id)->where('start_date','like','%'.date('Y-m').'%')->where('guide_ijen','0')->count(), // for driver & guide
                         'recap_this_month_ijen' => BookGuideDriver::where('guide_id',$crew->person->id)->where('start_date','like','%'.date('Y-m').'%')->where('guide_ijen','1')->count(), // for guide only
@@ -186,7 +186,7 @@ class DashboardController extends Controller
                 'grand_total'  => $data->booking->grand_total,
                 'pax' => $data->booking->total_pax,
                 'package' => $data->booking->bookingDetail[0]->package ? $data->booking->bookingDetail[0]->package->name : ($data->booking->package_duration > 1 ? $data->booking->package_duration."D ".($data->booking->package_duration - 1)."N" : $data->booking->package_duration."D ".($data->booking->package_duration)."N Package"),
-                'package_url' => $data->booking->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/packages/details/".$data->booking->bookingDetail[0]->package->url : null,
+                'package_url' => $data->booking->bookingDetail[0]->package ? "https://javavolcano-touroperator.com/".$data->booking->bookingDetail[0]->package->new_slug : null,
                 'booking_code' => $data->booking->booking_code,
                 'nominal' => $data->nominal,
                 'is_add_on' => $data->booking->book_add_on_total > 0 ? true : false,

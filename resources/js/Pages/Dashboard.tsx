@@ -513,7 +513,7 @@ export default function Dashboard({ dashboardData }) {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="flex items-center p-4 bg-blue-100 dark:bg-blue-900/20 rounded-lg relative">
                 <div className="bg-blue-200 dark:bg-blue-800 p-2 rounded-full mr-4">
-                    <img src="https://javavolcano-touroperator.com/assets/img/download.png" className="h-10" alt="" srcset="" />
+                    <img src="https://legacy.javavolcano-touroperator.com/assets/img/download.png" className="h-10" alt="" srcset="" />
                 </div>
                 <div>
                     <p className="text-sm font-medium text-gray-500 dark:text-gray-400">JVTO</p>
@@ -837,15 +837,15 @@ export default function Dashboard({ dashboardData }) {
                                   <div>
                                       <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Receipt No</p>
                                       <button onClick={() => {
-                                          window.open("https://javavolcano-touroperator.com/backoffice/invoice/view-receipt/"+payment.booking_id+"/partial/"+payment.id,'_blank')
+                                          window.open("https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-receipt/"+payment.booking_id+"/partial/"+payment.id,'_blank')
                                       }} className="text-blue-900 hover:underline dark:text-white">{payment.receipt}</button>
                                   </div>
                                   <div>
                                       <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Invoice No</p>
                                       <button onClick={() => {
-                                          window.open('https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/'+payment.booking_id,'_blank')
+                                          window.open('https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-invoice/'+payment.booking_id,'_blank')
                                           if(payment.is_add_on){
-                                              window.open('https://javavolcano-touroperator.com/backoffice/invoice/view-invoice/'+payment.booking_id+"?addon=true",'_blank')
+                                              window.open('https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-invoice/'+payment.booking_id+"?addon=true",'_blank')
                                           }
                                       }} className="text-blue-900 hover:underline dark:text-white">{payment.booking_code}</button>
                                   </div>

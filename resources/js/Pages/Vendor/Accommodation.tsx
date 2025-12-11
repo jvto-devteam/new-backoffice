@@ -574,7 +574,7 @@ const Accommodation = ({hotelData,initialFilters,tab}) => {
     <div 
       className="relative h-64 md:h-96 w-full overflow-hidden rounded-lg shadow-lg mb-8 bg-cover bg-center"
       style={{
-        backgroundImage: `url('https://javavolcano-touroperator.com/assets/img/hotels/${hotelData.hotel.banner}')`
+        backgroundImage: `url('https://legacy.javavolcano-touroperator.com/assets/img/hotels/${hotelData.hotel.banner}')`
       }}
     >
       {/* Dark overlay for better text readability */}

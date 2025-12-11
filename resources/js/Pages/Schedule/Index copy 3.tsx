@@ -1116,7 +1116,7 @@ const BookingRow = ({
             setApiError(null);
             
             // Format the URL with query parameters
-            const url = `https://javavolcano-touroperator.com/backoffice/plotting/get-plotting?id=${booking.booking_id}&order_channel=${booking.orderChannel.toLowerCase()}`;
+            const url = `https://legacy.javavolcano-touroperator.com/backoffice/plotting/get-plotting?id=${booking.booking_id}&order_channel=${booking.orderChannel.toLowerCase()}`;
             
             // Make the GET request
             const response = await fetch(url, {
@@ -1240,7 +1240,7 @@ const BookingRow = ({
                     <BookingDropdown/>
                     <div className="mt-4 md:mt-0">
                         <img
-                        src="https://javavolcano-touroperator.com/assets/img/download.png"
+                        src="https://legacy.javavolcano-touroperator.com/assets/img/download.png"
                         alt="Venice"
                         width="100"
                         className="rounded-lg"

@@ -100,7 +100,7 @@ const calendarCustomStyles = `
 `;
 
 const LOGOS = {
-    jvto: 'https://javavolcano-touroperator.com/assets/img/jvto-color.png?1702429896',
+    jvto: 'https://legacy.javavolcano-touroperator.com/assets/img/jvto-color.png?1702429896',
     klook: 'https://d36rd0l160k43h.cloudfront.net/43e4095a7ae79ed99c91e03767e505e1/7275fa5cc37e251508b0f4ec95d3115e/Logo_rgb.png'
 };
 

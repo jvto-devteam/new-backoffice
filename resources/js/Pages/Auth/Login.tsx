@@ -19,7 +19,7 @@ export default function Login() {
             <div className="max-w-md w-full space-y-8 bg-white rounded-xl shadow-2xl overflow-hidden p-8 transform transition-all duration-500 ">
                 <div className="text-center">
                     {/* Logo placeholder - you can replace with your actual logo */}
-                    <img src="https://javavolcano-touroperator.com/assets/img/jvto-color.png?1702429896" className="w-24 mx-auto mb-3" alt="" srcset="" />
+                    <img src="https://legacy.javavolcano-touroperator.com/assets/img/jvto-color.png?1702429896" className="w-24 mx-auto mb-3" alt="" srcset="" />
                     <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
                         Welcome back
                     </h2>

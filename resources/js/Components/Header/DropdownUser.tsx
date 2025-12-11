@@ -27,7 +27,7 @@ const DropdownUser = () => {
         </span>
 
         <span>
-          <img src="https://javavolcano-touroperator.com/assets/img/pages/about/mr-sam.png?1728115604" className="h-12 w-12 rounded-full object-cover" alt="User" />
+          <img src="https://legacy.javavolcano-touroperator.com/assets/img/pages/about/mr-sam.png?1728115604" className="h-12 w-12 rounded-full object-cover" alt="User" />
         </span>
 
         <svg

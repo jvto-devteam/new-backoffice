@@ -5,11 +5,11 @@
 <meta property="og:title" content="Java Volcano Tour Operator">
 <meta property="og:description" content="Java Volcano Tour Operator">
 <meta property="og:url" content="{{url('flip/jvr/legality')}}">
-<meta property="og:image" content="{{'https://javavolcano-touroperator.com/assets/flip/legality/1.jpg'}}">
+<meta property="og:image" content="{{'https://legacy.javavolcano-touroperator.com/assets/flip/legality/1.jpg'}}">
 <link rel="canonical" href="{{request()->url()}}" />
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-<script type="text/javascript" src="{{'https://javavolcano-touroperator.com/assets/turnjs/extras/jquery.min.1.7.js'}}"></script>
-<script type="text/javascript" src="{{'https://javavolcano-touroperator.com/assets/turnjs/extras/modernizr.2.5.3.min.js'}}"></script>
+<script type="text/javascript" src="{{'https://legacy.javavolcano-touroperator.com/assets/turnjs/extras/jquery.min.1.7.js'}}"></script>
+<script type="text/javascript" src="{{'https://legacy.javavolcano-touroperator.com/assets/turnjs/extras/modernizr.2.5.3.min.js'}}"></script>
 <title>Java Volcano Tour Operator</title>
 </head>
 <body>
@@ -63,14 +63,14 @@
 	}
 </style>
 <a href="{{ url('/') }}" class="logo-top" aria-label="Java Volcano Tour Operator">
-	<img src="{{ 'https://javavolcano-touroperator.com/assets/img/jvto-color.png' }}" alt="Logo JVTO" srcset="">
+	<img src="{{ 'https://legacy.javavolcano-touroperator.com/assets/img/jvto-color.png' }}" alt="Logo JVTO" srcset="">
 </a>
 <div class="flipbook-viewport">
 	<div class="container">
 		<div class="flipbook">
 {{--            page 1--}}
             <div>
-                <div style="height: 100%; background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://javavolcano-touroperator.com/assets/img/destinations/surabaya-ijen-papuma-beach-tumpak-sewu-bromo-surabaya-(5d-4n)-1688629701719/bromo13.webp'); background-size: cover; color: white; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;background-position: center;">
+                <div style="height: 100%; background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url('https://legacy.javavolcano-touroperator.com/assets/img/destinations/surabaya-ijen-papuma-beach-tumpak-sewu-bromo-surabaya-(5d-4n)-1688629701719/bromo13.webp'); background-size: cover; color: white; padding: 40px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;background-position: center;">
                     <h1 style="font-size: 2.5em; margin-bottom: 20px;">Ultimate East Java Experience</h1>
                     <h2 style="font-size: 1.8em; margin-bottom: 30px;">5D4N Ijen Crater, Tumpak Sewu & Bromo</h2>
                     <div style="display: flex; gap: 20px; margin-bottom: 30px;">
@@ -618,7 +618,7 @@
 </div>
 <button class="button" data-type="prev"><span class="fa fa-chevron-left"></span></button>
 <button class="button" data-type="next"><span class="fa fa-chevron-right"></span></button>
-<audio id="pageChangeAudio" src="{{'https://javavolcano-touroperator.com/assets/woosh.wav'}}"></audio>
+<audio id="pageChangeAudio" src="{{'https://legacy.javavolcano-touroperator.com/assets/woosh.wav'}}"></audio>
 
 
 <script type="text/javascript">
@@ -693,9 +693,9 @@
 
 	yepnope({
 		test : Modernizr.csstransforms,
-		yep: ["{{'https://javavolcano-touroperator.com/assets/turnjs/lib/turn.js'}}"],
-		nope: ["{{'https://javavolcano-touroperator.com/assets/turnjs/lib/turn.html4.min.js'}}"],
-		both: ["{{'https://javavolcano-touroperator.com/assets/turnjs/css/basic.css'}}"],
+		yep: ["{{'https://legacy.javavolcano-touroperator.com/assets/turnjs/lib/turn.js'}}"],
+		nope: ["{{'https://legacy.javavolcano-touroperator.com/assets/turnjs/lib/turn.html4.min.js'}}"],
+		both: ["{{'https://legacy.javavolcano-touroperator.com/assets/turnjs/css/basic.css'}}"],
 		complete: loadApp
 	});
 

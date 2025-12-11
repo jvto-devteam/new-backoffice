@@ -180,7 +180,7 @@ const PackageDetails = ({ isOpen, onClose, packages,paxConfiguration,orderChanne
                   </div>
                   <div>
                     <h3 className="text-md font-medium text-gray-500 dark:text-gray-400">Link</h3>
-                    <a href={packages.id_url ? `https://javavolcano-touroperator.com/packages/${packages.start_destination.name.toLowerCase()}/${packages.duration.day}d${packages.duration.night}n/${packages.id_url}` : `https://javavolcano-touroperator.com/packages/details/${packages.url}`} className="mt-1 underline text-blue-900 dark:text-blue-300">{packages.id_url ? `https://javavolcano-touroperator.com/packages/${packages.start_destination.name.toLowerCase()}/${packages.duration.day}d/${packages.duration.night}n/${packages.id_url}` : `https://javavolcano-touroperator.com/packages/details/${packages.url}`}</a>
+                    <a href={`https://javavolcano-touroperator.com/${packages.new_slug}`} className="mt-1 underline text-blue-900 dark:text-blue-300">{`https://javavolcano-touroperator.com/${packages.new_slug}`}</a>
                   </div>
                 </div>
               </div>
@@ -191,14 +191,14 @@ const PackageDetails = ({ isOpen, onClose, packages,paxConfiguration,orderChanne
                 <div className="grid md:grid-cols-2 gap-6">
                 {packages.package_banner.map((data,key) => (
   <React.Fragment key={key}>
-    <a href={`https://javavolcano-touroperator.com/assets/img/destinations/${data.gallery.image}`} 
+    <a href={`https://legacy.javavolcano-touroperator.com/assets/img/destinations/${data.gallery.image}`} 
        target="_blank" 
        className="block group">
       <div className="relative bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden transition-all duration-300 
                       group-hover:shadow-2xl group-hover:scale-[1.02] group-hover:ring-2 group-hover:ring-blue-500">
         <div className="relative">
           <img
-            src={`https://javavolcano-touroperator.com/assets/img/destinations/${data.gallery.image}` || 'https://via.placeholder.com/300'}
+            src={`https://legacy.javavolcano-touroperator.com/assets/img/destinations/${data.gallery.image}` || 'https://via.placeholder.com/300'}
             alt={data.title || 'Itinerary Image'}
             className="w-full h-48 object-cover transition-transform duration-300"
           />
@@ -322,7 +322,7 @@ const PackageDetails = ({ isOpen, onClose, packages,paxConfiguration,orderChanne
                     <div key={index} className="flex gap-4 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
                       <div className="w-24 h-24 flex-shrink-0">
                         <img
-                          src={`https://javavolcano-touroperator.com/assets/img/hotels/${hotel.hotel.banner}`}
+                          src={`https://legacy.javavolcano-touroperator.com/assets/img/hotels/${hotel.hotel.banner}`}
                           alt={hotel.hotel.name}
                           className="w-full h-full object-cover rounded-lg"
                         />
@@ -670,7 +670,7 @@ const PackageRow = ({paxConfiguration,dataKey,packages,order_channel}) => {
         <div className="h-20 w-20 overflow-hidden rounded-md">
           {packages.package_banner ? (
             <img
-              src={`https://javavolcano-touroperator.com/assets/img/destinations/${packages.package_banner[0].gallery.image}`}
+              src={`https://legacy.javavolcano-touroperator.com/assets/img/destinations/${packages.package_banner[0].gallery.image}`}
               alt={packages.name}
               className="h-full w-full object-cover rounded-md"
             />
@@ -679,7 +679,7 @@ const PackageRow = ({paxConfiguration,dataKey,packages,order_channel}) => {
       </td>
       <td className="py-4.5 px-4 md:px-6 3xl:px-7.5">
           <p className="text-sm text-black dark:text-white">
-            <a target="_blank" className="text-blue-600 dark:text-blue-300 underline" href={`https://javavolcano-touroperator.com/packages/details/${packages.url}`}>{packages.name}</a>
+            <a target="_blank" className="text-blue-600 dark:text-blue-300 underline" href={`https://javavolcano-touroperator.com/${packages.new_slug}`}>{packages.name}</a>
           </p>
       </td>
       <td className="py-4.5 px-4 md:px-6 2xl:px-7.5 hidden sm:table-cell">
@@ -809,9 +809,7 @@ const QRCodeModal = ({ isOpen, onClose, packageData }) => {
             return;
           }
 
-          const url = packageData.id_url 
-            ? `https://javavolcano-touroperator.com/packages/${packageData.start_destination.name.toLowerCase()}/${packageData.duration.day}d${packageData.duration.night}n/${packageData.id_url}`
-            : `https://javavolcano-touroperator.com/packages/details/${packageData.url}`;
+          const url = `https://javavolcano-touroperator.com/${packageData.new_slug}`;
 
           console.log('Generating QR for URL:', url);
           

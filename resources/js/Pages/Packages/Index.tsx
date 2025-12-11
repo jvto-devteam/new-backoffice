@@ -393,7 +393,7 @@ const Index = (data) => {
                     </div>
                     <div>
                       <h3 className="text-md font-medium text-gray-500 dark:text-gray-400">Link</h3>
-                      <a href={selectedPackage.id_url ? `https://javavolcano-touroperator.com/packages/${selectedPackage.start_destination.name.toLowerCase()}/${selectedPackage.duration.day}d${selectedPackage.duration.night}n/${selectedPackage.id_url}` : `https://javavolcano-touroperator.com/packages/details/${selectedPackage.url}`} className="mt-1 underline text-blue-900 dark:text-blue-300">{selectedPackage.id_url ? `https://javavolcano-touroperator.com/packages/${selectedPackage.start_destination.name.toLowerCase()}/${selectedPackage.duration.day}d/${selectedPackage.duration.night}n/${selectedPackage.id_url}` : `https://javavolcano-touroperator.com/packages/details/${selectedPackage.url}`}</a>
+                      <a href={`https://javavolcano-touroperator.com/${selectedPackage.new_slug}`} className="mt-1 underline text-blue-900 dark:text-blue-300">{`https://javavolcano-touroperator.com/${selectedPackage.new_slug}`}</a>
                     </div>
                   </div>
                 </div>

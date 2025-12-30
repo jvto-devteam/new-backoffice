@@ -75,6 +75,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/portal-vendor', [DashboardController::class,'portalVendor']);
     Route::get('/google-calendar', [ScheduleController::class,'googleCalendar']);
     Route::get('/booking-overview', [ScheduleController::class,'index']);
+    Route::get('/pending-booking', [ScheduleController::class,'pendingBooking']);
     Route::get('/booking-overview/kanban', [ScheduleController::class,'index']);
     Route::post('/plotting', [ScheduleController::class,'plotting']);
     Route::post('/update-booking-note', [ScheduleController::class,'updateBookingNote']);

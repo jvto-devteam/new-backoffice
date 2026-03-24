@@ -37,7 +37,7 @@ export default function PendingBooking({ data }) {
                     },
                     body: JSON.stringify({
                         external_id: bookingId,
-                        payment_method: 1,
+                        payment_method_id: 1,
                     }),
                 },
             );

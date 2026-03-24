@@ -197,7 +197,7 @@ class ScheduleController extends Controller
                             if (!$request->filter_type || $request->filter_type == 'month') {
                                 $recapEscort = $recapEscort->where('start_date', 'like', $d['filters']['month'] . "%")->count();
                             } else {
-                                $recapEscort = $recapEscort->whereBetween('start_date', [$d['filters']['startDate'], $d['filters']['endDate']]);
+                                $recapEscort = $recapEscort->whereBetween('start_date', [$d['filters']['startDate'], $d['filters']['endDate']])->count();
                             }
                             $drivers[] = [
                                 'id' => $value->person->id,
@@ -216,8 +216,8 @@ class ScheduleController extends Controller
                                 $recapEscort = $recapEscort->where('start_date', 'like', $d['filters']['month'] . "%")->count();
                                 $recapIjen = $recapIjen->where('start_date', 'like', $d['filters']['month'] . "%")->count();
                             } else {
-                                $recapEscort = $recapEscort->whereBetween('start_date', [$d['filters']['startDate'], $d['filters']['endDate']]);
-                                $recapIjen = $recapIjen->whereBetween('start_date', [$d['filters']['startDate'], $d['filters']['endDate']]);
+                                $recapEscort = $recapEscort->whereBetween('start_date', [$d['filters']['startDate'], $d['filters']['endDate']])->count();
+                                $recapIjen = $recapIjen->whereBetween('start_date', [$d['filters']['startDate'], $d['filters']['endDate']])->count();
                             }
                             $guides[] = [
                                 'id' => $value->person->id,

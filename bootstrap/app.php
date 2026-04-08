@@ -34,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->validateCsrfTokens(except: [
             '/twt-extractor',
             '/third-party/webhook/watzap',
+            '/login'
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

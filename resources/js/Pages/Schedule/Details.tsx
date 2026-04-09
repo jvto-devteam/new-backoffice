@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Copy, ChevronDown, Menu, X, Pencil, Eye, Download,Users } from 'lucide-react';
-import { Link, useForm } from '@inertiajs/react';
+import { Link, useForm, usePage } from '@inertiajs/react';
 import {Toast} from '@/utils/swal';
 
 import Main from '@/Layouts/Main';
 
 const Detail = ({ initialData }) => {
+  const { props } = usePage();
   const [activeTab, setActiveTab] = useState('transaction');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const sectionsRef = useRef({});
@@ -14,6 +15,8 @@ const Detail = ({ initialData }) => {
   const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
   const [isEditPaymentMethodOpen, setIsEditPaymentMethodOpen] = useState(false);
   const [isEditTripMediaOpen, setIsEditTripMediaOpen] = useState(false);
+  const { post: generateTripMedia, processing: isGeneratingTripMedia } = useForm({});
+  const tripMediaError = props.errors?.trip_media;
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('id-ID', {
@@ -22,6 +25,23 @@ const Detail = ({ initialData }) => {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount);
+  };
+
+  const handleGenerateTripMedia = () => {
+    generateTripMedia('/bookings/trip-media/' + initialData.booking_information.id + '/generate', {
+      onSuccess: () => {
+        Toast.fire({
+          icon: 'success',
+          title: 'Trip Media generated successfully'
+        });
+      },
+      onError: () => {
+        Toast.fire({
+          icon: 'error',
+          title: 'Failed to generate Trip Media'
+        });
+      }
+    });
   };
 
   // Edit Payment Method Form Component
@@ -742,23 +762,45 @@ const EditTripMediaForm = ({ onClose }) => {
                     <>
                       <div className="flex gap-3 items-start py-3 border-b border-gray-200">
                         <div className="w-1/3 text-sm text-gray-600">Trip Media</div>
-                        <div className="w-2/3 text-sm flex items-center gap-3">
+                        <div className="w-2/3 text-sm">
                           {initialData.client_information.media_link ? (
-                            <a
-                              href={initialData.client_information.media_link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 underline hover:text-blue-700 hover:underline transition-colors duration-200"
-                            >
-                              {initialData.client_information.media_link}
-                            </a>
-                          ) : '-'}
-                          <button 
-                            onClick={() => setIsEditTripMediaOpen(true)} 
-                            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                          >
-                            <Pencil className="h-4 w-4 text-blue-600"/>
-                          </button>
+                            <div className="flex items-center gap-3">
+                              <a
+                                href={initialData.client_information.media_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 underline hover:text-blue-700 hover:underline transition-colors duration-200 break-all"
+                              >
+                                {initialData.client_information.media_link}
+                              </a>
+                              <button 
+                                onClick={() => setIsEditTripMediaOpen(true)} 
+                                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                              >
+                                <Pencil className="h-4 w-4 text-blue-600"/>
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-2 items-start">
+                              <button
+                                onClick={handleGenerateTripMedia}
+                                disabled={isGeneratingTripMedia}
+                                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors disabled:opacity-75"
+                              >
+                                {isGeneratingTripMedia ? 'Generating...' : 'Generate Trip Media'}
+                              </button>
+                              <button 
+                                onClick={() => setIsEditTripMediaOpen(true)} 
+                                className="text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center gap-1"
+                              >
+                                <Pencil className="h-4 w-4"/>
+                                Input link manually
+                              </button>
+                              {tripMediaError && (
+                                <div className="text-sm text-red-500">{tripMediaError}</div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-3 items-start py-3 border-b border-gray-200">

@@ -37,7 +37,12 @@ use App\Models\User;
 use App\Models\UserLog;
 use App\Models\WaItinerary;
 use App\Models\WaLog;
+use Google\Client as GoogleClient;
+use Google\Service\Drive;
+use Google\Service\Drive\DriveFile;
+use Google\Service\Drive\Permission;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -2389,8 +2394,87 @@ class BookingController extends Controller
 
     function updateTripMedia(Request $request, $id){
         $booking = Booking::findOrFail($id);
+        $request->validate([
+            'media_link' => ['required', 'url'],
+        ]);
+
         $booking->media_link = $request->media_link;
         $booking->save();
+
+        return back();
+    }
+
+    function generateTripMedia($id): RedirectResponse
+    {
+        $booking = Booking::with('user')->findOrFail($id);
+
+        if ($booking->media_link) {
+            return back()->withErrors([
+                'trip_media' => 'Trip Media sudah dibuat untuk booking ini.',
+            ]);
+        }
+
+        if (! class_exists(GoogleClient::class) || ! class_exists(Drive::class)) {
+            return back()->withErrors([
+                'trip_media' => 'Package Google API client belum terinstall di local. Jalankan composer require google/apiclient:^2.18 terlebih dahulu.',
+            ]);
+        }
+
+        $credentialsPath = base_path('adept-stage-472705-a2-6d8a52e8f781.json');
+
+        if (! file_exists($credentialsPath)) {
+            return back()->withErrors([
+                'trip_media' => 'File kredensial Google Drive tidak ditemukan.',
+            ]);
+        }
+
+        try {
+            $client = new GoogleClient();
+            $client->setAuthConfig($credentialsPath);
+            $client->setScopes([Drive::DRIVE]);
+
+            $drive = new Drive($client);
+            $folderName = $this->buildTripMediaFolderName($booking);
+
+            $folder = new DriveFile([
+                'name' => $folderName,
+                'mimeType' => 'application/vnd.google-apps.folder',
+                'parents' => ['1Gqf5Pjm0ElWKmXdaXHPupVti6m7cTiXZ'],
+            ]);
+
+            $createdFolder = $drive->files->create($folder, [
+                'fields' => 'id, webViewLink',
+            ]);
+
+            $drive->permissions->create($createdFolder->id, new Permission([
+                'type' => 'anyone',
+                'role' => 'writer',
+            ]), [
+                'fields' => 'id',
+            ]);
+
+            $folderUrl = $createdFolder->webViewLink ?: 'https://drive.google.com/drive/folders/' . $createdFolder->id;
+
+            $booking->media_link = $folderUrl;
+            $booking->save();
+
+            return back()->with('success', 'Trip Media berhasil dibuat.');
+        } catch (\Throwable $th) {
+            report($th);
+
+            return back()->withErrors([
+                'trip_media' => 'Gagal membuat folder Trip Media. Silakan cek konfigurasi Google Drive.',
+            ]);
+        }
+    }
+
+    private function buildTripMediaFolderName(Booking $booking): string
+    {
+        $customerName = trim((string) optional($booking->user)->name);
+        $customerName = preg_replace('/[\\\\\\/]+/', '-', $customerName);
+        $customerName = preg_replace('/\s+/', ' ', $customerName);
+
+        return $booking->travel_date_start . '_' . $customerName;
     }
 
     function setPaymentMethod(Request $request, $id){

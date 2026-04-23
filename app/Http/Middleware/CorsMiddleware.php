@@ -24,6 +24,7 @@ class CorsMiddleware
             'https://travelhub.javavolcano-touroperator.com',
             'https://sam-app.javavolcano-touroperator.com',
             'https://c39ce487a0d1.ngrok-free.app',
+            'http://localhost:5173',
             // Tambahkan origin lain jika perlu, misalnya untuk development
             // 'http://localhost:3000',
         ];

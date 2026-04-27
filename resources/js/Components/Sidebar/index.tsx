@@ -443,6 +443,30 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                                     Finance
                                 </Link>
                             </li>
+                            <li>
+                                <Link
+                                    href="/finance/rekap-hutang"
+                                    className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                                        pathname.includes("rekap-hutang") &&
+                                        "bg-graydark dark:bg-meta-4"
+                                    }`}
+                                >
+                                    <svg
+                                        className="fill-current"
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path
+                                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"
+                                            fill=""
+                                        />
+                                    </svg>
+                                    Rekap Hutang
+                                </Link>
+                            </li>
                             {/* <SidebarLinkGroup
                                     activeCondition={
                                         pathname === '/finance' || pathname.includes('finance')

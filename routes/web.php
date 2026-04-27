@@ -18,6 +18,7 @@ use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ShortLinkController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\CrmController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\ArticleController;
@@ -183,6 +184,16 @@ Route::middleware('auth')->group(function () {
 
     // Client Management Routes
     Route::get('/client-management', [ClientController::class,'index']);
+
+    // CRM Routes
+    Route::get('/crm', [CrmController::class, 'index']);
+    Route::get('/crm/insights', [CrmController::class, 'insights']);
+    Route::get('/crm/customers', [CrmController::class, 'customers']);
+    Route::get('/crm/customers/{id}/profile', [CrmController::class, 'customerProfile']);
+    Route::get('/crm/export/customers', [CrmController::class, 'exportCustomers']);
+    Route::get('/crm/export/countries', [CrmController::class, 'exportCountries']);
+    Route::get('/crm/export/packages', [CrmController::class, 'exportPackages']);
+    Route::get('/crm/export/customer-report', [CrmController::class, 'exportCustomerReport']);
 
     Route::resource('articles', ArticleController::class);
 

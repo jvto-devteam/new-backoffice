@@ -174,7 +174,7 @@ export default function RekapHutangDetail({ vendor, debts, formatted_total, filt
                     <div className="bg-white rounded-lg shadow p-5 border-l-4 border-amber-500">
                         <p className="text-sm text-gray-500 font-medium">Total Pax</p>
                         <p className="text-2xl font-bold text-amber-600 mt-1">
-                            {debts.reduce((s, d) => s + (d.pax || 0), 0)}
+                            {debts.reduce((s, d) => s + (parseInt(String(d.pax)) || 0), 0)}
                         </p>
                         <p className="text-xs text-gray-400 mt-1">Dari seluruh booking</p>
                     </div>

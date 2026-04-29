@@ -70,6 +70,8 @@ Route::get('/finance/expense-manager/{id}/internal/api', [FinanceController::cla
 Route::get('/finance/expense-manager/{id}/crew', [FinanceController::class, 'downloadExpense']);
 
 Route::get('/booking-overview/api', [ScheduleController::class,'index']);
+Route::get('/finance/rekap-hutang', [FinanceController::class, 'rekapHutang']);
+Route::get('/finance/rekap-hutang/{vendorId}', [FinanceController::class, 'rekapHutangDetail']);
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [DashboardController::class,'index'])->name('dashboard');

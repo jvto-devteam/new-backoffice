@@ -160,10 +160,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/expense-manager/{bookingId}/upload-payment-proof', [FinanceController::class, 'uploadPaymentProofExpense']);
         Route::get('/monthly-settlement', [FinanceController::class, 'settlement']);
         Route::get('/profit-loss-summary', [FinanceController::class, 'profitLoss']);
-        Route::get('/rekap-hutang', [FinanceController::class, 'rekapHutang']);
         Route::get('/rekap-hutang/export-pdf', [FinanceController::class, 'rekapHutangExportPdf']);
         Route::get('/rekap-hutang/export-excel', [FinanceController::class, 'rekapHutangExportExcel']);
-        Route::get('/rekap-hutang/{vendorId}', [FinanceController::class, 'rekapHutangDetail']);
         Route::get('/rekap-hutang/{vendorId}/export-pdf', [FinanceController::class, 'rekapHutangDetailExportPdf']);
         Route::get('/rekap-hutang/{vendorId}/export-excel', [FinanceController::class, 'rekapHutangDetailExportExcel']);
     });

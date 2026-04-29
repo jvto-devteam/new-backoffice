@@ -1266,16 +1266,16 @@ class FinanceController extends Controller
             });
 
         $expenseRefund = ExpenseRefund::where('booking_id', $id)->orderBy('id', 'desc')->get()->map(function ($query) {
-                return [
-                    'id' => $query->id,
-                    'item' => $query->item,
-                    'refund_to' => $query->refund_to ?? 'office',
-                    'proof_image' => $query->proof_image,
-                    'price' => $query->price,
-                    'qty' => $query->qty,
-                    'subtotal' => $query->subtotal,
-                    'status' => $query->status,
-                ];
+            return [
+                'id' => $query->id,
+                'item' => $query->item,
+                'refund_to' => $query->refund_to ?? 'office',
+                'proof_image' => $query->proof_image,
+                'price' => $query->price,
+                'qty' => $query->qty,
+                'subtotal' => $query->subtotal,
+                'status' => $query->status,
+            ];
         });
 
         // return [
@@ -1283,8 +1283,8 @@ class FinanceController extends Controller
         //     'expenseRefund' => $expenseRefund,
 
         // ];
-        
-        
+
+
         return Inertia::render('Finance/EditExpenseManager', [
             'additionalRequests' => $additionalRequests,
             'expenseRefund' => $expenseRefund,
@@ -1977,11 +1977,9 @@ class FinanceController extends Controller
         ];
         if (request()->segment(4) == 'crew' && request()->preview) {
             return view('exports/expense', $data);
-        } 
-        else if(request()->segment(5) == 'api'){
+        } else if (request()->segment(5) == 'api') {
             return response()->json($data);
-        }
-        else {
+        } else {
             $pdf = PDF::loadView('exports/expense', $data);
             $name = Str::slug($booking['customer_name']);
             // Opsional: Set paper size dan orientation
@@ -3016,7 +3014,6 @@ class FinanceController extends Controller
 
                 $total     = $bookHotels->sum(fn($bh) => $bh->bookRoom->sum('subtotal') + $bh->bookHotelMeal->sum('subtotal'));
                 $itemCount = $bookHotels->count();
-
             } elseif ($vendor->vendor_category_id == 2) {
                 $activities = BookDestinationActivity::where('is_debt', '1')
                     ->whereNull('debt_payment_id')
@@ -3030,7 +3027,6 @@ class FinanceController extends Controller
 
                 $total     = $activities->sum('subtotal');
                 $itemCount = $activities->count();
-
             } elseif ($vendor->vendor_category_id == 3) {
                 $carItems = BookCarActivity::where('is_debt', '1')
                     ->whereNull('debt_payment_id')
@@ -3044,7 +3040,6 @@ class FinanceController extends Controller
 
                 $total     = $carItems->sum('subtotal');
                 $itemCount = $carItems->count();
-
             } elseif ($vendor->vendor_category_id == 4) {
                 $othersItems = BookOthersActivity::where('is_debt', '1')
                     ->whereNull('debt_payment_id')
@@ -3092,6 +3087,15 @@ class FinanceController extends Controller
 
         $currentYear = (int) date('Y');
         $years = [$currentYear - 1, $currentYear, $currentYear + 1];
+
+        if ($request->json) {
+            $data = [
+                'vendors'         => $vendorDebts,
+                'total_debt'    => $totalHutang,
+            ];
+
+            return $data;
+        }
 
         return Inertia::render('Finance/RekapHutang', [
             'vendors'         => $vendorDebts,
@@ -3158,7 +3162,6 @@ class FinanceController extends Controller
                     'type'        => 'hotel',
                 ];
             })->sortBy('check_in')->values();
-
         } elseif ($vendor->vendor_category_id == 2) {
             $activities = BookDestinationActivity::with([
                 'destinationActivity',
@@ -3228,7 +3231,6 @@ class FinanceController extends Controller
                     ];
                 })->sortBy('activity_date')->values();
             }
-
         } elseif ($vendor->vendor_category_id == 3) {
             $carItems = BookCarActivity::with(['car', 'booking.user'])
                 ->where('is_debt', '1')
@@ -3256,7 +3258,6 @@ class FinanceController extends Controller
                     'type'        => 'car',
                 ];
             })->sortBy('travel_date')->values();
-
         } elseif ($vendor->vendor_category_id == 4) {
             $othersItems = BookOthersActivity::with(['othersActivity', 'booking.user'])
                 ->where('is_debt', '1')
@@ -3306,6 +3307,20 @@ class FinanceController extends Controller
         $currentYear = (int) date('Y');
         $years = [$currentYear - 1, $currentYear, $currentYear + 1];
 
+        if($request->json) {
+            $data = [
+                'vendor' => [
+                    'id' => $vendor->id,
+                    'name' => $vendor->name,
+                    'category' => $vendor->vendorCategory->name,
+                ],
+                'debts' => $debts,
+                'total_debt' => $totalHutang,
+            ];
+
+            return $data;
+        }
+
         return Inertia::render('Finance/RekapHutangDetail', [
             'vendor'          => [
                 'id'       => $vendor->id,
@@ -3326,9 +3341,18 @@ class FinanceController extends Controller
     private function rekapHutangPeriodLabel($month, $year): string
     {
         $labels = [
-            '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April',
-            '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus',
-            '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember',
+            '01' => 'Januari',
+            '02' => 'Februari',
+            '03' => 'Maret',
+            '04' => 'April',
+            '05' => 'Mei',
+            '06' => 'Juni',
+            '07' => 'Juli',
+            '08' => 'Agustus',
+            '09' => 'September',
+            '10' => 'Oktober',
+            '11' => 'November',
+            '12' => 'Desember',
         ];
         return ($labels[$month] ?? $month) . ' ' . $year;
     }
@@ -3338,7 +3362,8 @@ class FinanceController extends Controller
         $vendors = Vendor::with('vendorCategory')->orderBy('vendor_category_id')->get();
 
         return $vendors->map(function ($vendor) use ($month, $year) {
-            $total = 0; $itemCount = 0;
+            $total = 0;
+            $itemCount = 0;
 
             if ($vendor->vendor_category_id == 1) {
                 $items = BookHotel::with(['bookRoom', 'bookHotelMeal'])
@@ -3348,27 +3373,27 @@ class FinanceController extends Controller
                     ->get();
                 $total = $items->sum(fn($bh) => $bh->bookRoom->sum('subtotal') + $bh->bookHotelMeal->sum('subtotal'));
                 $itemCount = $items->count();
-
             } elseif ($vendor->vendor_category_id == 2) {
                 $items = BookDestinationActivity::where('is_debt', '1')->whereNull('debt_payment_id')
                     ->whereHas('destinationActivity', fn($q) => $q->where('vendor_id', $vendor->id))
                     ->whereHas('booking', fn($q) => $q->where('travel_date_start', 'like', "$year-$month%"))
                     ->get();
-                $total = $items->sum('subtotal'); $itemCount = $items->count();
-
+                $total = $items->sum('subtotal');
+                $itemCount = $items->count();
             } elseif ($vendor->vendor_category_id == 3) {
                 $items = BookCarActivity::where('is_debt', '1')->whereNull('debt_payment_id')
                     ->whereHas('car', fn($q) => $q->where('vendor_id', $vendor->id))
                     ->whereHas('booking', fn($q) => $q->where('travel_date_start', 'like', "$year-$month%"))
                     ->get();
-                $total = $items->sum('subtotal'); $itemCount = $items->count();
-
+                $total = $items->sum('subtotal');
+                $itemCount = $items->count();
             } elseif ($vendor->vendor_category_id == 4) {
                 $items = BookOthersActivity::where('is_debt', '1')->whereNull('debt_payment_id')
                     ->whereHas('othersActivity', fn($q) => $q->where('vendor_id', $vendor->id))
                     ->whereHas('booking', fn($q) => $q->where('travel_date_start', 'like', "$year-$month%"))
                     ->get();
-                $total = $items->sum('subtotal'); $itemCount = $items->count();
+                $total = $items->sum('subtotal');
+                $itemCount = $items->count();
             }
 
             if ($total <= 0) return null;
@@ -3407,20 +3432,23 @@ class FinanceController extends Controller
                     'travel_date' => date('d M', strtotime($bh->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($bh->booking->travel_date_end)),
                     'check_in'    => date('d M Y', strtotime($bh->booking->travel_date_start . " +$night days")),
                     'rooms'       => $bh->bookRoom->map(fn($r) => [
-                        'room' => $r->roomHotel->room_name, 'quantity' => $r->quantity,
-                        'price' => $r->subtotal / max(1, $r->quantity), 'subtotal' => $r->subtotal,
+                        'room' => $r->roomHotel->room_name,
+                        'quantity' => $r->quantity,
+                        'price' => $r->subtotal / max(1, $r->quantity),
+                        'subtotal' => $r->subtotal,
                     ]),
                     'room_total'  => $bh->bookRoom->sum('subtotal'),
                     'meals'       => $bh->bookHotelMeal->map(fn($m) => [
-                        'meals' => ucfirst($m->meals), 'quantity' => $m->qty,
-                        'price' => $m->price, 'subtotal' => $m->subtotal,
+                        'meals' => ucfirst($m->meals),
+                        'quantity' => $m->qty,
+                        'price' => $m->price,
+                        'subtotal' => $m->subtotal,
                     ]),
                     'meals_total' => $bh->bookHotelMeal->sum('subtotal'),
                     'total'       => $bh->bookRoom->sum('subtotal') + $bh->bookHotelMeal->sum('subtotal'),
                     'type'        => 'hotel',
                 ];
             })->sortBy('check_in')->values();
-
         } elseif ($vendor->vendor_category_id == 2) {
             $activities = BookDestinationActivity::with(['destinationActivity', 'booking.bookingDetail.package', 'booking.user'])
                 ->where('is_debt', '1')->whereNull('debt_payment_id')
@@ -3439,7 +3467,8 @@ class FinanceController extends Controller
                     $activityDate  = $itinerary
                         ? date('d M Y', strtotime($first->booking->travel_date_start . ' +' . ($itinerary->day - 1) . ' days')) : '-';
                     return [
-                        'id'            => $first->id, 'booking_id' => $first->booking_id,
+                        'id'            => $first->id,
+                        'booking_id' => $first->booking_id,
                         'customer'      => $first->booking->user->name,
                         'channel'       => $first->booking->agent_id == 1 ? 'TWT' : ($first->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
                         'pax'           => (int) $first->booking->total_pax,
@@ -3448,7 +3477,8 @@ class FinanceController extends Controller
                         'bromo_ticket'  => $group->where('destination_activity_id', 1)->sum('subtotal'),
                         'jeep_unit'     => $group->whereNotIn('destination_activity_id', [1])->sum('qty'),
                         'bromo_jeep'    => $group->whereNotIn('destination_activity_id', [1])->sum('subtotal'),
-                        'total'         => $group->sum('subtotal'), 'type' => 'bromo',
+                        'total'         => $group->sum('subtotal'),
+                        'type' => 'bromo',
                     ];
                 })->values();
             } else {
@@ -3459,18 +3489,20 @@ class FinanceController extends Controller
                     $activityDate  = $itinerary
                         ? date('d M Y', strtotime($act->booking->travel_date_start . ' +' . ($itinerary->day - 1) . ' days')) : '-';
                     return [
-                        'id'            => $act->id, 'booking_id' => $act->booking_id,
+                        'id'            => $act->id,
+                        'booking_id' => $act->booking_id,
                         'customer'      => $act->booking->user->name,
                         'channel'       => $act->booking->agent_id == 1 ? 'TWT' : ($act->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
                         'pax'           => (int) $act->booking->total_pax,
                         'travel_date'   => date('d M', strtotime($act->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($act->booking->travel_date_end)),
                         'activity_date' => $activityDate,
                         'activity'      => $act->destinationActivity->name ?? '-',
-                        'qty'           => $act->qty, 'total' => $act->subtotal, 'type' => 'activity',
+                        'qty'           => $act->qty,
+                        'total' => $act->subtotal,
+                        'type' => 'activity',
                     ];
                 })->sortBy('activity_date')->values();
             }
-
         } elseif ($vendor->vendor_category_id == 3) {
             $carItems = BookCarActivity::with(['car', 'booking.user'])
                 ->where('is_debt', '1')->whereNull('debt_payment_id')
@@ -3478,15 +3510,18 @@ class FinanceController extends Controller
                 ->whereHas('booking', fn($q) => $q->where('travel_date_start', 'like', "$year-$month%"))
                 ->get();
             $debts = $carItems->map(fn($bca) => [
-                'id'          => $bca->id, 'booking_id' => $bca->booking_id,
+                'id'          => $bca->id,
+                'booking_id' => $bca->booking_id,
                 'customer'    => $bca->booking->user->name,
                 'channel'     => $bca->booking->agent_id == 1 ? 'TWT' : ($bca->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
                 'pax'         => (int) $bca->booking->total_pax,
                 'travel_date' => date('d M', strtotime($bca->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($bca->booking->travel_date_end)),
-                'car'         => $bca->car->name ?? '-', 'qty' => $bca->qty,
-                'driver'      => $bca->driver_txt ?: '-', 'total' => (float) $bca->subtotal, 'type' => 'car',
+                'car'         => $bca->car->name ?? '-',
+                'qty' => $bca->qty,
+                'driver'      => $bca->driver_txt ?: '-',
+                'total' => (float) $bca->subtotal,
+                'type' => 'car',
             ])->sortBy('travel_date')->values();
-
         } elseif ($vendor->vendor_category_id == 4) {
             $othersItems = BookOthersActivity::with(['othersActivity', 'booking.user'])
                 ->where('is_debt', '1')->whereNull('debt_payment_id')
@@ -3494,14 +3529,17 @@ class FinanceController extends Controller
                 ->whereHas('booking', fn($q) => $q->where('travel_date_start', 'like', "$year-$month%"))
                 ->get();
             $debts = $othersItems->map(fn($oa) => [
-                'id'          => $oa->id, 'booking_id' => $oa->booking_id,
+                'id'          => $oa->id,
+                'booking_id' => $oa->booking_id,
                 'customer'    => $oa->booking->user->name,
                 'channel'     => $oa->booking->agent_id == 1 ? 'TWT' : ($oa->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
                 'pax'         => (int) $oa->booking->total_pax,
                 'travel_date' => date('d M', strtotime($oa->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($oa->booking->travel_date_end)),
                 'item'        => $oa->othersActivity->name ?? '-',
-                'qty'         => $oa->qty, 'price' => (float) $oa->price,
-                'total'       => (float) $oa->subtotal, 'type' => 'others',
+                'qty'         => $oa->qty,
+                'price' => (float) $oa->price,
+                'total'       => (float) $oa->subtotal,
+                'type' => 'others',
             ])->sortBy('travel_date')->values();
         }
 

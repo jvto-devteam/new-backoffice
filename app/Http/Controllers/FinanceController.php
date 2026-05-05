@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AddOn;
 use App\Models\BookAddOn;
+use App\Models\GoogleBill;
 use App\Models\BookCar;
 use App\Models\BookCarActivity;
 use App\Models\BookCrewActivity;
@@ -3568,5 +3569,212 @@ class FinanceController extends Controller
         header("Content-type: application/vnd-ms-excel");
         header("Content-Disposition: attachment; filename=$filename");
         return view('exports.rekap-hutang-detail-excel', compact('vendor', 'debts', 'total', 'period', 'type'));
+    }
+
+    // ─── Channel Revenue Report ───────────────────────────────────────────────
+
+    function channelReport(Request $request)
+    {
+        $month = $request->month ? str_pad($request->month, 2, '0', STR_PAD_LEFT) : date('m');
+        $year  = $request->year  ? (int) $request->year  : (int) date('Y');
+
+        $channels   = $this->buildChannelData($month, $year);
+        $googleBill = GoogleBill::where('month', (int) $month)->where('year', $year)->first();
+        $allKlookBookings = $this->buildAllKlookBookingsForPeriod($month, $year);
+
+        $months = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $months[] = ['value' => str_pad($m, 2, '0', STR_PAD_LEFT), 'label' => date('F', mktime(0, 0, 0, $m, 1))];
+        }
+        $years = range(date('Y') - 2, date('Y') + 1);
+
+        return Inertia::render('Finance/ChannelReport', [
+            'filters'          => ['month' => $month, 'year' => (string) $year],
+            'channels'         => $channels,
+            'google_bill'      => $googleBill,
+            'klook_bookings'   => $allKlookBookings,
+            'months'           => $months,
+            'years'            => $years,
+        ]);
+    }
+
+    function saveGoogleBill(Request $request)
+    {
+        $month = str_pad($request->month, 2, '0', STR_PAD_LEFT);
+        $year  = (int) $request->year;
+
+        GoogleBill::updateOrCreate(
+            ['month' => (int) $month, 'year' => $year],
+            ['google_cloud' => (int) $request->google_cloud, 'google_ads' => (int) $request->google_ads]
+        );
+
+        return back()->with('success', 'Google bill saved.');
+    }
+
+    function updateChannelTag(Request $request)
+    {
+        $booking = Booking::findOrFail($request->booking_id);
+        $booking->channel_tag = $request->channel_tag ?: null;
+        $booking->save();
+
+        return response()->json(['ok' => true]);
+    }
+
+    function channelReportExportPdf(Request $request, string $channel)
+    {
+        $month  = str_pad($request->month ?: date('m'), 2, '0', STR_PAD_LEFT);
+        $year   = (int) ($request->year ?: date('Y'));
+        $period = $this->crPeriodLabel($month, $year);
+
+        if ($channel === 'net-profit') {
+            $channels   = $this->buildChannelData($month, $year);
+            $googleBill = GoogleBill::where('month', (int)$month)->where('year', $year)->first();
+            $pdf = PDF::loadView('exports.channel-report-net-profit-pdf', compact('channels', 'googleBill', 'period'));
+            $pdf->setPaper('A4', 'portrait');
+            return $pdf->download("net-profit-$month-$year.pdf");
+        }
+
+        $channelData = $this->buildChannelData($month, $year);
+        $bookings    = $channelData[$channel]['bookings'] ?? collect();
+        $totals      = $channelData[$channel] ?? [];
+        $label       = $this->crChannelLabel($channel);
+        $pdf = PDF::loadView('exports.channel-report-channel-pdf', compact('bookings', 'totals', 'label', 'period', 'channel'));
+        $pdf->setPaper('A4', 'landscape');
+        return $pdf->download("$channel-report-$month-$year.pdf");
+    }
+
+    function channelReportExportExcel(Request $request, string $channel)
+    {
+        $month  = str_pad($request->month ?: date('m'), 2, '0', STR_PAD_LEFT);
+        $year   = (int) ($request->year ?: date('Y'));
+        $period = $this->crPeriodLabel($month, $year);
+
+        if ($channel === 'net-profit') {
+            $channels   = $this->buildChannelData($month, $year);
+            $googleBill = GoogleBill::where('month', (int)$month)->where('year', $year)->first();
+            $filename   = "net-profit-$month-$year.xls";
+            header("Content-type: application/vnd-ms-excel");
+            header("Content-Disposition: attachment; filename=$filename");
+            return view('exports.channel-report-net-profit-excel', compact('channels', 'googleBill', 'period'));
+        }
+
+        $channelData = $this->buildChannelData($month, $year);
+        $bookings    = $channelData[$channel]['bookings'] ?? collect();
+        $totals      = $channelData[$channel] ?? [];
+        $label       = $this->crChannelLabel($channel);
+        $filename    = "$channel-report-$month-$year.xls";
+        header("Content-type: application/vnd-ms-excel");
+        header("Content-Disposition: attachment; filename=$filename");
+        return view('exports.channel-report-channel-excel', compact('bookings', 'totals', 'label', 'period', 'channel'));
+    }
+
+    private function buildChannelData(string $month, int $year): array
+    {
+        $base = Booking::where('status', 'booked')
+            ->whereYear('travel_date_start', $year)
+            ->whereMonth('travel_date_start', (int) $month);
+
+        $jvtoRows = (clone $base)
+            ->where('agent_id', 2)
+            ->where('booking_category_id', '!=', 3)
+            ->get();
+
+        $twtRows = (clone $base)
+            ->where('agent_id', 1)
+            ->get();
+
+        $klookAll = (clone $base)
+            ->where('agent_id', 2)
+            ->where('booking_category_id', 3)
+            ->get();
+
+        $klookRows  = $klookAll->filter(fn($b) => $this->resolveChannelTag($b) === 'klook');
+        $gygRows    = $klookAll->filter(fn($b) => $this->resolveChannelTag($b) === 'gyg');
+        $viatorRows = $klookAll->filter(fn($b) => $this->resolveChannelTag($b) === 'viator');
+
+        return [
+            'jvto'   => $this->crSumChannel($jvtoRows,  'jvto'),
+            'twt'    => $this->crSumChannel($twtRows,   'twt'),
+            'klook'  => $this->crSumChannel($klookRows,  'klook'),
+            'gyg'    => $this->crSumChannel($gygRows,    'gyg'),
+            'viator' => $this->crSumChannel($viatorRows, 'viator'),
+        ];
+    }
+
+    private function buildAllKlookBookingsForPeriod(string $month, int $year): \Illuminate\Support\Collection
+    {
+        return Booking::where('status', 'booked')
+            ->where('agent_id', 2)
+            ->where('booking_category_id', 3)
+            ->whereYear('travel_date_start', $year)
+            ->whereMonth('travel_date_start', (int) $month)
+            ->orderBy('travel_date_start')
+            ->get()
+            ->map(fn($b) => [
+                'id'                  => $b->id,
+                'invoice_code_origin' => $b->invoice_code_origin,
+                'customer'            => optional($b->user)->name ?? $b->booking_from ?? '-',
+                'total_pax'           => $b->total_pax,
+                'trip_date'           => $b->travel_date_start ? date('d M y', strtotime($b->travel_date_start)) : '-',
+                'invoice'             => (int) $b->grand_total,
+                'expense'             => (int) $b->expense_internal_total,
+                'profit'              => (int) $b->grand_total - (int) $b->expense_internal_total,
+                'channel_tag'         => $b->channel_tag,
+                'resolved_channel'    => $this->resolveChannelTag($b),
+            ]);
+    }
+
+    private function crSumChannel(\Illuminate\Support\Collection $rows, string $channel): array
+    {
+        $bookings = $rows->sortBy('travel_date_start')->values()->map(function ($b, $i) use ($channel) {
+            $bookingNumber = $channel === 'jvto' ? $b->booking_code : $b->invoice_code_origin;
+            $customer      = optional($b->user)->name ?? $b->booking_from ?? '-';
+            $invoice       = (int) $b->grand_total;
+            $expense       = (int) $b->expense_internal_total;
+            return [
+                'no'             => $i + 1,
+                'booking_number' => $bookingNumber ?? '-',
+                'customer'       => $customer,
+                'total_pax'      => $b->total_pax,
+                'trip_date'      => $b->travel_date_start ? date('d M y', strtotime($b->travel_date_start)) : '-',
+                'invoice'        => $invoice,
+                'expense'        => $expense,
+                'profit'         => $invoice - $expense,
+            ];
+        });
+
+        $totalInvoice = $bookings->sum('invoice');
+        $totalExpense = $bookings->sum('expense');
+
+        return [
+            'bookings'      => $bookings,
+            'total_invoice' => $totalInvoice,
+            'total_expense' => $totalExpense,
+            'total_profit'  => $totalInvoice - $totalExpense,
+        ];
+    }
+
+    private function resolveChannelTag(\App\Models\Booking $b): string
+    {
+        if ($b->channel_tag) return $b->channel_tag;
+        if ($b->invoice_code_origin && str_starts_with(strtoupper($b->invoice_code_origin), 'GYG')) return 'gyg';
+        return 'klook';
+    }
+
+    private function crPeriodLabel(string $month, int $year): string
+    {
+        return date('F Y', mktime(0, 0, 0, (int) $month, 1, $year));
+    }
+
+    private function crChannelLabel(string $channel): string
+    {
+        return match ($channel) {
+            'jvto'   => 'JVTO',
+            'twt'    => 'TWT',
+            'klook'  => 'KLOOK',
+            'gyg'    => 'GetYourGuide',
+            'viator' => 'Viator',
+            default  => strtoupper($channel),
+        };
     }
 }

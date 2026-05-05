@@ -164,6 +164,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/rekap-hutang/export-excel', [FinanceController::class, 'rekapHutangExportExcel']);
         Route::get('/rekap-hutang/{vendorId}/export-pdf', [FinanceController::class, 'rekapHutangDetailExportPdf']);
         Route::get('/rekap-hutang/{vendorId}/export-excel', [FinanceController::class, 'rekapHutangDetailExportExcel']);
+
+        // Channel Revenue Report
+        Route::get('/channel-revenue-report', [FinanceController::class, 'channelReport']);
+        Route::post('/channel-revenue-report/google-bill', [FinanceController::class, 'saveGoogleBill']);
+        Route::post('/channel-revenue-report/channel-tag', [FinanceController::class, 'updateChannelTag']);
+        Route::get('/channel-revenue-report/export-pdf/{channel}', [FinanceController::class, 'channelReportExportPdf']);
+        Route::get('/channel-revenue-report/export-excel/{channel}', [FinanceController::class, 'channelReportExportExcel']);
     });
     Route::prefix('package-inventory')->group(function () {
         Route::get('/json', [PackageController::class, 'json']);

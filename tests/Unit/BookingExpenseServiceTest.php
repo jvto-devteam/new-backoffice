@@ -34,11 +34,9 @@ describe('BookingExpenseService', function () {
                     && $data['total_expense_debt_paid'] == 0;
             });
 
-        // --- BookHotel: no records ---
+        // --- BookHotel: no records (single query, partitioned in PHP) ---
         $bh = Mockery::mock('alias:App\Models\BookHotel');
-        $bh->shouldReceive('with->where->where->whereNull->get')
-            ->andReturn(new Collection());
-        $bh->shouldReceive('with->where->where->whereNotNull->get')
+        $bh->shouldReceive('with->where->where->get')
             ->andReturn(new Collection());
 
         // --- BookDestinationActivity: unpaid=$subtotal, paid=0 ---
@@ -83,11 +81,9 @@ describe('BookingExpenseService', function () {
                     && $data['total_expense_debt_paid'] == $subtotal;
             });
 
-        // --- BookHotel: no records ---
+        // --- BookHotel: no records (single query, partitioned in PHP) ---
         $bh = Mockery::mock('alias:App\Models\BookHotel');
-        $bh->shouldReceive('with->where->where->whereNull->get')
-            ->andReturn(new Collection());
-        $bh->shouldReceive('with->where->where->whereNotNull->get')
+        $bh->shouldReceive('with->where->where->get')
             ->andReturn(new Collection());
 
         // --- BookDestinationActivity: unpaid=0, paid=$subtotal ---

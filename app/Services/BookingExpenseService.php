@@ -24,11 +24,13 @@ class BookingExpenseService
         }
 
         // Hotels: rooms + meals both belong to the BookHotel record
-        $hotelDebt = BookHotel::with(['bookRoom', 'bookHotelMeal'])
+        // Fetch all debt-flagged hotels once to avoid race condition
+        $allDebtHotels = BookHotel::with(['bookRoom', 'bookHotelMeal'])
             ->where('booking_id', $bookingId)
             ->where('is_debt', '1')
-            ->whereNull('debt_payment_id')
-            ->get()
+            ->get();
+
+        $hotelDebt = $allDebtHotels->filter(fn($bh) => is_null($bh->debt_payment_id))
             ->sum(fn($bh) => $bh->bookRoom->sum('subtotal') + $bh->bookHotelMeal->sum('subtotal'));
 
         $activityDebt = BookDestinationActivity::where('booking_id', $bookingId)
@@ -54,11 +56,7 @@ class BookingExpenseService
         $totalDebt = $hotelDebt + $activityDebt + $carDebt + $crewDebt + $othersDebt;
 
         // Paid portion: is_debt='1' AND debt_payment_id IS NOT NULL
-        $hotelPaid = BookHotel::with(['bookRoom', 'bookHotelMeal'])
-            ->where('booking_id', $bookingId)
-            ->where('is_debt', '1')
-            ->whereNotNull('debt_payment_id')
-            ->get()
+        $hotelPaid = $allDebtHotels->filter(fn($bh) => !is_null($bh->debt_payment_id))
             ->sum(fn($bh) => $bh->bookRoom->sum('subtotal') + $bh->bookHotelMeal->sum('subtotal'));
 
         $activityPaid = BookDestinationActivity::where('booking_id', $bookingId)

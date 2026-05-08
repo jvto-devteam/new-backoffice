@@ -3072,12 +3072,28 @@ class FinanceController extends Controller
             ['value'=>'11','label'=>'November'], ['value'=>'12','label'=>'Desember'],
         ];
 
+        $crewSummary = [
+            'total_crew_expense'   => (int) BookCrewActivity::whereHas('booking', function ($q) use ($year, $month) {
+                                          $q->where('status', 'booked')
+                                            ->where('travel_date_start', 'like', "$year-$month%");
+                                      })->sum('subtotal'),
+            'bookings_pending'     => Booking::where('status', 'booked')
+                                          ->where('travel_date_start', 'like', "$year-$month%")
+                                          ->where('crew_transfer_status', 'pending')
+                                          ->count(),
+            'bookings_transferred' => Booking::where('status', 'booked')
+                                          ->where('travel_date_start', 'like', "$year-$month%")
+                                          ->where('crew_transfer_status', 'transferred')
+                                          ->count(),
+        ];
+
         return Inertia::render('Finance/FinanceHub', [
-            'bookings' => $bookings,
-            'summary'  => $summary,
-            'filters'  => compact('month', 'year', 'view', 'status'),
-            'months'   => $months,
-            'years'    => [(int)date('Y')-1, (int)date('Y'), (int)date('Y')+1],
+            'bookings'     => $bookings,
+            'summary'      => $summary,
+            'crew_summary' => $crewSummary,
+            'filters'      => compact('month', 'year', 'view', 'status'),
+            'months'       => $months,
+            'years'        => [(int)date('Y')-1, (int)date('Y'), (int)date('Y')+1],
         ]);
     }
 

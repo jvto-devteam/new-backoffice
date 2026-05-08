@@ -26,9 +26,16 @@ interface Summary {
     outstanding: number;
 }
 
+interface CrewSummary {
+    total_crew_expense: number;
+    bookings_pending: number;
+    bookings_transferred: number;
+}
+
 interface Props {
     bookings: BookingRow[];
     summary: Summary;
+    crew_summary: CrewSummary;
     filters: { month: string; year: string; view: string; status: string };
     months: { value: string; label: string }[];
     years: number[];
@@ -59,7 +66,7 @@ function AgingBadge({ days }: { days: number }) {
     );
 }
 
-export default function FinanceHub({ bookings, summary, filters, months, years }: Props) {
+export default function FinanceHub({ bookings, summary, crew_summary, filters, months, years }: Props) {
     const [f, setF] = useState(filters);
     const [payTarget, setPayTarget] = useState<BookingRow | null>(null);
 
@@ -167,6 +174,28 @@ export default function FinanceHub({ bookings, summary, filters, months, years }
                     ))}
                 </div>
 
+                {/* Crew Summary Bar */}
+                <div className="bg-white rounded-xl shadow px-5 py-3 flex flex-wrap items-center gap-6 text-sm">
+                    <div className="flex items-center gap-2">
+                        <span className="text-base">👤</span>
+                        <span className="font-medium text-gray-700">Crew Expense Bulan Ini</span>
+                    </div>
+                    <div className="flex items-center gap-6">
+                        <div>
+                            <p className="text-xs text-gray-400">Total</p>
+                            <p className="font-bold text-indigo-700">{rp(crew_summary.total_crew_expense)}</p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-400">Belum Transfer</p>
+                            <p className="font-bold text-red-600">{crew_summary.bookings_pending} booking</p>
+                        </div>
+                        <div>
+                            <p className="text-xs text-gray-400">Sudah Transfer</p>
+                            <p className="font-bold text-green-600">{crew_summary.bookings_transferred} booking</p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Table */}
                 <div className="bg-white rounded-xl shadow overflow-hidden">
                     <div className="px-6 py-3 border-b flex items-center justify-between">
@@ -234,14 +263,22 @@ export default function FinanceHub({ bookings, summary, filters, months, years }
                                             <AgingBadge days={row.days_overdue} />
                                         </td>
                                         <td className="px-4 py-3">
-                                            {row.total_debt > 0 && (
-                                                <button
-                                                    onClick={() => setPayTarget(row)}
-                                                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                                            <div className="flex items-center gap-2">
+                                                {row.total_debt > 0 && (
+                                                    <button
+                                                        onClick={() => setPayTarget(row)}
+                                                        className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-colors"
+                                                    >
+                                                        Bayar
+                                                    </button>
+                                                )}
+                                                <a
+                                                    href={`/finance/cockpit/${row.id}`}
+                                                    className="border border-indigo-300 text-indigo-600 hover:bg-indigo-50 px-3 py-1 rounded-lg text-xs font-medium transition-colors"
                                                 >
-                                                    Bayar
-                                                </button>
-                                            )}
+                                                    Detail →
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

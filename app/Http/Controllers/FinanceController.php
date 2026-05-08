@@ -3007,17 +3007,18 @@ class FinanceController extends Controller
     {
         $month  = $request->month  ?: date('m');
         $year   = $request->year   ?: date('Y');
-        $view   = $request->view   ?: 'booking';
+        $tab    = $request->tab    ?: 'current';
         $status = $request->status ?: 'all';
 
+        // ── Current month bookings ─────────────────────────────────────
         $query = Booking::select(
                 'id', 'user_id', 'booking_code', 'invoice_code_origin',
                 'travel_date_start', 'travel_date_end', 'total_pax',
                 'grand_total', 'agent_id', 'booking_category_id',
-                'expense_internal_total',
-                'total_expense_debt', 'total_expense_debt_paid', 'total_expense_crew'
+                'expense_internal_total', 'total_expense_crew',
+                'total_expense_debt', 'total_expense_debt_paid'
             )
-            ->with(['user:id,name', 'bookingDetail.package:id,name'])
+            ->with(['user:id,name', 'bookingDetail.package:id,name', 'bookingPayment'])
             ->where('status', 'booked')
             ->where('travel_date_start', 'like', "$year-$month%");
 
@@ -3034,35 +3035,133 @@ class FinanceController extends Controller
                 default                      => 'JVTO',
             };
 
+            // TWT/KLOOK use invoice_code_origin; JVTO uses booking_code
+            $bookingCode = in_array($channel, ['TWT', 'KLOOK'])
+                ? ($b->invoice_code_origin ?? $b->booking_code)
+                : ($b->booking_code ?? $b->invoice_code_origin);
+
             $daysOverdue = 0;
             if ($b->travel_date_end) {
                 $diff = now()->diffInDays($b->travel_date_end, false);
                 $daysOverdue = $diff < 0 ? abs((int) $diff) : 0;
             }
 
+            $grandTotal = (int) ($b->grand_total ?? 0);
+            $terkumpul  = (int) $b->bookingPayment->sum('nominal');
+            $expense    = (int) ($b->expense_internal_total ?? 0);
+
             return [
                 'id'                => $b->id,
                 'channel'           => $channel,
-                'booking_code'      => in_array($channel, ['TWT', 'KLOOK'])
-                                        ? ($b->invoice_code_origin ?? $b->booking_code)
-                                        : ($b->booking_code ?? $b->invoice_code_origin),
+                'booking_code'      => $bookingCode,
                 'customer'          => $b->user?->name ?? '-',
                 'package'           => $b->bookingDetail->first()?->package?->name ?? 'Package',
                 'travel_date_start' => $b->travel_date_start,
                 'travel_date_end'   => $b->travel_date_end,
                 'total_pax'         => $b->total_pax,
-                'total_expense'     => (int) ($b->expense_internal_total ?? 0),
+                'grand_total'       => $grandTotal,
+                'terkumpul'         => $terkumpul,
+                'piutang'           => max(0, $grandTotal - $terkumpul),
+                'total_expense'     => $expense,
+                'profit'            => $grandTotal - $expense,
                 'total_debt'        => (int) ($b->total_expense_debt ?? 0),
                 'total_paid'        => (int) ($b->total_expense_debt_paid ?? 0),
                 'days_overdue'      => $daysOverdue,
             ];
         });
 
-        $summary = [
-            'total_expense' => (int) $bookings->sum('total_expense'),
-            'total_debt'    => (int) $bookings->sum('total_debt'),
-            'total_paid'    => (int) $bookings->sum('total_paid'),
-            'outstanding'   => (int) $bookings->sum('total_debt'),
+        // ── KPI aggregates ─────────────────────────────────────────────
+        $kpiGrandTotal   = (int) $bookings->sum('grand_total');
+        $kpiTerkumpul    = (int) $bookings->sum('terkumpul');
+        $kpiTotalExpense = (int) $bookings->sum('total_expense');
+        $kpiProfit       = $kpiGrandTotal - $kpiTotalExpense;
+        $kpiMarginPct    = $kpiGrandTotal > 0 ? round($kpiProfit / $kpiGrandTotal * 100, 1) : 0;
+        $kpiHutang       = (int) $bookings->sum('total_debt');
+
+        $kpi = [
+            'grand_total'   => $kpiGrandTotal,
+            'terkumpul'     => $kpiTerkumpul,
+            'piutang'       => max(0, $kpiGrandTotal - $kpiTerkumpul),
+            'total_expense' => $kpiTotalExpense,
+            'profit'        => $kpiProfit,
+            'margin_pct'    => $kpiMarginPct,
+            'hutang_vendor' => $kpiHutang,
+        ];
+
+        // ── Kebutuhan dana ─────────────────────────────────────────────
+        $crewPendingAmount = (int) BookCrewActivity::whereHas('booking', function ($q) use ($year, $month) {
+            $q->where('status', 'booked')
+              ->where('travel_date_start', 'like', "$year-$month%")
+              ->where('crew_transfer_status', 'pending');
+        })->sum('subtotal');
+
+        $kebutuhanDana = [
+            'hutang_vendor' => $kpiHutang,
+            'crew_pending'  => $crewPendingAmount,
+            'total'         => $kpiHutang + $crewPendingAmount,
+        ];
+
+        // ── Crew summary ───────────────────────────────────────────────
+        $crewSummary = [
+            'total_crew_expense'   => (int) BookCrewActivity::whereHas('booking', function ($q) use ($year, $month) {
+                $q->where('status', 'booked')->where('travel_date_start', 'like', "$year-$month%");
+            })->sum('subtotal'),
+            'bookings_pending'     => Booking::where('status', 'booked')
+                ->where('travel_date_start', 'like', "$year-$month%")
+                ->where('crew_transfer_status', 'pending')->count(),
+            'bookings_transferred' => Booking::where('status', 'booked')
+                ->where('travel_date_start', 'like', "$year-$month%")
+                ->where('crew_transfer_status', 'transferred')->count(),
+        ];
+
+        // ── Prediction (next month) ────────────────────────────────────
+        $nextMonthInt = (int) $month + 1;
+        $nextYear     = $nextMonthInt > 12 ? (int) $year + 1 : (int) $year;
+        $nextMonth    = str_pad($nextMonthInt > 12 ? 1 : $nextMonthInt, 2, '0', STR_PAD_LEFT);
+
+        $predBookings = Booking::select(
+                'id', 'user_id', 'booking_code', 'invoice_code_origin',
+                'travel_date_start', 'grand_total', 'agent_id', 'booking_category_id',
+                'expense_internal_total', 'total_expense_crew'
+            )
+            ->with(['user:id,name', 'bookingDetail.package:id,name'])
+            ->where('status', 'booked')
+            ->where('travel_date_start', 'like', "$nextYear-$nextMonth%")
+            ->orderBy('travel_date_start')
+            ->get();
+
+        $predRevenue = (int) $predBookings->sum('grand_total');
+        $predExpense = (int) $predBookings->sum('expense_internal_total');
+
+        $prediction = [
+            'bookings' => $predBookings->map(function ($b) {
+                $ch = match(true) {
+                    $b->agent_id == 1            => 'TWT',
+                    $b->booking_category_id == 3 => 'KLOOK',
+                    default                      => 'JVTO',
+                };
+                $code = in_array($ch, ['TWT', 'KLOOK'])
+                    ? ($b->invoice_code_origin ?? $b->booking_code)
+                    : ($b->booking_code ?? $b->invoice_code_origin);
+                $exp = (float) ($b->expense_internal_total ?? 0);
+                return [
+                    'id'                => $b->id,
+                    'booking_code'      => $code,
+                    'customer'          => $b->user?->name ?? '-',
+                    'package'           => $b->bookingDetail->first()?->package?->name ?? 'Package',
+                    'travel_date_start' => $b->travel_date_start,
+                    'grand_total'       => (int) ($b->grand_total ?? 0),
+                    'expense'           => (int) $exp,
+                    'has_expense'       => $exp > 0,
+                    'channel'           => $ch,
+                ];
+            })->values()->toArray(),
+            'expected_revenue'  => $predRevenue,
+            'expected_expense'  => $predExpense,
+            'expected_profit'   => $predRevenue - $predExpense,
+            'dana_siapkan'      => (int) $predBookings->sum('total_expense_crew'),
+            'expense_complete'  => $predBookings->count() > 0
+                                    && $predBookings->every(fn($b) => (float)($b->expense_internal_total ?? 0) > 0),
         ];
 
         $months = [
@@ -3074,28 +3173,15 @@ class FinanceController extends Controller
             ['value'=>'11','label'=>'November'], ['value'=>'12','label'=>'Desember'],
         ];
 
-        $crewSummary = [
-            'total_crew_expense'   => (int) BookCrewActivity::whereHas('booking', function ($q) use ($year, $month) {
-                                          $q->where('status', 'booked')
-                                            ->where('travel_date_start', 'like', "$year-$month%");
-                                      })->sum('subtotal'),
-            'bookings_pending'     => Booking::where('status', 'booked')
-                                          ->where('travel_date_start', 'like', "$year-$month%")
-                                          ->where('crew_transfer_status', 'pending')
-                                          ->count(),
-            'bookings_transferred' => Booking::where('status', 'booked')
-                                          ->where('travel_date_start', 'like', "$year-$month%")
-                                          ->where('crew_transfer_status', 'transferred')
-                                          ->count(),
-        ];
-
         return Inertia::render('Finance/FinanceHub', [
-            'bookings'     => $bookings,
-            'summary'      => $summary,
-            'crew_summary' => $crewSummary,
-            'filters'      => compact('month', 'year', 'view', 'status'),
-            'months'       => $months,
-            'years'        => [(int)date('Y')-1, (int)date('Y'), (int)date('Y')+1],
+            'bookings'       => $bookings,
+            'kpi'            => $kpi,
+            'kebutuhan_dana' => $kebutuhanDana,
+            'crew_summary'   => $crewSummary,
+            'prediction'     => $prediction,
+            'filters'        => compact('month', 'year', 'tab', 'status'),
+            'months'         => $months,
+            'years'          => [(int)date('Y')-1, (int)date('Y'), (int)date('Y')+1],
         ]);
     }
 

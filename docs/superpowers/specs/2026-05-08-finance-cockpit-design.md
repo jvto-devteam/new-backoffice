@@ -91,16 +91,17 @@ All sources merged into one flat array. Each row:
 ]
 ```
 
-**Sources:**
-1. `book_hotels` — amount = `bookRoom.sum('subtotal') + bookHotelMeal.sum('subtotal')`, vendor from `hotel.name`
-2. `book_destination_activities` — `subtotal`, vendor from `destinationActivity.name`
-3. `book_car_activities` — `subtotal`, vendor from `car.name`
-4. `book_crew_activities` — `subtotal`, vendor from `crewRole.name`
-5. `book_others_activities` — `subtotal`, vendor from `othersActivity.name`
-6. `book_crew_activities` — `subtotal`, description from `crewRole.role` (CrewRole has no vendor_id; crew debt is tracked but not vendor-linked in the same way)
-7. `expense_additionals` — `subtotal`, `is_debt=false` always (type: 'additional')
+**All items shown regardless of `is_debt` value** — the badge reflects status, no filtering applied.
 
-For sources 1–5: `is_debt` from the model's `is_debt` field. `is_paid` = `debt_payment_id IS NOT NULL`. `paid_date` via eager-loaded `debtPayment.payment_date`.
+**Sources (6 total):**
+1. `book_hotels` — ALL records; amount = `bookRoom.sum('subtotal') + bookHotelMeal.sum('subtotal')`, label from `hotel.name`
+2. `book_destination_activities` — ALL records; `subtotal`, label from `destinationActivity.name`
+3. `book_car_activities` — ALL records; `subtotal`, label from `car.name`
+4. `book_crew_activities` — ALL records; `subtotal`, label from `crewRole.role` (no vendor_id needed)
+5. `book_others_activities` — ALL records; `subtotal`, label from `othersActivity.name`
+6. `expense_additionals` — ALL records; `subtotal`, label from `item` field; always `is_debt=false` (badge: INTERNAL)
+
+For sources 1–5: `is_debt` read from model field. `is_paid` = `debt_payment_id IS NOT NULL`. `paid_date` via eager-loaded `debtPayment.payment_date`.
 
 ### Customer Payment History
 

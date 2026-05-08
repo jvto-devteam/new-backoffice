@@ -3043,7 +3043,9 @@ class FinanceController extends Controller
             return [
                 'id'                => $b->id,
                 'channel'           => $channel,
-                'booking_code'      => $b->booking_code ?? $b->invoice_code_origin,
+                'booking_code'      => in_array($channel, ['TWT', 'KLOOK'])
+                                        ? ($b->invoice_code_origin ?? $b->booking_code)
+                                        : ($b->booking_code ?? $b->invoice_code_origin),
                 'customer'          => $b->user?->name ?? '-',
                 'package'           => $b->bookingDetail->first()?->package?->name ?? 'Package',
                 'travel_date_start' => $b->travel_date_start,

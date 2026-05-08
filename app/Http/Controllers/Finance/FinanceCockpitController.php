@@ -148,7 +148,9 @@ class FinanceCockpitController extends Controller
         return Inertia::render('Finance/FinanceCockpit', [
             'booking' => [
                 'id'                   => $booking->id,
-                'booking_code'         => $booking->booking_code ?? $booking->invoice_code_origin,
+                'booking_code'         => in_array($channel, ['TWT', 'KLOOK'])
+                                           ? ($booking->invoice_code_origin ?? $booking->booking_code)
+                                           : ($booking->booking_code ?? $booking->invoice_code_origin),
                 'customer'             => $booking->user?->name ?? '-',
                 'package'              => $booking->bookingDetail->first()?->package?->name ?? 'Package',
                 'travel_date_start'    => $booking->travel_date_start,

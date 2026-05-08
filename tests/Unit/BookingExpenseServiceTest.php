@@ -1,126 +1,132 @@
 <?php
 
+namespace Tests\Unit;
+
+use App\Models\BookCarActivity;
+use App\Models\BookCrewActivity;
+use App\Models\BookDestinationActivity;
+use App\Models\BookHotel;
+use App\Models\BookOthersActivity;
 use App\Services\BookingExpenseService;
 use Illuminate\Database\Eloquent\Collection;
-
-uses(Tests\TestCase::class);
+use Illuminate\Database\Eloquent\Model;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\TestCase;
 
 /**
  * Unit tests for BookingExpenseService::recalculate()
  *
- * Uses Mockery alias mocks to intercept static Eloquent calls without
- * requiring a live database connection.
+ * Uses a test-double subclass to override the protected seam methods,
+ * eliminating the need for alias mocks and avoiding process-isolation issues.
  */
-describe('BookingExpenseService', function () {
+class BookingExpenseServiceTest extends TestCase
+{
+    // -------------------------------------------------------------------------
+    // Helper: build a minimal Booking-like stub without hitting the DB
+    // -------------------------------------------------------------------------
+    private function makeBookingStub(int $id): Model
+    {
+        /** @var Model $stub */
+        $stub = $this->getMockBuilder(Model::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['saveQuietly'])
+            ->getMock();
 
-    afterEach(function () {
-        Mockery::close();
-    });
+        $stub->expects($this->once())->method('saveQuietly');
 
-    it('sets total_expense_debt from unpaid debt activity (is_debt=1, debt_payment_id=null)', function () {
+        return $stub;
+    }
+
+    // -------------------------------------------------------------------------
+    // Tests
+    // -------------------------------------------------------------------------
+
+    #[Test]
+    public function it_sets_total_expense_debt_from_unpaid_debt_activity(): void
+    {
         $bookingId = 1;
         $subtotal  = 500000;
+        $booking   = $this->makeBookingStub($bookingId);
 
-        // --- Booking ---
-        $booking = Mockery::mock('alias:App\Models\Booking');
-        $booking->shouldReceive('find')
-            ->with($bookingId)
-            ->once()
-            ->andReturn($booking);
-        $booking->shouldReceive('updateQuietly')
-            ->once()
-            ->withArgs(function ($data) use ($subtotal) {
-                return $data['total_expense_debt'] == $subtotal
-                    && $data['total_expense_debt_paid'] == 0;
-            });
+        $svc = new class($booking, $subtotal, 0) extends BookingExpenseService {
+            public function __construct(
+                private Model $booking,
+                private int|float $unpaid,
+                private int|float $paid,
+            ) {}
 
-        // --- BookHotel: no records (single query, partitioned in PHP) ---
-        $bh = Mockery::mock('alias:App\Models\BookHotel');
-        $bh->shouldReceive('with->where->where->get')
-            ->andReturn(new Collection());
+            protected function findBooking(int $bookingId) { return $this->booking; }
 
-        // --- BookDestinationActivity: unpaid=$subtotal, paid=0 ---
-        $bda = Mockery::mock('alias:App\Models\BookDestinationActivity');
-        $bda->shouldReceive('where->where->whereNull->sum')
-            ->with('subtotal')->andReturn($subtotal);
-        $bda->shouldReceive('where->where->whereNotNull->sum')
-            ->with('subtotal')->andReturn(0);
+            protected function fetchDebtHotels(int $bookingId): Collection
+            {
+                return new Collection();
+            }
 
-        // --- BookCarActivity: 0 ---
-        $bca = Mockery::mock('alias:App\Models\BookCarActivity');
-        $bca->shouldReceive('where->where->whereNull->sum')->with('subtotal')->andReturn(0);
-        $bca->shouldReceive('where->where->whereNotNull->sum')->with('subtotal')->andReturn(0);
+            protected function sumActivityDebt(string $modelClass, int $bookingId): int|float
+            {
+                return $modelClass === BookDestinationActivity::class ? $this->unpaid : 0;
+            }
 
-        // --- BookCrewActivity: 0 ---
-        $bcrew = Mockery::mock('alias:App\Models\BookCrewActivity');
-        $bcrew->shouldReceive('where->where->whereNull->sum')->with('subtotal')->andReturn(0);
-        $bcrew->shouldReceive('where->where->whereNotNull->sum')->with('subtotal')->andReturn(0);
+            protected function sumActivityPaid(string $modelClass, int $bookingId): int|float
+            {
+                return $modelClass === BookDestinationActivity::class ? $this->paid : 0;
+            }
+        };
 
-        // --- BookOthersActivity: 0 ---
-        $boa = Mockery::mock('alias:App\Models\BookOthersActivity');
-        $boa->shouldReceive('where->where->whereNull->sum')->with('subtotal')->andReturn(0);
-        $boa->shouldReceive('where->where->whereNotNull->sum')->with('subtotal')->andReturn(0);
+        $svc->recalculate($bookingId);
 
-        (new BookingExpenseService())->recalculate($bookingId);
-    });
+        $this->assertSame($subtotal, $booking->total_expense_debt);
+        $this->assertSame(0, $booking->total_expense_debt_paid);
+    }
 
-    it('sets total_expense_debt_paid when debt activity is paid (is_debt=1, debt_payment_id not null)', function () {
+    #[Test]
+    public function it_sets_total_expense_debt_paid_when_debt_activity_is_paid(): void
+    {
         $bookingId = 2;
         $subtotal  = 750000;
+        $booking   = $this->makeBookingStub($bookingId);
 
-        // --- Booking ---
-        $booking = Mockery::mock('alias:App\Models\Booking');
-        $booking->shouldReceive('find')
-            ->with($bookingId)
-            ->once()
-            ->andReturn($booking);
-        $booking->shouldReceive('updateQuietly')
-            ->once()
-            ->withArgs(function ($data) use ($subtotal) {
-                return $data['total_expense_debt'] == 0
-                    && $data['total_expense_debt_paid'] == $subtotal;
-            });
+        $svc = new class($booking, 0, $subtotal) extends BookingExpenseService {
+            public function __construct(
+                private Model $booking,
+                private int|float $unpaid,
+                private int|float $paid,
+            ) {}
 
-        // --- BookHotel: no records (single query, partitioned in PHP) ---
-        $bh = Mockery::mock('alias:App\Models\BookHotel');
-        $bh->shouldReceive('with->where->where->get')
-            ->andReturn(new Collection());
+            protected function findBooking(int $bookingId) { return $this->booking; }
 
-        // --- BookDestinationActivity: unpaid=0, paid=$subtotal ---
-        $bda = Mockery::mock('alias:App\Models\BookDestinationActivity');
-        $bda->shouldReceive('where->where->whereNull->sum')
-            ->with('subtotal')->andReturn(0);
-        $bda->shouldReceive('where->where->whereNotNull->sum')
-            ->with('subtotal')->andReturn($subtotal);
+            protected function fetchDebtHotels(int $bookingId): Collection
+            {
+                return new Collection();
+            }
 
-        // --- BookCarActivity: 0 ---
-        $bca = Mockery::mock('alias:App\Models\BookCarActivity');
-        $bca->shouldReceive('where->where->whereNull->sum')->with('subtotal')->andReturn(0);
-        $bca->shouldReceive('where->where->whereNotNull->sum')->with('subtotal')->andReturn(0);
+            protected function sumActivityDebt(string $modelClass, int $bookingId): int|float
+            {
+                return $modelClass === BookDestinationActivity::class ? $this->unpaid : 0;
+            }
 
-        // --- BookCrewActivity: 0 ---
-        $bcrew = Mockery::mock('alias:App\Models\BookCrewActivity');
-        $bcrew->shouldReceive('where->where->whereNull->sum')->with('subtotal')->andReturn(0);
-        $bcrew->shouldReceive('where->where->whereNotNull->sum')->with('subtotal')->andReturn(0);
+            protected function sumActivityPaid(string $modelClass, int $bookingId): int|float
+            {
+                return $modelClass === BookDestinationActivity::class ? $this->paid : 0;
+            }
+        };
 
-        // --- BookOthersActivity: 0 ---
-        $boa = Mockery::mock('alias:App\Models\BookOthersActivity');
-        $boa->shouldReceive('where->where->whereNull->sum')->with('subtotal')->andReturn(0);
-        $boa->shouldReceive('where->where->whereNotNull->sum')->with('subtotal')->andReturn(0);
+        $svc->recalculate($bookingId);
 
-        (new BookingExpenseService())->recalculate($bookingId);
-    });
+        $this->assertSame(0, $booking->total_expense_debt);
+        $this->assertSame($subtotal, $booking->total_expense_debt_paid);
+    }
 
-    it('does nothing when booking is not found', function () {
-        $booking = Mockery::mock('alias:App\Models\Booking');
-        $booking->shouldReceive('find')
-            ->with(9999)
-            ->once()
-            ->andReturn(null);
+    #[Test]
+    public function it_does_nothing_when_booking_is_not_found(): void
+    {
+        $svc = new class extends BookingExpenseService {
+            protected function findBooking(int $bookingId) { return null; }
+        };
 
-        // No further model calls should occur
-        (new BookingExpenseService())->recalculate(9999);
+        // Should return early without calling any query or save methods
+        $svc->recalculate(9999);
 
-        expect(true)->toBeTrue();
-    });
-});
+        $this->assertTrue(true);
+    }
+}

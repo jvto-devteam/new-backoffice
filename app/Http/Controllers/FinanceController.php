@@ -2711,6 +2711,17 @@ class FinanceController extends Controller
             }
 
             DB::commit();
+
+            // Recalculate expense totals for every affected booking
+            $affectedBookingIds = collect($request->items ?? [])
+                ->pluck('booking_id')
+                ->filter()
+                ->unique();
+
+            foreach ($affectedBookingIds as $bid) {
+                app(\App\Services\BookingExpenseService::class)->recalculate((int) $bid);
+            }
+
             return back()->with('message', 'Expense saved successfully');
         } catch (\Exception $e) {
             DB::rollBack();

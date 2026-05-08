@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import Main from '@/Layouts/Main';
 import { AlertTriangle, CheckCircle, DollarSign, TrendingDown } from 'lucide-react';
-// TODO: Task 7 - import DebtPaymentModal from './components/DebtPaymentModal';
+import DebtPaymentModal from './components/DebtPaymentModal';
 
 interface BookingRow {
     id: number;
@@ -251,23 +251,15 @@ export default function FinanceHub({ bookings, summary, filters, months, years }
                 </div>
             </div>
 
-            {/* TODO: Task 7 - Replace with <DebtPaymentModal> component once created */}
             {payTarget && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4 shadow-xl">
-                        <h3 className="font-semibold text-lg mb-2">Catat Pembayaran</h3>
-                        <p className="text-sm text-gray-500 mb-4">
-                            Modal pembayaran untuk booking <strong>{payTarget.booking_code}</strong>
-                            akan tersedia setelah Task 7 selesai.
-                        </p>
-                        <button
-                            onClick={() => setPayTarget(null)}
-                            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm"
-                        >
-                            Tutup
-                        </button>
-                    </div>
-                </div>
+                <DebtPaymentModal
+                    booking={payTarget}
+                    onClose={() => setPayTarget(null)}
+                    onSuccess={() => {
+                        setPayTarget(null);
+                        router.reload();
+                    }}
+                />
             )}
         </Main>
     );

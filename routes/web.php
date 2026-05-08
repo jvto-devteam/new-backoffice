@@ -171,6 +171,11 @@ Route::middleware('auth')->group(function () {
         Route::post('/channel-revenue-report/channel-tag', [FinanceController::class, 'updateChannelTag']);
         Route::get('/channel-revenue-report/export-pdf/{channel}', [FinanceController::class, 'channelReportExportPdf']);
         Route::get('/channel-revenue-report/export-excel/{channel}', [FinanceController::class, 'channelReportExportExcel']);
+
+        // Finance Hub
+        Route::get('/hub', [FinanceController::class, 'financeHub'])->name('finance.hub');
+        Route::get('/hub/{bookingId}/debt-items', [FinanceController::class, 'getBookingDebtItems']);
+        Route::post('/hub/record-payment', [FinanceController::class, 'recordDebtPayment']);
     });
     Route::prefix('package-inventory')->group(function () {
         Route::get('/json', [PackageController::class, 'json']);

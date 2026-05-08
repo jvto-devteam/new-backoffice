@@ -3003,6 +3003,242 @@ class FinanceController extends Controller
         return Inertia::render('Finance/ExpenseRecap', $data);
     }
 
+    public function financeHub(Request $request): \Inertia\Response
+    {
+        $month  = $request->month  ?: date('m');
+        $year   = $request->year   ?: date('Y');
+        $view   = $request->view   ?: 'booking';
+        $status = $request->status ?: 'all';
+
+        $query = Booking::select(
+                'id', 'user_id', 'booking_code', 'invoice_code_origin',
+                'travel_date_start', 'travel_date_end', 'total_pax',
+                'grand_total', 'agent_id', 'booking_category_id',
+                'expense_internal_total',
+                'total_expense_debt', 'total_expense_debt_paid', 'total_expense_crew'
+            )
+            ->with(['user:id,name', 'bookingDetail.package:id,name'])
+            ->where('status', 'booked')
+            ->where('travel_date_start', 'like', "$year-$month%");
+
+        if ($status === 'has_debt') {
+            $query->where('total_expense_debt', '>', 0);
+        } elseif ($status === 'fully_paid') {
+            $query->where('total_expense_debt', 0)->where('total_expense_debt_paid', '>', 0);
+        }
+
+        $bookings = $query->orderBy('travel_date_start')->get()->map(function ($b) {
+            $channel = match(true) {
+                $b->agent_id == 1            => 'TWT',
+                $b->booking_category_id == 3 => 'KLOOK',
+                default                      => 'JVTO',
+            };
+
+            $daysOverdue = 0;
+            if ($b->travel_date_end) {
+                $diff = now()->diffInDays($b->travel_date_end, false);
+                $daysOverdue = $diff < 0 ? abs((int) $diff) : 0;
+            }
+
+            return [
+                'id'                => $b->id,
+                'channel'           => $channel,
+                'booking_code'      => $b->booking_code ?? $b->invoice_code_origin,
+                'customer'          => $b->user?->name ?? '-',
+                'package'           => $b->bookingDetail->first()?->package?->name ?? 'Package',
+                'travel_date_start' => $b->travel_date_start,
+                'travel_date_end'   => $b->travel_date_end,
+                'total_pax'         => $b->total_pax,
+                'total_expense'     => (int) ($b->expense_internal_total ?? 0),
+                'total_debt'        => (int) ($b->total_expense_debt ?? 0),
+                'total_paid'        => (int) ($b->total_expense_debt_paid ?? 0),
+                'days_overdue'      => $daysOverdue,
+            ];
+        });
+
+        $summary = [
+            'total_expense' => (int) $bookings->sum('total_expense'),
+            'total_debt'    => (int) $bookings->sum('total_debt'),
+            'total_paid'    => (int) $bookings->sum('total_paid'),
+            'outstanding'   => (int) $bookings->sum('total_debt'),
+        ];
+
+        $months = [
+            ['value'=>'01','label'=>'Januari'],  ['value'=>'02','label'=>'Februari'],
+            ['value'=>'03','label'=>'Maret'],    ['value'=>'04','label'=>'April'],
+            ['value'=>'05','label'=>'Mei'],      ['value'=>'06','label'=>'Juni'],
+            ['value'=>'07','label'=>'Juli'],     ['value'=>'08','label'=>'Agustus'],
+            ['value'=>'09','label'=>'September'],['value'=>'10','label'=>'Oktober'],
+            ['value'=>'11','label'=>'November'], ['value'=>'12','label'=>'Desember'],
+        ];
+
+        return Inertia::render('Finance/FinanceHub', [
+            'bookings' => $bookings,
+            'summary'  => $summary,
+            'filters'  => compact('month', 'year', 'view', 'status'),
+            'months'   => $months,
+            'years'    => [(int)date('Y')-1, (int)date('Y'), (int)date('Y')+1],
+        ]);
+    }
+
+    public function getBookingDebtItems(Request $request, int $bookingId): \Illuminate\Http\JsonResponse
+    {
+        $booking = Booking::with(['user'])->findOrFail($bookingId);
+
+        $hotels = BookHotel::with(['bookRoom', 'bookHotelMeal', 'hotel'])
+            ->where('booking_id', $bookingId)
+            ->where('is_debt', '1')
+            ->whereNull('debt_payment_id')
+            ->get()
+            ->map(fn($bh) => [
+                'id'          => $bh->id,
+                'type'        => 'hotel',
+                'item_type'   => 'hotel',
+                'vendor_id'   => $bh->hotel?->vendor_id,
+                'vendor_name' => $bh->hotel?->name ?? 'Hotel',
+                'description' => ($bh->hotel?->name ?? 'Hotel') . ' (kamar + makan)',
+                'amount'      => (int) ($bh->bookRoom->sum('subtotal') + $bh->bookHotelMeal->sum('subtotal')),
+            ]);
+
+        $activities = BookDestinationActivity::with(['destinationActivity'])
+            ->where('booking_id', $bookingId)
+            ->where('is_debt', '1')
+            ->whereNull('debt_payment_id')
+            ->get()
+            ->map(fn($a) => [
+                'id'          => $a->id,
+                'type'        => 'activity',
+                'item_type'   => 'activity',
+                'vendor_id'   => $a->destinationActivity?->vendor_id,
+                'vendor_name' => $a->destinationActivity?->name ?? 'Activity',
+                'description' => $a->destinationActivity?->name ?? 'Activity',
+                'amount'      => (int) $a->subtotal,
+            ]);
+
+        $cars = BookCarActivity::with(['car'])
+            ->where('booking_id', $bookingId)
+            ->where('is_debt', '1')
+            ->whereNull('debt_payment_id')
+            ->get()
+            ->map(fn($c) => [
+                'id'          => $c->id,
+                'type'        => 'car',
+                'item_type'   => 'car',
+                'vendor_id'   => $c->car?->vendor_id,
+                'vendor_name' => $c->car?->name ?? 'Vehicle',
+                'description' => $c->car?->name ?? 'Vehicle',
+                'amount'      => (int) $c->subtotal,
+            ]);
+
+        $others = BookOthersActivity::with(['othersActivity'])
+            ->where('booking_id', $bookingId)
+            ->where('is_debt', '1')
+            ->whereNull('debt_payment_id')
+            ->get()
+            ->map(fn($o) => [
+                'id'          => $o->id,
+                'type'        => 'others',
+                'item_type'   => 'others',
+                'vendor_id'   => $o->othersActivity?->vendor_id,
+                'vendor_name' => $o->othersActivity?->name ?? 'Others',
+                'description' => $o->othersActivity?->name ?? 'Others',
+                'amount'      => (int) $o->subtotal,
+            ]);
+
+        $items = $hotels->merge($activities)->merge($cars)->merge($others)->values();
+
+        $paymentMethods = PaymentMethod::all(['id', 'name']);
+
+        return response()->json([
+            'booking'         => [
+                'id'       => $booking->id,
+                'code'     => $booking->booking_code ?? $booking->invoice_code_origin,
+                'customer' => $booking->user?->name ?? '-',
+            ],
+            'items'           => $items,
+            'payment_methods' => $paymentMethods,
+        ]);
+    }
+
+    public function recordDebtPayment(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'vendor_id'          => 'required|exists:vendors,id',
+            'payment_date'       => 'required|date',
+            'payment_method_id'  => 'required|exists:payment_methods,id',
+            'payment_proof'      => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:5120',
+            'note'               => 'nullable|string|max:1000',
+            'items'              => 'required',
+        ]);
+
+        $items = is_string($request->items) ? json_decode($request->items, true) : $request->items;
+
+        if (empty($items)) {
+            return response()->json(['success' => false, 'message' => 'No items provided'], 422);
+        }
+
+        // Auto-generate sequential payment number: JVR/PAY/MM/YY/XXXX
+        $prefix = 'JVR/PAY/' . date('m/y') . '/';
+        $last   = DebtPayment::where('payment_number', 'like', $prefix . '%')
+                    ->orderByDesc('id')->first();
+        $seq    = $last ? ((int) substr($last->payment_number, -4)) + 1 : 1;
+        $paymentNumber = $prefix . str_pad($seq, 4, '0', STR_PAD_LEFT);
+
+        $proofPath = null;
+        if ($request->hasFile('payment_proof')) {
+            $proofPath = $request->file('payment_proof')->store('payment_proofs', 'public');
+        }
+
+        $itemType    = $items[0]['item_type'] ?? 'others';
+        $totalAmount = collect($items)->sum('amount');
+
+        DB::beginTransaction();
+        try {
+            $payment = DebtPayment::create([
+                'payment_number'    => $paymentNumber,
+                'vendor_id'         => $request->vendor_id,
+                'item_type'         => $itemType,
+                'payment_date'      => $request->payment_date,
+                'payment_method_id' => $request->payment_method_id,
+                'payment_proof'     => $proofPath,
+                'note'              => $request->note,
+                'total_amount'      => $totalAmount,
+            ]);
+
+            $affectedBookingIds = [];
+
+            foreach ($items as $item) {
+                DebtPaymentDetail::create([
+                    'payment_id' => $payment->id,
+                    'booking_id' => $item['booking_id'],
+                    'item_id'    => $item['id'],
+                    'amount'     => $item['amount'],
+                    'item_data'  => $item,
+                ]);
+
+                $modelClass = match($item['type']) {
+                    'hotel'              => BookHotel::class,
+                    'activity', 'bromo' => BookDestinationActivity::class,
+                    'car'               => BookCarActivity::class,
+                    default             => BookOthersActivity::class,
+                };
+                $modelClass::where('id', $item['id'])->update(['debt_payment_id' => $payment->id]);
+                $affectedBookingIds[] = $item['booking_id'];
+            }
+
+            DB::commit();
+
+            foreach (array_unique($affectedBookingIds) as $bid) {
+                app(\App\Services\BookingExpenseService::class)->recalculate((int) $bid);
+            }
+
+            return response()->json(['success' => true, 'payment_number' => $paymentNumber]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
     function rekapHutang(Request $request)
     {
         $month = $request->month ? $request->month : date('m');

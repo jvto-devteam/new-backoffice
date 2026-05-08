@@ -3202,6 +3202,14 @@ const EditExpenseManager = ({
     return (
         <Authenticated>
             <div className="px-4 sm:px-6 lg:px-8 py-8">
+                <div className="mb-6 flex justify-end">
+                    <a
+                        href={`/finance/cockpit/${booking.id}`}
+                        className="inline-flex items-center gap-1 text-sm text-indigo-600 border border-indigo-300 rounded-lg px-3 py-1.5 hover:bg-indigo-50 transition-colors"
+                    >
+                        Finance Cockpit →
+                    </a>
+                </div>
                 <BookingInfo booking={booking} />
                 <PriceAndPayment
                     booking={booking}

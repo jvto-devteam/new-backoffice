@@ -2420,9 +2420,9 @@ class BookingController extends Controller
             ]);
         }
 
-        $credentialsPath = base_path('adept-stage-472705-a2-959c463cf022.json');
+        $credentialsPath = base_path(env('GOOGLE_DRIVE_CREDENTIALS_PATH', ''));
 
-        if (! file_exists($credentialsPath)) {
+        if (! $credentialsPath || ! file_exists($credentialsPath)) {
             return back()->withErrors([
                 'trip_media' => 'File kredensial Google Drive tidak ditemukan.',
             ]);

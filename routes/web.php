@@ -18,6 +18,7 @@ use App\Http\Controllers\PackageController;
 use App\Http\Controllers\ShortLinkController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\CrmController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\ArticleController;
@@ -69,6 +70,8 @@ Route::get('/finance/expense-manager/{id}/internal/api', [FinanceController::cla
 Route::get('/finance/expense-manager/{id}/crew', [FinanceController::class, 'downloadExpense']);
 
 Route::get('/booking-overview/api', [ScheduleController::class,'index']);
+Route::get('/finance/rekap-hutang', [FinanceController::class, 'rekapHutang']);
+Route::get('/finance/rekap-hutang/{vendorId}', [FinanceController::class, 'rekapHutangDetail']);
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/', [DashboardController::class,'index'])->name('dashboard');
@@ -157,6 +160,17 @@ Route::middleware('auth')->group(function () {
         Route::post('/expense-manager/{bookingId}/upload-payment-proof', [FinanceController::class, 'uploadPaymentProofExpense']);
         Route::get('/monthly-settlement', [FinanceController::class, 'settlement']);
         Route::get('/profit-loss-summary', [FinanceController::class, 'profitLoss']);
+        Route::get('/rekap-hutang/export-pdf', [FinanceController::class, 'rekapHutangExportPdf']);
+        Route::get('/rekap-hutang/export-excel', [FinanceController::class, 'rekapHutangExportExcel']);
+        Route::get('/rekap-hutang/{vendorId}/export-pdf', [FinanceController::class, 'rekapHutangDetailExportPdf']);
+        Route::get('/rekap-hutang/{vendorId}/export-excel', [FinanceController::class, 'rekapHutangDetailExportExcel']);
+
+        // Channel Revenue Report
+        Route::get('/channel-revenue-report', [FinanceController::class, 'channelReport']);
+        Route::post('/channel-revenue-report/google-bill', [FinanceController::class, 'saveGoogleBill']);
+        Route::post('/channel-revenue-report/channel-tag', [FinanceController::class, 'updateChannelTag']);
+        Route::get('/channel-revenue-report/export-pdf/{channel}', [FinanceController::class, 'channelReportExportPdf']);
+        Route::get('/channel-revenue-report/export-excel/{channel}', [FinanceController::class, 'channelReportExportExcel']);
     });
     Route::prefix('package-inventory')->group(function () {
         Route::get('/json', [PackageController::class, 'json']);
@@ -177,6 +191,16 @@ Route::middleware('auth')->group(function () {
 
     // Client Management Routes
     Route::get('/client-management', [ClientController::class,'index']);
+
+    // CRM Routes
+    Route::get('/crm', [CrmController::class, 'index']);
+    Route::get('/crm/insights', [CrmController::class, 'insights']);
+    Route::get('/crm/customers', [CrmController::class, 'customers']);
+    Route::get('/crm/customers/{id}/profile', [CrmController::class, 'customerProfile']);
+    Route::get('/crm/export/customers', [CrmController::class, 'exportCustomers']);
+    Route::get('/crm/export/countries', [CrmController::class, 'exportCountries']);
+    Route::get('/crm/export/packages', [CrmController::class, 'exportPackages']);
+    Route::get('/crm/export/customer-report', [CrmController::class, 'exportCustomerReport']);
 
     Route::resource('articles', ArticleController::class);
 

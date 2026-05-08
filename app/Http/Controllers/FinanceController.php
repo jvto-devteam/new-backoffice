@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AddOn;
 use App\Models\BookAddOn;
+use App\Models\GoogleBill;
 use App\Models\BookCar;
 use App\Models\BookCarActivity;
 use App\Models\BookCrewActivity;
@@ -1237,7 +1238,7 @@ class FinanceController extends Controller
         }
         $listForNewItems['destinations'] = $listForNewItems['destinations']->get()->groupBy(fn($item) => $item->destination->name);
         $listForNewItems['others'] = OthersActivity::get();
-        $listForNewItems['cars'] = Car::whereIn('id', [1, 2, 4, 5, 14, 24, 7, 25])->get();
+        $listForNewItems['cars'] = Car::whereIn('id', [1, 2, 4, 5, 14, 24, 7, 25, 19, 23, 26, 16, 22, 27])->get();
         $listForNewItems['crews'] = CrewRole::where('order_channel_id', $orderChannelID)->get();
         $listForNewItems['add_on'] = AddOn::get()->map(function ($data) {
             return [
@@ -1266,16 +1267,16 @@ class FinanceController extends Controller
             });
 
         $expenseRefund = ExpenseRefund::where('booking_id', $id)->orderBy('id', 'desc')->get()->map(function ($query) {
-                return [
-                    'id' => $query->id,
-                    'item' => $query->item,
-                    'refund_to' => $query->refund_to ?? 'office',
-                    'proof_image' => $query->proof_image,
-                    'price' => $query->price,
-                    'qty' => $query->qty,
-                    'subtotal' => $query->subtotal,
-                    'status' => $query->status,
-                ];
+            return [
+                'id' => $query->id,
+                'item' => $query->item,
+                'refund_to' => $query->refund_to ?? 'office',
+                'proof_image' => $query->proof_image,
+                'price' => $query->price,
+                'qty' => $query->qty,
+                'subtotal' => $query->subtotal,
+                'status' => $query->status,
+            ];
         });
 
         // return [
@@ -1283,8 +1284,8 @@ class FinanceController extends Controller
         //     'expenseRefund' => $expenseRefund,
 
         // ];
-        
-        
+
+
         return Inertia::render('Finance/EditExpenseManager', [
             'additionalRequests' => $additionalRequests,
             'expenseRefund' => $expenseRefund,
@@ -1977,11 +1978,9 @@ class FinanceController extends Controller
         ];
         if (request()->segment(4) == 'crew' && request()->preview) {
             return view('exports/expense', $data);
-        } 
-        else if(request()->segment(5) == 'api'){
+        } else if (request()->segment(5) == 'api') {
             return response()->json($data);
-        }
-        else {
+        } else {
             $pdf = PDF::loadView('exports/expense', $data);
             $name = Str::slug($booking['customer_name']);
             // Opsional: Set paper size dan orientation
@@ -2989,5 +2988,831 @@ class FinanceController extends Controller
                 })->sortBy('travel_date')->values();
         }
         return Inertia::render('Finance/ExpenseRecap', $data);
+    }
+
+    function rekapHutang(Request $request)
+    {
+        $month = $request->month ? $request->month : date('m');
+        $year  = $request->year  ? $request->year  : date('Y');
+
+        $vendors = Vendor::with('vendorCategory')->orderBy('vendor_category_id')->get();
+
+        $vendorDebts = $vendors->map(function ($vendor) use ($month, $year) {
+            $total     = 0;
+            $itemCount = 0;
+
+            if ($vendor->vendor_category_id == 1) {
+                $bookHotels = BookHotel::with(['bookRoom', 'bookHotelMeal'])
+                    ->where('is_debt', '1')
+                    ->whereNull('debt_payment_id')
+                    ->whereHas('hotel', function ($q) use ($vendor) {
+                        $q->where('vendor_id', $vendor->id);
+                    })
+                    ->whereHas('booking', function ($q) use ($month, $year) {
+                        $q->where('travel_date_start', 'like', "$year-$month%");
+                    })
+                    ->get();
+
+                $total     = $bookHotels->sum(fn($bh) => $bh->bookRoom->sum('subtotal') + $bh->bookHotelMeal->sum('subtotal'));
+                $itemCount = $bookHotels->count();
+            } elseif ($vendor->vendor_category_id == 2) {
+                $activities = BookDestinationActivity::where('is_debt', '1')
+                    ->whereNull('debt_payment_id')
+                    ->whereHas('destinationActivity', function ($q) use ($vendor) {
+                        $q->where('vendor_id', $vendor->id);
+                    })
+                    ->whereHas('booking', function ($q) use ($month, $year) {
+                        $q->where('travel_date_start', 'like', "$year-$month%");
+                    })
+                    ->get();
+
+                $total     = $activities->sum('subtotal');
+                $itemCount = $activities->count();
+            } elseif ($vendor->vendor_category_id == 3) {
+                $carItems = BookCarActivity::where('is_debt', '1')
+                    ->whereNull('debt_payment_id')
+                    ->whereHas('car', function ($q) use ($vendor) {
+                        $q->where('vendor_id', $vendor->id);
+                    })
+                    ->whereHas('booking', function ($q) use ($month, $year) {
+                        $q->where('travel_date_start', 'like', "$year-$month%");
+                    })
+                    ->get();
+
+                $total     = $carItems->sum('subtotal');
+                $itemCount = $carItems->count();
+            } elseif ($vendor->vendor_category_id == 4) {
+                $othersItems = BookOthersActivity::where('is_debt', '1')
+                    ->whereNull('debt_payment_id')
+                    ->whereHas('othersActivity', function ($q) use ($vendor) {
+                        $q->where('vendor_id', $vendor->id);
+                    })
+                    ->whereHas('booking', function ($q) use ($month, $year) {
+                        $q->where('travel_date_start', 'like', "$year-$month%");
+                    })
+                    ->get();
+
+                $total     = $othersItems->sum('subtotal');
+                $itemCount = $othersItems->count();
+            }
+
+            if ($total <= 0) return null;
+
+            return [
+                'id'              => $vendor->id,
+                'name'            => $vendor->name,
+                'category'        => $vendor->vendorCategory->name,
+                'category_id'     => $vendor->vendor_category_id,
+                'total'           => $total,
+                'item_count'      => $itemCount,
+                'formatted_total' => 'Rp ' . number_format($total, 0, ',', '.'),
+            ];
+        })->filter()->values();
+
+        $totalHutang = $vendorDebts->sum('total');
+
+        $months = [
+            ['value' => '01', 'label' => 'Januari'],
+            ['value' => '02', 'label' => 'Februari'],
+            ['value' => '03', 'label' => 'Maret'],
+            ['value' => '04', 'label' => 'April'],
+            ['value' => '05', 'label' => 'Mei'],
+            ['value' => '06', 'label' => 'Juni'],
+            ['value' => '07', 'label' => 'Juli'],
+            ['value' => '08', 'label' => 'Agustus'],
+            ['value' => '09', 'label' => 'September'],
+            ['value' => '10', 'label' => 'Oktober'],
+            ['value' => '11', 'label' => 'November'],
+            ['value' => '12', 'label' => 'Desember'],
+        ];
+
+        $currentYear = (int) date('Y');
+        $years = [$currentYear - 1, $currentYear, $currentYear + 1];
+
+        if ($request->json) {
+            $data = [
+                'vendors'         => $vendorDebts,
+                'total_debt'    => $totalHutang,
+            ];
+
+            return $data;
+        }
+
+        return Inertia::render('Finance/RekapHutang', [
+            'vendors'         => $vendorDebts,
+            'total_hutang'    => $totalHutang,
+            'formatted_total' => 'Rp ' . number_format($totalHutang, 0, ',', '.'),
+            'filters'         => ['month' => $month, 'year' => $year],
+            'months'          => $months,
+            'years'           => $years,
+        ]);
+    }
+
+    function rekapHutangDetail(Request $request, $vendorId)
+    {
+        $month  = $request->month ? $request->month : date('m');
+        $year   = $request->year  ? $request->year  : date('Y');
+
+        $vendor = Vendor::with('vendorCategory')->findOrFail($vendorId);
+
+        $debts = collect();
+
+        if ($vendor->vendor_category_id == 1) {
+            $bookHotels = BookHotel::with([
+                'bookRoom.roomHotel',
+                'bookHotelMeal',
+                'booking.user',
+                'bookingItinerary',
+                'hotel',
+            ])
+                ->where('is_debt', '1')
+                ->whereNull('debt_payment_id')
+                ->whereHas('hotel', function ($q) use ($vendorId) {
+                    $q->where('vendor_id', $vendorId);
+                })
+                ->whereHas('booking', function ($q) use ($month, $year) {
+                    $q->where('travel_date_start', 'like', "$year-$month%");
+                })
+                ->get();
+
+            $debts = $bookHotels->map(function ($bh) {
+                $night = $bh->bookingItinerary ? $bh->bookingItinerary->day - 1 : 0;
+                return [
+                    'id'          => $bh->id,
+                    'booking_id'  => $bh->booking_id,
+                    'customer'    => $bh->booking->user->name,
+                    'channel'     => $bh->booking->agent_id == 1 ? 'TWT' : ($bh->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
+                    'pax'         => (int) $bh->booking->total_pax,
+                    'travel_date' => date('d M', strtotime($bh->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($bh->booking->travel_date_end)),
+                    'check_in'    => date('d M Y', strtotime($bh->booking->travel_date_start . " +$night days")),
+                    'rooms'       => $bh->bookRoom->map(fn($r) => [
+                        'room'     => $r->roomHotel->room_name,
+                        'quantity' => $r->quantity,
+                        'price'    => $r->subtotal / max(1, $r->quantity),
+                        'subtotal' => $r->subtotal,
+                    ]),
+                    'room_total'  => $bh->bookRoom->sum('subtotal'),
+                    'meals'       => $bh->bookHotelMeal->map(fn($m) => [
+                        'meals'    => ucfirst($m->meals),
+                        'quantity' => $m->qty,
+                        'price'    => $m->price,
+                        'subtotal' => $m->subtotal,
+                    ]),
+                    'meals_total' => $bh->bookHotelMeal->sum('subtotal'),
+                    'total'       => $bh->bookRoom->sum('subtotal') + $bh->bookHotelMeal->sum('subtotal'),
+                    'type'        => 'hotel',
+                ];
+            })->sortBy('check_in')->values();
+        } elseif ($vendor->vendor_category_id == 2) {
+            $activities = BookDestinationActivity::with([
+                'destinationActivity',
+                'booking.bookingDetail.package',
+                'booking.user',
+            ])
+                ->where('is_debt', '1')
+                ->whereNull('debt_payment_id')
+                ->whereHas('destinationActivity', function ($q) use ($vendorId) {
+                    $q->where('vendor_id', $vendorId);
+                })
+                ->whereHas('booking', function ($q) use ($month, $year) {
+                    $q->where('travel_date_start', 'like', "$year-$month%");
+                })
+                ->get();
+
+            $isDestBromo = $activities->isNotEmpty() && $activities->first()->destinationActivity->destination_id == 1;
+
+            if ($isDestBromo) {
+                $debts = $activities->groupBy('booking_id')->map(function ($group) {
+                    $first = $group->first();
+                    $destinationId = $first->destination_id;
+                    $itinerary = BookingItinerary::where('booking_id', $first->booking_id)
+                        ->whereHas('activityStart', fn($q) => $q->where('destination_id', $destinationId))
+                        ->first();
+                    $activityDate = $itinerary
+                        ? date('d M Y', strtotime($first->booking->travel_date_start . ' +' . ($itinerary->day - 1) . ' days'))
+                        : '-';
+
+                    return [
+                        'id'            => $first->id,
+                        'booking_id'    => $first->booking_id,
+                        'customer'      => $first->booking->user->name,
+                        'channel'       => $first->booking->agent_id == 1 ? 'TWT' : ($first->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
+                        'pax'           => (int) $first->booking->total_pax,
+                        'travel_date'   => date('d M', strtotime($first->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($first->booking->travel_date_end)),
+                        'activity_date' => $activityDate,
+                        'bromo_ticket'  => $group->where('destination_activity_id', 1)->sum('subtotal'),
+                        'jeep_unit'     => $group->whereNotIn('destination_activity_id', [1])->sum('qty'),
+                        'bromo_jeep'    => $group->whereNotIn('destination_activity_id', [1])->sum('subtotal'),
+                        'total'         => $group->sum('subtotal'),
+                        'type'          => 'bromo',
+                    ];
+                })->values();
+            } else {
+                $debts = $activities->map(function ($act) {
+                    $destinationId = $act->destination_id;
+                    $itinerary = BookingItinerary::where('booking_id', $act->booking_id)
+                        ->whereHas('activityStart', fn($q) => $q->where('destination_id', $destinationId))
+                        ->first();
+                    $activityDate = $itinerary
+                        ? date('d M Y', strtotime($act->booking->travel_date_start . ' +' . ($itinerary->day - 1) . ' days'))
+                        : '-';
+
+                    return [
+                        'id'            => $act->id,
+                        'booking_id'    => $act->booking_id,
+                        'customer'      => $act->booking->user->name,
+                        'channel'       => $act->booking->agent_id == 1 ? 'TWT' : ($act->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
+                        'pax'           => (int) $act->booking->total_pax,
+                        'travel_date'   => date('d M', strtotime($act->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($act->booking->travel_date_end)),
+                        'activity_date' => $activityDate,
+                        'activity'      => $act->destinationActivity->name ?? '-',
+                        'qty'           => $act->qty,
+                        'total'         => $act->subtotal,
+                        'type'          => 'activity',
+                    ];
+                })->sortBy('activity_date')->values();
+            }
+        } elseif ($vendor->vendor_category_id == 3) {
+            $carItems = BookCarActivity::with(['car', 'booking.user'])
+                ->where('is_debt', '1')
+                ->whereNull('debt_payment_id')
+                ->whereHas('car', function ($q) use ($vendorId) {
+                    $q->where('vendor_id', $vendorId);
+                })
+                ->whereHas('booking', function ($q) use ($month, $year) {
+                    $q->where('travel_date_start', 'like', "$year-$month%");
+                })
+                ->get();
+
+            $debts = $carItems->map(function ($bca) {
+                return [
+                    'id'          => $bca->id,
+                    'booking_id'  => $bca->booking_id,
+                    'customer'    => $bca->booking->user->name,
+                    'channel'     => $bca->booking->agent_id == 1 ? 'TWT' : ($bca->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
+                    'pax'         => (int) $bca->booking->total_pax,
+                    'travel_date' => date('d M', strtotime($bca->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($bca->booking->travel_date_end)),
+                    'car'         => $bca->car->name ?? '-',
+                    'qty'         => $bca->qty,
+                    'driver'      => $bca->driver_txt ?: '-',
+                    'total'       => (float) $bca->subtotal,
+                    'type'        => 'car',
+                ];
+            })->sortBy('travel_date')->values();
+        } elseif ($vendor->vendor_category_id == 4) {
+            $othersItems = BookOthersActivity::with(['othersActivity', 'booking.user'])
+                ->where('is_debt', '1')
+                ->whereNull('debt_payment_id')
+                ->whereHas('othersActivity', function ($q) use ($vendorId) {
+                    $q->where('vendor_id', $vendorId);
+                })
+                ->whereHas('booking', function ($q) use ($month, $year) {
+                    $q->where('travel_date_start', 'like', "$year-$month%");
+                })
+                ->get();
+
+            $debts = $othersItems->map(function ($oa) {
+                return [
+                    'id'          => $oa->id,
+                    'booking_id'  => $oa->booking_id,
+                    'customer'    => $oa->booking->user->name,
+                    'channel'     => $oa->booking->agent_id == 1 ? 'TWT' : ($oa->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
+                    'pax'         => (int) $oa->booking->total_pax,
+                    'travel_date' => date('d M', strtotime($oa->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($oa->booking->travel_date_end)),
+                    'item'        => $oa->othersActivity->name ?? '-',
+                    'qty'         => $oa->qty,
+                    'price'       => (float) $oa->price,
+                    'total'       => (float) $oa->subtotal,
+                    'type'        => 'others',
+                ];
+            })->sortBy('travel_date')->values();
+        }
+
+        $totalHutang = $debts->sum('total');
+
+        $months = [
+            ['value' => '01', 'label' => 'Januari'],
+            ['value' => '02', 'label' => 'Februari'],
+            ['value' => '03', 'label' => 'Maret'],
+            ['value' => '04', 'label' => 'April'],
+            ['value' => '05', 'label' => 'Mei'],
+            ['value' => '06', 'label' => 'Juni'],
+            ['value' => '07', 'label' => 'Juli'],
+            ['value' => '08', 'label' => 'Agustus'],
+            ['value' => '09', 'label' => 'September'],
+            ['value' => '10', 'label' => 'Oktober'],
+            ['value' => '11', 'label' => 'November'],
+            ['value' => '12', 'label' => 'Desember'],
+        ];
+
+        $currentYear = (int) date('Y');
+        $years = [$currentYear - 1, $currentYear, $currentYear + 1];
+
+        if($request->json) {
+            $data = [
+                'vendor' => [
+                    'id' => $vendor->id,
+                    'name' => $vendor->name,
+                    'category' => $vendor->vendorCategory->name,
+                ],
+                'debts' => $debts,
+                'total_debt' => $totalHutang,
+            ];
+
+            return $data;
+        }
+
+        return Inertia::render('Finance/RekapHutangDetail', [
+            'vendor'          => [
+                'id'       => $vendor->id,
+                'name'     => $vendor->name,
+                'category' => $vendor->vendorCategory->name,
+            ],
+            'debts'           => $debts,
+            'total_hutang'    => $totalHutang,
+            'formatted_total' => 'Rp ' . number_format($totalHutang, 0, ',', '.'),
+            'filters'         => ['month' => $month, 'year' => $year],
+            'months'          => $months,
+            'years'           => $years,
+        ]);
+    }
+
+    // ── Private helpers ──────────────────────────────────────────────────────
+
+    private function rekapHutangPeriodLabel($month, $year): string
+    {
+        $labels = [
+            '01' => 'Januari',
+            '02' => 'Februari',
+            '03' => 'Maret',
+            '04' => 'April',
+            '05' => 'Mei',
+            '06' => 'Juni',
+            '07' => 'Juli',
+            '08' => 'Agustus',
+            '09' => 'September',
+            '10' => 'Oktober',
+            '11' => 'November',
+            '12' => 'Desember',
+        ];
+        return ($labels[$month] ?? $month) . ' ' . $year;
+    }
+
+    private function buildVendorDebtsList($month, $year)
+    {
+        $vendors = Vendor::with('vendorCategory')->orderBy('vendor_category_id')->get();
+
+        return $vendors->map(function ($vendor) use ($month, $year) {
+            $total = 0;
+            $itemCount = 0;
+
+            if ($vendor->vendor_category_id == 1) {
+                $items = BookHotel::with(['bookRoom', 'bookHotelMeal'])
+                    ->where('is_debt', '1')->whereNull('debt_payment_id')
+                    ->whereHas('hotel', fn($q) => $q->where('vendor_id', $vendor->id))
+                    ->whereHas('booking', fn($q) => $q->where('travel_date_start', 'like', "$year-$month%"))
+                    ->get();
+                $total = $items->sum(fn($bh) => $bh->bookRoom->sum('subtotal') + $bh->bookHotelMeal->sum('subtotal'));
+                $itemCount = $items->count();
+            } elseif ($vendor->vendor_category_id == 2) {
+                $items = BookDestinationActivity::where('is_debt', '1')->whereNull('debt_payment_id')
+                    ->whereHas('destinationActivity', fn($q) => $q->where('vendor_id', $vendor->id))
+                    ->whereHas('booking', fn($q) => $q->where('travel_date_start', 'like', "$year-$month%"))
+                    ->get();
+                $total = $items->sum('subtotal');
+                $itemCount = $items->count();
+            } elseif ($vendor->vendor_category_id == 3) {
+                $items = BookCarActivity::where('is_debt', '1')->whereNull('debt_payment_id')
+                    ->whereHas('car', fn($q) => $q->where('vendor_id', $vendor->id))
+                    ->whereHas('booking', fn($q) => $q->where('travel_date_start', 'like', "$year-$month%"))
+                    ->get();
+                $total = $items->sum('subtotal');
+                $itemCount = $items->count();
+            } elseif ($vendor->vendor_category_id == 4) {
+                $items = BookOthersActivity::where('is_debt', '1')->whereNull('debt_payment_id')
+                    ->whereHas('othersActivity', fn($q) => $q->where('vendor_id', $vendor->id))
+                    ->whereHas('booking', fn($q) => $q->where('travel_date_start', 'like', "$year-$month%"))
+                    ->get();
+                $total = $items->sum('subtotal');
+                $itemCount = $items->count();
+            }
+
+            if ($total <= 0) return null;
+
+            return [
+                'id'              => $vendor->id,
+                'name'            => $vendor->name,
+                'category'        => $vendor->vendorCategory->name,
+                'total'           => (float) $total,
+                'item_count'      => $itemCount,
+                'formatted_total' => 'Rp ' . number_format($total, 0, ',', '.'),
+            ];
+        })->filter()->values();
+    }
+
+    private function buildVendorDebtsDetail($vendorId, $month, $year)
+    {
+        $vendor = Vendor::with('vendorCategory')->findOrFail($vendorId);
+        $debts  = collect();
+
+        if ($vendor->vendor_category_id == 1) {
+            $bookHotels = BookHotel::with(['bookRoom.roomHotel', 'bookHotelMeal', 'booking.user', 'bookingItinerary', 'hotel'])
+                ->where('is_debt', '1')->whereNull('debt_payment_id')
+                ->whereHas('hotel', fn($q) => $q->where('vendor_id', $vendorId))
+                ->whereHas('booking', fn($q) => $q->where('travel_date_start', 'like', "$year-$month%"))
+                ->get();
+
+            $debts = $bookHotels->map(function ($bh) {
+                $night = $bh->bookingItinerary ? $bh->bookingItinerary->day - 1 : 0;
+                return [
+                    'id'          => $bh->id,
+                    'booking_id'  => $bh->booking_id,
+                    'customer'    => $bh->booking->user->name,
+                    'channel'     => $bh->booking->agent_id == 1 ? 'TWT' : ($bh->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
+                    'pax'         => (int) $bh->booking->total_pax,
+                    'travel_date' => date('d M', strtotime($bh->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($bh->booking->travel_date_end)),
+                    'check_in'    => date('d M Y', strtotime($bh->booking->travel_date_start . " +$night days")),
+                    'rooms'       => $bh->bookRoom->map(fn($r) => [
+                        'room' => $r->roomHotel->room_name,
+                        'quantity' => $r->quantity,
+                        'price' => $r->subtotal / max(1, $r->quantity),
+                        'subtotal' => $r->subtotal,
+                    ]),
+                    'room_total'  => $bh->bookRoom->sum('subtotal'),
+                    'meals'       => $bh->bookHotelMeal->map(fn($m) => [
+                        'meals' => ucfirst($m->meals),
+                        'quantity' => $m->qty,
+                        'price' => $m->price,
+                        'subtotal' => $m->subtotal,
+                    ]),
+                    'meals_total' => $bh->bookHotelMeal->sum('subtotal'),
+                    'total'       => $bh->bookRoom->sum('subtotal') + $bh->bookHotelMeal->sum('subtotal'),
+                    'type'        => 'hotel',
+                ];
+            })->sortBy('check_in')->values();
+        } elseif ($vendor->vendor_category_id == 2) {
+            $activities = BookDestinationActivity::with(['destinationActivity', 'booking.bookingDetail.package', 'booking.user'])
+                ->where('is_debt', '1')->whereNull('debt_payment_id')
+                ->whereHas('destinationActivity', fn($q) => $q->where('vendor_id', $vendorId))
+                ->whereHas('booking', fn($q) => $q->where('travel_date_start', 'like', "$year-$month%"))
+                ->get();
+
+            $isDestBromo = $activities->isNotEmpty() && $activities->first()->destinationActivity->destination_id == 1;
+
+            if ($isDestBromo) {
+                $debts = $activities->groupBy('booking_id')->map(function ($group) {
+                    $first         = $group->first();
+                    $destinationId = $first->destination_id;
+                    $itinerary     = BookingItinerary::where('booking_id', $first->booking_id)
+                        ->whereHas('activityStart', fn($q) => $q->where('destination_id', $destinationId))->first();
+                    $activityDate  = $itinerary
+                        ? date('d M Y', strtotime($first->booking->travel_date_start . ' +' . ($itinerary->day - 1) . ' days')) : '-';
+                    return [
+                        'id'            => $first->id,
+                        'booking_id' => $first->booking_id,
+                        'customer'      => $first->booking->user->name,
+                        'channel'       => $first->booking->agent_id == 1 ? 'TWT' : ($first->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
+                        'pax'           => (int) $first->booking->total_pax,
+                        'travel_date'   => date('d M', strtotime($first->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($first->booking->travel_date_end)),
+                        'activity_date' => $activityDate,
+                        'bromo_ticket'  => $group->where('destination_activity_id', 1)->sum('subtotal'),
+                        'jeep_unit'     => $group->whereNotIn('destination_activity_id', [1])->sum('qty'),
+                        'bromo_jeep'    => $group->whereNotIn('destination_activity_id', [1])->sum('subtotal'),
+                        'total'         => $group->sum('subtotal'),
+                        'type' => 'bromo',
+                    ];
+                })->values();
+            } else {
+                $debts = $activities->map(function ($act) {
+                    $destinationId = $act->destination_id;
+                    $itinerary     = BookingItinerary::where('booking_id', $act->booking_id)
+                        ->whereHas('activityStart', fn($q) => $q->where('destination_id', $destinationId))->first();
+                    $activityDate  = $itinerary
+                        ? date('d M Y', strtotime($act->booking->travel_date_start . ' +' . ($itinerary->day - 1) . ' days')) : '-';
+                    return [
+                        'id'            => $act->id,
+                        'booking_id' => $act->booking_id,
+                        'customer'      => $act->booking->user->name,
+                        'channel'       => $act->booking->agent_id == 1 ? 'TWT' : ($act->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
+                        'pax'           => (int) $act->booking->total_pax,
+                        'travel_date'   => date('d M', strtotime($act->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($act->booking->travel_date_end)),
+                        'activity_date' => $activityDate,
+                        'activity'      => $act->destinationActivity->name ?? '-',
+                        'qty'           => $act->qty,
+                        'total' => $act->subtotal,
+                        'type' => 'activity',
+                    ];
+                })->sortBy('activity_date')->values();
+            }
+        } elseif ($vendor->vendor_category_id == 3) {
+            $carItems = BookCarActivity::with(['car', 'booking.user'])
+                ->where('is_debt', '1')->whereNull('debt_payment_id')
+                ->whereHas('car', fn($q) => $q->where('vendor_id', $vendorId))
+                ->whereHas('booking', fn($q) => $q->where('travel_date_start', 'like', "$year-$month%"))
+                ->get();
+            $debts = $carItems->map(fn($bca) => [
+                'id'          => $bca->id,
+                'booking_id' => $bca->booking_id,
+                'customer'    => $bca->booking->user->name,
+                'channel'     => $bca->booking->agent_id == 1 ? 'TWT' : ($bca->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
+                'pax'         => (int) $bca->booking->total_pax,
+                'travel_date' => date('d M', strtotime($bca->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($bca->booking->travel_date_end)),
+                'car'         => $bca->car->name ?? '-',
+                'qty' => $bca->qty,
+                'driver'      => $bca->driver_txt ?: '-',
+                'total' => (float) $bca->subtotal,
+                'type' => 'car',
+            ])->sortBy('travel_date')->values();
+        } elseif ($vendor->vendor_category_id == 4) {
+            $othersItems = BookOthersActivity::with(['othersActivity', 'booking.user'])
+                ->where('is_debt', '1')->whereNull('debt_payment_id')
+                ->whereHas('othersActivity', fn($q) => $q->where('vendor_id', $vendorId))
+                ->whereHas('booking', fn($q) => $q->where('travel_date_start', 'like', "$year-$month%"))
+                ->get();
+            $debts = $othersItems->map(fn($oa) => [
+                'id'          => $oa->id,
+                'booking_id' => $oa->booking_id,
+                'customer'    => $oa->booking->user->name,
+                'channel'     => $oa->booking->agent_id == 1 ? 'TWT' : ($oa->booking->booking_category_id == '3' ? 'KLOOK' : 'JVTO'),
+                'pax'         => (int) $oa->booking->total_pax,
+                'travel_date' => date('d M', strtotime($oa->booking->travel_date_start)) . ' – ' . date('d M Y', strtotime($oa->booking->travel_date_end)),
+                'item'        => $oa->othersActivity->name ?? '-',
+                'qty'         => $oa->qty,
+                'price' => (float) $oa->price,
+                'total'       => (float) $oa->subtotal,
+                'type' => 'others',
+            ])->sortBy('travel_date')->values();
+        }
+
+        return compact('vendor', 'debts');
+    }
+
+    // ── Export methods ───────────────────────────────────────────────────────
+
+    function rekapHutangExportPdf(Request $request)
+    {
+        $month  = $request->month ?: date('m');
+        $year   = $request->year  ?: date('Y');
+        $vendors = $this->buildVendorDebtsList($month, $year);
+        $total   = $vendors->sum('total');
+        $period  = $this->rekapHutangPeriodLabel($month, $year);
+
+        $pdf = PDF::loadView('exports.rekap-hutang-pdf', compact('vendors', 'total', 'period'));
+        $pdf->setPaper('A4', 'portrait');
+        return $pdf->download("rekap-hutang-$month-$year.pdf");
+    }
+
+    function rekapHutangExportExcel(Request $request)
+    {
+        $month  = $request->month ?: date('m');
+        $year   = $request->year  ?: date('Y');
+        $vendors = $this->buildVendorDebtsList($month, $year);
+        $total   = $vendors->sum('total');
+        $period  = $this->rekapHutangPeriodLabel($month, $year);
+
+        $filename = "rekap-hutang-$month-$year.xls";
+        header("Content-type: application/vnd-ms-excel");
+        header("Content-Disposition: attachment; filename=$filename");
+        return view('exports.rekap-hutang-excel', compact('vendors', 'total', 'period'));
+    }
+
+    function rekapHutangDetailExportPdf(Request $request, $vendorId)
+    {
+        $month  = $request->month ?: date('m');
+        $year   = $request->year  ?: date('Y');
+        $data   = $this->buildVendorDebtsDetail($vendorId, $month, $year);
+        $vendor = $data['vendor'];
+        $debts  = $data['debts'];
+        $total  = $debts->sum('total');
+        $period = $this->rekapHutangPeriodLabel($month, $year);
+        $type   = $debts->isNotEmpty() ? $debts->first()['type'] : 'others';
+
+        $pdf = PDF::loadView('exports.rekap-hutang-detail-pdf', compact('vendor', 'debts', 'total', 'period', 'type'));
+        $pdf->setPaper('A4', 'landscape');
+        return $pdf->download("rekap-hutang-{$vendor->name}-$month-$year.pdf");
+    }
+
+    function rekapHutangDetailExportExcel(Request $request, $vendorId)
+    {
+        $month  = $request->month ?: date('m');
+        $year   = $request->year  ?: date('Y');
+        $data   = $this->buildVendorDebtsDetail($vendorId, $month, $year);
+        $vendor = $data['vendor'];
+        $debts  = $data['debts'];
+        $total  = $debts->sum('total');
+        $period = $this->rekapHutangPeriodLabel($month, $year);
+        $type   = $debts->isNotEmpty() ? $debts->first()['type'] : 'others';
+
+        $filename = "rekap-hutang-{$vendor->name}-$month-$year.xls";
+        header("Content-type: application/vnd-ms-excel");
+        header("Content-Disposition: attachment; filename=$filename");
+        return view('exports.rekap-hutang-detail-excel', compact('vendor', 'debts', 'total', 'period', 'type'));
+    }
+
+    // ─── Channel Revenue Report ───────────────────────────────────────────────
+
+    function channelReport(Request $request)
+    {
+        $month = $request->month ? str_pad($request->month, 2, '0', STR_PAD_LEFT) : date('m');
+        $year  = $request->year  ? (int) $request->year  : (int) date('Y');
+
+        $channels   = $this->buildChannelData($month, $year);
+        $googleBill = GoogleBill::where('month', (int) $month)->where('year', $year)->first();
+        $allKlookBookings = $this->buildAllKlookBookingsForPeriod($month, $year);
+
+        $months = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $months[] = ['value' => str_pad($m, 2, '0', STR_PAD_LEFT), 'label' => date('F', mktime(0, 0, 0, $m, 1))];
+        }
+        $years = range(date('Y') - 2, date('Y') + 1);
+
+        return Inertia::render('Finance/ChannelReport', [
+            'filters'          => ['month' => $month, 'year' => (string) $year],
+            'channels'         => $channels,
+            'google_bill'      => $googleBill,
+            'klook_bookings'   => $allKlookBookings,
+            'months'           => $months,
+            'years'            => $years,
+        ]);
+    }
+
+    function saveGoogleBill(Request $request)
+    {
+        $month = str_pad($request->month, 2, '0', STR_PAD_LEFT);
+        $year  = (int) $request->year;
+
+        GoogleBill::updateOrCreate(
+            ['month' => (int) $month, 'year' => $year],
+            ['google_cloud' => (int) $request->google_cloud, 'google_ads' => (int) $request->google_ads]
+        );
+
+        return back()->with('success', 'Google bill saved.');
+    }
+
+    function updateChannelTag(Request $request)
+    {
+        $booking = Booking::findOrFail($request->booking_id);
+        $booking->channel_tag = $request->channel_tag ?: null;
+        $booking->save();
+
+        return response()->json(['ok' => true]);
+    }
+
+    function channelReportExportPdf(Request $request, string $channel)
+    {
+        $month  = str_pad($request->month ?: date('m'), 2, '0', STR_PAD_LEFT);
+        $year   = (int) ($request->year ?: date('Y'));
+        $period = $this->crPeriodLabel($month, $year);
+
+        if ($channel === 'net-profit') {
+            $channels   = $this->buildChannelData($month, $year);
+            $googleBill = GoogleBill::where('month', (int)$month)->where('year', $year)->first();
+            $pdf = PDF::loadView('exports.channel-report-net-profit-pdf', compact('channels', 'googleBill', 'period'));
+            $pdf->setPaper('A4', 'portrait');
+            return $pdf->download("net-profit-$month-$year.pdf");
+        }
+
+        $channelData = $this->buildChannelData($month, $year);
+        $bookings    = $channelData[$channel]['bookings'] ?? collect();
+        $totals      = $channelData[$channel] ?? [];
+        $label       = $this->crChannelLabel($channel);
+        $pdf = PDF::loadView('exports.channel-report-channel-pdf', compact('bookings', 'totals', 'label', 'period', 'channel'));
+        $pdf->setPaper('A4', 'landscape');
+        return $pdf->download("$channel-report-$month-$year.pdf");
+    }
+
+    function channelReportExportExcel(Request $request, string $channel)
+    {
+        $month  = str_pad($request->month ?: date('m'), 2, '0', STR_PAD_LEFT);
+        $year   = (int) ($request->year ?: date('Y'));
+        $period = $this->crPeriodLabel($month, $year);
+
+        if ($channel === 'net-profit') {
+            $channels   = $this->buildChannelData($month, $year);
+            $googleBill = GoogleBill::where('month', (int)$month)->where('year', $year)->first();
+            $filename   = "net-profit-$month-$year.xls";
+            header("Content-type: application/vnd-ms-excel");
+            header("Content-Disposition: attachment; filename=$filename");
+            return view('exports.channel-report-net-profit-excel', compact('channels', 'googleBill', 'period'));
+        }
+
+        $channelData = $this->buildChannelData($month, $year);
+        $bookings    = $channelData[$channel]['bookings'] ?? collect();
+        $totals      = $channelData[$channel] ?? [];
+        $label       = $this->crChannelLabel($channel);
+        $filename    = "$channel-report-$month-$year.xls";
+        header("Content-type: application/vnd-ms-excel");
+        header("Content-Disposition: attachment; filename=$filename");
+        return view('exports.channel-report-channel-excel', compact('bookings', 'totals', 'label', 'period', 'channel'));
+    }
+
+    private function buildChannelData(string $month, int $year): array
+    {
+        $base = Booking::where('status', 'booked')
+            ->whereYear('travel_date_start', $year)
+            ->whereMonth('travel_date_start', (int) $month);
+
+        $jvtoRows = (clone $base)
+            ->where('agent_id', 2)
+            ->where('booking_category_id', '!=', 3)
+            ->get();
+
+        $twtRows = (clone $base)
+            ->where('agent_id', 1)
+            ->get();
+
+        $klookAll = (clone $base)
+            ->where('agent_id', 2)
+            ->where('booking_category_id', 3)
+            ->get();
+
+        $klookRows  = $klookAll->filter(fn($b) => $this->resolveChannelTag($b) === 'klook');
+        $gygRows    = $klookAll->filter(fn($b) => $this->resolveChannelTag($b) === 'gyg');
+        $viatorRows = $klookAll->filter(fn($b) => $this->resolveChannelTag($b) === 'viator');
+
+        return [
+            'jvto'   => $this->crSumChannel($jvtoRows,  'jvto'),
+            'twt'    => $this->crSumChannel($twtRows,   'twt'),
+            'klook'  => $this->crSumChannel($klookRows,  'klook'),
+            'gyg'    => $this->crSumChannel($gygRows,    'gyg'),
+            'viator' => $this->crSumChannel($viatorRows, 'viator'),
+        ];
+    }
+
+    private function buildAllKlookBookingsForPeriod(string $month, int $year): \Illuminate\Support\Collection
+    {
+        return Booking::where('status', 'booked')
+            ->where('agent_id', 2)
+            ->where('booking_category_id', 3)
+            ->whereYear('travel_date_start', $year)
+            ->whereMonth('travel_date_start', (int) $month)
+            ->orderBy('travel_date_start')
+            ->get()
+            ->map(fn($b) => [
+                'id'                  => $b->id,
+                'invoice_code_origin' => $b->invoice_code_origin,
+                'customer'            => optional($b->user)->name ?? $b->booking_from ?? '-',
+                'total_pax'           => $b->total_pax,
+                'trip_date'           => $b->travel_date_start ? date('d M y', strtotime($b->travel_date_start)) : '-',
+                'invoice'             => (int) $b->grand_total,
+                'expense'             => (int) $b->expense_internal_total,
+                'profit'              => (int) $b->grand_total - (int) $b->expense_internal_total,
+                'channel_tag'         => $b->channel_tag,
+                'resolved_channel'    => $this->resolveChannelTag($b),
+            ]);
+    }
+
+    private function crSumChannel(\Illuminate\Support\Collection $rows, string $channel): array
+    {
+        $bookings = $rows->sortBy('travel_date_start')->values()->map(function ($b, $i) use ($channel) {
+            $bookingNumber = $channel === 'jvto' ? $b->booking_code : $b->invoice_code_origin;
+            $customer      = optional($b->user)->name ?? $b->booking_from ?? '-';
+            $invoice       = (int) $b->grand_total;
+            $expense       = (int) $b->expense_internal_total;
+            return [
+                'no'             => $i + 1,
+                'booking_number' => $bookingNumber ?? '-',
+                'customer'       => $customer,
+                'total_pax'      => $b->total_pax,
+                'trip_date'      => $b->travel_date_start ? date('d M y', strtotime($b->travel_date_start)) : '-',
+                'invoice'        => $invoice,
+                'expense'        => $expense,
+                'profit'         => $invoice - $expense,
+            ];
+        });
+
+        $totalInvoice = $bookings->sum('invoice');
+        $totalExpense = $bookings->sum('expense');
+
+        return [
+            'bookings'      => $bookings,
+            'total_invoice' => $totalInvoice,
+            'total_expense' => $totalExpense,
+            'total_profit'  => $totalInvoice - $totalExpense,
+        ];
+    }
+
+    private function resolveChannelTag(\App\Models\Booking $b): string
+    {
+        if ($b->channel_tag) return $b->channel_tag;
+        if ($b->invoice_code_origin && str_starts_with(strtoupper($b->invoice_code_origin), 'GYG')) return 'gyg';
+        return 'klook';
+    }
+
+    private function crPeriodLabel(string $month, int $year): string
+    {
+        return date('F Y', mktime(0, 0, 0, (int) $month, 1, $year));
+    }
+
+    private function crChannelLabel(string $channel): string
+    {
+        return match ($channel) {
+            'jvto'   => 'JVTO',
+            'twt'    => 'TWT',
+            'klook'  => 'KLOOK',
+            'gyg'    => 'GetYourGuide',
+            'viator' => 'Viator',
+            default  => strtoupper($channel),
+        };
     }
 }

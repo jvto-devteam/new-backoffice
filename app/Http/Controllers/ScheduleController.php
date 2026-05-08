@@ -3060,7 +3060,7 @@ class ScheduleController extends Controller
 
         // $curl = curl_init();
         // curl_setopt_array($curl, array(
-        //     CURLOPT_URL => 'https://api.watzap.id/v1/send_message',
+        //     CURLOPT_URL => 'https://wa-dashboard.javavolcano-touroperator.com/api/v1/send_message',
         //     CURLOPT_RETURNTRANSFER => true,
         //     CURLOPT_ENCODING => '',
         //     CURLOPT_MAXREDIRS => 10,

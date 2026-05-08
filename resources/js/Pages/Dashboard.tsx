@@ -4,17 +4,20 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import Main from '@/Layouts/Main';
-import { 
-  Users, Calendar, CheckCircle, Clock, AlertTriangle, CreditCard, 
+import {
+  Users, Calendar, CheckCircle, Clock, AlertTriangle, CreditCard,
   Filter, Search, Package, DollarSign, TrendingUp, List, MoreHorizontal,
   Layers, MapPin, Car, UserCheck, CreditCard as CardIcon, Hotel, Shirt, Camera,
   ChevronDown, ChevronUp, ChevronRight,
   X, Calendar as CalendarIcon
 } from 'lucide-react';
 import {Link,router} from '@inertiajs/react';
+import Chart from 'react-apexcharts';
+
+const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export default function Dashboard({ dashboardData }) {
-  const { summaryOrderChannel, summary, paymentHistory, trips, alert, month } = dashboardData;
+  const { summaryOrderChannel, summary, paymentHistory, trips, alert, month, bookingTrend, travelTrend } = dashboardData;
   const [activeTab, setActiveTab] = useState('active');
   const [hoveredCrew, setHoveredCrew] = useState(null);
   const [expandedPayments, setExpandedPayments] = useState([]);
@@ -1013,8 +1016,73 @@ export default function Dashboard({ dashboardData }) {
                 )}
               </div>
             </div>
-          )} 
+          )}
         </div>
+
+        {/* Booking & Travel Trend Charts */}
+        {(bookingTrend || travelTrend) && (
+          <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
+            {/* Booking Trend */}
+            <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-strokedark dark:bg-boxdark shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-black dark:text-white flex items-center gap-2">
+                  <TrendingUp size={15} className="text-blue-500" />
+                  Booking Trend {new Date().getFullYear()} (by Order Date)
+                </h3>
+                <Link href="/crm" className="text-xs text-primary hover:underline">View CRM →</Link>
+              </div>
+              <Chart
+                options={{
+                  chart: { type: 'line', height: 220, toolbar: { show: false }, background: 'transparent' },
+                  stroke: { curve: 'smooth', width: 2 },
+                  colors: ['#3b82f6', '#10b981'],
+                  xaxis: { categories: MONTH_LABELS, labels: { style: { fontSize: '11px' } } },
+                  yaxis: { title: { text: 'Bookings' }, labels: { formatter: (v: number) => String(Math.round(v)) } },
+                  legend: { position: 'top' },
+                  tooltip: { y: { formatter: (v: number) => `${v} bookings` } },
+                  grid: { borderColor: '#e5e7eb' },
+                  dataLabels: { enabled: false },
+                }}
+                series={[
+                  { name: 'JVTO', data: bookingTrend?.map((d: any) => d.jvto) ?? [] },
+                  { name: 'Klook', data: bookingTrend?.map((d: any) => d.klook) ?? [] },
+                ]}
+                type="line"
+                height={220}
+              />
+            </div>
+
+            {/* Travel Trend */}
+            <div className="rounded-xl border border-gray-200 bg-white p-5 dark:border-strokedark dark:bg-boxdark shadow-sm">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-black dark:text-white flex items-center gap-2">
+                  <Calendar size={15} className="text-green-500" />
+                  Travel Trend {new Date().getFullYear()} (by Trip Start Date)
+                </h3>
+                <Link href="/crm" className="text-xs text-primary hover:underline">View CRM →</Link>
+              </div>
+              <Chart
+                options={{
+                  chart: { type: 'bar', height: 220, toolbar: { show: false }, background: 'transparent' },
+                  colors: ['#3b82f6', '#10b981'],
+                  xaxis: { categories: MONTH_LABELS, labels: { style: { fontSize: '11px' } } },
+                  yaxis: { title: { text: 'Trips' }, labels: { formatter: (v: number) => String(Math.round(v)) } },
+                  plotOptions: { bar: { borderRadius: 3, columnWidth: '60%' } },
+                  legend: { position: 'top' },
+                  tooltip: { y: { formatter: (v: number) => `${v} trips` } },
+                  grid: { borderColor: '#e5e7eb' },
+                  dataLabels: { enabled: false },
+                }}
+                series={[
+                  { name: 'JVTO', data: travelTrend?.map((d: any) => d.jvto) ?? [] },
+                  { name: 'Klook', data: travelTrend?.map((d: any) => d.klook) ?? [] },
+                ]}
+                type="bar"
+                height={220}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </Main>
   );

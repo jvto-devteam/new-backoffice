@@ -199,6 +199,44 @@ class DashboardController extends Controller
             ];
         });
 
+        $currentYear = date('Y');
+        $allMonths = array_map(fn($m) => $currentYear.'-'.str_pad($m, 2, '0', STR_PAD_LEFT), range(1, 12));
+
+        // Klook = booking_category_id 3, JVTO = everything else (agent_id=2)
+        $bookingTrendRaw = Booking::selectRaw('DATE_FORMAT(created_at, "%Y-%m") as month, IF(booking_category_id = 3, "klook", "jvto") as ch, COUNT(*) as count')
+            ->where('agent_id', 2)
+            ->where('status', 'booked')
+            ->whereYear('created_at', $currentYear)
+            ->groupBy('month', 'ch')
+            ->get()
+            ->groupBy('month');
+
+        $travelTrendRaw = Booking::selectRaw('DATE_FORMAT(travel_date_start, "%Y-%m") as month, IF(booking_category_id = 3, "klook", "jvto") as ch, COUNT(*) as count')
+            ->where('agent_id', 2)
+            ->where('status', 'booked')
+            ->whereYear('travel_date_start', $currentYear)
+            ->groupBy('month', 'ch')
+            ->get()
+            ->groupBy('month');
+
+        $bookingTrend = collect($allMonths)->map(function($month) use ($bookingTrendRaw) {
+            $rows = $bookingTrendRaw->get($month, collect());
+            return [
+                'month' => $month,
+                'jvto' => (int) ($rows->firstWhere('ch', 'jvto')?->count ?? 0),
+                'klook' => (int) ($rows->firstWhere('ch', 'klook')?->count ?? 0),
+            ];
+        })->values();
+
+        $travelTrend = collect($allMonths)->map(function($month) use ($travelTrendRaw) {
+            $rows = $travelTrendRaw->get($month, collect());
+            return [
+                'month' => $month,
+                'jvto' => (int) ($rows->firstWhere('ch', 'jvto')?->count ?? 0),
+                'klook' => (int) ($rows->firstWhere('ch', 'klook')?->count ?? 0),
+            ];
+        })->values();
+
         $dashboardData = [
             'summaryOrderChannel' => $summaryOrderChannel,
             'summary' => $summary,
@@ -206,6 +244,8 @@ class DashboardController extends Controller
             'trips' => $trips,
             'alert' => $alert,
             'month' => $month,
+            'bookingTrend' => $bookingTrend,
+            'travelTrend' => $travelTrend,
             'orderChannelLinks' => [
                 'jvto' => '/booking-overview?channel=JVTO&filter_type=month&month='.date('Y-'.$month),
                 'klook' => '/booking-overview?channel=KLOOK&filter_type=month&month='.date('Y-'.$month),

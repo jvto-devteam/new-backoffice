@@ -614,7 +614,7 @@ class BookingController extends Controller
     
                         $curl = curl_init();
                         curl_setopt_array($curl, array(
-                          CURLOPT_URL => 'https://api.watzap.id/v1/send_message_group',
+                          CURLOPT_URL => 'https://wa-dashboard.javavolcano-touroperator.com/api/v1/send_message_group',
                           CURLOPT_RETURNTRANSFER => true,
                           CURLOPT_ENCODING => '',
                           CURLOPT_MAXREDIRS => 10,
@@ -683,7 +683,7 @@ class BookingController extends Controller
     
             $curl = curl_init();
             curl_setopt_array($curl, array(
-              CURLOPT_URL => 'https://api.watzap.id/v1/send_image_url',
+              CURLOPT_URL => 'https://wa-dashboard.javavolcano-touroperator.com/api/v1/send_image_url',
               CURLOPT_RETURNTRANSFER => true,
               CURLOPT_ENCODING => '',
               CURLOPT_MAXREDIRS => 10,

@@ -2420,7 +2420,7 @@ class BookingController extends Controller
             ]);
         }
 
-        $credentialsPath = base_path('adept-stage-472705-a2-6d8a52e8f781.json');
+        $credentialsPath = base_path('adept-stage-472705-a2-959c463cf022.json');
 
         if (! file_exists($credentialsPath)) {
             return back()->withErrors([
@@ -2434,12 +2434,17 @@ class BookingController extends Controller
             $client->setScopes([Drive::DRIVE]);
 
             $drive = new Drive($client);
+
+            $masterFolderId = '1Gqf5Pjm0ElWKmXdaXHPupVti6m7cTiXZ';
+            $channelName = $booking->booking_category_id == 3 ? 'KLOOK' : 'JVTO';
+            $channelFolderId = $this->findOrCreateDriveFolder($drive, $channelName, $masterFolderId);
+
             $folderName = $this->buildTripMediaFolderName($booking);
 
             $folder = new DriveFile([
                 'name' => $folderName,
                 'mimeType' => 'application/vnd.google-apps.folder',
-                'parents' => ['1Gqf5Pjm0ElWKmXdaXHPupVti6m7cTiXZ'],
+                'parents' => [$channelFolderId],
             ]);
 
             $createdFolder = $drive->files->create($folder, [
@@ -2466,6 +2471,30 @@ class BookingController extends Controller
                 'trip_media' => 'Gagal membuat folder Trip Media. Silakan cek konfigurasi Google Drive.',
             ]);
         }
+    }
+
+    private function findOrCreateDriveFolder(Drive $drive, string $name, string $parentId): string
+    {
+        $escapedName = str_replace("'", "\\'", $name);
+        $results = $drive->files->listFiles([
+            'q' => "name = '{$escapedName}' and '{$parentId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+            'fields' => 'files(id)',
+            'pageSize' => 1,
+        ]);
+
+        if (count($results->getFiles()) > 0) {
+            return $results->getFiles()[0]->getId();
+        }
+
+        $folder = new DriveFile([
+            'name' => $name,
+            'mimeType' => 'application/vnd.google-apps.folder',
+            'parents' => [$parentId],
+        ]);
+
+        $created = $drive->files->create($folder, ['fields' => 'id']);
+
+        return $created->getId();
     }
 
     private function buildTripMediaFolderName(Booking $booking): string

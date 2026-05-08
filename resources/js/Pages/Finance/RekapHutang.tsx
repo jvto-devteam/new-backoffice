@@ -75,6 +75,12 @@ export default function RekapHutang({ vendors, formatted_total, filters, months,
                         </div>
                         <div className="flex items-center gap-2">
                             <a
+                                href="/finance/hub"
+                                className="inline-flex items-center gap-1 text-indigo-600 border border-indigo-300 bg-white px-3 py-1.5 rounded-lg text-sm hover:bg-indigo-50 transition-colors"
+                            >
+                                ← Finance Hub
+                            </a>
+                            <a
                                 href={`/finance/rekap-hutang/export-pdf?month=${filterData.month}&year=${filterData.year}`}
                                 target="_blank"
                                 className="inline-flex items-center gap-1.5 bg-white text-indigo-700 px-3 py-1.5 rounded text-sm font-medium hover:bg-indigo-50 transition-colors"
@@ -229,13 +235,21 @@ export default function RekapHutang({ vendors, formatted_total, filters, months,
                                                     <span className="text-sm font-bold text-gray-800">{vendor.formatted_total}</span>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    <Link
-                                                        href={`/finance/rekap-hutang/${vendor.id}?month=${filterData.month}&year=${filterData.year}`}
-                                                        className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-lg text-sm transition-colors"
-                                                    >
-                                                        <Eye size={14} />
-                                                        Detail
-                                                    </Link>
+                                                    <div className="flex items-center justify-center gap-2">
+                                                        <Link
+                                                            href={`/finance/rekap-hutang/${vendor.id}?month=${filterData.month}&year=${filterData.year}`}
+                                                            className="inline-flex items-center gap-1 text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-lg text-sm transition-colors"
+                                                        >
+                                                            <Eye size={14} />
+                                                            Detail
+                                                        </Link>
+                                                        <a
+                                                            href={`/finance/payable-report/create?vendor=${vendor.id}&month=${filterData.month}&year=${filterData.year}`}
+                                                            className="inline-flex items-center gap-1 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-lg text-sm font-medium transition-colors"
+                                                        >
+                                                            Bayar
+                                                        </a>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}

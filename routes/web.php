@@ -22,6 +22,7 @@ use App\Http\Controllers\CrmController;
 use App\Http\Controllers\FinanceController;
 use App\Http\Controllers\VendorController;
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\BcaTransferController;
 use App\Http\Controllers\CrewController;
 use App\Http\Controllers\ThirdParty\WatzapController;
 use App\Http\Controllers\WaChatController;
@@ -171,6 +172,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/channel-revenue-report/channel-tag', [FinanceController::class, 'updateChannelTag']);
         Route::get('/channel-revenue-report/export-pdf/{channel}', [FinanceController::class, 'channelReportExportPdf']);
         Route::get('/channel-revenue-report/export-excel/{channel}', [FinanceController::class, 'channelReportExportExcel']);
+
+        // BCA Crew Transfer Log
+        Route::get('/bca-transfers', [BcaTransferController::class, 'index']);
     });
     Route::prefix('package-inventory')->group(function () {
         Route::get('/json', [PackageController::class, 'json']);

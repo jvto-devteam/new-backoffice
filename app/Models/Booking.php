@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\BcaCrewTransfer;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -149,5 +150,10 @@ class Booking extends Model
     public function crewReview()
     {
         return $this->hasMany(CrewReview::class, 'booking_id');
+    }
+
+    public function bcaCrewTransfers()
+    {
+        return $this->hasMany(BcaCrewTransfer::class, 'booking_id');
     }
 }

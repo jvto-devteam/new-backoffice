@@ -23,7 +23,7 @@ class GmailSetup extends Command
         $client = new Client();
         $client->setClientId($clientId);
         $client->setClientSecret($clientSecret);
-        $client->setRedirectUri('http://localhost');
+        $client->setRedirectUri('http://127.0.0.1:9999');
         $client->setScopes(['https://www.googleapis.com/auth/gmail.readonly']);
         $client->setAccessType('offline');
         $client->setPrompt('consent');
@@ -36,7 +36,7 @@ class GmailSetup extends Command
         $this->line('');
         $this->info('Sign in as javavolcano.rendezvous@gmail.com and grant access.');
         $this->info('After redirect, copy the "code" value from the URL bar.');
-        $this->info('The redirect URL looks like: http://localhost/?code=4%2FXXXXX...');
+        $this->info('The redirect URL looks like: http://127.0.0.1:9999/?code=4%2FXXXXX...');
         $this->line('');
 
         $authCode = $this->ask('Paste the authorization code here');

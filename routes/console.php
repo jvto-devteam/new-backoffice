@@ -11,3 +11,8 @@ Schedule::command('wa:generate-daily-summaries')
     ->dailyAt('23:59')
     ->appendOutputTo(storage_path('logs/wa-daily-summaries.log'))
     ->description('Generate daily summaries for WhatsApp chats');
+
+Schedule::command('bca:sync-transfers')
+    ->everyThirtyMinutes()
+    ->appendOutputTo(storage_path('logs/bca-sync.log'))
+    ->description('Sync BCA transfer notification emails to crew expense records');

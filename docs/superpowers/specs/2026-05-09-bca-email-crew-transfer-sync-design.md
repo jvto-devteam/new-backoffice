@@ -10,7 +10,7 @@ After transferring crew expenses via KlikBCA Bisnis, the system sends notificati
 
 ## Overview
 
-A Laravel scheduled command polls Gmail every 5 minutes for new emails from `klikbcabisnis@klikbca.com`. It parses the transaction details, matches the booking by the code in the `Keterangan/Remark` field, and records the transfer in a new `bca_crew_transfers` table. The UI reflects transfer status in the Expense Manager (per booking) and the Booking Overview list.
+A Laravel scheduled command polls Gmail every 30 minutes for new emails from `klikbcabisnis@klikbca.com`. It parses the transaction details, matches the booking by the code in the `Keterangan/Remark` field, and records the transfer in a new `bca_crew_transfers` table. Transfers with a remark that does not match any booking are silently ignored — they are assumed to be non-crew transfers. The UI reflects transfer status in the Expense Manager (per booking) and the Booking Overview list.
 
 ---
 
@@ -39,10 +39,11 @@ Only emails with Status = `Berhasil` or `Success` are processed.
 ## Booking Matching
 
 1. Extract the first word from `Keterangan` → `booking_code_matched`
-2. Query: `Booking::where('booking_code', $code)->first()`
-3. If not found: `Booking::where('invoice_code_origin', $code)->first()`
-4. If found → set `booking_id` on the transfer record
-5. If not found → save with `booking_id = null` for manual review
+2. If `Keterangan` is empty or blank → **skip entirely** (non-crew transfer)
+3. Query: `Booking::where('booking_code', $code)->first()`
+4. If not found: `Booking::where('invoice_code_origin', $code)->first()`
+5. If found → set `booking_id` on the transfer record, save it
+6. If not found → **skip entirely, do not save** (non-crew transfer, log as debug only)
 
 ---
 
@@ -53,7 +54,7 @@ Only emails with Status = `Berhasil` or `Success` are processed.
 | Column | Type | Notes |
 |--------|------|-------|
 | id | bigint PK | |
-| booking_id | bigint FK nullable | null if booking not matched |
+| booking_id | bigint FK | always matched — records without a match are discarded |
 | transfer_date | date | |
 | transfer_time | time | |
 | amount | bigint | in IDR (e.g., 2310000) |
@@ -110,14 +111,16 @@ Parses raw email body text into structured data.
    a. Check if `email_message_id` already exists in `bca_crew_transfers` → skip if yes
    b. Parse email body via `BcaEmailParser::parse()`
    c. Skip if status is not success
-   d. Match booking via `booking_code_matched`
-   e. Create `BcaCrewTransfer` record
-   f. Call `GmailService::markAsProcessed()`
-3. Log summary: `X new transfers recorded, Y not matched`
+   d. Skip if `Keterangan` is empty
+   e. Match booking via `booking_code_matched`
+   f. Skip (log debug) if no booking found — non-crew transfer
+   g. Create `BcaCrewTransfer` record
+   h. Call `GmailService::markAsProcessed()`
+3. Log summary: `X new transfers recorded, Y skipped (no booking match)`
 
 **Scheduler registration in `app/Console/Kernel.php`:**
 ```php
-$schedule->command('bca:sync-transfers')->everyFiveMinutes();
+$schedule->command('bca:sync-transfers')->everyThirtyMinutes();
 ```
 
 ### 4. `BcaCrewTransfer` model (`app/Models/BcaCrewTransfer.php`)
@@ -135,9 +138,7 @@ $schedule->command('bca:sync-transfers')->everyFiveMinutes();
 
 | Method | URI | Purpose |
 |--------|-----|---------|
-| GET | `/finance/bca-transfers` | List all transfers (with search/filter) |
-| GET | `/finance/bca-transfers/unmatched` | List unmatched transfers (booking_id = null) |
-| POST | `/finance/bca-transfers/{id}/match` | Manually assign booking_id to unmatched transfer |
+| GET | `/finance/bca-transfers` | List all matched transfers (with search/filter by date/booking) |
 
 ### Updates to `FinanceController`
 
@@ -167,9 +168,9 @@ New section: **"Crew Transfer Records"**
 
 Route: `/finance/bca-transfers`
 
-- Table of all transfers (date, booking code matched, customer, amount, bank, status)
-- Filter by date range, matched/unmatched
-- Unmatched transfers show a "Assign Booking" button → modal to search and assign booking manually
+- Table of all matched transfers (date, booking code, customer name, amount, bank, reference no)
+- Filter by date range
+- No manual assignment needed — unmatched transfers are silently discarded
 
 ---
 
@@ -190,7 +191,7 @@ Route: `/finance/bca-transfers`
 |----------|----------|
 | Gmail API rate limit | Retry with exponential backoff in GmailService |
 | Email parsing fails | Log warning, skip email, do not mark as processed |
-| Booking not found | Save with `booking_id = null`, visible in unmatched list |
+| Booking not found / empty remark | Skip silently, log as debug — assumed non-crew transfer |
 | Duplicate reference_no | DB unique constraint catches it, command skips silently |
 | OAuth token expired | `google/apiclient` handles refresh automatically via refresh_token |
 
@@ -208,5 +209,5 @@ Route: `/finance/bca-transfers`
 
 - Per-crew matching (which specific crew was paid)
 - Automated reconciliation of transfer amounts vs expected crew subtotals
-- Push notifications / real-time (polling every 5 min is sufficient)
+- Push notifications / real-time (polling every 30 min is sufficient)
 - Modifying BCA email format assumptions

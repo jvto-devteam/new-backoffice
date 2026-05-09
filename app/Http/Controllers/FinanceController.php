@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AddOn;
+use App\Models\BcaCrewTransfer;
 use App\Models\BookAddOn;
 use App\Models\GoogleBill;
 use App\Models\BookCar;
@@ -1306,7 +1307,21 @@ class FinanceController extends Controller
                     'receipt' => "https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-receipt/" . $booking->id . "/partial/" . $payment->id,
                     'date' => date('d M y H:i', strtotime($payment->created_at)),
                 ];
-            })
+            }),
+            'bcaTransfers' => $booking->bcaCrewTransfers()
+                ->orderBy('transfer_date', 'desc')
+                ->orderBy('transfer_time', 'desc')
+                ->get()
+                ->map(fn($t) => [
+                    'id'            => $t->id,
+                    'transfer_date' => $t->transfer_date->format('d M Y'),
+                    'transfer_time' => $t->transfer_time,
+                    'amount'        => $t->amount,
+                    'to_account'    => $t->to_account,
+                    'to_bank'       => $t->to_bank,
+                    'reference_no'  => $t->reference_no,
+                    'remark'        => $t->remark,
+                ]),
         ]);
     }
     function updateExpense(Request $request)

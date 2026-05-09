@@ -819,7 +819,7 @@ class FinanceController extends Controller
                 ];
             });
         } else if ($tab == 'expense') {
-            $booking = Booking::with(['user', 'bookingDetail.package'])->where('travel_date_start', 'like', '%' . $yearMonth . '%');
+            $booking = Booking::with(['user', 'bookingDetail.package', 'bcaCrewTransfers'])->where('travel_date_start', 'like', '%' . $yearMonth . '%');
             if ($channel == 'jvto') {
                 $booking = $booking->where('agent_id', 2)->where('booking_category_id', '!=', 3);
             } else if ($channel == 'klook') {
@@ -855,6 +855,7 @@ class FinanceController extends Controller
                         'grand_total'  => (int)$data->grand_total,
                         'total_expense'  => (int)$data->expense_internal_total,
                         'crew_expense'  => (int)$data->total_expense_crew,
+                        'total_bca_transferred' => $data->bcaCrewTransfers->sum('amount'),
                     ],
                 ];
             });

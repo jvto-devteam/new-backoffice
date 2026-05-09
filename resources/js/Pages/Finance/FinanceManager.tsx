@@ -809,6 +809,7 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
             case "expense":
                 const totalExpense = row.booking?.total_expense || 0;
                 const crewExpense = row.booking?.crew_expense || 0;
+                const totalBcaTransferred = row.booking?.total_bca_transferred || 0;
                 return (
                     <tr
                         key={`${row.id}-${currentTab}`}
@@ -832,6 +833,16 @@ const FinanceDashboard = ({ booking = [], summary = {}, filters = {} }) => {
                         </td>
                         <td className="px-4 py-4 text-sm whitespace-nowrap md:whitespace-normal">
                             {formatRupiah(crewExpense)}
+                            {totalBcaTransferred > 0 && (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 mt-1">
+                                    ✓ Transferred{' '}
+                                    {new Intl.NumberFormat('id-ID', {
+                                        style: 'currency',
+                                        currency: 'IDR',
+                                        maximumFractionDigits: 0,
+                                    }).format(totalBcaTransferred)}
+                                </span>
+                            )}
                         </td>
                     </tr>
                 );

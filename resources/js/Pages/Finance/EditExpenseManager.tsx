@@ -2407,11 +2407,12 @@ const EditExpenseManager = ({
     destinations,
     others,
     resources,
-    addOn,    
+    addOn,
     listForNewItems,
     paymentHistory,
     additionalRequests,
-    expenseRefund
+    expenseRefund,
+    bcaTransfers,
 }) => {
     const [isDestinationModalOpen, setIsDestinationModalOpen] = useState(false);
     const [isOthersModalOpen, setIsOthersModalOpen] = useState(false);
@@ -3337,6 +3338,59 @@ const EditExpenseManager = ({
                         Submit Changes
                     </button>
                 </div>
+                {/* Crew Transfer Records */}
+                <div className="mt-6 bg-white rounded-lg border p-5">
+                    <h3 className="text-base font-semibold mb-3 text-gray-800">Crew Transfer Records</h3>
+                    {bcaTransfers && bcaTransfers.length > 0 ? (
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b text-gray-500">
+                                        <th className="text-left py-2 pr-4 font-medium">Date</th>
+                                        <th className="text-right py-2 pr-4 font-medium">Amount</th>
+                                        <th className="text-left py-2 pr-4 font-medium">Bank / Account</th>
+                                        <th className="text-left py-2 font-medium">Reference No</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {bcaTransfers.map(t => (
+                                        <tr key={t.id} className="border-b last:border-0">
+                                            <td className="py-2 pr-4 whitespace-nowrap">{t.transfer_date}</td>
+                                            <td className="py-2 pr-4 text-right font-mono">
+                                                {new Intl.NumberFormat('id-ID', {
+                                                    style: 'currency',
+                                                    currency: 'IDR',
+                                                    maximumFractionDigits: 0,
+                                                }).format(t.amount)}
+                                            </td>
+                                            <td className="py-2 pr-4 text-gray-600 text-xs">
+                                                {t.to_bank && <div className="font-medium text-gray-700">{t.to_bank}</div>}
+                                                <div>{t.to_account}</div>
+                                            </td>
+                                            <td className="py-2 text-gray-400 text-xs font-mono">{t.reference_no}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                                <tfoot>
+                                    <tr className="border-t bg-gray-50">
+                                        <td className="py-2 pr-4 font-semibold text-sm">Total Transferred</td>
+                                        <td className="py-2 pr-4 text-right font-mono font-semibold">
+                                            {new Intl.NumberFormat('id-ID', {
+                                                style: 'currency',
+                                                currency: 'IDR',
+                                                maximumFractionDigits: 0,
+                                            }).format(bcaTransfers.reduce((s, t) => s + t.amount, 0))}
+                                        </td>
+                                        <td colSpan={2} />
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    ) : (
+                        <p className="text-gray-400 text-sm">No BCA transfer records found for this booking.</p>
+                    )}
+                </div>
+
                 {/* Modal-modal */}
                 <AddDestinationModal
                     isOpen={isDestinationModalOpen}

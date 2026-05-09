@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AddOn;
+use App\Models\BcaCrewTransfer;
 use App\Models\BookAddOn;
 use App\Models\GoogleBill;
 use App\Models\BookCar;
@@ -818,7 +819,7 @@ class FinanceController extends Controller
                 ];
             });
         } else if ($tab == 'expense') {
-            $booking = Booking::with(['user', 'bookingDetail.package'])->where('travel_date_start', 'like', '%' . $yearMonth . '%');
+            $booking = Booking::with(['user', 'bookingDetail.package', 'bcaCrewTransfers'])->where('travel_date_start', 'like', '%' . $yearMonth . '%');
             if ($channel == 'jvto') {
                 $booking = $booking->where('agent_id', 2)->where('booking_category_id', '!=', 3);
             } else if ($channel == 'klook') {
@@ -854,6 +855,7 @@ class FinanceController extends Controller
                         'grand_total'  => (int)$data->grand_total,
                         'total_expense'  => (int)$data->expense_internal_total,
                         'crew_expense'  => (int)$data->total_expense_crew,
+                        'total_bca_transferred' => $data->bcaCrewTransfers->sum('amount'),
                     ],
                 ];
             });
@@ -1306,7 +1308,21 @@ class FinanceController extends Controller
                     'receipt' => "https://legacy.javavolcano-touroperator.com/backoffice/invoice/view-receipt/" . $booking->id . "/partial/" . $payment->id,
                     'date' => date('d M y H:i', strtotime($payment->created_at)),
                 ];
-            })
+            }),
+            'bcaTransfers' => $booking->bcaCrewTransfers()
+                ->orderBy('transfer_date', 'desc')
+                ->orderBy('transfer_time', 'desc')
+                ->get()
+                ->map(fn($t) => [
+                    'id'            => $t->id,
+                    'transfer_date' => $t->transfer_date->format('d M Y'),
+                    'transfer_time' => $t->transfer_time,
+                    'amount'        => $t->amount,
+                    'to_account'    => $t->to_account,
+                    'to_bank'       => $t->to_bank,
+                    'reference_no'  => $t->reference_no,
+                    'remark'        => $t->remark,
+                ]),
         ]);
     }
     function updateExpense(Request $request)

@@ -73,7 +73,7 @@ class GmailSetup extends Command
         $envContent = file_get_contents($envPath);
 
         if (str_contains($envContent, $key . '=')) {
-            $envContent = preg_replace('/^' . $key . '=.*/m', $key . '=' . $value, $envContent);
+            $envContent = preg_replace_callback('/^' . $key . '=.*/m', fn() => $key . '=' . $value, $envContent);
         } else {
             $envContent .= PHP_EOL . $key . '=' . $value . PHP_EOL;
         }

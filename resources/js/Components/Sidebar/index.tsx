@@ -488,6 +488,30 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                             </li>
                             <li>
                                 <Link
+                                    href="/finance/hub"
+                                    className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                                        pathname.includes("finance/hub") &&
+                                        "bg-graydark dark:bg-meta-4"
+                                    }`}
+                                >
+                                    <svg
+                                        className="fill-current"
+                                        width="18"
+                                        height="18"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <path
+                                            d="M3 3h8v8H3V3zm0 10h8v8H3v-8zm10-10h8v8h-8V3zm0 10h8v8h-8v-8z"
+                                            fill=""
+                                        />
+                                    </svg>
+                                    Finance Hub
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
                                     href="/finance/channel-revenue-report"
                                     className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
                                         pathname.includes("channel-revenue-report") &&

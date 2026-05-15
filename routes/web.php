@@ -175,6 +175,15 @@ Route::middleware('auth')->group(function () {
 
         // BCA Crew Transfer Log
         Route::get('/bca-transfers', [BcaTransferController::class, 'index']);
+
+        // Finance Hub
+        Route::get('/hub', [FinanceController::class, 'financeHub'])->name('finance.hub');
+        Route::get('/hub/{bookingId}/debt-items', [FinanceController::class, 'getBookingDebtItems']);
+        Route::post('/hub/record-payment', [FinanceController::class, 'recordDebtPayment']);
+
+        // Finance Cockpit
+        Route::get('/cockpit/{bookingId}', [\App\Http\Controllers\Finance\FinanceCockpitController::class, 'show'])->name('finance.cockpit');
+        Route::post('/cockpit/{bookingId}/crew-transfer', [\App\Http\Controllers\Finance\FinanceCockpitController::class, 'markCrewTransfer'])->name('finance.cockpit.crew-transfer');
     });
     Route::prefix('package-inventory')->group(function () {
         Route::get('/json', [PackageController::class, 'json']);

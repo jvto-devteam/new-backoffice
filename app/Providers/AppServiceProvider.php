@@ -24,5 +24,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        // Debt-related model observers — auto-sync booking expense totals
+        \App\Models\BookHotel::observe(\App\Observers\BookHotelObserver::class);
+        \App\Models\BookDestinationActivity::observe(\App\Observers\BookDestinationActivityObserver::class);
+        \App\Models\BookCarActivity::observe(\App\Observers\BookCarActivityObserver::class);
+        \App\Models\BookCrewActivity::observe(\App\Observers\BookCrewActivityObserver::class);
+        \App\Models\BookOthersActivity::observe(\App\Observers\BookOthersActivityObserver::class);
+        \App\Models\DebtPaymentDetail::observe(\App\Observers\DebtPaymentDetailObserver::class);
     }
 }

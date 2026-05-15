@@ -265,7 +265,9 @@ export default function ChannelReport({
     const googleCloud        = billCloud;
     const googleAds          = billAds;
     const totalExpenseGoogle = googleCloud + googleAds;
-    const totalRevenue       = CHANNEL_KEYS.reduce((s, k) => s + channels[k].total_profit, 0);
+    const totalAllInvoice    = CHANNEL_KEYS.reduce((s, k) => s + (Number(channels[k]?.total_invoice) || 0), 0);
+    const totalAllExpense    = CHANNEL_KEYS.reduce((s, k) => s + (Number(channels[k]?.total_expense) || 0), 0);
+    const totalRevenue       = CHANNEL_KEYS.reduce((s, k) => s + (Number(channels[k]?.total_profit)  || 0), 0);
     const netProfit          = totalRevenue - totalExpenseGoogle;
     const share5pct          = Math.round(netProfit * 0.05);
 
@@ -553,9 +555,9 @@ export default function ChannelReport({
                                             <tfoot>
                                                 <tr className="bg-amber-50 font-semibold text-amber-900 border-t-2 border-amber-200">
                                                     <td className="px-4 py-3">Total Revenue (Profit)</td>
-                                                    <td className="px-4 py-3 text-right text-gray-400">—</td>
-                                                    <td className="px-4 py-3 text-right text-gray-400">—</td>
-                                                    <td className="px-4 py-3 text-right text-lg">{fmt(totalRevenue)}</td>
+                                                    <td className="px-4 py-3 text-right">{fmt(totalAllInvoice)}</td>
+                                                    <td className="px-4 py-3 text-right text-red-700">{fmt(totalAllExpense)}</td>
+                                                    <td className="px-4 py-3 text-right text-lg text-green-800">{fmt(totalRevenue)}</td>
                                                     <td />
                                                 </tr>
                                             </tfoot>

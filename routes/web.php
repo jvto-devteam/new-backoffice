@@ -177,9 +177,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/bca-transfers', [BcaTransferController::class, 'index']);
 
         // Finance Hub
+        Route::get('/hub/export-pdf',   [FinanceController::class, 'financeHubExportPdf']);
+        Route::get('/hub/export-excel', [FinanceController::class, 'financeHubExportExcel']);
         Route::get('/hub', [FinanceController::class, 'financeHub'])->name('finance.hub');
         Route::get('/hub/{bookingId}/debt-items', [FinanceController::class, 'getBookingDebtItems']);
         Route::post('/hub/record-payment', [FinanceController::class, 'recordDebtPayment']);
+        Route::post('/hub/{bookingId}/toggle-crew-transfer', [FinanceController::class, 'toggleCrewTransfer']);
 
         // Finance Cockpit
         Route::get('/cockpit/{bookingId}', [\App\Http\Controllers\Finance\FinanceCockpitController::class, 'show'])->name('finance.cockpit');

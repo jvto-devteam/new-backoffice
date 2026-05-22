@@ -1,24 +1,33 @@
 import Main from "@/Layouts/Main";
 import { router } from "@inertiajs/react";
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { format, addDays } from "date-fns";
 import { Link } from "@inertiajs/react";
 import Swal, { Toast } from "@/utils/swal";
 import {
     ChevronDown,
     ChevronRight,
+    ChevronUp,
     Calendar,
     Plane,
     CreditCard,
     Info,
-    Hotel, // Ditambahkan
-    Train, // Ditambahkan
-    MapPin, // Ditambahkan
+    Hotel,
+    Train,
+    MapPin,
     AlertCircle,
     Clock,
     Ticket,
     MoreVertical,
     X,
+    Car,
+    User,
+    Users,
+    Compass,
+    FileText,
+    CheckCircle2,
+    Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -1708,53 +1717,60 @@ export default function Index({ data }) {
     }) => {
         const [isOpen, setIsOpen] = useState(false);
         const [search, setSearch] = useState("");
-        const dropdownRef = useRef(null);
-        const [tooltip, setTooltip] = useState({
-            show: false,
-            text: "",
-            x: 0,
-            y: 0,
-        });
+        const triggerRef = useRef<HTMLDivElement>(null);
+        const dropdownRef = useRef<HTMLDivElement>(null);
+        const searchRef = useRef<HTMLInputElement>(null);
+        const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0, openUp: false });
+
+        const openDropdown = () => {
+            if (triggerRef.current) {
+                const rect = triggerRef.current.getBoundingClientRect();
+                const spaceBelow = window.innerHeight - rect.bottom - 8;
+                const openUp = spaceBelow < 260 && rect.top > 260;
+                setDropdownPos({
+                    top: openUp ? rect.top - 4 : rect.bottom + 4,
+                    left: rect.left,
+                    width: rect.width,
+                    openUp,
+                });
+            }
+            setIsOpen(true);
+            setTimeout(() => searchRef.current?.focus(), 50);
+        };
 
         useEffect(() => {
             const handleClickOutside = (event) => {
                 if (
-                    dropdownRef.current &&
-                    !dropdownRef.current.contains(event.target)
+                    triggerRef.current && !triggerRef.current.contains(event.target as Node) &&
+                    dropdownRef.current && !dropdownRef.current.contains(event.target as Node)
                 ) {
                     setIsOpen(false);
+                    setSearch("");
                 }
             };
-
+            const handleKeyDown = (e: KeyboardEvent) => {
+                if (e.key === "Escape") { setIsOpen(false); setSearch(""); }
+            };
             document.addEventListener("mousedown", handleClickOutside);
-            return () =>
+            document.addEventListener("keydown", handleKeyDown);
+            return () => {
                 document.removeEventListener("mousedown", handleClickOutside);
+                document.removeEventListener("keydown", handleKeyDown);
+            };
         }, []);
 
-        const showTooltip = (e, scheduleInfo) => {
-            const rect = e.currentTarget.getBoundingClientRect();
-            setTooltip({
-                show: true,
-                text: scheduleInfo,
-                x: rect.left + rect.width / 2,
-                y: rect.top - 10,
-            });
-        };
+        const availableOptions = options.filter((o) => !o.disabled);
+        const unavailableOptions = options.filter((o) => o.disabled);
 
-        const hideTooltip = () => {
-            setTooltip({ show: false, text: "", x: 0, y: 0 });
-        };
+        const filterOpts = (opts) =>
+            opts.filter((o) => o.label.toLowerCase().includes(search.toLowerCase()));
 
-        const filteredOptions = options.filter((option) =>
-            option.label.toLowerCase().includes(search.toLowerCase()),
-        );
+        const filteredAvailable = filterOpts(availableOptions);
+        const filteredUnavailable = filterOpts(unavailableOptions);
 
         const toggleOption = (option) => {
             if (option.disabled) return;
-
-            const isSelected = value.find(
-                (item) => item.value === option.value,
-            );
+            const isSelected = value.find((item) => item.value === option.value);
             if (isSelected) {
                 onChange(value.filter((item) => item.value !== option.value));
             } else {
@@ -1763,155 +1779,251 @@ export default function Index({ data }) {
         };
 
         const removeOption = (optionToRemove) => {
-            onChange(
-                value.filter((option) => option.value !== optionToRemove.value),
+            onChange(value.filter((option) => option.value !== optionToRemove.value));
+        };
+
+        const clearAll = (e) => {
+            e.stopPropagation();
+            onChange([]);
+        };
+
+        const OptionRow = ({ option }) => {
+            const isSelected = value.some((item) => item.value === option.value);
+            const hasStats =
+                option.tripCount !== undefined ||
+                option.escortCount !== undefined ||
+                option.ijenCount !== undefined;
+            const isRoleOnly =
+                option.scheduleInfo === "Hanya tersedia untuk Ijen" ||
+                option.scheduleInfo === "Hanya tersedia untuk Escort";
+
+            return (
+                <div
+                    className={`px-3 py-2 flex items-start gap-2.5 select-none
+                        ${option.disabled ? "cursor-not-allowed" : "cursor-pointer hover:bg-gray-50"}
+                        ${isSelected && !option.disabled ? "bg-blue-50" : ""}
+                    `}
+                    onClick={() => toggleOption(option)}
+                >
+                    <input
+                        type="checkbox"
+                        checked={isSelected}
+                        disabled={option.disabled}
+                        onChange={() => {}}
+                        className="h-4 w-4 rounded border-gray-300 text-blue-600 flex-shrink-0 mt-0.5"
+                    />
+                    <span
+                        className={`w-2 h-2 rounded-full flex-shrink-0 mt-1.5 ${
+                            option.disabled ? "bg-gray-300" : "bg-green-500"
+                        }`}
+                    />
+                    <div className="flex-1 min-w-0">
+                        {/* Name row + stat badges */}
+                        <div className="flex items-center justify-between gap-2">
+                            <span className={`text-sm leading-snug ${option.disabled ? "text-gray-400" : "text-gray-800"}`}>
+                                {option.label}
+                            </span>
+                            {hasStats && (
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                    {option.tripCount !== undefined && (
+                                        <span
+                                            title="Jumlah trip pada periode ini"
+                                            className="text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded font-medium"
+                                        >
+                                            {option.tripCount}×
+                                        </span>
+                                    )}
+                                    {option.escortCount !== undefined && (
+                                        <span
+                                            title="Escort trip pada periode ini"
+                                            className="text-xs bg-purple-50 text-purple-700 px-1.5 py-0.5 rounded font-medium"
+                                        >
+                                            E:{option.escortCount}
+                                        </span>
+                                    )}
+                                    {option.ijenCount !== undefined && (
+                                        <span
+                                            title="Ijen trip pada periode ini"
+                                            className="text-xs bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded font-medium"
+                                        >
+                                            I:{option.ijenCount}
+                                        </span>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Role restriction — selalu tampil jika ada */}
+                        {option.disabled && isRoleOnly && (
+                            <div className="mt-0.5 text-xs text-gray-400 italic">
+                                {option.scheduleInfo}
+                            </div>
+                        )}
+
+                        {/* Schedule info (dari API) untuk Tidak Tersedia non-role */}
+                        {option.disabled && !isRoleOnly && option.scheduleInfo && !option.currentAssignment && (
+                            <div className="mt-0.5 text-xs text-amber-700 truncate" title={option.scheduleInfo}>
+                                {option.scheduleInfo}
+                            </div>
+                        )}
+
+                        {/* Sedang di trip customer — tampil untuk semua disabled yang ada konfllik */}
+                        {option.disabled && option.currentAssignment && (
+                            <div className="mt-0.5 text-xs text-amber-700 flex items-center gap-1">
+                                <span className="font-medium">Sedang di:</span>
+                                <span className="truncate">{option.currentAssignment}</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
             );
         };
 
         return (
-            <>
-                {/* Fixed position tooltip */}
-                {tooltip.show && (
-                    <div
-                        style={{
-                            position: "fixed",
-                            left: `${tooltip.x}px`,
-                            top: `${tooltip.y}px`,
-                            transform: "translate(-50%, -100%)",
-                            zIndex: 1000,
-                        }}
-                        className="px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap shadow-lg"
-                    >
-                        {tooltip.text}
-                        <div
-                            className="border-solid border-4 border-transparent border-t-gray-900"
-                            style={{
-                                position: "absolute",
-                                bottom: "-8px",
-                                left: "50%",
-                                transform: "translateX(-50%)",
-                            }}
-                        />
-                    </div>
-                )}
-
-                <div className="relative" ref={dropdownRef}>
-                    {/* Selected items display */}
-                    <div
-                        className="min-h-[38px] p-1 border rounded-md bg-white flex flex-wrap gap-1 cursor-pointer"
-                        onClick={() => setIsOpen(!isOpen)}
-                    >
-                        {value.length === 0 && (
-                            <span className="p-1 text-gray-500">
-                                {placeholder}
-                            </span>
-                        )}
-                        {value.map((item) => (
+            <div className="relative">
+                {/* Trigger */}
+                <div
+                    ref={triggerRef}
+                    className={`min-h-[42px] px-3 py-2 border rounded-lg bg-white flex flex-wrap gap-1.5 items-center cursor-pointer transition-colors
+                        ${isOpen ? "border-blue-500 ring-2 ring-blue-100" : "border-gray-200 hover:border-gray-300"}
+                    `}
+                    onClick={() => (isOpen ? setIsOpen(false) : openDropdown())}
+                >
+                    {value.length === 0 ? (
+                        <span className="text-gray-400 text-sm">{placeholder}</span>
+                    ) : (
+                        value.map((item) => (
                             <span
                                 key={item.value}
-                                className="bg-blue-100 text-blue-800 px-2 py-1 rounded-md flex items-center gap-1 text-sm"
+                                className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-md font-medium"
                             >
                                 {item.label}
                                 <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        removeOption(item);
-                                    }}
-                                    className="hover:text-blue-600"
+                                    onClick={(e) => { e.stopPropagation(); removeOption(item); }}
+                                    className="hover:text-blue-900 ml-0.5 leading-none"
                                 >
                                     ×
                                 </button>
                             </span>
-                        ))}
+                        ))
+                    )}
+                    <div className="ml-auto flex items-center gap-1.5 flex-shrink-0">
+                        {value.length > 0 && (
+                            <button
+                                onClick={clearAll}
+                                className="text-xs text-gray-400 hover:text-gray-600 px-1 py-0.5 hover:bg-gray-100 rounded"
+                            >
+                                Clear
+                            </button>
+                        )}
+                        <ChevronDown
+                            className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${isOpen ? "rotate-180" : ""}`}
+                        />
                     </div>
+                </div>
 
-                    {/* Dropdown */}
-                    {isOpen && (
-                        <div className="absolute z-10 w-full mt-1 bg-white border rounded-md shadow-lg">
-                            {/* Search input */}
-                            <div className="p-2 border-b">
+                {/* Dropdown rendered via portal to avoid z-index clipping */}
+                {isOpen && createPortal(
+                    <div
+                        ref={dropdownRef}
+                        style={{
+                            position: "fixed",
+                            top: dropdownPos.openUp ? "auto" : `${dropdownPos.top}px`,
+                            bottom: dropdownPos.openUp ? `${window.innerHeight - dropdownPos.top}px` : "auto",
+                            left: `${dropdownPos.left}px`,
+                            width: `${dropdownPos.width}px`,
+                            zIndex: 99999,
+                        }}
+                        className="bg-white border border-gray-200 rounded-lg shadow-2xl overflow-hidden"
+                    >
+                        {/* Search + legend */}
+                        <div className="p-2 border-b border-gray-100 bg-gray-50 space-y-1.5">
+                            <div className="relative">
+                                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                                 <input
+                                    ref={searchRef}
                                     type="text"
-                                    className="w-full px-2 py-1 border rounded-md"
+                                    className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:ring-1 focus:ring-blue-300"
                                     placeholder="Search..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     onClick={(e) => e.stopPropagation()}
                                 />
                             </div>
-
-                            {/* Options list */}
-                            <div className="max-h-48 overflow-y-auto">
-                                {filteredOptions.length === 0 ? (
-                                    <div className="p-2 text-gray-500 text-center">
-                                        No options found
-                                    </div>
-                                ) : (
-                                    filteredOptions.map((option) => (
-                                        <div
-                                            key={option.value}
-                                            className={`p-2 flex items-center gap-2 
-                                              ${
-                                                  option.disabled
-                                                      ? "bg-gray-50 cursor-not-allowed text-gray-400"
-                                                      : "cursor-pointer hover:bg-gray-100"
-                                              }
-                                              ${value.find((item) => item.value === option.value) ? "bg-gray-50" : ""}`}
-                                            onClick={() => toggleOption(option)}
-                                        >
-                                            <input
-                                                type="checkbox"
-                                                checked={value.some(
-                                                    (item) =>
-                                                        item.value ===
-                                                        option.value,
-                                                )}
-                                                disabled={option.disabled}
-                                                onChange={() => {}}
-                                                className="h-4 w-4"
-                                            />
-                                            <span className="flex-1">
-                                                {option.label}
+                            {/* Badge legend */}
+                            {(filteredAvailable.some(o => o.tripCount !== undefined || o.escortCount !== undefined) ||
+                              filteredUnavailable.some(o => o.tripCount !== undefined || o.escortCount !== undefined)) && (
+                                <div className="flex items-center gap-2 flex-wrap px-0.5">
+                                    <span className="text-[10px] text-gray-400">Trip bulan ini:</span>
+                                    {filteredAvailable.some(o => o.tripCount !== undefined) && (
+                                        <span className="inline-flex items-center gap-0.5 text-[10px] text-blue-600">
+                                            <span className="bg-blue-50 text-blue-700 px-1 py-0.5 rounded font-medium">N×</span>
+                                            = total driver
+                                        </span>
+                                    )}
+                                    {filteredAvailable.some(o => o.escortCount !== undefined) && (
+                                        <>
+                                            <span className="inline-flex items-center gap-0.5 text-[10px] text-purple-600">
+                                                <span className="bg-purple-50 text-purple-700 px-1 py-0.5 rounded font-medium">E:N</span>
+                                                = Escort
                                             </span>
-                                            {option.disabled && (
-                                                <div
-                                                    onMouseEnter={(e) =>
-                                                        showTooltip(
-                                                            e,
-                                                            option.scheduleInfo,
-                                                        )
-                                                    }
-                                                    onMouseLeave={hideTooltip}
-                                                >
-                                                    <AlertCircle className="h-4 w-4 text-yellow-500" />
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))
-                                )}
-                            </div>
+                                            <span className="inline-flex items-center gap-0.5 text-[10px] text-orange-600">
+                                                <span className="bg-orange-50 text-orange-700 px-1 py-0.5 rounded font-medium">I:N</span>
+                                                = Ijen
+                                            </span>
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
-            </>
+
+                        <div className="max-h-64 overflow-y-auto">
+                            {/* Available section */}
+                            {filteredAvailable.length > 0 && (
+                                <>
+                                    <div className="px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 flex items-center gap-1.5 sticky top-0">
+                                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                                        Available ({filteredAvailable.length})
+                                    </div>
+                                    {filteredAvailable.map((o) => (
+                                        <OptionRow key={o.value} option={o} />
+                                    ))}
+                                </>
+                            )}
+
+                            {/* Unavailable section */}
+                            {filteredUnavailable.length > 0 && (
+                                <>
+                                    <div className="px-3 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 flex items-center gap-1.5 border-t border-gray-100 sticky top-0">
+                                        <span className="w-1.5 h-1.5 bg-gray-400 rounded-full" />
+                                        Unavailable ({filteredUnavailable.length})
+                                    </div>
+                                    {filteredUnavailable.map((o) => (
+                                        <OptionRow key={o.value} option={o} />
+                                    ))}
+                                </>
+                            )}
+
+                            {filteredAvailable.length === 0 && filteredUnavailable.length === 0 && (
+                                <div className="px-3 py-6 text-sm text-gray-400 text-center">
+                                    No results found
+                                </div>
+                            )}
+                        </div>
+                    </div>,
+                    document.body
+                )}
+            </div>
         );
     };
 
     const DetailsModal = ({ isOpen, onClose, booking, plottingData }) => {
-        // Set default values based on booking data
         const defaultVehicles = useMemo(() => {
             return (
                 booking?.vehicles
                     ?.map((vehicleName) => {
-                        const vehicle = plottingData?.car?.find(
-                            (v) => v.name === vehicleName,
-                        );
-                        return vehicle
-                            ? {
-                                  value: vehicle.id,
-                                  label: vehicle.name,
-                              }
-                            : null;
+                        const vehicle = plottingData?.car?.find((v) => v.name === vehicleName);
+                        return vehicle ? { value: vehicle.id, label: vehicle.name } : null;
                     })
                     .filter(Boolean) || []
             );
@@ -1920,133 +2032,219 @@ export default function Index({ data }) {
         const defaultDrivers = useMemo(() => {
             return (
                 booking?.drivers
-                    ?.map((driverName) => {
+                    ?.map((driverItem) => {
+                        // booking.drivers bisa berupa string (setelah save) atau object (dari server)
+                        const name = typeof driverItem === "string" ? driverItem : driverItem?.name;
+                        const id = typeof driverItem === "object" ? driverItem?.id : undefined;
                         const driver = plottingData?.driver?.find(
-                            (d) => d.name === driverName,
+                            (d) => (id !== undefined ? d.id === id : d.name === name)
                         );
-                        return driver
-                            ? {
-                                  value: driver.id,
-                                  label: driver.name,
-                              }
-                            : null;
+                        return driver ? { value: driver.id, label: driver.name } : null;
                     })
                     .filter(Boolean) || []
             );
         }, [booking?.drivers, plottingData?.driver]);
 
-        // Split guides by type
         const defaultGuides = useMemo(() => {
             const escortGuides = [];
             const ijenGuides = [];
-
             booking?.guides?.forEach((bookingGuide) => {
-                const guide = plottingData?.guide?.find(
-                    (g) => g.name === bookingGuide.name,
-                );
+                const guide = plottingData?.guide?.find((g) => g.name === bookingGuide.name);
                 if (guide) {
-                    const guideOption = {
-                        value: guide.id,
-                        label: guide.name,
-                    };
-
-                    if (bookingGuide.type === "Escort") {
-                        escortGuides.push(guideOption);
-                    } else if (bookingGuide.type === "Ijen") {
-                        ijenGuides.push(guideOption);
-                    }
+                    const guideOption = { value: guide.id, label: guide.name };
+                    if (bookingGuide.type === "Escort") escortGuides.push(guideOption);
+                    else if (bookingGuide.type === "Ijen") ijenGuides.push(guideOption);
                 }
             });
-
             return { escortGuides, ijenGuides };
         }, [booking?.guides, plottingData?.guide]);
 
         const [vehicles, setVehicles] = useState(defaultVehicles);
         const [drivers, setDrivers] = useState(defaultDrivers);
-        const [escortGuides, setEscortGuides] = useState(
-            defaultGuides.escortGuides,
-        );
+        const [escortGuides, setEscortGuides] = useState(defaultGuides.escortGuides);
         const [ijenGuides, setIjenGuides] = useState(defaultGuides.ijenGuides);
         const [notes, setNotes] = useState(booking?.notes || "");
-        // Transform API data into options format with IDs
+        const [ijenExpanded, setIjenExpanded] = useState(defaultGuides.ijenGuides.length > 0);
+
+        // Hitung stats trip per crew dari bookings yang sedang di-load (sesuai filter periode)
+        const crewStats = useMemo(() => {
+            const driverCounts = new Map<number, { total: number; customers: string[] }>();
+            const guideCounts = new Map<number, { escort: number; ijen: number; customers: string[] }>();
+            const vehicleAssignments = new Map<string, string[]>();
+
+            bookings.forEach((b) => {
+                // Kendaraan – booking.vehicles adalah array of name strings
+                if (Array.isArray(b.vehicles)) {
+                    b.vehicles.forEach((vName) => {
+                        if (typeof vName === "string") {
+                            if (!vehicleAssignments.has(vName)) vehicleAssignments.set(vName, []);
+                            vehicleAssignments.get(vName)!.push(b.guest);
+                        }
+                    });
+                }
+
+                // Driver – booking.drivers adalah array of objects { id, name, ... }
+                if (Array.isArray(b.drivers)) {
+                    b.drivers.forEach((d) => {
+                        if (!d?.id) return;
+                        if (!driverCounts.has(d.id)) driverCounts.set(d.id, { total: 0, customers: [] });
+                        const s = driverCounts.get(d.id)!;
+                        s.total++;
+                        s.customers.push(b.guest);
+                    });
+                }
+
+                // Guide – booking.guides adalah array of objects { id, name, type, ... }
+                if (Array.isArray(b.guides)) {
+                    b.guides.forEach((g) => {
+                        if (!g?.id) return;
+                        if (!guideCounts.has(g.id)) guideCounts.set(g.id, { escort: 0, ijen: 0, customers: [] });
+                        const s = guideCounts.get(g.id)!;
+                        if (g.type === "Escort") s.escort++;
+                        else if (g.type === "Ijen") s.ijen++;
+                        s.customers.push(`${b.guest} (${g.type})`);
+                    });
+                }
+            });
+
+            return { driverCounts, guideCounts, vehicleAssignments };
+        }, [bookings]);
+
+        // Helper: cek apakah dua rentang tanggal overlap (format string "YYYY-MM-DD")
+        const datesOverlap = (aStart: string, aEnd: string, bStart: string, bEnd: string) =>
+            aStart <= bEnd && aEnd >= bStart;
+
+        // Tanggal booking yang sedang diplot
+        const targetStart = booking?.date?.start_ymd ?? "";
+        const targetEnd = booking?.date?.end_ymd ?? "";
+
+        // Helper: dari bookings, cari customer yang punya overlap tanggal dan memiliki crew/vehicle tertentu
+        const findConflictingCustomers = (
+            predicate: (b: any) => boolean,
+        ): string | undefined => {
+            const names = bookings
+                .filter(b => {
+                    if (b.booking_id === booking.booking_id) return false;
+                    if (!predicate(b)) return false;
+                    // Hanya booking yang tanggalnya bentrok dengan booking ini
+                    const bStart = b.date?.start_ymd ?? "";
+                    const bEnd = b.date?.end_ymd ?? "";
+                    if (!bStart || !bEnd || !targetStart || !targetEnd) return true;
+                    return datesOverlap(bStart, bEnd, targetStart, targetEnd);
+                })
+                .map(b => b.guest);
+            return names.length > 0 ? names.join(", ") : undefined;
+        };
+
         const vehicleOptions = useMemo(() => {
             return (
                 plottingData?.car?.map((vehicle) => {
-                    // Always enable Hiace (id: 5) and Premio (id: 21)
                     const alwaysEnabled = [5, 21, 1, 2, 4].includes(vehicle.id);
+                    const isUnavailable = !alwaysEnabled && vehicle.status === "Tidak Tersedia";
+                    const currentAssignment = isUnavailable
+                        ? findConflictingCustomers(b =>
+                            Array.isArray(b.vehicles) && b.vehicles.includes(vehicle.name)
+                          )
+                        : undefined;
 
                     return {
                         value: vehicle.id,
                         label: vehicle.name,
-                        // Only disable if it's not in the alwaysEnabled list and status is 'Tidak Tersedia'
-                        disabled:
-                            !alwaysEnabled &&
-                            vehicle.status === "Tidak Tersedia",
+                        disabled: isUnavailable,
                         scheduleInfo: vehicle.schedule_info,
+                        currentAssignment,
                     };
                 }) || []
             );
-        }, [plottingData?.car]);
+        }, [plottingData?.car, crewStats, bookings, booking.booking_id, targetStart, targetEnd]);
 
         const driverOptions = useMemo(() => {
             return (
                 plottingData?.driver?.map((driver) => {
-                    // Always enable GARAGE (id: 9)
                     const alwaysEnabled = driver.id === 9;
+                    const isUnavailable = !alwaysEnabled && driver.status === "Tidak Tersedia";
+                    const stat = crewStats.driverCounts.get(driver.id);
+                    const currentAssignment = isUnavailable
+                        ? findConflictingCustomers(b =>
+                            Array.isArray(b.drivers) && b.drivers.some(d => d?.id === driver.id)
+                          )
+                        : undefined;
 
                     return {
                         value: driver.id,
                         label: driver.name,
-                        // Only disable if it's not GARAGE and status is 'Tidak Tersedia'
-                        disabled:
-                            !alwaysEnabled &&
-                            driver.status === "Tidak Tersedia",
+                        disabled: isUnavailable,
                         scheduleInfo: driver.schedule_info,
+                        currentAssignment,
+                        tripCount: stat?.total ?? 0,
                     };
                 }) || []
             );
-        }, [plottingData?.driver]);
+        }, [plottingData?.driver, crewStats, bookings, booking.booking_id, targetStart, targetEnd]);
 
         const escortGuideOptions = useMemo(() => {
             return (
                 plottingData?.guide
-                    ?.filter((guide) => guide.id !== 56) // Still exclude Local Ijen from escort
-                    .map((guide) => ({
-                        value: guide.id,
-                        label: guide.name,
-                        disabled:
-                            guide.status === "Tidak Tersedia" ||
-                            !guide.dynamic_roles?.includes("Escort"),
-                        scheduleInfo:
-                            guide.status === "Tidak Tersedia"
+                    ?.filter((guide) => guide.id !== 56)
+                    .map((guide) => {
+                        const isUnavailableStatus = guide.status === "Tidak Tersedia";
+                        const isRoleRestricted = !guide.dynamic_roles?.includes("Escort");
+                        const isUnavailable = isUnavailableStatus || isRoleRestricted;
+                        const stat = crewStats.guideCounts.get(guide.id);
+                        // Hitung currentAssignment untuk semua yang disabled (bukan hanya Tidak Tersedia)
+                        const currentAssignment = isUnavailable
+                            ? findConflictingCustomers(b =>
+                                Array.isArray(b.guides) && b.guides.some(g => g?.id === guide.id)
+                              )
+                            : undefined;
+
+                        return {
+                            value: guide.id,
+                            label: guide.name,
+                            disabled: isUnavailable,
+                            scheduleInfo: isUnavailableStatus
                                 ? guide.schedule_info
-                                : !guide.dynamic_roles?.includes("Escort")
+                                : isRoleRestricted
                                   ? "Hanya tersedia untuk Ijen"
                                   : undefined,
-                    })) || []
+                            currentAssignment,
+                            escortCount: stat?.escort ?? 0,
+                            ijenCount: stat?.ijen ?? 0,
+                        };
+                    }) || []
             );
-        }, [plottingData?.guide]);
+        }, [plottingData?.guide, crewStats, bookings, booking.booking_id, targetStart, targetEnd]);
 
         const ijenGuideOptions = useMemo(() => {
             return (
-                plottingData?.guide?.map((guide) => ({
-                    value: guide.id,
-                    label: guide.name,
-                    disabled:
-                        (guide.id !== 56 &&
-                            guide.status === "Tidak Tersedia") ||
-                        (!guide.dynamic_roles?.includes("Ijen") &&
-                            guide.id !== 56),
-                    scheduleInfo:
-                        guide.status === "Tidak Tersedia" && guide.id !== 56
+                plottingData?.guide?.map((guide) => {
+                    const isUnavailableStatus = guide.status === "Tidak Tersedia" && guide.id !== 56;
+                    const isRoleRestricted = !guide.dynamic_roles?.includes("Ijen") && guide.id !== 56;
+                    const isUnavailable = isUnavailableStatus || isRoleRestricted;
+                    const stat = crewStats.guideCounts.get(guide.id);
+                    // Hitung currentAssignment untuk semua yang disabled
+                    const currentAssignment = isUnavailable
+                        ? findConflictingCustomers(b =>
+                            Array.isArray(b.guides) && b.guides.some(g => g?.id === guide.id)
+                          )
+                        : undefined;
+
+                    return {
+                        value: guide.id,
+                        label: guide.name,
+                        disabled: isUnavailable,
+                        scheduleInfo: isUnavailableStatus
                             ? guide.schedule_info
-                            : !guide.dynamic_roles?.includes("Ijen") &&
-                                guide.id !== 56
+                            : isRoleRestricted
                               ? "Hanya tersedia untuk Escort"
                               : undefined,
-                })) || []
+                        currentAssignment,
+                        escortCount: stat?.escort ?? 0,
+                        ijenCount: stat?.ijen ?? 0,
+                    };
+                }) || []
             );
-        }, [plottingData?.guide]);
+        }, [plottingData?.guide, crewStats, bookings, booking.booking_id, targetStart, targetEnd]);
 
         const handleSubmit = (e) => {
             e.preventDefault();
@@ -2062,14 +2260,11 @@ export default function Index({ data }) {
                 notes: notes,
             };
 
-            // Use Inertia to make the POST request
             router.post("/plotting", paramData, {
                 onSuccess: (page) => {
                     setIsLoading(false);
                     setIsModalOpen(false);
-
                     if (page.props.flash.message) {
-                        // Update the booking data in the parent component
                         const updatedBookings = bookings.map((b) => {
                             if (b.booking_id === booking.booking_id) {
                                 return {
@@ -2077,38 +2272,24 @@ export default function Index({ data }) {
                                     vehicles: vehicles.map((v) => v.label),
                                     drivers: drivers.map((d) => d.label),
                                     guides: [
-                                        ...escortGuides.map((g) => ({
-                                            type: "Escort",
-                                            name: g.label,
-                                        })),
-                                        ...ijenGuides.map((g) => ({
-                                            type: "Ijen",
-                                            name: g.label,
-                                        })),
+                                        ...escortGuides.map((g) => ({ type: "Escort", name: g.label })),
+                                        ...ijenGuides.map((g) => ({ type: "Ijen", name: g.label })),
                                     ],
                                     notes: notes,
                                 };
                             }
                             return b;
                         });
-
-                        // Update state
                         setBookings(updatedBookings);
-
-                        Toast.fire({
-                            icon: "success",
-                            title: "Crew and vehicle assigned successfully",
-                        });
+                        Toast.fire({ icon: "success", title: "Crew and vehicle assigned successfully" });
                     }
                 },
                 onError: (errors) => {
                     setIsLoading(false);
                     setApiError(errors);
-
                     Swal.fire({
                         title: "Error!",
-                        text:
-                            errors.error || "Failed to assign crew and vehicle",
+                        text: errors.error || "Failed to assign crew and vehicle",
                         icon: "error",
                         confirmButtonText: "OK",
                         confirmButtonColor: "#d33",
@@ -2120,133 +2301,302 @@ export default function Index({ data }) {
 
         if (!isOpen) return null;
 
-        return (
-            <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-                <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="text-lg font-semibold">
-                            Assign Crew & Vehicle
-                        </h3>
-                        <button
-                            onClick={onClose}
-                            className="text-gray-500 hover:text-gray-700"
-                        >
-                            ×
-                        </button>
+        const channelColor =
+            booking?.orderChannel === "JVTO"
+                ? "bg-blue-100 text-blue-800"
+                : booking?.orderChannel === "TWT"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : booking?.orderChannel === "KLOOK"
+                    ? "bg-green-100 text-green-800"
+                    : "bg-gray-100 text-gray-800";
+
+        const totalAssigned = vehicles.length + drivers.length + escortGuides.length + ijenGuides.length;
+        const isFullyAssigned = vehicles.length > 0 && drivers.length > 0;
+
+        return createPortal(
+            <div className="fixed inset-0 z-[9990] flex">
+                {/* Backdrop */}
+                <div
+                    className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+                    onClick={onClose}
+                />
+
+                {/* Slide-over panel */}
+                <div className="relative ml-auto w-full max-w-lg bg-white shadow-2xl flex flex-col h-full">
+                    {/* Header */}
+                    <div className="flex-shrink-0 px-6 py-4 border-b border-gray-100 bg-white">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                                    <Users className="w-4 h-4 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-semibold text-gray-900">Assign Crew & Vehicle</h3>
+                                    <p className="text-xs text-gray-500">Booking #{booking?.id}</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Vehicle Selection */}
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium">
-                                Vehicles:
-                            </label>
-                            <CustomMultiSelect
-                                options={vehicleOptions}
-                                value={vehicles}
-                                onChange={setVehicles}
-                                placeholder="Select vehicles..."
-                            />
+                    {/* Booking info card */}
+                    <div className="flex-shrink-0 px-6 py-3 bg-gray-50 border-b border-gray-100">
+                        <div className="flex flex-wrap items-start gap-x-4 gap-y-1.5">
+                            <div className="flex items-center gap-1.5">
+                                <span className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full ${channelColor}`}>
+                                    {booking?.orderChannel}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-1 text-sm font-medium text-gray-900">
+                                <User className="w-3.5 h-3.5 text-gray-400" />
+                                {booking?.guest}
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                                <Users className="w-3.5 h-3.5 text-gray-400" />
+                                {booking?.total_pax} PAX
+                            </div>
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                                <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                                {booking?.date
+                                    ? `${format(booking.date.start, "dd MMM")} – ${format(booking.date.end, "dd MMM yyyy")}`
+                                    : ""}
+                                <span className="ml-1 text-xs text-gray-400">({booking?.date?.days}d)</span>
+                            </div>
+                            {booking?.pickup?.meeting_point && (
+                                <div className="flex items-center gap-1 text-sm text-gray-600">
+                                    <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                                    {booking.pickup.meeting_point}
+                                    {booking.pickup.pickup_time && (
+                                        <span className="text-xs text-gray-400 ml-1">@ {booking.pickup.pickup_time}</span>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
-                        {/* Driver Selection */}
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium">
-                                Drivers:
-                            </label>
-                            <CustomMultiSelect
-                                options={driverOptions}
-                                value={drivers}
-                                onChange={setDrivers}
-                                placeholder="Select drivers..."
-                            />
+                        {/* Assignment status summary */}
+                        <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+                            <span className="text-xs text-gray-500">Assigned:</span>
+                            {totalAssigned === 0 ? (
+                                <span className="text-xs text-red-500 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" /> Belum ada crew
+                                </span>
+                            ) : (
+                                <>
+                                    {vehicles.map((v) => (
+                                        <span key={v.value} className="inline-flex items-center gap-1 text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full">
+                                            <Car className="w-3 h-3" /> {v.label}
+                                        </span>
+                                    ))}
+                                    {drivers.map((d) => (
+                                        <span key={d.value} className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
+                                            <User className="w-3 h-3" /> {d.label}
+                                        </span>
+                                    ))}
+                                    {escortGuides.map((g) => (
+                                        <span key={g.value} className="inline-flex items-center gap-1 text-xs bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full">
+                                            <Compass className="w-3 h-3" /> {g.label}
+                                        </span>
+                                    ))}
+                                    {ijenGuides.map((g) => (
+                                        <span key={g.value} className="inline-flex items-center gap-1 text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded-full">
+                                            <Compass className="w-3 h-3" /> {g.label}
+                                        </span>
+                                    ))}
+                                </>
+                            )}
                         </div>
 
-                        {/* Escort Guide Selection */}
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium">
-                                Escort Guides (Optional):
-                            </label>
-                            <CustomMultiSelect
-                                options={escortGuideOptions}
-                                value={escortGuides}
-                                onChange={setEscortGuides}
-                                placeholder="Select escort guides..."
-                            />
+                        {/* Data period info */}
+                        <div className="mt-2 flex items-center gap-1.5 text-[11px] text-gray-400">
+                            <Info className="w-3 h-3 flex-shrink-0" />
+                            <span>
+                                Jumlah trip dihitung dari data periode{" "}
+                                <span className="font-medium text-gray-500">
+                                    {startDate} – {endDate}
+                                </span>
+                                {" "}({bookings.length} booking)
+                            </span>
                         </div>
+                    </div>
 
-                        {/* Ijen Guide Selection */}
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium">
-                                Ijen Guides (Optional):
-                            </label>
-                            <CustomMultiSelect
-                                options={ijenGuideOptions}
-                                value={ijenGuides}
-                                onChange={setIjenGuides}
-                                placeholder="Select ijen guides..."
-                            />
-                        </div>
+                    {/* Scrollable form body */}
+                    <div className="flex-1 overflow-y-auto">
+                        <form onSubmit={handleSubmit} id="plotting-form">
+                            {/* Required section */}
+                            <div className="px-6 pt-5 pb-4 border-b border-gray-100">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Wajib</span>
+                                    <div className="flex-1 h-px bg-gray-100" />
+                                    {!isFullyAssigned && (
+                                        <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Belum lengkap</span>
+                                    )}
+                                    {isFullyAssigned && (
+                                        <span className="text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                            <CheckCircle2 className="w-3 h-3" /> Lengkap
+                                        </span>
+                                    )}
+                                </div>
 
-                        {/* Special Notes */}
-                        <div className="space-y-2">
-                            <label className="block text-sm font-medium">
-                                Notes:
-                            </label>
-                            <textarea
-                                className="w-full border border-gray-300 rounded-md p-2 h-24"
-                                placeholder="Enter any special notes..."
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                            />
-                        </div>
+                                {/* Vehicle */}
+                                <div className="mb-4">
+                                    <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+                                        <Car className="w-4 h-4 text-green-600" />
+                                        Kendaraan
+                                        {vehicles.length > 0 && (
+                                            <span className="ml-auto text-xs font-normal text-green-700 bg-green-100 px-1.5 py-0.5 rounded-full">
+                                                {vehicles.length} dipilih
+                                            </span>
+                                        )}
+                                    </label>
+                                    <CustomMultiSelect
+                                        options={vehicleOptions}
+                                        value={vehicles}
+                                        onChange={setVehicles}
+                                        placeholder="Pilih kendaraan..."
+                                    />
+                                </div>
 
-                        {/* Action Buttons */}
-                        <div className="flex space-x-3 pt-4">
+                                {/* Driver */}
+                                <div>
+                                    <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+                                        <User className="w-4 h-4 text-blue-600" />
+                                        Driver
+                                        {drivers.length > 0 && (
+                                            <span className="ml-auto text-xs font-normal text-blue-700 bg-blue-100 px-1.5 py-0.5 rounded-full">
+                                                {drivers.length} dipilih
+                                            </span>
+                                        )}
+                                    </label>
+                                    <CustomMultiSelect
+                                        options={driverOptions}
+                                        value={drivers}
+                                        onChange={setDrivers}
+                                        placeholder="Pilih driver..."
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Optional section */}
+                            <div className="px-6 pt-5 pb-4 border-b border-gray-100">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Opsional</span>
+                                    <div className="flex-1 h-px bg-gray-100" />
+                                </div>
+
+                                {/* Escort Guide */}
+                                <div className="mb-4">
+                                    <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+                                        <Compass className="w-4 h-4 text-purple-600" />
+                                        Escort Guide
+                                        {escortGuides.length > 0 && (
+                                            <span className="ml-auto text-xs font-normal text-purple-700 bg-purple-100 px-1.5 py-0.5 rounded-full">
+                                                {escortGuides.length} dipilih
+                                            </span>
+                                        )}
+                                    </label>
+                                    <CustomMultiSelect
+                                        options={escortGuideOptions}
+                                        value={escortGuides}
+                                        onChange={setEscortGuides}
+                                        placeholder="Pilih escort guide..."
+                                    />
+                                </div>
+
+                                {/* Ijen Guide - collapsible */}
+                                <div>
+                                    <button
+                                        type="button"
+                                        className="flex items-center gap-1.5 w-full text-sm font-medium text-gray-700 mb-1.5 group"
+                                        onClick={() => setIjenExpanded(!ijenExpanded)}
+                                    >
+                                        <Compass className="w-4 h-4 text-orange-500" />
+                                        Ijen Guide
+                                        {ijenGuides.length > 0 && (
+                                            <span className="text-xs font-normal text-orange-700 bg-orange-100 px-1.5 py-0.5 rounded-full">
+                                                {ijenGuides.length} dipilih
+                                            </span>
+                                        )}
+                                        <span className="ml-auto flex items-center gap-1 text-xs text-gray-400 group-hover:text-gray-600">
+                                            {ijenExpanded ? (
+                                                <><ChevronUp className="w-3.5 h-3.5" /> Sembunyikan</>
+                                            ) : (
+                                                <><ChevronDown className="w-3.5 h-3.5" /> Tampilkan</>
+                                            )}
+                                        </span>
+                                    </button>
+                                    {ijenExpanded && (
+                                        <CustomMultiSelect
+                                            options={ijenGuideOptions}
+                                            value={ijenGuides}
+                                            onChange={setIjenGuides}
+                                            placeholder="Pilih ijen guide..."
+                                        />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Notes section */}
+                            <div className="px-6 pt-5 pb-6">
+                                <label className="flex items-center gap-1.5 text-sm font-medium text-gray-700 mb-1.5">
+                                    <FileText className="w-4 h-4 text-gray-400" />
+                                    Catatan
+                                </label>
+                                <textarea
+                                    className="w-full border border-gray-200 rounded-lg p-3 text-sm h-24 resize-none focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition-colors"
+                                    placeholder="Tambahkan catatan khusus untuk trip ini..."
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                />
+                            </div>
+                        </form>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex-shrink-0 px-6 py-4 border-t border-gray-100 bg-white">
+                        <div className="flex gap-3">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                                className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors"
                             >
-                                Cancel
+                                Batal
                             </button>
                             <button
                                 type="submit"
+                                form="plotting-form"
                                 disabled={isLoading}
-                                className={`flex-1 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                                className="flex-1 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
                             >
                                 {isLoading ? (
                                     <>
                                         <svg
-                                            className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                                            className="animate-spin h-4 w-4 text-white"
                                             xmlns="http://www.w3.org/2000/svg"
                                             fill="none"
                                             viewBox="0 0 24 24"
                                         >
-                                            <circle
-                                                className="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
-                                                stroke="currentColor"
-                                                strokeWidth="4"
-                                            ></circle>
-                                            <path
-                                                className="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                            ></path>
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                                         </svg>
-                                        Saving...
+                                        Menyimpan...
                                     </>
                                 ) : (
-                                    "Save"
+                                    <>
+                                        <CheckCircle2 className="w-4 h-4" />
+                                        Simpan Assignment
+                                    </>
                                 )}
                             </button>
                         </div>
-                    </form>
+                    </div>
                 </div>
-            </div>
+            </div>,
+            document.body
         );
     };
     const handleMoreVerticalClick = async (booking) => {

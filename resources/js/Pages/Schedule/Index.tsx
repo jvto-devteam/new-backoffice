@@ -121,41 +121,53 @@ function formatCurrency(amount) {
         minimumFractionDigits: 0,
     }).format(amount);
 }
+// Mengembalikan warna background untuk cell # (subtle)
 const getDateBasedColor = (dateString, allBookings) => {
-    // Hitung berapa kali tanggal ini muncul
     const dateCount = allBookings.filter(b => b.date.start_ymd === dateString).length;
-    
-    // Jika tanggal hanya muncul sekali (tidak duplikat), return putih
-    if (dateCount === 1) return 'bg-white';
-    
-    // Untuk tanggal yang duplikat, ambil semua tanggal yang memiliki duplikat
+    if (dateCount === 1) return '';
+
     const duplicatedDates = [...new Set(allBookings
         .filter(b => allBookings.filter(bb => bb.date.start_ymd === b.date.start_ymd).length > 1)
         .map(b => b.date.start_ymd)
     )].sort();
-    
-    // Daftar warna background yang akan digunakan secara bergilir untuk tanggal duplikat
+
     const colors = [
-        'bg-red-200',
-        'bg-green-200', 
-        'bg-blue-200',
-        'bg-yellow-200',
-        'bg-cyan-200',
-        'bg-orange-200',
-        'bg-indigo-200',
-        'bg-pink-200',
-        'bg-teal-200',
-        'bg-purple-200',
+        'bg-red-100', 'bg-green-100', 'bg-blue-100', 'bg-yellow-100',
+        'bg-cyan-100', 'bg-orange-100', 'bg-indigo-100', 'bg-pink-100',
+        'bg-teal-100', 'bg-purple-100',
     ];
-    
-    // Cari index tanggal ini dalam array tanggal duplikat
+
     const dateIndex = duplicatedDates.indexOf(dateString);
-    
-    // Jika tidak ditemukan, return putih
-    if (dateIndex === -1) return 'bg-white';
-    
-    // Return warna berdasarkan index (bergilir jika lebih dari 10 tanggal duplikat)
+    if (dateIndex === -1) return '';
     return colors[dateIndex % colors.length];
+};
+
+// Mengembalikan kelas border-left berwarna untuk row — jauh lebih visible
+const getDateBorderColor = (dateString, allBookings) => {
+    const dateCount = allBookings.filter(b => b.date.start_ymd === dateString).length;
+    if (dateCount === 1) return '';
+
+    const duplicatedDates = [...new Set(allBookings
+        .filter(b => allBookings.filter(bb => bb.date.start_ymd === b.date.start_ymd).length > 1)
+        .map(b => b.date.start_ymd)
+    )].sort();
+
+    const borders = [
+        'border-l-4 border-l-red-400',
+        'border-l-4 border-l-green-500',
+        'border-l-4 border-l-blue-500',
+        'border-l-4 border-l-yellow-400',
+        'border-l-4 border-l-cyan-500',
+        'border-l-4 border-l-orange-400',
+        'border-l-4 border-l-indigo-500',
+        'border-l-4 border-l-pink-500',
+        'border-l-4 border-l-teal-500',
+        'border-l-4 border-l-purple-500',
+    ];
+
+    const dateIndex = duplicatedDates.indexOf(dateString);
+    if (dateIndex === -1) return '';
+    return borders[dateIndex % borders.length];
 };
 
 // Let's create a Note component with edit capabilities
@@ -394,6 +406,7 @@ const BookingRow = ({
         categoryColor: booking.noteCategoryColor || "#3B82F6",
     });
     const dateBasedBgColor = getDateBasedColor(booking.date.start_ymd, allBookings);
+    const dateBorderColor = getDateBorderColor(booking.date.start_ymd, allBookings);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -424,77 +437,77 @@ const BookingRow = ({
 
     return (
         <tr
-            className={`border-b ${isCompleted ? "bg-green-50" : ""} ${parseInt(booking.total_pax) >= 18 ? "bg-gradient-to-r from-pink-50 via-transparent to-transparent" : ""}`}
+            className={`border-b transition-colors duration-150 ${dateBorderColor}
+                ${isCompleted ? "bg-green-50 hover:bg-green-100/60" : "hover:bg-blue-50/30"}
+                ${parseInt(booking.total_pax) >= 18 ? "bg-gradient-to-r from-pink-50/60 via-transparent to-transparent" : ""}
+            `}
         >
-            {/* Row Index */}
-            <td className={`py-3 px-2 align-top font-bold relative ${dateBasedBgColor}`}>
+            {/* Row Index — warna background menunjukkan trip serentak (start date sama) */}
+            <td className={`py-3 px-0 align-middle text-center w-10 ${dateBasedBgColor}`}>
                 {parseInt(booking.total_pax) >= 18 ? (
-                    <div className="relative">
-                        <div className="absolute -left-1 -top-1 flex items-center justify-center">
-                            <div className="relative">
-                                <div className="absolute inset-0 bg-pink-500 rounded-full animate-ping opacity-30"></div>
-                                <div className="relative bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-full h-5 w-5 flex items-center justify-center text-xs">
-                                    {startNumb}
-                                </div>
+                    <div className="flex items-center justify-center">
+                        <div className="relative">
+                            <div className="absolute inset-0 bg-pink-500 rounded-full animate-ping opacity-20"></div>
+                            <div className="relative bg-gradient-to-br from-pink-500 to-purple-600 text-white rounded-full h-6 w-6 flex items-center justify-center text-xs font-bold shadow-sm">
+                                {startNumb}
                             </div>
                         </div>
                     </div>
                 ) : (
-                    startNumb
+                    <span className="text-sm font-semibold text-gray-600">{startNumb}</span>
                 )}
             </td>
             {/* Date Column */}
-            <td className="py-3 px-4 align-top whitespace-nowrap">
-                <div className="text-blue-600 font-bold">
-                    {format(booking.date.start, "dd MMM")} -{" "}
-                    {format(booking.date.end, "dd MMM")}
+            <td className="py-3 px-3 align-top whitespace-nowrap">
+                <div className="text-blue-600 font-semibold text-sm">
+                    {format(booking.date.start, "dd MMM")} – {format(booking.date.end, "dd MMM")}
                 </div>
-                <div className="text-gray-800 font-bold">
-                    {booking.date.days}
+                <div className="text-xs text-gray-500 mt-0.5">
+                    <span className="font-medium text-gray-700">{booking.date.days}</span>
+                    {" "}hari
                 </div>
-                <div className="text-gray-800 mt-5">
-                    <span className="text-gray-600 text-xs mr-1 block">
-                        Booking Date:
-                    </span>
-                    <span className="text-xs font-bold tracking-wide">
-                        {format(booking.booking_date, "dd MMM yyyy")}
+                <div className="text-gray-400 text-xs mt-3 hidden sm:block">
+                    <span className="block">Booked:</span>
+                    <span className="font-medium text-gray-500">
+                        {format(booking.booking_date, "dd MMM yy")}
                     </span>
                 </div>
             </td>
             {/* Guest & Package */}
-            <td className="py-3 px-4 align-top space-y-1">
-                <div>
+            <td className="py-3 px-3 align-top">
+                <div className="flex items-center gap-1.5 mb-1">
                     <Link href={`bookings/edit-booking/${booking.booking_id}`}>
                         <span
-                            className={`inline-block px-2 py-1 text-xs font-medium rounded-full 
+                            className={`inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full
                             ${
                                 booking.orderChannel === "JVTO"
-                                    ? "bg-blue-100 text-blue-800"
+                                    ? "bg-blue-100 text-blue-700"
                                     : booking.orderChannel === "TWT"
-                                      ? "bg-yellow-100 text-yellow-800"
+                                      ? "bg-amber-100 text-amber-700"
                                       : booking.orderChannel === "KLOOK"
-                                        ? "bg-green-100 text-green-800"
-                                        : "bg-gray-100 text-gray-800"
+                                        ? "bg-emerald-100 text-emerald-700"
+                                        : "bg-gray-100 text-gray-600"
                             }`}
                         >
                             {booking.id}
                         </span>
                     </Link>
                 </div>
-                {booking.orderChannel != "TWT" ? (
-                    <div className="font-medium underline">
-                        <a
-                            target="_blank"
-                            href={`/client-management/details/${booking.guest_id}`}
-                        >
-                            {booking.guest}
-                        </a>
-                    </div>
+                {booking.orderChannel !== "TWT" ? (
+                    <a
+                        target="_blank"
+                        href={`/client-management/details/${booking.guest_id}`}
+                        className="font-medium text-gray-900 hover:text-blue-600 hover:underline text-sm leading-snug"
+                    >
+                        {booking.guest}
+                    </a>
                 ) : (
-                    <div className="font-medium">{booking.guest}</div>
+                    <div className="font-medium text-gray-900 text-sm">{booking.guest}</div>
                 )}
-                <div className="text-xs text-gray-500">
-                    {booking.duration} / {booking.total_pax} PAX
+                <div className="flex items-center gap-1.5 mt-1">
+                    <span className="text-xs text-gray-500">{booking.duration}</span>
+                    <span className="text-gray-300">·</span>
+                    <span className="text-xs font-medium text-gray-600">{booking.total_pax} PAX</span>
                 </div>
             </td>
 
@@ -985,55 +998,50 @@ const BookingRow = ({
             )}
 
             {viewColumns.includes("financial") && (
-                <td className="py-3 px-4 align-top space-y-1 relative">
-                    <div className="text-sm">
+                <td className="py-3 px-3 align-top relative">
+                    {/* Baris finansial: label kiri, angka kanan */}
+                    <div className="flex flex-col gap-0.5 min-w-[130px]">
+                        {/* Invoice */}
                         {booking.financial.invoice.invoiceLink.length ? (
                             <div
-                                onClick={() => {
-                                    booking.financial.invoice.invoiceLink.forEach(
-                                        (link) => window.open(link, "_blank"),
-                                    );
-                                }}
-                                className="text-blue-500 underline cursor-pointer hover:text-blue-700"
+                                onClick={() => booking.financial.invoice.invoiceLink.forEach(l => window.open(l, "_blank"))}
+                                className="flex items-center justify-between gap-2 text-xs text-blue-500 underline cursor-pointer hover:text-blue-700"
                             >
-                                Invoice:{" "}
-                                {formatCurrency(
-                                    booking.financial.invoice.total,
-                                )}
+                                <span>Invoice</span>
+                                <span className="font-medium tabular-nums">{formatCurrency(booking.financial.invoice.total)}</span>
                             </div>
                         ) : (
-                            <div className="text-blue-500">
-                                Invoice:{" "}
-                                {formatCurrency(
-                                    booking.financial.invoice.total,
-                                )}
+                            <div className="flex items-center justify-between gap-2 text-xs text-blue-500">
+                                <span>Invoice</span>
+                                <span className="font-medium tabular-nums">{formatCurrency(booking.financial.invoice.total)}</span>
                             </div>
                         )}
-                    </div>
-                    <div className="text-sm">
+
+                        {/* Expense — merah */}
                         <Link
                             href={booking.financial.expense.expenseLink}
-                            className="text-orange-500 underline cursor-pointer hover:text-orange-700"
+                            className="flex items-center justify-between gap-2 text-xs text-red-500 hover:text-red-700 hover:underline"
                         >
-                            Expense:{" "}
-                            {formatCurrency(booking.financial.expense.total)}
+                            <span>Expense</span>
+                            <span className="font-medium tabular-nums">{formatCurrency(booking.financial.expense.total)}</span>
                         </Link>
-                    </div>
-                    <div className="text-sm">
-                        <div className="text-green-500">
-                            Crew:{" "}
-                            {formatCurrency(
-                                booking.financial.expense.crew_expense,
-                            )}
+
+                        {/* Crew — orange */}
+                        <div className="flex items-center justify-between gap-2 text-xs text-orange-500">
+                            <span>Crew</span>
+                            <span className="font-medium tabular-nums">{formatCurrency(booking.financial.expense.crew_expense)}</span>
                         </div>
-                    </div>
-                    <div className="text-sm">
-                        <div className="text-red-500">
-                            Hutang:{" "}
-                            {formatCurrency(
-                                booking.financial.expense.debt_expense,
-                            )}
-                        </div>
+
+                        {/* Profit — semua channel */}
+                        {(() => {
+                            const profit = booking.financial.invoice.total - booking.financial.expense.total;
+                            return (
+                                <div className={`flex items-center justify-between gap-2 text-xs font-semibold mt-1 pt-1 border-t border-gray-200 ${profit >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                                    <span>Profit</span>
+                                    <span className="tabular-nums">{formatCurrency(profit)}</span>
+                                </div>
+                            );
+                        })()}
                     </div>
 
                     {/* Add Info icon with payment history for JVTO orders */}
@@ -3074,19 +3082,21 @@ export default function Index({ data }) {
                     </form>
                 </div>
                 {/* Bookings Table */}
-                <div className="bg-white shadow rounded-md p-4 mb-8 overflow-x-auto">
+                <div className="bg-white shadow border border-gray-200 rounded-xl mb-8 overflow-x-auto">
                     <table className="min-w-full text-left text-sm text-gray-700">
-                        <thead className="bg-gray-100 text-gray-600 text-sm uppercase">
-                            <tr>
-                                <th className="py-3 px-4">#</th>
-                                <th className="py-3 px-4 min-w-35 relative whitespace-nowrap">
+                        <thead>
+                            <tr className="bg-slate-700 text-white text-xs uppercase tracking-widest">
+                                <th className="py-3 px-3 w-10 text-center font-medium">
+                                    <span title="Warna border kiri = trip start di tanggal yang sama">#</span>
+                                </th>
+                                <th className="py-3 px-3 min-w-35 relative whitespace-nowrap font-medium">
                                     <div className="flex items-center">
                                         <div
                                             className="relative"
                                             ref={dateSortDropdownRef}
                                         >
                                             <button
-                                                className="ml-1 text-gray-600 text-left font-bold hover:text-gray-700"
+                                                className="ml-1 text-white text-left font-medium hover:text-slate-200 flex items-center gap-1"
                                                 onClick={() =>
                                                     setIsDateSortDropdownOpen(
                                                         !isDateSortDropdownOpen,
@@ -3278,58 +3288,38 @@ export default function Index({ data }) {
                                         </div>
                                     </div>
                                 </th>
-                                <th className="py-3 px-4 min-w-35">
-                                    Guest & Pax
-                                </th>
+                                <th className="py-3 px-3 min-w-40 font-medium">Guest & Pax</th>
                                 {viewColumns.includes("pickup") && (
-                                    <th className="py-3 px-4 min-w-45">
-                                        Pickup
-                                    </th>
+                                    <th className="py-3 px-3 min-w-40 font-medium">Pickup</th>
                                 )}
                                 {viewColumns.includes("dropoff") && (
-                                    <th className="py-3 px-4 min-w-45">
-                                        Drop-off
-                                    </th>
+                                    <th className="py-3 px-3 min-w-40 font-medium">Drop-off</th>
                                 )}
                                 {viewColumns.includes("tshirtSize") && (
-                                    <th className="py-3 px-4 min-w-30">
-                                        T-Shirt Size
-                                    </th>
+                                    <th className="py-3 px-3 min-w-28 font-medium">T-Shirt</th>
                                 )}
                                 {viewColumns.includes("activities") && (
-                                    <th className="py-3 px-4 min-w-60">
-                                        Activities
-                                    </th>
+                                    <th className="py-3 px-3 min-w-56 font-medium">Activities</th>
                                 )}
                                 {viewColumns.includes("itinerary") && (
-                                    <th className="py-3 px-4 min-w-60">
-                                        Itinerary
-                                    </th>
+                                    <th className="py-3 px-3 min-w-56 font-medium">Itinerary</th>
                                 )}
                                 {viewColumns.includes("accommodation") && (
-                                    <th className="py-3 px-4 min-w-60">
-                                        Accommodation
-                                    </th>
+                                    <th className="py-3 px-3 min-w-56 font-medium">Accommodation</th>
                                 )}
                                 {viewColumns.includes("vehicleCrew") && (
-                                    <th className="py-3 px-4 min-w-50">
-                                        Vehicle & Crew
-                                    </th>
+                                    <th className="py-3 px-3 min-w-48 font-medium">Vehicle & Crew</th>
                                 )}
                                 {viewColumns.includes("financial") && (
-                                    <th className="py-3 px-4 min-w-50">
-                                        Financial
-                                    </th>
+                                    <th className="py-3 px-3 min-w-44 font-medium">Financial</th>
                                 )}
                                 {viewColumns.includes("notes") && (
-                                    <th className="py-3 px-4 min-w-40 md:min-w-1">
-                                        Notes
-                                    </th>
+                                    <th className="py-3 px-3 min-w-36 font-medium">Notes</th>
                                 )}
-                                <th className="py-3 px-4"></th>
+                                <th className="py-3 px-3 w-10"></th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody className="divide-y divide-gray-100 [&>tr:nth-child(even)]:bg-slate-50/50">
                             {/* Completed Trips Collapsible Section */}
                             <tr className="border-b bg-green-50">
                                 <td

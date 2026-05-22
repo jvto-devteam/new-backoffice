@@ -121,7 +121,7 @@ function formatCurrency(amount) {
         minimumFractionDigits: 0,
     }).format(amount);
 }
-// Mengembalikan warna background untuk cell # (subtle)
+// Cell # — background + border kiri tebal (2 shade lebih gelap)
 const getDateBasedColor = (dateString, allBookings) => {
     const dateCount = allBookings.filter(b => b.date.start_ymd === dateString).length;
     if (dateCount === 1) return '';
@@ -131,15 +131,22 @@ const getDateBasedColor = (dateString, allBookings) => {
         .map(b => b.date.start_ymd)
     )].sort();
 
-    const colors = [
-        'bg-red-100', 'bg-green-100', 'bg-blue-100', 'bg-yellow-100',
-        'bg-cyan-100', 'bg-orange-100', 'bg-indigo-100', 'bg-pink-100',
-        'bg-teal-100', 'bg-purple-100',
+    const styles = [
+        'bg-red-200 border-l-4 border-l-red-500',
+        'bg-green-200 border-l-4 border-l-green-600',
+        'bg-blue-200 border-l-4 border-l-blue-500',
+        'bg-yellow-200 border-l-4 border-l-yellow-500',
+        'bg-cyan-200 border-l-4 border-l-cyan-600',
+        'bg-orange-200 border-l-4 border-l-orange-500',
+        'bg-indigo-200 border-l-4 border-l-indigo-600',
+        'bg-pink-200 border-l-4 border-l-pink-500',
+        'bg-teal-200 border-l-4 border-l-teal-600',
+        'bg-purple-200 border-l-4 border-l-purple-500',
     ];
 
     const dateIndex = duplicatedDates.indexOf(dateString);
     if (dateIndex === -1) return '';
-    return colors[dateIndex % colors.length];
+    return styles[dateIndex % styles.length];
 };
 
 // Mengembalikan kelas border-left berwarna untuk row — jauh lebih visible
@@ -437,7 +444,7 @@ const BookingRow = ({
 
     return (
         <tr
-            className={`border-b transition-colors duration-150 ${dateBorderColor}
+            className={`border-b transition-colors duration-150
                 ${isCompleted ? "bg-green-50 hover:bg-green-100/60" : "hover:bg-blue-50/30"}
                 ${parseInt(booking.total_pax) >= 18 ? "bg-gradient-to-r from-pink-50/60 via-transparent to-transparent" : ""}
             `}
@@ -462,9 +469,8 @@ const BookingRow = ({
                 <div className="text-blue-600 font-semibold text-sm">
                     {format(booking.date.start, "dd MMM")} – {format(booking.date.end, "dd MMM")}
                 </div>
-                <div className="text-xs text-gray-500 mt-0.5">
-                    <span className="font-medium text-gray-700">{booking.date.days}</span>
-                    {" "}hari
+                <div className="text-xs text-gray-500 mt-0.5 font-medium">
+                    {booking.date.days}
                 </div>
                 <div className="text-gray-400 text-xs mt-3 hidden sm:block">
                     <span className="block">Booked:</span>

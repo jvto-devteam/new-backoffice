@@ -93,6 +93,11 @@ class ScheduleController extends Controller
                     $query->where('guide_id', $request->crew);
                 });
             }
+            if ($request->phone_no) {
+                $data['booking'] = $data['booking']->whereHas('user', function ($query) use ($request) {
+                    $query->where('phone', $request->phone_no);
+                });
+            }
             $data['booking'] = $data['booking']->where('status', $status)->orderByRaw($orderByBookingColumn . " " . $orderByBookingOrder)->get();
             $data['bookingReal'] = $data['booking'];
             $d = $data;
@@ -363,6 +368,9 @@ class ScheduleController extends Controller
                         'Content-Type' => 'application/json',
                     ]);
                 } else {
+                    if ($request->phone_no) {
+                        return $data['booking']->first();
+                    }
                     return $data['booking'];
                 }
             }

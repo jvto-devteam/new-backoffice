@@ -279,6 +279,7 @@ class ScheduleController extends Controller
                     'orderChannel' => $orderChannel,
                     'guest_id' => $booking->user_id,
                     'guest' => $booking->user->name,
+                    'customer_portal' => "https://javavolcano-touroperator.com/my-booking/". $booking->url,
                     'guestDetails' => [
                         'id' => $booking->user->id,
                         'name' => $booking->user->name,

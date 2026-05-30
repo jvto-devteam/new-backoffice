@@ -94,8 +94,12 @@ class ScheduleController extends Controller
                 });
             }
             if ($request->phone_no) {
-                $data['booking'] = $data['booking']->whereHas('user', function ($query) use ($request) {
-                    $query->where('phone', $request->phone_no);
+                $phoneNo = $request->phone_no;
+                if (str_starts_with($phoneNo, ' ')) {
+                    $phoneNo = '+' . ltrim($phoneNo);
+                }
+                $data['booking'] = $data['booking']->whereHas('user', function ($query) use ($phoneNo) {
+                    $query->where('phone', 'like', '%' . $phoneNo . '%');
                 });
             }
             $data['booking'] = $data['booking']->where('status', $status)->orderByRaw($orderByBookingColumn . " " . $orderByBookingOrder)->get();

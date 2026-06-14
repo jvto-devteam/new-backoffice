@@ -522,7 +522,7 @@ class ExportDataItineraryCore extends Controller
             $patterns[] = [
                 'activity_id' => $g['activity_id'],
                 'sample_count' => $g['sample_count'],
-                'avg_qty' => intdiv($g['sum_qty'], $count),
+                'avg_qty' => round($g['sum_qty'] / $count, 2),
                 'avg_price' => intdiv($g['sum_price'], $count),
                 'avg_subtotal' => intdiv($g['sum_subtotal'], $count),
             ];
@@ -536,7 +536,9 @@ class ExportDataItineraryCore extends Controller
     private function bookingProfit(Booking $booking): int
     {
         if ($booking->balance == 0) {
-            $lastPayment = $booking->bookingPayment->first();
+            // hasMany has no default ordering; sort explicitly so the final
+            // settlement payment (highest id) is the one excluded from the DP sum.
+            $lastPayment = $booking->bookingPayment->sortByDesc('id')->first();
             $count = $booking->bookingPayment->count();
             if ($count == 1) {
                 $dp = $booking->bookingPayment->sum('nominal');

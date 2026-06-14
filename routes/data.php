@@ -7,6 +7,7 @@ use App\Http\Controllers\ExportData\ExportDataCrew;
 use App\Http\Controllers\ExportData\ExportDataCustomer;
 use App\Http\Controllers\ExportData\ExportDataDestinations;
 use App\Http\Controllers\ExportData\ExportDataHotel;
+use App\Http\Controllers\ExportData\ExportDataItineraryCore;
 use App\Http\Controllers\ExportData\ExportDataPackage;
 use App\Http\Controllers\ExportData\ExportDataPriceTiers;
 use App\Http\Controllers\ExportData\ExportDataVehicles;
@@ -120,6 +121,9 @@ Route::prefix('export-data')->group(function () {
         Route::get('/booking-crew-member-activities', [ExportDataBookings::class, 'bookingCrewMemberActivities']);
         Route::get('/booking-destination-activities', [ExportDataBookings::class, 'bookingDestinationActivities']);
         Route::get('/booking-other-activities', [ExportDataBookings::class, 'bookingOtherActivities']);
+    });
+    Route::prefix('itinerary-core')->group(function () {
+        Route::get('/bundle', [ExportDataItineraryCore::class, 'bundle']);
     });
     Route::get('/all', [ExportDataAllController::class, 'all']);
 });

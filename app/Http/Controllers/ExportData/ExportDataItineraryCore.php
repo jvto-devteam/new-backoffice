@@ -9,6 +9,7 @@ use App\Models\Booking;
 use App\Models\Car;
 use App\Models\CarConfiguration;
 use App\Models\CrewRole;
+use App\Models\Destination;
 use App\Models\DestinationActivity;
 use App\Models\Hotel;
 use App\Models\Itinerary;
@@ -58,6 +59,7 @@ class ExportDataItineraryCore extends Controller
             'source' => 'new-backoffice',
 
             // Operational reference data (no customer PII).
+            'destinations' => $this->destinations(),
             'packages' => $this->packages(),
             'package_prices' => $this->packagePrices(),
             'package_itinerary_days' => $this->packageItineraryDays(),
@@ -84,6 +86,20 @@ class ExportDataItineraryCore extends Controller
                 'Reference data is limited to the curated itinerary-core package scope.',
             ],
         ]);
+    }
+
+    private function destinations(): array
+    {
+        return Destination::query()
+            ->whereNotNull('slug')
+            ->orderBy('id')
+            ->get()
+            ->map(fn ($d) => [
+                'id' => $d->id,
+                'slug' => $d->slug,
+                'name' => $d->name,
+            ])
+            ->all();
     }
 
     private function packages(): array

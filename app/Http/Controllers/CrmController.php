@@ -89,6 +89,7 @@ class CrmController extends Controller
             ->sortByDesc('count')
             ->values();
 
+        $totalBookings = $bookings->count();
         $countryDistribution = $bookings
             ->groupBy(fn($b) => $b->user?->country?->long_name ?? 'Unknown')
             ->map(fn($group, $country) => [
@@ -96,6 +97,7 @@ class CrmController extends Controller
                 'count' => $group->count(),
                 'pax' => $group->sum('total_pax'),
                 'revenue' => $group->sum('grand_total'),
+                'percentage' => $totalBookings > 0 ? round($group->count() / $totalBookings * 100, 1) : 0,
             ])
             ->sortByDesc('count')
             ->values();
@@ -307,6 +309,7 @@ class CrmController extends Controller
         if ($request->format === 'pdf') {
             $title = 'Customer Report';
             $period = $this->buildPeriodLabel($request);
+            ini_set('memory_limit', '512M');
             $pdf = PDF::loadView('exports.crm_customers_pdf', compact('customers', 'title', 'period'))
                 ->setPaper('A4', 'landscape');
             return $pdf->download('customer_report_' . date('Y-m-d') . '.pdf');
@@ -403,7 +406,7 @@ class CrmController extends Controller
 
         $data = $query->get()->map(fn($b) => [
             'Email' => $b->user?->email ?? '',
-            'Phone' => $b->user?->phone ?? '',
+            'Phone' => "'" . ($b->user?->phone ?? ''),
             'First Name' => $b->user?->first_name ?: (explode(' ', $b->user?->name ?? ' ')[0] ?? ''),
             'Last Name' => $b->user?->last_name ?: (str_contains($b->user?->name ?? '', ' ') ? implode(' ', array_slice(explode(' ', $b->user?->name ?? ''), 1)) : ''),
             'Country' => $b->user?->country?->long_name ?? '',
@@ -413,6 +416,15 @@ class CrmController extends Controller
             'Channel' => $this->channelLabel($b->booking_category_id),
             'Pax' => $b->total_pax ?? 0,
         ]);
+
+        if ($request->format === 'pdf') {
+            $title = 'Customer Report';
+            $period = $this->buildPeriodLabel($request);
+            ini_set('memory_limit', '512M');
+            $pdf = PDF::loadView('exports.customer_report_pdf', compact('data', 'title', 'period'))
+                ->setPaper('A4', 'landscape');
+            return $pdf->download('customer_report_' . date('Y-m-d') . '.pdf');
+        }
 
         $filename = 'customer_report_' . date('Y-m-d_His') . '.xls';
         header('Content-type: application/vnd-ms-excel');

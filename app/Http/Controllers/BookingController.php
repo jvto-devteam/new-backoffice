@@ -2557,6 +2557,91 @@ class BookingController extends Controller
         });
         return redirect()->back()->withStatus('Booking Deleted Successfully');
     }
+
+    function quickUpdate(Request $request, $id)
+    {
+        $booking = Booking::findOrFail($id);
+
+        if ($request->has('pickupLocation')) {
+            $pickupLocation = json_decode($request->pickupLocation, true);
+            $booking->meeting_point = $pickupLocation['location'];
+            $booking->meeting_point_arrival = null;
+            $booking->meeting_point_value = null;
+
+            if (in_array($pickupLocation['location'], ['Surabaya Airport', 'Denpasar Airport'])) {
+                $booking->meeting_point_arrival = $pickupLocation['terminal'] ?? null;
+                $booking->meeting_point_value = $pickupLocation['ticketNumber'] ?? null;
+            } elseif ($pickupLocation['location'] == 'Surabaya Train Station') {
+                $booking->meeting_point_arrival = $pickupLocation['station'] ?? null;
+                $booking->meeting_point_value = $pickupLocation['ticketNumber'] ?? null;
+            } elseif (in_array($pickupLocation['location'], ['Surabaya Hotel', 'Bali Hotel'])) {
+                $booking->meeting_point_value = $pickupLocation['hotelName'] ?? null;
+            } elseif ($pickupLocation['location'] == 'Others') {
+                $booking->meeting_point_value = $pickupLocation['customLocation'] ?? null;
+                $booking->pickup = $pickupLocation['customLocation'];
+            }
+
+            if ($pickupLocation['location'] != 'Others') {
+                $booking->pickup = trim($pickupLocation['location'] . " " . ($booking->meeting_point_arrival ?? '') . " " . ($booking->meeting_point_value ?? ''));
+            }
+        }
+
+        if ($request->has('pickupTime')) {
+            $t = $request->pickupTime;
+            $booking->pickup_time = ($t && $t != '' && $t != 'null') ? $t : null;
+        }
+
+        if ($request->has('dropLocation')) {
+            $dropLocation = json_decode($request->dropLocation, true);
+            $booking->drop_point = $dropLocation['location'];
+            $booking->drop_point_arrival = null;
+            $booking->drop_point_value = null;
+
+            if (in_array($dropLocation['location'], ['Surabaya Airport', 'Denpasar Airport'])) {
+                $booking->drop_point_arrival = $dropLocation['terminal'] ?? null;
+                $booking->drop_point_value = $dropLocation['ticketNumber'] ?? null;
+            } elseif ($dropLocation['location'] == 'Surabaya Train Station') {
+                $booking->drop_point_arrival = $dropLocation['station'] ?? null;
+                $booking->drop_point_value = $dropLocation['ticketNumber'] ?? null;
+            } elseif (in_array($dropLocation['location'], ['Surabaya Hotel', 'Bali Hotel'])) {
+                $booking->drop_point_value = $dropLocation['hotelName'] ?? null;
+            } elseif ($dropLocation['location'] == 'Others') {
+                $booking->drop_point_value = $dropLocation['customLocation'] ?? null;
+                $booking->drop = $dropLocation['customLocation'];
+            }
+
+            if ($dropLocation['location'] != 'Others') {
+                $booking->drop = trim($dropLocation['location'] . " " . ($booking->drop_point_arrival ?? '') . " " . ($booking->drop_point_value ?? ''));
+            }
+        }
+
+        if ($request->has('dropTime')) {
+            $t = $request->dropTime;
+            $booking->drop_time = ($t && $t != '' && $t != 'null') ? $t : null;
+        }
+
+        $booking->save();
+
+        if ($request->has('sizes')) {
+            $tshirts = json_decode($request->sizes, true);
+            $bookingDetail = BookingDetail::where('booking_id', $id)->first();
+            if ($bookingDetail) {
+                $bookingDetail->xss = $tshirts['xss'] ?? 0;
+                $bookingDetail->xxs = $tshirts['xxs'] ?? 0;
+                $bookingDetail->xs = $tshirts['xs'] ?? 0;
+                $bookingDetail->s = $tshirts['s'] ?? 0;
+                $bookingDetail->m = $tshirts['m'] ?? 0;
+                $bookingDetail->l = $tshirts['l'] ?? 0;
+                $bookingDetail->xl = $tshirts['xl'] ?? 0;
+                $bookingDetail->xxl = $tshirts['xxl'] ?? 0;
+                $bookingDetail->xxxl = $tshirts['xxxl'] ?? 0;
+                $bookingDetail->save();
+            }
+        }
+
+        return back()->with('success', 'Booking updated successfully');
+    }
+
     // function store(Request $request){
     //     // return dd($request->all());
     //     $customerInfo = json_decode($request->customer_info);

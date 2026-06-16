@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Copy, ChevronDown, Menu, X, Pencil, Eye, Download,Users } from 'lucide-react';
-import { Link, useForm, usePage } from '@inertiajs/react';
+import { Link, useForm, usePage, router } from '@inertiajs/react';
 import {Toast} from '@/utils/swal';
 
 import Main from '@/Layouts/Main';
@@ -15,6 +15,7 @@ const Detail = ({ initialData }) => {
   const [isPaymentFormOpen, setIsPaymentFormOpen] = useState(false);
   const [isEditPaymentMethodOpen, setIsEditPaymentMethodOpen] = useState(false);
   const [isEditTripMediaOpen, setIsEditTripMediaOpen] = useState(false);
+  const [quickEditField, setQuickEditField] = useState<string | null>(null);
   const { post: generateTripMedia, processing: isGeneratingTripMedia } = useForm({});
   const tripMediaError = props.errors?.trip_media;
 
@@ -502,6 +503,195 @@ const EditTripMediaForm = ({ onClose }) => {
   );
 };
 
+  // ---- Quick Edit Pickup / Dropoff / Tshirt ----
+  const QuickLocationForm = ({ label, value, onChange }) => {
+    const locationOptions = ['Surabaya Airport', 'Surabaya Train Station', 'Surabaya Hotel', 'Denpasar Airport', 'Bali Hotel', 'Others'];
+    return (
+      <div className="space-y-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-600 mb-1">{label} Location</label>
+          <select className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={value.location} onChange={(e) => onChange({ ...value, location: e.target.value })}>
+            <option value="">Select location</option>
+            {locationOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          </select>
+        </div>
+        {(value.location === 'Surabaya Airport' || value.location === 'Denpasar Airport') && (
+          <>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Terminal</label>
+              <select className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                value={value.terminal} onChange={(e) => onChange({ ...value, terminal: e.target.value })}>
+                <option value="">Select terminal</option>
+                <option value="Terminal 1">Terminal 1</option>
+                <option value="Terminal 2">Terminal 2</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Flight Ticket Number</label>
+              <input type="text" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                value={value.ticketNumber} onChange={(e) => onChange({ ...value, ticketNumber: e.target.value })}
+                placeholder="Enter flight ticket number" />
+            </div>
+          </>
+        )}
+        {value.location === 'Surabaya Train Station' && (
+          <>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Station</label>
+              <select className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                value={value.station} onChange={(e) => onChange({ ...value, station: e.target.value })}>
+                <option value="">Select station</option>
+                <option value="Gubeng Station">Gubeng Station</option>
+                <option value="Pasar Turi Station">Pasar Turi Station</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Train Ticket Number</label>
+              <input type="text" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                value={value.ticketNumber} onChange={(e) => onChange({ ...value, ticketNumber: e.target.value })}
+                placeholder="Enter train ticket number" />
+            </div>
+          </>
+        )}
+        {(value.location === 'Surabaya Hotel' || value.location === 'Bali Hotel') && (
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Hotel Name</label>
+            <input type="text" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              value={value.hotelName} onChange={(e) => onChange({ ...value, hotelName: e.target.value })}
+              placeholder="Enter hotel name" />
+          </div>
+        )}
+        {value.location === 'Others' && (
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Custom Location</label>
+            <input type="text" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+              value={value.customLocation} onChange={(e) => onChange({ ...value, customLocation: e.target.value })}
+              placeholder="Enter location details" />
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const initPickupFormState = () => {
+    const p = initialData.booking_information.pickup;
+    const loc = p.location !== '-' ? p.location : '';
+    return {
+      location: loc,
+      terminal: (loc === 'Surabaya Airport' || loc === 'Denpasar Airport') ? (p.arrival !== '-' ? p.arrival : '') : '',
+      ticketNumber: (loc === 'Surabaya Airport' || loc === 'Denpasar Airport' || loc === 'Surabaya Train Station') ? (p.location_value !== '-' ? p.location_value : '') : '',
+      station: loc === 'Surabaya Train Station' ? (p.arrival !== '-' ? p.arrival : '') : '',
+      hotelName: (loc === 'Surabaya Hotel' || loc === 'Bali Hotel') ? (p.location_value !== '-' ? p.location_value : '') : '',
+      customLocation: loc === 'Others' ? (p.location_value !== '-' ? p.location_value : '') : '',
+    };
+  };
+
+  const initDropFormState = () => {
+    const d = initialData.booking_information.drop;
+    const loc = d.location !== '-' ? d.location : '';
+    return {
+      location: loc,
+      terminal: (loc === 'Surabaya Airport' || loc === 'Denpasar Airport') ? (d.arrival !== '-' ? d.arrival : '') : '',
+      ticketNumber: (loc === 'Surabaya Airport' || loc === 'Denpasar Airport' || loc === 'Surabaya Train Station') ? (d.location_value !== '-' ? d.location_value : '') : '',
+      station: loc === 'Surabaya Train Station' ? (d.arrival !== '-' ? d.arrival : '') : '',
+      hotelName: (loc === 'Surabaya Hotel' || loc === 'Bali Hotel') ? (d.location_value !== '-' ? d.location_value : '') : '',
+      customLocation: loc === 'Others' ? (d.location_value !== '-' ? d.location_value : '') : '',
+    };
+  };
+
+  const QuickEditDetailsForm = ({ field, onClose }) => {
+    const [pickupLocation, setPickupLocation] = useState(initPickupFormState);
+    const [pickupTime, setPickupTime] = useState(initialData.booking_information.pickup.time !== '-' ? initialData.booking_information.pickup.time : '');
+    const [dropLocation, setDropLocation] = useState(initDropFormState);
+    const [dropTime, setDropTime] = useState(initialData.booking_information.drop.time !== '-' ? initialData.booking_information.drop.time : '');
+    const sizeKeys = ['xss', 'xxs', 'xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'];
+    const [sizes, setSizes] = useState(initialData.booking_information.tshirt_raw || { xss: 0, xxs: 0, xs: 0, s: 0, m: 0, l: 0, xl: 0, xxl: 0, xxxl: 0 });
+    const [saving, setSaving] = useState(false);
+    const titles = { pickup: 'Edit Pickup', drop: 'Edit Drop-off', tshirt: 'Edit T-Shirt Sizes' };
+
+    const handleSave = () => {
+      setSaving(true);
+      const payload: any = {};
+      if (field === 'pickup') {
+        payload.pickupLocation = JSON.stringify(pickupLocation);
+        payload.pickupTime = pickupTime;
+      } else if (field === 'drop') {
+        payload.dropLocation = JSON.stringify(dropLocation);
+        payload.dropTime = dropTime;
+      } else if (field === 'tshirt') {
+        payload.sizes = JSON.stringify(sizes);
+      }
+      router.post('/bookings/quick-update/' + initialData.booking_information.id, payload, {
+        preserveScroll: true,
+        onSuccess: () => {
+          setSaving(false);
+          Toast.fire({ icon: 'success', title: 'Updated successfully' });
+          onClose();
+        },
+        onError: () => {
+          setSaving(false);
+          Toast.fire({ icon: 'error', title: 'Failed to update' });
+        },
+      });
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <h3 className="text-base font-semibold text-gray-800">{titles[field]}</h3>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors"><X size={20} /></button>
+          </div>
+          <div className="px-5 py-4 max-h-[70vh] overflow-y-auto space-y-4">
+            {field === 'pickup' && (
+              <>
+                <QuickLocationForm label="Pickup" value={pickupLocation} onChange={setPickupLocation} />
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Pickup Time</label>
+                  <input type="time" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} />
+                </div>
+              </>
+            )}
+            {field === 'drop' && (
+              <>
+                <QuickLocationForm label="Drop-off" value={dropLocation} onChange={setDropLocation} />
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Drop-off Time</label>
+                  <input type="time" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                    value={dropTime} onChange={(e) => setDropTime(e.target.value)} />
+                </div>
+              </>
+            )}
+            {field === 'tshirt' && (
+              <div className="grid grid-cols-3 gap-3">
+                {sizeKeys.map(size => (
+                  <div key={size}>
+                    <label className="block text-xs font-medium text-gray-600 uppercase mb-1">{size}</label>
+                    <input type="number" min="0"
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                      value={sizes[size] || 0}
+                      onChange={(e) => setSizes(prev => ({ ...prev, [size]: parseInt(e.target.value) || 0 }))} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-gray-100 bg-gray-50">
+            <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              Cancel
+            </button>
+            <button onClick={handleSave} disabled={saving}
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   const tabs = [
     { id: 'transaction', label: 'Client Information' },
     { id: 'booking', label: 'Booking Information' },
@@ -610,6 +800,7 @@ const EditTripMediaForm = ({ onClose }) => {
       {isPaymentFormOpen && <PaymentForm onClose={() => setIsPaymentFormOpen(false)} />}
       {isEditPaymentMethodOpen && <EditPaymentMethodForm onClose={() => setIsEditPaymentMethodOpen(false)} />}
       {isEditTripMediaOpen && <EditTripMediaForm onClose={() => setIsEditTripMediaOpen(false)} />}
+      {quickEditField && <QuickEditDetailsForm field={quickEditField} onClose={() => setQuickEditField(null)} />}
       
       <div className="flex flex-col lg:flex-row gap-5 p-4">
         {/* Sidebar */}
@@ -961,46 +1152,69 @@ const EditTripMediaForm = ({ onClose }) => {
                 label="TRAVEL DATE"
                 value={initialData.booking_information.travel_date}
               />
-              <DetailRow
-                label="TRAVEL T-SHIRT"
-                value={initialData.booking_information.tshirt}
-              />
-              {initialData.booking_information.pickup.location === 'Others' ? (
-                <DetailRow
-                  label="PICKUP LOCATION"
-                  value={initialData.booking_information.pickup.location_value}
-                />
-              ) : (
-                <DetailRow
-                  label="PICKUP LOCATION"
-                  value={`${initialData.booking_information.pickup.location}${
-                    initialData.booking_information.pickup.arrival ? 
-                    `, ${initialData.booking_information.pickup.arrival}` : 
-                    ''} (${initialData.booking_information.pickup.location_value})`}
-                />
-              )}
-              <DetailRow
-                label="PICKUP TIME"
-                value={initialData.booking_information.pickup.time}
-              />
-              {initialData.booking_information.drop.location === 'Others' ? (
-                <DetailRow
-                  label="DROP LOCATION"
-                  value={initialData.booking_information.drop.location_value}
-                />
-              ) : (
-                <DetailRow
-                  label="DROP LOCATION"
-                  value={`${initialData.booking_information.drop.location}${
-                    initialData.booking_information.drop.arrival ? 
-                    `, ${initialData.booking_information.drop.arrival}` : 
-                    ''} (${initialData.booking_information.drop.location_value})`}
-                />
-              )}
-              <DetailRow
-                label="DROP TIME"
-                value={initialData.booking_information.drop.time}
-              />
+              {/* T-Shirt - editable */}
+              <div className="flex gap-3 items-start py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200 group">
+                <div className="w-1/3 text-sm text-gray-600">TRAVEL T-SHIRT</div>
+                <div className="w-2/3 text-sm flex items-center justify-between">
+                  <span className="text-gray-900">{initialData.booking_information.tshirt || '-'}</span>
+                  <button onClick={() => setQuickEditField('tshirt')}
+                    className="flex items-center gap-1 text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity hover:text-blue-800 ml-2">
+                    <Pencil size={12} /> Edit
+                  </button>
+                </div>
+              </div>
+
+              {/* Pickup - editable */}
+              <div className="flex gap-3 items-start py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200 group">
+                <div className="w-1/3 text-sm text-gray-600">PICKUP LOCATION</div>
+                <div className="w-2/3 text-sm flex items-center justify-between">
+                  <span className="text-gray-900">
+                    {initialData.booking_information.pickup.location === 'Others'
+                      ? initialData.booking_information.pickup.location_value
+                      : `${initialData.booking_information.pickup.location}${initialData.booking_information.pickup.arrival && initialData.booking_information.pickup.arrival !== '-' ? `, ${initialData.booking_information.pickup.arrival}` : ''} ${initialData.booking_information.pickup.location_value && initialData.booking_information.pickup.location_value !== '-' ? `(${initialData.booking_information.pickup.location_value})` : ''}`.trim() || '-'}
+                  </span>
+                  <button onClick={() => setQuickEditField('pickup')}
+                    className="flex items-center gap-1 text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity hover:text-blue-800 ml-2">
+                    <Pencil size={12} /> Edit
+                  </button>
+                </div>
+              </div>
+              <div className="flex gap-3 items-start py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200 group">
+                <div className="w-1/3 text-sm text-gray-600">PICKUP TIME</div>
+                <div className="w-2/3 text-sm flex items-center justify-between">
+                  <span className="text-gray-900">{initialData.booking_information.pickup.time || '-'}</span>
+                  <button onClick={() => setQuickEditField('pickup')}
+                    className="flex items-center gap-1 text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity hover:text-blue-800 ml-2">
+                    <Pencil size={12} /> Edit
+                  </button>
+                </div>
+              </div>
+
+              {/* Drop - editable */}
+              <div className="flex gap-3 items-start py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200 group">
+                <div className="w-1/3 text-sm text-gray-600">DROP LOCATION</div>
+                <div className="w-2/3 text-sm flex items-center justify-between">
+                  <span className="text-gray-900">
+                    {initialData.booking_information.drop.location === 'Others'
+                      ? initialData.booking_information.drop.location_value
+                      : `${initialData.booking_information.drop.location}${initialData.booking_information.drop.arrival && initialData.booking_information.drop.arrival !== '-' ? `, ${initialData.booking_information.drop.arrival}` : ''} ${initialData.booking_information.drop.location_value && initialData.booking_information.drop.location_value !== '-' ? `(${initialData.booking_information.drop.location_value})` : ''}`.trim() || '-'}
+                  </span>
+                  <button onClick={() => setQuickEditField('drop')}
+                    className="flex items-center gap-1 text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity hover:text-blue-800 ml-2">
+                    <Pencil size={12} /> Edit
+                  </button>
+                </div>
+              </div>
+              <div className="flex gap-3 items-start py-3 border-b border-gray-200 hover:bg-gray-50 transition-colors duration-200 group">
+                <div className="w-1/3 text-sm text-gray-600">DROP TIME</div>
+                <div className="w-2/3 text-sm flex items-center justify-between">
+                  <span className="text-gray-900">{initialData.booking_information.drop.time || '-'}</span>
+                  <button onClick={() => setQuickEditField('drop')}
+                    className="flex items-center gap-1 text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity hover:text-blue-800 ml-2">
+                    <Pencil size={12} /> Edit
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 

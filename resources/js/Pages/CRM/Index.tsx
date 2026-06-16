@@ -170,7 +170,7 @@ export default function CRMIndex({ packages, countries, years }: Props) {
         chart: { type: 'donut', height: 280 },
         labels: insights?.country_distribution?.slice(0, 12).map((d: any) => d.country) ?? [],
         legend: { position: 'bottom', fontSize: '12px' },
-        dataLabels: { enabled: true, formatter: (_: any, opts: any) => `${opts.w.globals.series[opts.seriesIndex]}` },
+        dataLabels: { enabled: true, formatter: (val: number) => `${val.toFixed(1)}%` },
         tooltip: { y: { formatter: (v: number) => `${v} bookings` } },
     };
 
@@ -340,6 +340,7 @@ export default function CRMIndex({ packages, countries, years }: Props) {
                                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">#</th>
                                                     <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Country</th>
                                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Bookings</th>
+                                                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">%</th>
                                                     <th className="px-4 py-2 text-right text-xs font-medium text-gray-500">Pax</th>
                                                 </tr>
                                             </thead>
@@ -349,6 +350,7 @@ export default function CRMIndex({ packages, countries, years }: Props) {
                                                         <td className="px-4 py-2 text-gray-400 text-xs">{i + 1}</td>
                                                         <td className="px-4 py-2 text-gray-700 dark:text-gray-300">{d.country}</td>
                                                         <td className="px-4 py-2 text-right font-medium">{d.count}</td>
+                                                        <td className="px-4 py-2 text-right text-gray-400 text-xs">{d.percentage}%</td>
                                                         <td className="px-4 py-2 text-right text-gray-500">{d.pax}</td>
                                                     </tr>
                                                 ))}
@@ -439,7 +441,7 @@ export default function CRMIndex({ packages, countries, years }: Props) {
                                     <table className="w-full text-sm">
                                         <thead className="bg-gray-50 dark:bg-meta-4">
                                             <tr>
-                                                {['Name', 'Country', 'Channel', 'Package', 'Booking Date', 'Travel Date', 'Pax', 'Total', 'Status', ''].map(h => (
+                                                {['Name', 'Phone', 'Country', 'Channel', 'Package', 'Booking Date', 'Travel Date', 'Pax', 'Total', 'Status', ''].map(h => (
                                                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 whitespace-nowrap">{h}</th>
                                                 ))}
                                             </tr>
@@ -451,6 +453,7 @@ export default function CRMIndex({ packages, countries, years }: Props) {
                                                         <div className="font-medium text-black dark:text-white">{c.name}</div>
                                                         <div className="text-xs text-gray-400">{c.email}</div>
                                                     </td>
+                                                    <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap text-xs">{c.phone}</td>
                                                     <td className="px-4 py-3 text-gray-600 dark:text-gray-300 whitespace-nowrap">{c.country}</td>
                                                     <td className="px-4 py-3">
                                                         <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${c.channel === 'KLOOK' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>

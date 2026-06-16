@@ -21,6 +21,7 @@ import {
     Ticket,
     MoreVertical,
     X,
+    Pencil,
     Car,
     User,
     Users,
@@ -401,7 +402,8 @@ const BookingRow = ({
     updateBookingNote,
     noteCategories,
     viewColumns,
-    allBookings
+    allBookings,
+    onQuickEdit,
 }) => {
     const [hoveredCrew, setHoveredCrew] = useState(null);
     const [openDropdownId, setOpenDropdownId] = useState(null);
@@ -519,7 +521,7 @@ const BookingRow = ({
 
             {/* Pickup Details */}
             {viewColumns.includes("pickup") && (
-                <td className="py-3 px-4 align-top space-y-2">
+                <td className="py-3 px-4 align-top space-y-2 relative group">
                     <div className="flex">
                         {booking.pickup.meeting_point === "Surabaya Airport" ? (
                             booking.pickup.meeting_point_arrival ? (
@@ -602,10 +604,16 @@ const BookingRow = ({
                             </span>
                         )}
                     </div>
+                    <button
+                        onClick={() => onQuickEdit('pickup')}
+                        className="flex items-center gap-1 text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity hover:text-blue-800 mt-1"
+                    >
+                        <Pencil className="w-3 h-3" /> Edit
+                    </button>
                 </td>
             )}
             {viewColumns.includes("dropoff") && (
-                <td className="py-3 px-4 align-top space-y-2">
+                <td className="py-3 px-4 align-top space-y-2 relative group">
                     <div className="flex">
                         {booking.dropoff.drop_point === "Surabaya Airport" ? (
                             booking.dropoff.drop_point_arrival ? (
@@ -687,14 +695,26 @@ const BookingRow = ({
                             </span>
                         )}
                     </div>
+                    <button
+                        onClick={() => onQuickEdit('dropoff')}
+                        className="flex items-center gap-1 text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity hover:text-blue-800 mt-1"
+                    >
+                        <Pencil className="w-3 h-3" /> Edit
+                    </button>
                 </td>
             )}
 
             {viewColumns.includes("tshirtSize") && (
-                <td className="py-3 px-4 align-top">
+                <td className="py-3 px-4 align-top relative group">
                     <div className="text-sm text-gray-700">
                         {booking.tshirtSize || "-"}
                     </div>
+                    <button
+                        onClick={() => onQuickEdit('tshirt')}
+                        className="flex items-center gap-1 text-xs text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity hover:text-blue-800 mt-1"
+                    >
+                        <Pencil className="w-3 h-3" /> Edit
+                    </button>
                 </td>
             )}
             {viewColumns.includes("activities") && (
@@ -1582,6 +1602,215 @@ const ColumnSelector = ({ selectedColumns, setSelectedColumns }) => {
     );
 };
 
+// ---- Quick Edit helpers ----
+const QuickLocationForm = ({ label, value, onChange }) => {
+    const locationOptions = [
+        'Surabaya Airport', 'Surabaya Train Station', 'Surabaya Hotel',
+        'Denpasar Airport', 'Bali Hotel', 'Others',
+    ];
+    return (
+        <div className="space-y-3">
+            <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{label} Location</label>
+                <select
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    value={value.location}
+                    onChange={(e) => onChange({ ...value, location: e.target.value })}
+                >
+                    <option value="">Select location</option>
+                    {locationOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                </select>
+            </div>
+            {(value.location === 'Surabaya Airport' || value.location === 'Denpasar Airport') && (
+                <>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Terminal</label>
+                        <select
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                            value={value.terminal}
+                            onChange={(e) => onChange({ ...value, terminal: e.target.value })}
+                        >
+                            <option value="">Select terminal</option>
+                            <option value="Terminal 1">Terminal 1</option>
+                            <option value="Terminal 2">Terminal 2</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Flight Ticket Number</label>
+                        <input type="text" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                            value={value.ticketNumber}
+                            onChange={(e) => onChange({ ...value, ticketNumber: e.target.value })}
+                            placeholder="Enter flight ticket number" />
+                    </div>
+                </>
+            )}
+            {value.location === 'Surabaya Train Station' && (
+                <>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Station</label>
+                        <select
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                            value={value.station}
+                            onChange={(e) => onChange({ ...value, station: e.target.value })}
+                        >
+                            <option value="">Select station</option>
+                            <option value="Gubeng Station">Gubeng Station</option>
+                            <option value="Pasar Turi Station">Pasar Turi Station</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Train Ticket Number</label>
+                        <input type="text" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                            value={value.ticketNumber}
+                            onChange={(e) => onChange({ ...value, ticketNumber: e.target.value })}
+                            placeholder="Enter train ticket number" />
+                    </div>
+                </>
+            )}
+            {(value.location === 'Surabaya Hotel' || value.location === 'Bali Hotel') && (
+                <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Hotel Name</label>
+                    <input type="text" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                        value={value.hotelName}
+                        onChange={(e) => onChange({ ...value, hotelName: e.target.value })}
+                        placeholder="Enter hotel name" />
+                </div>
+            )}
+            {value.location === 'Others' && (
+                <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Custom Location</label>
+                    <input type="text" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                        value={value.customLocation}
+                        onChange={(e) => onChange({ ...value, customLocation: e.target.value })}
+                        placeholder="Enter location details" />
+                </div>
+            )}
+        </div>
+    );
+};
+
+const initPickupState = (pickup) => ({
+    location: pickup.meeting_point || '',
+    terminal: (pickup.meeting_point === 'Surabaya Airport' || pickup.meeting_point === 'Denpasar Airport') ? (pickup.meeting_point_arrival || '') : '',
+    ticketNumber: (pickup.meeting_point === 'Surabaya Airport' || pickup.meeting_point === 'Denpasar Airport' || pickup.meeting_point === 'Surabaya Train Station') ? (pickup.meeting_point_value || '') : '',
+    station: pickup.meeting_point === 'Surabaya Train Station' ? (pickup.meeting_point_arrival || '') : '',
+    hotelName: (pickup.meeting_point === 'Surabaya Hotel' || pickup.meeting_point === 'Bali Hotel') ? (pickup.meeting_point_value || '') : '',
+    customLocation: pickup.meeting_point === 'Others' ? (pickup.meeting_point_value || '') : '',
+});
+
+const initDropState = (dropoff) => ({
+    location: dropoff.drop_point || '',
+    terminal: (dropoff.drop_point === 'Surabaya Airport' || dropoff.drop_point === 'Denpasar Airport') ? (dropoff.drop_point_arrival || '') : '',
+    ticketNumber: (dropoff.drop_point === 'Surabaya Airport' || dropoff.drop_point === 'Denpasar Airport' || dropoff.drop_point === 'Surabaya Train Station') ? (dropoff.drop_point_value || '') : '',
+    station: dropoff.drop_point === 'Surabaya Train Station' ? (dropoff.drop_point_arrival || '') : '',
+    hotelName: (dropoff.drop_point === 'Surabaya Hotel' || dropoff.drop_point === 'Bali Hotel') ? (dropoff.drop_point_value || '') : '',
+    customLocation: dropoff.drop_point === 'Others' ? (dropoff.drop_point_value || '') : '',
+});
+
+const buildTshirtLabel = (sizes) => {
+    const sizeKeys = ['xss', 'xxs', 'xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'];
+    return sizeKeys
+        .filter(k => (sizes[k] || 0) > 0)
+        .map(k => `${k.toUpperCase()} x ${sizes[k]}`)
+        .join(', ');
+};
+
+const QuickEditModal = ({ booking, field, onClose, onSave }) => {
+    const [pickupLocation, setPickupLocation] = useState(() => initPickupState(booking.pickup));
+    const [pickupTime, setPickupTime] = useState(booking.pickup.pickup_time || '');
+    const [dropLocation, setDropLocation] = useState(() => initDropState(booking.dropoff));
+    const [dropTime, setDropTime] = useState(booking.dropoff.drop_time || '');
+    const [sizes, setSizes] = useState(booking.tshirtRaw || { xss: 0, xxs: 0, xs: 0, s: 0, m: 0, l: 0, xl: 0, xxl: 0, xxxl: 0 });
+    const [saving, setSaving] = useState(false);
+    const sizeKeys = ['xss', 'xxs', 'xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'];
+    const titles = { pickup: 'Edit Pickup', dropoff: 'Edit Drop-off', tshirt: 'Edit T-Shirt Sizes' };
+
+    const handleSave = () => {
+        setSaving(true);
+        const payload: any = {};
+        if (field === 'pickup') {
+            payload.pickupLocation = JSON.stringify(pickupLocation);
+            payload.pickupTime = pickupTime;
+        } else if (field === 'dropoff') {
+            payload.dropLocation = JSON.stringify(dropLocation);
+            payload.dropTime = dropTime;
+        } else if (field === 'tshirt') {
+            payload.sizes = JSON.stringify(sizes);
+        }
+        router.post('/bookings/quick-update/' + booking.booking_id, payload, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setSaving(false);
+                Toast.fire({ icon: 'success', title: 'Updated successfully' });
+                onSave({ field, pickupLocation, pickupTime, dropLocation, dropTime, sizes });
+                onClose();
+            },
+            onError: () => {
+                setSaving(false);
+                Toast.fire({ icon: 'error', title: 'Failed to update' });
+            },
+        });
+    };
+
+    return createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                    <h3 className="text-base font-semibold text-gray-800">{titles[field]}</h3>
+                    <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+                <div className="px-5 py-4 max-h-[70vh] overflow-y-auto space-y-4">
+                    {field === 'pickup' && (
+                        <>
+                            <QuickLocationForm label="Pickup" value={pickupLocation} onChange={setPickupLocation} />
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Pickup Time</label>
+                                <input type="time" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                    value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} />
+                            </div>
+                        </>
+                    )}
+                    {field === 'dropoff' && (
+                        <>
+                            <QuickLocationForm label="Drop-off" value={dropLocation} onChange={setDropLocation} />
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Drop-off Time</label>
+                                <input type="time" className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                    value={dropTime} onChange={(e) => setDropTime(e.target.value)} />
+                            </div>
+                        </>
+                    )}
+                    {field === 'tshirt' && (
+                        <div className="grid grid-cols-3 gap-3">
+                            {sizeKeys.map(size => (
+                                <div key={size}>
+                                    <label className="block text-xs font-medium text-gray-600 uppercase mb-1">{size}</label>
+                                    <input type="number" min="0"
+                                        className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500"
+                                        value={sizes[size] || 0}
+                                        onChange={(e) => setSizes(prev => ({ ...prev, [size]: parseInt(e.target.value) || 0 }))} />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-gray-100 bg-gray-50">
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button onClick={handleSave} disabled={saving}
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors">
+                        {saving ? 'Saving...' : 'Save'}
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    );
+};
+
 export default function Index({ data }) {
     // Local state
     const [bookings, setBookings] = useState(data.booking);
@@ -1622,6 +1851,7 @@ export default function Index({ data }) {
     const [sortOrder, setSortOrder] = useState(data.filters.sort_order); // Get from props or default to asc
     const [isDateSortDropdownOpen, setIsDateSortDropdownOpen] = useState(false); // New state to control dropdown visibility
     const dateSortDropdownRef = useRef(null); // Reference for the dropdown
+    const [quickEdit, setQuickEdit] = useState<{ open: boolean; booking: any; field: string | null }>({ open: false, booking: null, field: null });
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -2229,14 +2459,29 @@ export default function Index({ data }) {
             );
         }, [plottingData?.guide, crewStats, bookings, booking.booking_id, targetStart, targetEnd]);
 
+        // Kumpulkan ID guide yang sudah di-assign sebagai Ijen pada tanggal yang sama
+        const ijenConflictIds = useMemo(() => {
+            const ids = new Set<number>();
+            if (!booking?.at_ijen) return ids;
+            bookings.forEach(b => {
+                if (b.booking_id === booking.booking_id) return;
+                if (b.at_ijen !== booking.at_ijen) return;
+                if (!Array.isArray(b.guides)) return;
+                b.guides.forEach((g: any) => {
+                    if (g?.type === 'Ijen' && g?.id) ids.add(g.id);
+                });
+            });
+            return ids;
+        }, [bookings, booking?.booking_id, booking?.at_ijen]);
+
         const ijenGuideOptions = useMemo(() => {
             return (
                 plottingData?.guide?.map((guide) => {
                     const isUnavailableStatus = guide.status === "Tidak Tersedia" && guide.id !== 56;
+                    const isIjenConflict = ijenConflictIds.has(guide.id) && guide.id !== 56;
                     const isRoleRestricted = !guide.dynamic_roles?.includes("Ijen") && guide.id !== 56;
-                    const isUnavailable = isUnavailableStatus || isRoleRestricted;
+                    const isUnavailable = isUnavailableStatus || isIjenConflict || isRoleRestricted;
                     const stat = crewStats.guideCounts.get(guide.id);
-                    // Hitung currentAssignment untuk semua yang disabled
                     const currentAssignment = isUnavailable
                         ? findConflictingCustomers(b =>
                             Array.isArray(b.guides) && b.guides.some(g => g?.id === guide.id)
@@ -2249,16 +2494,18 @@ export default function Index({ data }) {
                         disabled: isUnavailable,
                         scheduleInfo: isUnavailableStatus
                             ? guide.schedule_info
-                            : isRoleRestricted
-                              ? "Hanya tersedia untuk Escort"
-                              : undefined,
+                            : isIjenConflict
+                              ? `Sudah sebagai Ijen Guide untuk trip lain (${booking.at_ijen})`
+                              : isRoleRestricted
+                                ? (guide.schedule_info_ijen ?? "Hanya tersedia untuk Escort")
+                                : undefined,
                         currentAssignment,
                         escortCount: stat?.escort ?? 0,
                         ijenCount: stat?.ijen ?? 0,
                     };
                 }) || []
             );
-        }, [plottingData?.guide, crewStats, bookings, booking.booking_id, targetStart, targetEnd]);
+        }, [plottingData?.guide, crewStats, bookings, booking.booking_id, booking?.at_ijen, ijenConflictIds, targetStart, targetEnd]);
 
         const handleSubmit = (e) => {
             e.preventDefault();
@@ -2738,7 +2985,46 @@ export default function Index({ data }) {
         setBookings(updatedBookings);
     };
 
+    const updateBookingQuickEdit = (bookingId, { field, pickupLocation, pickupTime, dropLocation, dropTime, sizes }) => {
+        setBookings(prev => prev.map(b => {
+            if (b.booking_id !== bookingId) return b;
+            if (field === 'pickup') {
+                const arrival = pickupLocation.terminal || pickupLocation.station || '';
+                const value = pickupLocation.ticketNumber || pickupLocation.hotelName || pickupLocation.customLocation || '';
+                return {
+                    ...b,
+                    pickup: {
+                        ...b.pickup,
+                        meeting_point: pickupLocation.location,
+                        meeting_point_arrival: arrival,
+                        meeting_point_value: value,
+                        pickup_time: pickupTime,
+                    },
+                };
+            }
+            if (field === 'dropoff') {
+                const arrival = dropLocation.terminal || dropLocation.station || '';
+                const value = dropLocation.ticketNumber || dropLocation.hotelName || dropLocation.customLocation || '';
+                return {
+                    ...b,
+                    dropoff: {
+                        ...b.dropoff,
+                        drop_point: dropLocation.location,
+                        drop_point_arrival: arrival,
+                        drop_point_value: value,
+                        drop_time: dropTime,
+                    },
+                };
+            }
+            if (field === 'tshirt') {
+                return { ...b, tshirtSize: buildTshirtLabel(sizes), tshirtRaw: sizes };
+            }
+            return b;
+        }));
+    };
+
     return (
+        <>
         <Main>
             <div className="w-full mx-auto">
                 {/* Gradient header area (like the MS Rewards style) */}
@@ -3395,6 +3681,7 @@ export default function Index({ data }) {
                                             }
                                             viewColumns={viewColumns}
                                             allBookings={bookings}
+                                            onQuickEdit={(field) => setQuickEdit({ open: true, booking, field })}
                                         />
                                     ))}
 
@@ -3455,6 +3742,7 @@ export default function Index({ data }) {
                                         noteCategories={data.note_categories}
                                         viewColumns={viewColumns}
                                         allBookings={bookings}
+                                        onQuickEdit={(field) => setQuickEdit({ open: true, booking, field })}
                                     />
                                 ))}
                         </tbody>
@@ -3472,5 +3760,14 @@ export default function Index({ data }) {
                 )}
             </div>
         </Main>
+        {quickEdit.open && quickEdit.booking && quickEdit.field && (
+            <QuickEditModal
+                booking={quickEdit.booking}
+                field={quickEdit.field}
+                onClose={() => setQuickEdit({ open: false, booking: null, field: null })}
+                onSave={(updatedData) => updateBookingQuickEdit(quickEdit.booking.booking_id, updatedData)}
+            />
+        )}
+        </>
     );
 }

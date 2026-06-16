@@ -131,6 +131,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/delete/{id}', [BookingController::class, 'delete']);
         Route::post('/trip-media/{id}', [BookingController::class, 'updateTripMedia']);
         Route::post('/trip-media/{id}/generate', [BookingController::class, 'generateTripMedia']);
+        Route::post('/quick-update/{id}', [BookingController::class, 'quickUpdate']);
     });
     Route::prefix('vendor')->group(function () {
         Route::get('/accommodation/{id}', [VendorController::class, 'accommodation']);

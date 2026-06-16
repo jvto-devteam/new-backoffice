@@ -318,6 +318,17 @@ class ScheduleController extends Controller
                     'itinerary' => $itinerary,
                     'hotels' => $hotels,
                     'tshirtSize' => $tshirtSize,
+                    'tshirtRaw' => [
+                        'xss' => (int)($booking->bookingDetail[0]->xss ?? 0),
+                        'xxs' => (int)($booking->bookingDetail[0]->xxs ?? 0),
+                        'xs' => (int)($booking->bookingDetail[0]->xs ?? 0),
+                        's' => (int)($booking->bookingDetail[0]->s ?? 0),
+                        'm' => (int)($booking->bookingDetail[0]->m ?? 0),
+                        'l' => (int)($booking->bookingDetail[0]->l ?? 0),
+                        'xl' => (int)($booking->bookingDetail[0]->xl ?? 0),
+                        'xxl' => (int)($booking->bookingDetail[0]->xxl ?? 0),
+                        'xxxl' => (int)($booking->bookingDetail[0]->xxxl ?? 0),
+                    ],
                     'vehicles' => $vehicles,
                     'drivers' => $drivers,
                     'guides' => $guides,
@@ -1413,6 +1424,17 @@ class ScheduleController extends Controller
                 'travel_date' => date('d F Y', strtotime($booking->travel_date_start)),
                 'booking_date' => date('d F Y', strtotime($booking->booking_date)),
                 'tshirt' => $tshirts,
+                'tshirt_raw' => [
+                    'xss' => (int)($booking->bookingDetail[0]->xss ?? 0),
+                    'xxs' => (int)($booking->bookingDetail[0]->xxs ?? 0),
+                    'xs' => (int)($booking->bookingDetail[0]->xs ?? 0),
+                    's' => (int)($booking->bookingDetail[0]->s ?? 0),
+                    'm' => (int)($booking->bookingDetail[0]->m ?? 0),
+                    'l' => (int)($booking->bookingDetail[0]->l ?? 0),
+                    'xl' => (int)($booking->bookingDetail[0]->xl ?? 0),
+                    'xxl' => (int)($booking->bookingDetail[0]->xxl ?? 0),
+                    'xxxl' => (int)($booking->bookingDetail[0]->xxxl ?? 0),
+                ],
                 'pickup' => [
                     'location' => $booking->meeting_point ? $booking->meeting_point : '-',
                     'arrival' => $booking->meeting_point_arrival ? $booking->meeting_point_arrival : '-',
@@ -1947,16 +1969,27 @@ class ScheduleController extends Controller
             ->map(function ($guide) use ($bookingId, $at_ijen) {
                 $guide->dynamic_roles = ['Escort', 'Ijen'];
                 $checkIjen = BookGuideDriver::whereRaw("'$at_ijen' between start_date and end_date")->where('guide_id', $guide->id)->count();
+                // Cek apakah guide sudah di-assign sebagai Ijen Guide di booking lain pada tanggal yang sama
+                $ijenConflict = $at_ijen ? BookGuideDriver::where('guide_id', $guide->id)
+                    ->where('guide_ijen', '1')
+                    ->where('start_date', $at_ijen)
+                    ->where('booking_id', '!=', $bookingId)
+                    ->exists() : false;
                 if ($guide->status == 'Terplotting') {
                     $guideType = $guide->current_guide_ijen == '1' ? 'Ijen Guide' : 'Escort Guide';
                     $guide->schedule_info = "Terplotting untuk Booking ID: {$bookingId} ({$guideType})";
                     $guide->guide_ijen = $guide->current_guide_ijen;
                 } elseif ($guide->status == 'Tidak Tersedia' && $guide->conflicting_booking_id) {
-                    // if($guide->guide_ijen == '1' && $guide->conflicting_start_date != $at_ijen){
                     if (($guide->guide_ijen == '1' && $guide->conflicting_start_date != $at_ijen)) {
                         $guide->status = 'Tersedia';
                         $guide->schedule_info = 'Tersedia';
-                        $guide->dynamic_roles = ['Ijen'];
+                        // Conflict ada di Ijen tanggal lain; cek apakah juga ada konflik Ijen di tanggal ini
+                        if ($ijenConflict) {
+                            $guide->dynamic_roles = ['Escort'];
+                            $guide->schedule_info_ijen = "Sudah ditugaskan sebagai Ijen Guide pada {$at_ijen}";
+                        } else {
+                            $guide->dynamic_roles = ['Ijen'];
+                        }
                     } else if (($guide->guide_ijen == '0' && $at_ijen > $guide->conflicting_end_date)) {
                         if ($checkIjen == 0) {
                             $guide->status = 'Tersedia';
@@ -1972,6 +2005,11 @@ class ScheduleController extends Controller
                     }
                 } else {
                     $guide->schedule_info = "Tersedia";
+                    // Tidak ada konflik tanggal umum, tapi cek konflik Ijen spesifik pada tanggal yang sama
+                    if ($ijenConflict) {
+                        $guide->dynamic_roles = ['Escort'];
+                        $guide->schedule_info_ijen = "Sudah ditugaskan sebagai Ijen Guide pada {$at_ijen}";
+                    }
                 }
                 unset($guide->conflicting_booking_id, $guide->conflicting_user_name,  $guide->current_guide_ijen);
                 return $guide;

@@ -129,6 +129,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/update-bookings', [BookingController::class, 'update']);
         Route::post('/store', [BookingController::class, 'store']);
         Route::delete('/delete/{id}', [BookingController::class, 'delete']);
+        Route::post('/trip-media/bulk-generate', [BookingController::class, 'bulkGenerateTripMedia']);
         Route::post('/trip-media/{id}', [BookingController::class, 'updateTripMedia']);
         Route::post('/trip-media/{id}/generate', [BookingController::class, 'generateTripMedia']);
         Route::post('/quick-update/{id}', [BookingController::class, 'quickUpdate']);

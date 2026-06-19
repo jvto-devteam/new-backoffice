@@ -29,6 +29,7 @@ import {
     FileText,
     CheckCircle2,
     Search,
+    FolderPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -1852,6 +1853,76 @@ export default function Index({ data }) {
     const [isDateSortDropdownOpen, setIsDateSortDropdownOpen] = useState(false); // New state to control dropdown visibility
     const dateSortDropdownRef = useRef(null); // Reference for the dropdown
     const [quickEdit, setQuickEdit] = useState<{ open: boolean; booking: any; field: string | null }>({ open: false, booking: null, field: null });
+    const [generateAllState, setGenerateAllState] = useState({ isRunning: false, current: 0, total: 0 });
+
+    const bookingsWithoutTripMedia = bookings.filter(b => !b.guestDetails?.trip_media && b.orderChannel !== 'TWT');
+
+    const handleGenerateAllTripMedia = async () => {
+        if (bookingsWithoutTripMedia.length === 0) {
+            Toast.fire({ icon: 'info', title: 'Semua booking sudah memiliki Trip Media Link' });
+            return;
+        }
+
+        const { isConfirmed } = await Swal.fire({
+            title: 'Generate All Trip Media',
+            html: `Ditemukan <strong>${bookingsWithoutTripMedia.length}</strong> booking yang belum memiliki Trip Media Link.<br><br>Proses akan berjalan secara otomatis untuk semua booking dalam rentang tanggal yang ditampilkan.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#7c3aed',
+            confirmButtonText: 'Generate!',
+            cancelButtonText: 'Batal',
+        });
+
+        if (!isConfirmed) return;
+
+        const ids = bookingsWithoutTripMedia.map(b => b.booking_id);
+        setGenerateAllState({ isRunning: true, current: 0, total: ids.length });
+
+        const getCsrfToken = () => {
+            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+            return match ? decodeURIComponent(match[1]) : '';
+        };
+
+        try {
+            const response = await fetch('/bookings/trip-media/bulk-generate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-XSRF-TOKEN': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ ids }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                Toast.fire({ icon: 'error', title: data.error || 'Gagal generate Trip Media' });
+                return;
+            }
+
+            const { summary, results } = data;
+
+            // Update local bookings state so generated ones no longer show in count
+            setBookings(prev => prev.map(b => {
+                const result = results.find((r: any) => r.id === b.booking_id && r.success);
+                return result ? { ...b, guestDetails: { ...b.guestDetails, trip_media: result.url } } : b;
+            }));
+
+            Toast.fire({
+                icon: summary.failed === 0 ? 'success' : summary.success === 0 ? 'error' : 'warning',
+                title: `Selesai! ${summary.success} berhasil${summary.failed > 0 ? `, ${summary.failed} gagal` : ''}`,
+                timer: 5000,
+                timerProgressBar: true,
+            });
+
+        } catch {
+            Toast.fire({ icon: 'error', title: 'Terjadi kesalahan, coba lagi' });
+        } finally {
+            setGenerateAllState({ isRunning: false, current: 0, total: 0 });
+        }
+    };
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -3273,6 +3344,34 @@ export default function Index({ data }) {
                                         </button>
                                     </div>
 
+                                    <button
+                                        type="button"
+                                        onClick={handleGenerateAllTripMedia}
+                                        disabled={generateAllState.isRunning}
+                                        title={
+                                            bookingsWithoutTripMedia.length === 0
+                                                ? 'Semua booking sudah memiliki Trip Media'
+                                                : `Generate Trip Media untuk ${bookingsWithoutTripMedia.length} booking`
+                                        }
+                                        className={`py-2 px-4 rounded-md flex items-center gap-2 transition-colors text-white font-medium
+                                            ${generateAllState.isRunning ? 'bg-violet-400 cursor-not-allowed' : bookingsWithoutTripMedia.length === 0 ? 'bg-gray-400 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700'}
+                                        `}
+                                    >
+                                        <FolderPlus className="h-5 w-5 flex-shrink-0" />
+                                        <span className="hidden lg:inline whitespace-nowrap">Trip Media</span>
+                                        {bookingsWithoutTripMedia.length > 0 && !generateAllState.isRunning && (
+                                            <span className="bg-white/25 text-xs font-bold px-1.5 py-0.5 rounded-full leading-none">
+                                                {bookingsWithoutTripMedia.length}
+                                            </span>
+                                        )}
+                                        {generateAllState.isRunning && (
+                                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                            </svg>
+                                        )}
+                                    </button>
+
                                     <div className="relative">
                                         <button
                                             type="button"
@@ -3767,6 +3866,30 @@ export default function Index({ data }) {
                 onClose={() => setQuickEdit({ open: false, booking: null, field: null })}
                 onSave={(updatedData) => updateBookingQuickEdit(quickEdit.booking.booking_id, updatedData)}
             />
+        )}
+        {generateAllState.isRunning && createPortal(
+            <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center">
+                <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-sm mx-4 text-center">
+                    <div className="flex items-center justify-center mb-4">
+                        <div className="relative">
+                            <svg className="animate-spin h-12 w-12 text-violet-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            <FolderPlus className="absolute inset-0 m-auto h-5 w-5 text-violet-600" />
+                        </div>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-1">Generating Trip Media</h3>
+                    <p className="text-sm text-gray-500 mb-5">
+                        Membuat folder Google Drive untuk <strong>{generateAllState.total}</strong> booking...
+                    </p>
+                    <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                        <div className="bg-violet-500 h-2.5 rounded-full animate-pulse w-full" />
+                    </div>
+                    <p className="text-xs text-gray-400 mt-3">Harap jangan menutup atau me-refresh halaman ini</p>
+                </div>
+            </div>,
+            document.body
         )}
         </>
     );

@@ -2497,74 +2497,75 @@ class BookingController extends Controller
             $client->setAuthConfig($credentialsPath);
             $client->setScopes([Drive::DRIVE]);
             $drive = new Drive($client);
+
+            $results = [];
+
+            foreach ($ids as $id) {
+                try {
+                    $booking = Booking::with('user')->find((int) $id);
+
+                    if (! $booking) {
+                        $results[] = ['id' => $id, 'success' => false, 'message' => 'Booking tidak ditemukan'];
+                        continue;
+                    }
+
+                    if ($booking->agent_id == 1) {
+                        $results[] = ['id' => $id, 'success' => false, 'message' => 'TWT booking tidak didukung'];
+                        continue;
+                    }
+
+                    if ($booking->media_link) {
+                        $results[] = ['id' => $id, 'success' => false, 'message' => 'Sudah ada Trip Media'];
+                        continue;
+                    }
+
+                    $masterFolderId = '1Gqf5Pjm0ElWKmXdaXHPupVti6m7cTiXZ';
+                    $channelName = $booking->booking_category_id == 3 ? 'KLOOK' : 'JVTO';
+                    $channelFolderId = $this->findOrCreateDriveFolder($drive, $channelName, $masterFolderId);
+
+                    $folderName = $this->buildTripMediaFolderName($booking);
+
+                    $folder = new DriveFile([
+                        'name'     => $folderName,
+                        'mimeType' => 'application/vnd.google-apps.folder',
+                        'parents'  => [$channelFolderId],
+                    ]);
+
+                    $createdFolder = $drive->files->create($folder, ['fields' => 'id, webViewLink']);
+
+                    $drive->permissions->create($createdFolder->id, new Permission([
+                        'type' => 'anyone',
+                        'role' => 'writer',
+                    ]), ['fields' => 'id']);
+
+                    $folderUrl = $createdFolder->webViewLink ?: 'https://drive.google.com/drive/folders/' . $createdFolder->id;
+
+                    $booking->media_link = $folderUrl;
+                    $booking->save();
+
+                    $results[] = ['id' => $id, 'success' => true, 'url' => $folderUrl];
+
+                } catch (\Throwable $th) {
+                    report($th);
+                    $results[] = ['id' => $id, 'success' => false, 'message' => 'Gagal membuat folder: ' . $th->getMessage()];
+                }
+            }
+
+            $successCount = count(array_filter($results, fn ($r) => $r['success']));
+
+            return response()->json([
+                'results' => $results,
+                'summary' => [
+                    'total'   => count($results),
+                    'success' => $successCount,
+                    'failed'  => count($results) - $successCount,
+                ],
+            ]);
+
         } catch (\Throwable $th) {
             report($th);
-            return response()->json(['error' => 'Gagal menginisialisasi Google Drive client.'], 500);
+            return response()->json(['error' => 'Gagal: ' . $th->getMessage()], 500);
         }
-
-        $results = [];
-
-        foreach ($ids as $id) {
-            try {
-                $booking = Booking::with('user')->find((int) $id);
-
-                if (! $booking) {
-                    $results[] = ['id' => $id, 'success' => false, 'message' => 'Booking tidak ditemukan'];
-                    continue;
-                }
-
-                if ($booking->agent_id == 1) {
-                    $results[] = ['id' => $id, 'success' => false, 'message' => 'TWT booking tidak didukung'];
-                    continue;
-                }
-
-                if ($booking->media_link) {
-                    $results[] = ['id' => $id, 'success' => false, 'message' => 'Sudah ada Trip Media'];
-                    continue;
-                }
-
-                $masterFolderId = '1Gqf5Pjm0ElWKmXdaXHPupVti6m7cTiXZ';
-                $channelName = $booking->booking_category_id == 3 ? 'KLOOK' : 'JVTO';
-                $channelFolderId = $this->findOrCreateDriveFolder($drive, $channelName, $masterFolderId);
-
-                $folderName = $this->buildTripMediaFolderName($booking);
-
-                $folder = new DriveFile([
-                    'name'     => $folderName,
-                    'mimeType' => 'application/vnd.google-apps.folder',
-                    'parents'  => [$channelFolderId],
-                ]);
-
-                $createdFolder = $drive->files->create($folder, ['fields' => 'id, webViewLink']);
-
-                $drive->permissions->create($createdFolder->id, new Permission([
-                    'type' => 'anyone',
-                    'role' => 'writer',
-                ]), ['fields' => 'id']);
-
-                $folderUrl = $createdFolder->webViewLink ?: 'https://drive.google.com/drive/folders/' . $createdFolder->id;
-
-                $booking->media_link = $folderUrl;
-                $booking->save();
-
-                $results[] = ['id' => $id, 'success' => true, 'url' => $folderUrl];
-
-            } catch (\Throwable $th) {
-                report($th);
-                $results[] = ['id' => $id, 'success' => false, 'message' => 'Gagal membuat folder'];
-            }
-        }
-
-        $successCount = count(array_filter($results, fn ($r) => $r['success']));
-
-        return response()->json([
-            'results' => $results,
-            'summary' => [
-                'total'   => count($results),
-                'success' => $successCount,
-                'failed'  => count($results) - $successCount,
-            ],
-        ]);
     }
 
     private function findOrCreateDriveFolder(Drive $drive, string $name, string $parentId): string

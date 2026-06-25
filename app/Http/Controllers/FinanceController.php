@@ -4233,9 +4233,9 @@ class FinanceController extends Controller
                 'customer'            => optional($b->user)->name ?? $b->booking_from ?? '-',
                 'total_pax'           => $b->total_pax,
                 'trip_date'           => $b->travel_date_start ? date('d M y', strtotime($b->travel_date_start)) : '-',
-                'invoice'             => (int) $b->grand_total,
+                'invoice'             => (int) $b->grand_total + (int) $b->book_add_on_total,
                 'expense'             => (int) $b->expense_internal_total,
-                'profit'              => (int) $b->grand_total - (int) $b->expense_internal_total,
+                'profit'              => (int) $b->grand_total + (int) $b->book_add_on_total - (int) $b->expense_internal_total,
                 'channel_tag'         => $b->channel_tag,
                 'resolved_channel'    => $this->resolveChannelTag($b),
             ]);
@@ -4246,7 +4246,7 @@ class FinanceController extends Controller
         $bookings = $rows->sortBy('travel_date_start')->values()->map(function ($b, $i) use ($channel) {
             $bookingNumber = $channel === 'jvto' ? $b->booking_code : $b->invoice_code_origin;
             $customer      = optional($b->user)->name ?? $b->booking_from ?? '-';
-            $invoice       = (int) $b->grand_total;
+            $invoice       = (int) $b->grand_total + (int) $b->book_add_on_total;
             $expense       = (int) $b->expense_internal_total;
             return [
                 'no'             => $i + 1,
